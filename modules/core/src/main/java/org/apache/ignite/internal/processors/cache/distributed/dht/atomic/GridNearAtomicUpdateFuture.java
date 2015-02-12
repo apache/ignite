@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
@@ -36,6 +37,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -114,7 +116,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Write synchronization mode. */
     private final CacheWriteSynchronizationMode syncMode;
@@ -196,7 +198,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<CacheEntry<K, V>>[] filter,
+        final IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {
@@ -791,7 +793,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                cctx.io().send(req.nodeId(), req);
+                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
                     onDone(new GridCacheReturn<V>(null, true));
@@ -825,7 +827,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     if (log.isDebugEnabled())
                         log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                    cctx.io().send(req.nodeId(), req);
+                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     addFailedKeys(req.keys(), e);

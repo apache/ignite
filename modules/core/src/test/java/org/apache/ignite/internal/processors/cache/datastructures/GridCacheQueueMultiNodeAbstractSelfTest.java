@@ -29,7 +29,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -92,25 +91,12 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
+        cfg.setPublicThreadPoolSize(RETRIES * 2);
 
-        cfg.setExecutorServiceShutdown(true);
+        cfg.setSystemThreadPoolSize(RETRIES * 2);
 
-        cfg.setSystemExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        cfg.setSystemExecutorServiceShutdown(true);
-
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }
@@ -332,7 +318,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
                 futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        IgniteCollectionConfiguration colCfg = config(collocated);
+                        CollectionConfiguration colCfg = config(collocated);
 
                         IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
@@ -401,7 +387,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
                 putFuts.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        IgniteCollectionConfiguration colCfg = config(collocated);
+                        CollectionConfiguration colCfg = config(collocated);
 
                         IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
@@ -419,7 +405,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
                     pollFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            IgniteCollectionConfiguration colCfg = config(collocated);
+                            CollectionConfiguration colCfg = config(collocated);
 
                             IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
@@ -444,7 +430,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
             for (IgniteInternalFuture fut : pollFuts)
                 fut.get();
 
-            IgniteCollectionConfiguration colCfg = config(collocated);
+            CollectionConfiguration colCfg = config(collocated);
 
             IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, colCfg);
 
@@ -559,7 +545,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * Tests queue serialization.
      */
-    private static class QueueJob implements Callable<Integer>, Serializable {
+    private static class QueueJob implements IgniteCallable<Integer> {
         /** */
         private IgniteQueue<Integer> queue;
 
@@ -693,7 +679,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         private final String expVal;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
@@ -701,7 +687,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
          * @param retries  Number of operations.
          * @param expVal Expected value.
          */
-        GetJob(String queueName, IgniteCollectionConfiguration colCfg, int retries, String expVal) {
+        GetJob(String queueName, CollectionConfiguration colCfg, int retries, String expVal) {
             this.queueName = queueName;
             this.colCfg = colCfg;
             this.retries = retries;

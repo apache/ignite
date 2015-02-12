@@ -84,7 +84,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
 
         return Collections.singletonMap(
             new ComputeJobAdapter() {
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 @IgniteInstanceResource
@@ -94,7 +94,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                     try {
                         log.info("Going to put data: " + data.size());
 
-                        GridCache<Object, Object> cache = ignite.cache(cacheName);
+                        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
                         assert cache != null;
 
@@ -106,8 +106,9 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                             Object affKey = pair.get1();
 
                             // Group lock partition.
-                            try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affKey),
-                                optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ, 0, pair.get2().size())) {
+                            try (IgniteTx tx = ignite.transactions().txStartPartition(cacheName,
+                                ignite.affinity(cacheName).partition(affKey), optimistic ? OPTIMISTIC : PESSIMISTIC,
+                                REPEATABLE_READ, 0, pair.get2().size())) {
                                 for (Integer val : pair.get2())
                                     cache.put(val, val);
 
@@ -131,12 +132,10 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                  * @return Grouped map.
                  */
                 private Map<Integer, T2<Integer, Collection<Integer>>> groupData(Iterable<Integer> data) {
-                    GridCache<Object, Object> cache = ignite.cache(cacheName);
-
                     Map<Integer, T2<Integer, Collection<Integer>>> res = new HashMap<>();
 
                     for (Integer val : data) {
-                        int part = cache.affinity().partition(val);
+                        int part = ignite.affinity(cacheName).partition(val);
 
                         T2<Integer, Collection<Integer>> tup = res.get(part);
 

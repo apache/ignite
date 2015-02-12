@@ -67,12 +67,12 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(PESSIMISTIC);
         tCfg.setDefaultTxIsolation(READ_COMMITTED);
 
-        c.setTransactionsConfiguration(tCfg);
+        c.setTransactionConfiguration(tCfg);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -154,8 +154,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * http://atlassian.gridgain.com/jira/browse/GG-9002
-     *
      * @throws Throwable If failed.
      */
     public void testLocalSync() throws Throwable {
@@ -167,10 +165,10 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         Ignite g = startGrid(0);
 
-        final GridCache<Integer, Integer> cache = g.cache(null);
+        final IgniteCache<Integer, Integer> cache = g.jcache(null);
 
         for (int i = 1; i < 20; i++) {
-            cache.putx(i * gridCnt, i * gridCnt);
+            cache.put(i * gridCnt, i * gridCnt);
 
             info("Put to cache: " + i * gridCnt);
         }
@@ -183,26 +181,26 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             Ignite ignite = grid(0);
 
-            final GridCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
             // Put 1 entry to primary node.
-            cache.putx(0, 0);
+            cache.put(0, 0);
 
-            Integer nearVal = this.<Integer, Integer>cache(2).get(0);
+            Integer nearVal = this.<Integer, Integer>jcache(2).get(0);
 
             assert nearVal == 0 : "Unexpected near value: " + nearVal;
 
             // Put several vals to primary node.
             for (int i = 1; i < 20; i++) {
-                cache.putx(i * gridCnt, i * gridCnt);
+                cache.put(i * gridCnt, i * gridCnt);
 
                 info("Put to cache: " + i * gridCnt);
             }
 
             for (int i = 0; i < 3; i++) {
                 try {
-                    assert cache(2).get(0) == null : "Entry has not been evicted from near node for key: " + 0;
-                    assert cache(1).get(0) == null : "Entry has not been evicted from backup node for key: " + 0;
+                    assert jcache(2).get(0) == null : "Entry has not been evicted from near node for key: " + 0;
+                    assert jcache(1).get(0) == null : "Entry has not been evicted from backup node for key: " + 0;
                     assert cache.get(0) == null : "Entry has not been evicted from primary node for key: " + 0;
                 }
                 catch (Throwable e) {
@@ -230,12 +228,10 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
                 info("Near node near key set: " + new TreeSet<>(this.<Integer, Integer>near(2).keySet()));
 
                 try {
-                    assert cache.size() == 10 : "Invalid cache size [size=" + cache.size() +
-                        ", keys=" + new TreeSet<>(cache.keySet()) + ']';
-                    assert cache.size() == 10 : "Invalid key size [size=" + cache.size() +
-                        ", keys=" + new TreeSet<>(cache.keySet()) + ']';
+                    assert cache.localSize() == 10 : "Invalid cache size [size=" + cache.localSize() + ']';
+                    assert cache.localSize() == 10 : "Invalid key size [size=" + cache.localSize() + ']';
 
-                    assert cache(2).isEmpty();
+                    assert jcache(2).localSize() == 0;
 
                     break;
                 }

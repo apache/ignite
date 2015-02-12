@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -54,7 +53,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ = new DelayQueue<>();
 
     /** Marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /**
      * @param ctx Kernal context.
@@ -235,7 +234,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             }
 
             Collection<Map.Entry<K, V>> col;
-            IgniteDataLoadCacheUpdater<K, V> updater;
+            IgniteDataLoader.Updater<K, V> updater;
 
             try {
                 col = marsh.unmarshal(req.collectionBytes(), clsLdr);

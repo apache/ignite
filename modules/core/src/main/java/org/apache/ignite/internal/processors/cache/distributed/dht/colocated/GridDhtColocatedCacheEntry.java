@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -43,16 +41,6 @@ public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     public GridDhtColocatedCacheEntry(GridCacheContext<K, V> ctx, long topVer, K key, int hash, V val,
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
         super(ctx, topVer, key, hash, val, next, ttl, hdrId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = cctx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
-
-        return new GridDhtCacheEntryImpl<>(null, cctx, key, this);
     }
 
     /** {@inheritDoc} */

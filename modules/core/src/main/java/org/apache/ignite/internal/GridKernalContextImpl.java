@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -45,11 +46,11 @@ import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.processors.portable.os.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -61,8 +62,6 @@ import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -231,10 +230,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridLicenseProcessor licProc;
-
-    /** */
-    @GridToStringInclude
     private GridStreamProcessor streamProc;
 
     /** */
@@ -266,13 +261,35 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
+    @GridToStringExclude
+    protected ExecutorService execSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService sysExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService p2pExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService mgmtExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService ggfsExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService restExecSvc;
+
+
+    /** */
     private IgniteEx grid;
 
     /** */
     private ExecutorService utilityCachePool;
-
-    /** */
-    private IgniteProduct product;
 
     /** */
     private IgniteConfiguration cfg;
@@ -289,18 +306,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
-    /** Enterprise release flag. */
-    private boolean ent;
-
-    /** */
-    private GridTcpMessageFactory msgFactory;
-
-    /** */
-    private int pluginMsg = GridTcpCommunicationMessageFactory.MAX_COMMON_TYPE;
-
-    /** */
-    private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -311,20 +316,31 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * Creates new kernal context.
      *
-     * @param log Logger.
-     * @param grid Grid instance managed by kernal.
-     * @param cfg Grid configuration.
-     * @param gw Kernal gateway.
-     * @param utilityCachePool Utility cache pool.
-     * @param ent Release enterprise flag.
+     *  @param log Logger.
+     *  @param grid Grid instance managed by kernal.
+     *  @param cfg Grid configuration.
+     *  @param gw Kernal gateway.
+     *  @param utilityCachePool Utility cache pool.
+     *  @param execSvc Public executor service.
+     *  @param sysExecSvc System executor service.
+     *  @param p2pExecSvc P2P executor service.
+     *  @param mgmtExecSvc Management executor service.
+     *  @param ggfsExecSvc GGFS executor service.
+     *  @param restExecSvc REST executor service.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    protected GridKernalContextImpl(GridLoggerProxy log,
+    protected GridKernalContextImpl(
+        GridLoggerProxy log,
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
-        boolean ent) {
+        ExecutorService execSvc,
+        ExecutorService sysExecSvc,
+        ExecutorService p2pExecSvc,
+        ExecutorService mgmtExecSvc,
+        ExecutorService ggfsExecSvc,
+        ExecutorService restExecSvc) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -332,8 +348,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.ent = ent;
         this.utilityCachePool = utilityCachePool;
+        this.execSvc = execSvc;
+        this.sysExecSvc = sysExecSvc;
+        this.p2pExecSvc = p2pExecSvc;
+        this.mgmtExecSvc = mgmtExecSvc;
+        this.ggfsExecSvc = ggfsExecSvc;
+        this.restExecSvc = restExecSvc;
 
         try {
             spring = SPRING.create(false);
@@ -341,7 +362,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         catch (IgniteCheckedException ignored) {
             if (log != null && log.isDebugEnabled())
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
-                    "META-INF/gridgain.xml.");
+                    "META-INF/ignite.xml.");
         }
     }
 
@@ -434,8 +455,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             ggfsProc = (IgniteFsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridLicenseProcessor)
-            licProc = (GridLicenseProcessor)comp;
         else if (comp instanceof GridStreamProcessor)
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
@@ -466,11 +485,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             ggfsHelper = (IgniteFsHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<String> compatibleVersions() {
-        return grid.compatibleVersions();
     }
 
     /** {@inheritDoc} */
@@ -641,11 +655,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridLicenseProcessor license() {
-        return licProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridAffinityProcessor affinity() {
         return affProc;
     }
@@ -732,18 +741,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /**
-     * @param product Product.
-     */
-    public void product(IgniteProduct product) {
-        this.product = product;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
-        return product;
-    }
-
-    /**
      * Sets time source. For test purposes only.
      *
      * @param clockSrc Time source.
@@ -755,11 +752,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEnterprise() {
-        return ent;
     }
 
     /** {@inheritDoc} */
@@ -792,6 +784,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
         T res = pluginProc.createComponent(cls);
 
@@ -800,67 +793,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
+        else if (cls.equals(GridPortableProcessor.class))
+            return (T)new GridOsPortableProcessor(this);
+        else if (cls.equals(IgniteCacheSerializationManager.class))
+            return (T)new IgniteCacheOsSerializationManager();
 
         throw new IgniteException("Unsupported component type: " + cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridTcpMessageFactory messageFactory() {
-        assert msgFactory != null;
-
-        return msgFactory;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
-        int nextMsg = ++pluginMsg;
-
-        if (nextMsg > Byte.MAX_VALUE)
-            throw new IgniteException();
-
-        if (pluginMsgs == null)
-            pluginMsgs = new HashMap<>();
-
-        pluginMsgs.put((byte)nextMsg, producer);
-
-        return (byte)nextMsg;
-    }
-
-    /**
-     * Creates message factory.
-     */
-    void createMessageFactory() {
-        final GridTcpCommunicationMessageProducer[] common = GridTcpCommunicationMessageFactory.commonProducers();
-
-        final GridTcpCommunicationMessageProducer[] producers;
-
-        if (pluginMsgs != null) {
-            producers = Arrays.copyOf(common, pluginMsg + 1);
-
-            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : pluginMsgs.entrySet()) {
-                assert producers[e.getKey()] == null : e.getKey();
-
-                producers[e.getKey()] = e.getValue();
-            }
-
-            pluginMsgs = null;
-        }
-        else
-            producers = common;
-
-        msgFactory = new GridTcpMessageFactory() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
-                if (type < 0 || type >= producers.length)
-                    return GridTcpCommunicationMessageFactory.create(type);
-
-                GridTcpCommunicationMessageProducer producer = producers[type];
-
-                if (producer != null)
-                    return producer.create(type);
-                else
-                    throw new IllegalStateException("Common message type producer is not registered: " + type);
-            }
-        };
     }
 
     /**
@@ -896,6 +834,36 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         finally {
             stash.remove();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getExecutorService() {
+        return execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getSystemExecutorService() {
+        return sysExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getManagementExecutorService() {
+        return mgmtExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getPeerClassLoadingExecutorService() {
+        return p2pExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getGgfsExecutorService() {
+        return ggfsExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getRestExecutorService() {
+        return restExecSvc;
     }
 
     /** {@inheritDoc} */

@@ -20,8 +20,8 @@ package org.apache.ignite.scalar.examples
 import java.util.concurrent.Callable
 
 import org.apache.ignite._
-import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
+import org.apache.ignite.lang.IgniteCallable
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
@@ -65,11 +65,10 @@ object ScalarCacheAffinityExample1 {
 
             keys.foreach(key => {
                 val res = ignite$.call$(
-                    new Callable[String] {
+                    new IgniteCallable[String] {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
-                        @CacheName
                         def cacheName(): String = NAME
 
                         @Nullable def call: String = {

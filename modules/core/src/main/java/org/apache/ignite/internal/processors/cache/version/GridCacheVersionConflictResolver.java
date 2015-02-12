@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
  */
 public class GridCacheVersionConflictResolver extends GridCacheVersionAbstractConflictResolver {
     /** {@inheritDoc} */
-    @Override protected <K, V> void resolve0(GridCacheVersionConflictContextImpl<K, V> ctx,
+    @Override protected <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator) throws IgniteCheckedException {
         if (newEntry.dataCenterId() != oldEntry.dataCenterId())

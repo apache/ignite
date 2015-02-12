@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Test for {@link org.apache.ignite.cache.CacheConfiguration#isStoreValueBytes()}.
+ * Test for {@link org.apache.ignite.configuration.CacheConfiguration#isStoreValueBytes()}.
  */
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -78,7 +78,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        GridCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.jcache(null);
 
         c.put(1, "Cached value");
 
@@ -99,7 +99,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        GridCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.jcache(null);
 
         c.put(1, "Cached value");
 

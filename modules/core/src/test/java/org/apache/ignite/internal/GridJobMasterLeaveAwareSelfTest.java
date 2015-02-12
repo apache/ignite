@@ -18,17 +18,16 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -91,7 +90,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -442,7 +441,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
-                CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
+                CacheAffinity<Object> aff = prj.ignite().affinity(null);
 
                 ClusterNode node = F.first(prj.nodes());
 
@@ -458,10 +457,10 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     public void testAffinityCall() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
-            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
                 IgniteCompute comp = compute(prj).withAsync();
 
-                CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
+                CacheAffinity<Object> aff = prj.ignite().affinity(null);
 
                 ClusterNode node = F.first(prj.nodes());
 
@@ -582,9 +581,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware callable.
      */
-    private static class TestCallable implements Callable<Void>, ComputeJobMasterLeaveAware {
+    private static class TestCallable implements IgniteCallable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -606,9 +605,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware runnable.
      */
-    private static class TestRunnable implements Runnable, ComputeJobMasterLeaveAware {
+    private static class TestRunnable implements IgniteRunnable, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -630,7 +629,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestClosure implements IgniteClosure<String, Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -657,7 +656,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private int jobCnt;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /**
@@ -690,7 +689,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestJob extends ComputeJobAdapter implements ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -733,7 +732,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private CountDownLatch waitLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             sendMessage0(node, msg);
         }
@@ -746,7 +745,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          * @param msg Message to be sent.
          * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
-        private void sendMessage0(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws IgniteSpiException {
+        private void sendMessage0(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 

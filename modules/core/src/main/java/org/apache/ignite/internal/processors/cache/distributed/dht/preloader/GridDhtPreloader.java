@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 
@@ -75,11 +75,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (!enterBusy())
                 return;
 
-            IgniteDiscoveryEvent e = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent e = (DiscoveryEvent)evt;
 
             try {
                 ClusterNode loc = cctx.localNode();
@@ -178,7 +178,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         topVer.setIfGreater(startTopVer);
 
         // Generate dummy discovery event for local node joining.
-        IgniteDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
 
@@ -380,7 +380,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending force key response [node=" + node.id() + ", res=" + res + ']');
 
-            cctx.io().send(node, res);
+            cctx.io().send(node, res, cctx.ioPolicy());
         }
         catch (ClusterTopologyCheckedException ignore) {
             if (log.isDebugEnabled())

@@ -21,14 +21,11 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain properties holder.
+ * Ignite properties holder.
  */
 public class GridProperties {
     /** Properties file path. */
     private static final String FILE_PATH = "ignite.properties";
-
-    /** Enterprise properties file path. */
-    private static final String ENT_FILE_PATH = "gridgain-ent.properties";
 
     /** Properties. */
     private static final Properties PROPS;
@@ -40,7 +37,6 @@ public class GridProperties {
         PROPS = new Properties();
 
         readProperties(FILE_PATH, true);
-        readProperties(ENT_FILE_PATH, false);
     }
 
     /**
@@ -48,7 +44,7 @@ public class GridProperties {
      * @param throwExc Flag indicating whether to throw an exception or not.
      */
     private static void readProperties(String path, boolean throwExc) {
-        try (InputStream is = GridProductImpl.class.getClassLoader().getResourceAsStream(path)) {
+        try (InputStream is = IgniteVersionUtils.class.getClassLoader().getResourceAsStream(path)) {
             if (is == null) {
                 if (throwExc)
                     throw new RuntimeException("Failed to find properties file: " + path);

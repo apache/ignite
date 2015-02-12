@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -37,12 +36,12 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
@@ -112,7 +111,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     private GridDhtTxLocalAdapter<K, V> tx;
@@ -166,7 +165,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -884,7 +883,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         if (log.isDebugEnabled())
                             log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
 
-                        cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                        cctx.io().send(n, req, cctx.ioPolicy());
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
@@ -947,7 +946,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             log.debug("Sending DHT lock request to near node [node=" + n.id() +
                                 ", req=" + req + ']');
 
-                        cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                        cctx.io().send(n, req, cctx.ioPolicy());
                     }
                     catch (ClusterTopologyCheckedException e) {
                         fut.onResult(e);
@@ -1136,7 +1135,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     evictReaders(cctx, res.nearEvicted(), node.id(), res.messageId(), nearMapping);
                 }
 
-                Set<Integer> invalidParts = res.invalidPartitions();
+                Collection<Integer> invalidParts = res.invalidPartitions();
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {

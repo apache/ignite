@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -26,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -112,10 +112,10 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
-            IgnitePredicate<CacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
-                F.<CacheEntry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
+            IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
+                F.<Cache.Entry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
 
-            IgniteMarshaller marsh = cctx.marshaller();
+            Marshaller marsh = cctx.marshaller();
 
             IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
                 marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;

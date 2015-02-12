@@ -27,7 +27,7 @@ import java.util.*;
  * Usually cache name will be used as space name, so multiple caches can write to single indexing SPI instance.
  * <p>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

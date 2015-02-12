@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -31,7 +31,7 @@ import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests preloading of expired entries.
@@ -75,7 +75,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testExpiredEntriesPreloading() throws Exception {
-        GridCache<String, Integer> cache0 = cache(0);
+        IgniteCache<String, Integer> cache0 = jcache(0);
 
         final int KEYS_NUM = 3;
 
@@ -103,7 +103,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         cache1.preloader().syncFuture().get();
 
-        Collection<IgniteEvent> evts = g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         assertEquals("Expected all entries are preloaded.", KEYS_NUM, evts.size());
 

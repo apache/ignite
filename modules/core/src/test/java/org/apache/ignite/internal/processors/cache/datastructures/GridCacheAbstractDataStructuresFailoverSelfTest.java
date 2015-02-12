@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
@@ -93,7 +92,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(collectionCacheMode());
         atomicCfg.setBackups(collectionConfiguration().getBackups());
@@ -232,9 +231,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteAtomicReference atomic = grid(0).atomicReference(STRUCTURE_NAME, 10, true)) {
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            assert g.<Integer>atomicReference(STRUCTURE_NAME, 10, true).get() == 10;
+            assert g.atomicReference(STRUCTURE_NAME, 10, true).get() == 10;
 
-            g.<Integer>atomicReference(STRUCTURE_NAME, 10, true).set(20);
+            g.atomicReference(STRUCTURE_NAME, 10, true).set(20);
 
             stopGrid(NEW_GRID_NAME);
 
@@ -257,7 +256,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             try {
                                 Ignite g = startGrid(name);
 
-                                assert g.<Integer>atomicReference(STRUCTURE_NAME, 1, true).get() > 0;
+                                assert g.atomicReference(STRUCTURE_NAME, 1, true).get() > 0;
                             }
                             finally {
                                 if (i != TOP_CHANGE_CNT - 1)
@@ -282,7 +281,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assertEquals(val, (int)g.<Integer>atomicReference(STRUCTURE_NAME, 1, true).get());
+                assertEquals(val, (int)g.atomicReference(STRUCTURE_NAME, 1, true).get());
         }
     }
 
@@ -305,7 +304,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                     Ignite g = startGrid(name);
 
-                                    assert g.<Integer>atomicReference(STRUCTURE_NAME, 1, true).get() > 0;
+                                    assert g.atomicReference(STRUCTURE_NAME, 1, true).get() > 0;
                                 }
                             }
                             finally {
@@ -332,7 +331,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assert g.<Integer>atomicReference(STRUCTURE_NAME, 1, true).get() == val;
+                assert g.atomicReference(STRUCTURE_NAME, 1, true).get() == val;
         }
     }
 
@@ -343,16 +342,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteAtomicStamped atomic = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true)) {
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            IgniteBiTuple<Integer, Integer> t = g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
+            IgniteBiTuple<Integer, Integer> t = g.atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
 
             assert t.get1() == 10;
             assert t.get2() == 10;
 
-            g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 10, 10, true).set(20, 20);
+            g.atomicStamped(STRUCTURE_NAME, 10, 10, true).set(20, 20);
 
             stopGrid(NEW_GRID_NAME);
 
-            t = grid(0).<Integer, Integer>atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
+            t = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true).get();
 
             assert t.get1() == 20;
             assert t.get2() == 20;
@@ -375,7 +374,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 Ignite g = startGrid(name);
 
                                 IgniteBiTuple<Integer, Integer> t =
-                                    g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
+                                    g.atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                                 assert t.get1() > 0;
                                 assert t.get2() > 0;
@@ -408,7 +407,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids()) {
-                IgniteBiTuple<Integer, Integer> t = g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
+                IgniteBiTuple<Integer, Integer> t = g.atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                 assert t.get1() == val;
                 assert t.get2() == val;
@@ -436,7 +435,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                     Ignite g = startGrid(name);
 
                                     IgniteBiTuple<Integer, Integer> t =
-                                        g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
+                                        g.atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                                     assert t.get1() > 0;
                                     assert t.get2() > 0;
@@ -471,7 +470,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids()) {
-                IgniteBiTuple<Integer, Integer> t = g.<Integer, Integer>atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
+                IgniteBiTuple<Integer, Integer> t = g.atomicStamped(STRUCTURE_NAME, 1, 1, true).get();
 
                 assert t.get1() == val;
                 assert t.get2() == val;
@@ -814,7 +813,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }, threadCnt, "test-thread");
 
         while (!fut.isDone()) {
-            grid(0).compute().call(new Callable<Object>() {
+            grid(0).compute().call(new IgniteCallable<Object>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite g;

@@ -18,23 +18,24 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -81,7 +82,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         assert tx != null;
 
@@ -90,7 +91,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>... filter) {
+        IgnitePredicate<Cache.Entry<K, V>>... filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
@@ -117,7 +118,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param key Key to remove.
@@ -141,7 +142,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             do {
                 topVer = ctx.affinity().affinityTopologyVersion();
 
-                // Send job to all nodes.
+                // Send job to all data nodes.
                 Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
@@ -155,12 +156,61 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
-        catch (ComputeTaskTimeoutCheckedException e) {
-            U.warn(log, "Timed out waiting for remote nodes to finish cache remove (consider increasing " +
-                "'networkTimeout' configuration property) [cacheName=" + name() + "]");
+    }
 
-            throw e;
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
+
+        long topVer = ctx.affinity().affinityTopologyVersion();
+
+        removeAllAsync(opFut, topVer);
+
+        return opFut;
+    }
+
+    /**
+     * @param opFut Future.
+     * @param topVer Topology version.
+     */
+    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final long topVer) {
+        Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+
+        if (!nodes.isEmpty()) {
+            IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
+                    new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
+
+            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    try {
+                        fut.get();
+
+                        long topVer0 = ctx.affinity().affinityTopologyVersion();
+
+                        if (topVer0 == topVer)
+                            opFut.onDone();
+                        else
+                            removeAllAsync(opFut, topVer0);
+                    }
+                    catch (ClusterGroupEmptyCheckedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+
+                        opFut.onDone();
+                    }
+                    catch (IgniteCheckedException e) {
+                        opFut.onDone(e);
+                    }
+                    catch (Error e) {
+                        opFut.onDone(e);
+
+                        throw e;
+                    }
+                }
+            });
         }
+        else
+            opFut.onDone();
     }
 
     /** {@inheritDoc} */
@@ -174,9 +224,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      */
     @GridInternal
     private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
-        /** */
-        private static final long REMOVE_ALL_BATCH_SIZE = 100L;
-
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -210,40 +257,51 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * {@inheritDoc}
          */
         @Override public Object call() throws Exception {
-            final IgniteKernal grid = (IgniteKernal)ignite;
-
-            final GridCache<K,V> cache = grid.cachex(cacheName);
-
-            GridCacheAdapter<K, V> cacheAdapter = grid.context().cache().internalCache(cacheName);
+            GridCacheAdapter<K, V> cacheAdapter = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
-            if (ctx.affinity().affinityTopologyVersion() != topVer)
-                return null; // Ignore this remove request because remove request will be sent again.
+            ctx.affinity().affinityReadyFuture(topVer).get();
 
-            if (cacheAdapter instanceof GridNearCacheAdapter)
-                cacheAdapter = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+            ctx.gate().enter();
 
-            GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
+            try {
+                if (ctx.affinity().affinityTopologyVersion() != topVer)
+                    return null; // Ignore this remove request because remove request will be sent again.
 
-            Collection<K> keys = new ArrayList<>();
+                GridDhtCacheAdapter<K, V> dht;
 
-            for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
-                if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                    for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
-                        keys.add(o.key());
+                if (cacheAdapter instanceof GridNearCacheAdapter)
+                    dht = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+                else
+                    dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                        if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
-                            cache.removeAll(keys);
+                try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
 
-                            keys.clear();
+                    for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                        if (!locPart.isEmpty() && locPart.primary(topVer)) {
+                            for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                                if (!o.obsoleteOrDeleted())
+                                    dataLdr.removeData(o.key());
+                            }
                         }
                     }
+
+                    Iterator<Cache.Entry<K, V>> it = dht.context().swap().offheapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
+
+                    it = dht.context().swap().swapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
                 }
             }
-
-            if (!keys.isEmpty())
-                cache.removeAll(keys);
+            finally {
+                ctx.gate().leave();
+            }
 
             return null;
         }

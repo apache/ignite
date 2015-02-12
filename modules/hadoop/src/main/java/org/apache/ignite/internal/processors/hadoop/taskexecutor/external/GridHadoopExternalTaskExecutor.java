@@ -95,7 +95,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             UUID.randomUUID(),
             ctx.kernalContext().config().getMarshaller(),
             log,
-            ctx.kernalContext().config().getSystemExecutorService(),
+            ctx.kernalContext().getSystemExecutorService(),
             ctx.kernalContext().gridName());
 
         comm.setListener(new MessageListener());
@@ -302,7 +302,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
         meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
-            "-DIGNITE_HOME=" + U.getGridGainHome()));
+            "-DIGNITE_HOME=" + U.getIgniteHome()));
 
         return meta;
     }

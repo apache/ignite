@@ -35,9 +35,9 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        assert cfg.getClientConnectionConfiguration() != null;
+        assert cfg.getConnectorConfiguration() != null;
 
-        cfg.getClientConnectionConfiguration().setRestSecretKey(REST_SECRET_KEY);
+        cfg.getConnectorConfiguration().setSecretKey(REST_SECRET_KEY);
 
         return cfg;
     }
@@ -51,7 +51,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
      * @throws Exception If failed.
      */
     public void testUnauthorized() throws Exception {
-        String addr = "http://" + LOC_HOST + ":" + restPort() + "/gridgain?cmd=top";
+        String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
 
         URL url = new URL(addr);
 
@@ -63,7 +63,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         assert ((HttpURLConnection)conn).getResponseCode() == 401;
 
         // Request with authentication info.
-        addr = "http://" + LOC_HOST + ":" + restPort() + "/gridgain?cmd=top";
+        addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
 
         url = new URL(addr);
 

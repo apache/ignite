@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -124,15 +122,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param i Grid index.
-     * @return Cache.
-     */
-    @SuppressWarnings("unchecked")
-    @Override protected GridCache<Integer, String> cache(int i) {
-        return grid(i).cache(null);
-    }
-
-    /**
      * @return Keys.
      */
     protected Iterable<Integer> getKeys() {
@@ -174,9 +163,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            GridCache<Integer, String> cache = cache(gridIdx);
+            IgniteCache<Integer, String> cache = jcache(gridIdx);
 
-            IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
+            IgniteTx tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
 
             try {
                 int prevKey = -1;
@@ -186,12 +175,12 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     assert key >= prevKey : "key: " + key + ", prevKey: " + prevKey;
 
                     if (isTestDebug()) {
-                        CacheAffinityFunction aff = cache.configuration().getAffinity();
+                        CacheAffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
 
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(cache.affinity().mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(null).mapPartitionToPrimaryAndBackups(part)) + ']');
                     }
 
                     String val = Integer.toString(key);
@@ -271,7 +260,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                IgniteTx t = cache.tx();
+                IgniteTx t = ignite(gridIdx).transactions().tx();
 
                 assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                     ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';
@@ -311,19 +300,19 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            GridCache<Integer, String> cache = cache(gridIdx);
+            IgniteCache<Integer, String> cache = jcache(gridIdx);
 
-            IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
+            IgniteTx tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
 
             try {
                 for (Integer key : getKeys()) {
                     if (isTestDebug()) {
-                        CacheAffinityFunction aff = cache.configuration().getAffinity();
+                        CacheAffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
 
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(cache.affinity().mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(null).mapPartitionToPrimaryAndBackups(part)) + ']');
                     }
 
                     String val = Integer.toString(key);
@@ -340,7 +329,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         case WRITE: {
                             debug("Writing key and value [key=" + key + ", val=" + val + ']');
 
-                            checkMap(map, key, cache.put(key, val));
+                            checkMap(map, key, cache.getAndPut(key, val));
 
                             break;
                         }
@@ -348,7 +337,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         case REMOVE: {
                             debug("Removing key: " + key);
 
-                            checkMap(map, key, cache.remove(key));
+                            checkMap(map, key, cache.getAndRemove(key));
 
                             break;
                         }
@@ -361,7 +350,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                 debug("Rolled back transaction: " + tx);
             }
-            catch (IgniteTxOptimisticCheckedException e) {
+            catch (IgniteTxOptimisticException e) {
                 tx.rollback();
 
                 log.warning("Rolled back transaction due to optimistic exception [tx=" + tx + ", e=" + e + ']');
@@ -376,7 +365,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                IgniteTx t1 = cache.tx();
+                IgniteTx t1 = ignite(gridIdx).transactions().tx();
 
                 debug("t1=" + t1);
 
@@ -409,35 +398,28 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 1; i <= maxKeyValue(); i++) {
             for (int k = 0; k < 3; k++) {
                 try {
-                    CacheEntry<Integer, String> e1 = null;
-
                     String v1 = null;
 
                     for (int j = 0; j < gridCount(); j++) {
-                        GridCache<Integer, String> cache = cache(j);
+                        IgniteCache<Integer, String> cache = jcache(j);
 
-                        IgniteTx tx = cache.tx();
+                        IgniteTx tx = ignite(j).transactions().tx();
 
                         assertNull("Transaction is not completed: " + tx, tx);
 
                         if (j == 0) {
-                            e1 = cache.entry(i);
-
-                            v1 = e1.get();
+                            v1 = cache.get(i);
                         }
                         else {
-                            CacheEntry<Integer, String> e2 = cache.entry(i);
-
-                            String v2 = e2.get();
+                            String v2 = cache.get(i);
 
                             if (!F.eq(v2, v1)) {
-                                v1 = e1.get();
-                                v2 = e2.get();
+                                v1 = this.<Integer, String>jcache(0).get(i);
+                                v2 = cache.get(i);
                             }
 
                             assert F.eq(v2, v1) :
-                                "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", e1=" + e1 +
-                                    ", e2=" + e2 + ", grid=" + j + ']';
+                                "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", grid=" + j + ']';
                         }
                     }
 
@@ -457,7 +439,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             for (int k = 0; k < 3; k++) {
                 try {
                     for (int j = 0; j < gridCount(); j++) {
-                        CacheProjection<Integer, String> cache = cache(j);
+                        IgniteCache<Integer, String> cache = jcache(j);
 
                         cache.removeAll();
 

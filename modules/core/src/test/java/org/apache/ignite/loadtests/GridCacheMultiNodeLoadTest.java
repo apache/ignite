@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -81,8 +80,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         ignite1 = startGrid(1);
         startGrid(2);
-
-        ignite1.cache(CACHE_NAME);
     }
 
     /** {@inheritDoc} */

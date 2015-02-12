@@ -96,10 +96,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(100000);
         atomicCfg.setCacheMode(mode);
@@ -132,7 +132,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.setPeerClassLoadingEnabled(false);
 
         // Enable tracing.
-//        Logger.getLogger("org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace").setLevel(Level.DEBUG);
+//        Logger.getLogger("org.apache.ignite.kernal.processors.cache.GridCacheDgcManager.trace").setLevel(Level.DEBUG);
 
         return c;
     }
@@ -616,12 +616,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          *
          */
         private void doWork()  {
-            GridCache cache = ignite.cache(null);
-
             Session ses = new Session(terminalId());
 
             try {
-                try (IgniteTx tx = cache.txStart()) {
+                try (IgniteTx tx = ignite.transactions().txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());
@@ -709,13 +707,14 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
-
-            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
-
-            CacheEntry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
-
-            entry.setx(o);
+//            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
+//
+//            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
+//
+//            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+//
+//            entry.setx(o);
+            assert false;
         }
 
         /**
@@ -728,7 +727,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
             Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.jcache(null).get(key);
         }
     }
 

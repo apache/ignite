@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
@@ -84,10 +84,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         // We care only about node leave and fail events.
         ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 checkLaunchCoordinator(discoEvt);
             }
@@ -108,7 +108,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (ggfsCtx.configuration().isFragmentizerEnabled()) {
             // Check at startup if this node is a fragmentizer coordinator.
-            IgniteDiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
+            DiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
 
             checkLaunchCoordinator(locJoinEvt);
         }
@@ -187,7 +187,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      *
      * @param discoEvt Discovery event.
      */
-    private void checkLaunchCoordinator(IgniteDiscoveryEvent discoEvt) {
+    private void checkLaunchCoordinator(DiscoveryEvent discoEvt) {
         rw.readLock();
 
         try {
@@ -433,10 +433,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
                 log.debug("Processing node leave event: " + discoEvt);

@@ -41,7 +41,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -65,7 +65,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     private final int len;
 
     /** Marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** Request listener. */
     private RequestListener msgLsnr;
@@ -126,7 +126,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         // Javadoc to GridEventType states that all types in range from 1 to 1000
-        // are reserved for internal GridGain events.
+        // are reserved for internal Ignite events.
         assert maxIdx <= 1000 : "Invalid max index: " + maxIdx;
 
         // We don't want to pre-process passed in types,
@@ -222,10 +222,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        Map<IgnitePredicate<? extends IgniteEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+        Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (IgnitePredicate<? extends IgniteEvent> lsnr : evtLsnrs.keySet())
+            for (IgnitePredicate<? extends Event> lsnr : evtLsnrs.keySet())
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
         }
 
@@ -244,7 +244,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param evt Event to record.
      */
-    public void record(IgniteEvent evt) {
+    public void record(Event evt) {
         assert evt != null;
 
         if (!enterBusy())
@@ -466,7 +466,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /**
      * Checks whether all provided events are user-recordable.
      * <p>
-     * Note that this method supports only predefined GridGain events.
+     * Note that this method supports only predefined Ignite events.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
@@ -517,7 +517,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param lsnr User listener to add.
      * @param types Event types to subscribe listener for.
      */
-    public void addLocalEventListener(IgnitePredicate<? extends IgniteEvent> lsnr, int[] types) {
+    public void addLocalEventListener(IgnitePredicate<? extends Event> lsnr, int[] types) {
         try {
             ctx.resource().injectGeneric(lsnr);
         }
@@ -619,7 +619,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param types Event types.
      * @return Returns {@code true} if removed.
      */
-    public boolean removeLocalEventListener(IgnitePredicate<? extends IgniteEvent> lsnr, @Nullable int... types) {
+    public boolean removeLocalEventListener(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
         return removeLocalEventListener(new UserListenerWrapper(lsnr), types);
     }
 
@@ -661,19 +661,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param types Event types to wait for.
      * @return Event future.
      */
-    public <T extends IgniteEvent> IgniteInternalFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
+    public <T extends Event> IgniteInternalFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
         @Nullable int... types) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<>(ctx);
 
         addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 if (p == null || p.apply((T)evt)) {
                     fut.onDone((T)evt);
 
                     removeLocalEventListener(this);
                 }
             }
-        }, F.isEmpty(types) ? IgniteEventType.EVTS_ALL : types);
+        }, F.isEmpty(types) ? EventType.EVTS_ALL : types);
 
         return fut;
     }
@@ -687,14 +687,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Event.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public IgniteEvent waitForEvent(long timeout, @Nullable Runnable c,
-        @Nullable final IgnitePredicate<? super IgniteEvent> p, int... types) throws IgniteCheckedException {
+    public Event waitForEvent(long timeout, @Nullable Runnable c,
+        @Nullable final IgnitePredicate<? super Event> p, int... types) throws IgniteCheckedException {
         assert timeout >= 0;
 
-        final GridFutureAdapter<IgniteEvent> fut = new GridFutureAdapter<>(ctx);
+        final GridFutureAdapter<Event> fut = new GridFutureAdapter<>(ctx);
 
         addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 if (p == null || p.apply(evt)) {
                     fut.onDone(evt);
 
@@ -717,7 +717,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /**
      * @param evt Event to notify about.
      */
-    private void notifyListeners(IgniteEvent evt) {
+    private void notifyListeners(Event evt) {
         assert evt != null;
 
         notifyListeners(lsnrs.get(evt.type()), evt);
@@ -727,7 +727,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param set Set of listeners.
      * @param evt Grid event.
      */
-    private void notifyListeners(@Nullable Collection<GridLocalEventListener> set, IgniteEvent evt) {
+    private void notifyListeners(@Nullable Collection<GridLocalEventListener> set, Event evt) {
         assert evt != null;
 
         if (!F.isEmpty(set)) {
@@ -748,7 +748,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
+    public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
         return getSpi().localEvents(p);
@@ -760,7 +760,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param timeout Maximum time to wait for result, if {@code 0}, then wait until result is received.
      * @return Collection of events.
      */
-    public <T extends IgniteEvent> IgniteInternalFuture<List<T>> remoteEventsAsync(final IgnitePredicate<T> p,
+    public <T extends Event> IgniteInternalFuture<List<T>> remoteEventsAsync(final IgnitePredicate<T> p,
         final Collection<? extends ClusterNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;
@@ -789,7 +789,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
-    private <T extends IgniteEvent> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
+    private <T extends Event> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws IgniteCheckedException {
         assert p != null;
         assert nodes != null;
@@ -814,11 +814,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             uids.add(node.id());
 
         GridLocalEventListener evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
                 synchronized (qryMux) {
-                    uids.remove(((IgniteDiscoveryEvent)evt).eventNode().id());
+                    uids.remove(((DiscoveryEvent)evt).eventNode().id());
 
                     if (uids.isEmpty())
                         qryMux.notifyAll();
@@ -842,7 +842,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 try {
                     if (res.eventsBytes() != null)
-                        res.events(marsh.<Collection<IgniteEvent>>unmarshal(res.eventsBytes(), null));
+                        res.events(marsh.<Collection<Event>>unmarshal(res.eventsBytes(), null));
 
                     if (res.exceptionBytes() != null)
                         res.exception(marsh.<Throwable>unmarshal(res.exceptionBytes(), null));
@@ -1032,9 +1032,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 Throwable ex = null;
 
-                IgnitePredicate<IgniteEvent> filter = null;
+                IgnitePredicate<Event> filter = null;
 
-                Collection<IgniteEvent> evts;
+                Collection<Event> evts;
 
                 try {
                     if (req.responseTopicBytes() != null)
@@ -1108,24 +1108,24 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private class UserListenerWrapper implements GridLocalEventListener {
         /** */
-        private final IgnitePredicate<IgniteEvent> lsnr;
+        private final IgnitePredicate<Event> lsnr;
 
         /**
          * @param lsnr User listener predicate.
          */
-        private UserListenerWrapper(IgnitePredicate<? extends IgniteEvent> lsnr) {
-            this.lsnr = (IgnitePredicate<IgniteEvent>)lsnr;
+        private UserListenerWrapper(IgnitePredicate<? extends Event> lsnr) {
+            this.lsnr = (IgnitePredicate<Event>)lsnr;
         }
 
         /**
          * @return User listener.
          */
-        private IgnitePredicate<? extends IgniteEvent> listener() {
+        private IgnitePredicate<? extends Event> listener() {
             return lsnr;
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (!lsnr.apply(evt))
                 removeLocalEventListener(this);
         }

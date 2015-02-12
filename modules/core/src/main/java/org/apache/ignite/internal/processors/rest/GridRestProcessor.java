@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.*;
-import org.apache.ignite.internal.processors.rest.handlers.log.*;
-import org.apache.ignite.internal.processors.rest.handlers.metadata.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
@@ -130,7 +128,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                config().getRestExecutorService().execute(w);
+                ctx.getRestExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
@@ -177,7 +175,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            if (ctx.isEnterprise()) {
+            if (ctx.secureSession().enabled()) {
                 try {
                     res.sessionTokenBytes(updateSessionToken(req, subjCtx));
                 }
@@ -254,8 +252,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
-            addHandler(new GridLogCommandHandler(ctx));
-            addHandler(new GridPortableMetadataHandler(ctx));
             addHandler(new DataStructuresCommandHandler(ctx));
 
             // Start protocols.
@@ -331,14 +327,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ConnectorMessageInterceptor}
+     * from {@link ConnectorConfiguration#getMessageInterceptor()} ()}
      * to all user parameters in the request.
      *
      * @param req Client request.
      */
     private void interceptRequest(GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor == null)
             return;
@@ -378,15 +374,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ConnectorMessageInterceptor} from
+     * {@link ConnectorConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
      * @param req Request.
      */
     private void interceptResponse(GridRestResponse res, GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {
@@ -430,7 +426,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param interceptor Interceptor to apply.
      * @return Intercepted object.
      */
-    private static Object interceptSendObject(Object obj, ClientMessageInterceptor interceptor) {
+    private static Object interceptSendObject(Object obj, ConnectorMessageInterceptor interceptor) {
         if (obj instanceof Map) {
             Map<Object, Object> original = (Map<Object, Object>)obj;
 
@@ -592,7 +588,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case TOPOLOGY:
             case NODE:
             case VERSION:
-            case LOG:
             case NOOP:
             case QUIT:
             case GET_PORTABLE_METADATA:
@@ -614,7 +609,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return !ctx.config().isDaemon() && ctx.config().getClientConnectionConfiguration() != null;
+        return !ctx.config().isDaemon() && ctx.config().getConnectorConfiguration() != null;
     }
 
     /**
@@ -658,8 +653,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding gridgain-rest-http " +
-                "module to classpath).");
+            if (log.isDebugEnabled())
+                log.debug("Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
+                    "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to initialize HTTP REST protocol.", e);
@@ -669,8 +665,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * @return Client configuration.
      */
-    private ClientConnectionConfiguration config() {
-        return ctx.config().getClientConnectionConfiguration();
+    private ConnectorConfiguration config() {
+        return ctx.config().getConnectorConfiguration();
     }
 
     /**

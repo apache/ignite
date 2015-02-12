@@ -100,7 +100,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
-        final IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
+        final OptimizedMarshaller marsh = new OptimizedMarshaller();
 
         marsh.setClassNames(Arrays.asList(TestObject.class.getName()));
 

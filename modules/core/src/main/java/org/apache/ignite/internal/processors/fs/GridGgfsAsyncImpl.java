@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -31,7 +32,7 @@ import java.util.*;
 /**
  * Ggfs supporting asynchronous operations.
  */
-public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter<IgniteFs> implements GridGgfsEx {
+public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements GridGgfsEx {
     /** */
     private final GridGgfsImpl ggfs;
 

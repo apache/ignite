@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -75,42 +75,42 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtPartitionsAbstractMessage _clone = (GridDhtPartitionsAbstractMessage)_msg;
 
-        _clone.exchId = exchId;
-        _clone.lastVer = lastVer;
+        _clone.exchId = exchId != null ? (GridDhtPartitionExchangeId)exchId.clone() : null;
+        _clone.lastVer = lastVer != null ? (GridCacheVersion)lastVer.clone() : null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putDhtPartitionExchangeId(exchId))
+                if (!writer.writeMessage("exchId", exchId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putCacheVersion(lastVer))
+                if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -120,31 +120,27 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                GridDhtPartitionExchangeId exchId0 = commState.getDhtPartitionExchangeId();
+                exchId = reader.readMessage("exchId");
 
-                if (exchId0 == DHT_PART_EXCHANGE_ID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                exchId = exchId0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                GridCacheVersion lastVer0 = commState.getCacheVersion();
+                lastVer = reader.readMessage("lastVer");
 
-                if (lastVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                lastVer = lastVer0;
-
-                commState.idx++;
+                state++;
 
         }
 

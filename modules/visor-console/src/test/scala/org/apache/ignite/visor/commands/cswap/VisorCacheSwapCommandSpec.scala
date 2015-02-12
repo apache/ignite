@@ -17,11 +17,9 @@
 
 package org.apache.ignite.visor.commands.cswap
 
-import org.apache.ignite.cache.CacheConfiguration
-
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheMode
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
@@ -74,13 +72,13 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cswap' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=<default>")
     }
 
     it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=cache")
     }

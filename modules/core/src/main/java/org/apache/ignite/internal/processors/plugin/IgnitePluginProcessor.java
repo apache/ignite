@@ -64,14 +64,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Provider class is null.");
 
                     try {
-                        Constructor<? extends  PluginProvider> ctr =
+                        Constructor<? extends PluginProvider> ctr =
                             pluginCfg.providerClass().getConstructor(PluginContext.class);
 
                         provider = ctr.newInstance(pluginCtx);
                     }
                     catch (NoSuchMethodException ignore) {
                         try {
-                            Constructor<? extends  PluginProvider> ctr =
+                            Constructor<? extends PluginProvider> ctr =
                                 pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
 
                             provider = ctr.newInstance(pluginCfg);
@@ -161,7 +161,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      */
     public <T> T createComponent(Class<T> cls) {
         for (PluginProvider plugin : plugins.values()) {
-            T comp = (T)plugin.createComponent(cls);
+            PluginContext ctx = pluginContextForProvider(plugin);
+
+            T comp = (T)plugin.createComponent(ctx, cls);
 
             if (comp != null)
                 return comp;
@@ -212,7 +214,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class ExtensionRegistry implements IgniteExtensionRegistry {
+    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 

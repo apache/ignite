@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -59,14 +58,7 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * EXEC_COUNT,
-                SPLIT_COUNT * EXEC_COUNT,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }
@@ -126,11 +118,11 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

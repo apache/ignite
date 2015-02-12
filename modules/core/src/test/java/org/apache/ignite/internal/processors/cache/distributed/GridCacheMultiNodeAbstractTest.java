@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -33,9 +30,10 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Multi-node cache test.
@@ -51,13 +49,22 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static Ignite ignite3;
 
     /** Cache 1. */
-    private static GridCache<Integer, String> cache1;
+    private static IgniteCache<Integer, String> cache1;
 
     /** Cache 2. */
-    private static GridCache<Integer, String> cache2;
+    private static IgniteCache<Integer, String> cache2;
 
     /** Cache 3. */
-    private static GridCache<Integer, String> cache3;
+    private static IgniteCache<Integer, String> cache3;
+
+    /** Cache 1. */
+    private static IgniteCache<Integer, String> cache1Async;
+
+    /** Cache 2. */
+    private static IgniteCache<Integer, String> cache2Async;
+
+    /** Cache 3. */
+    private static IgniteCache<Integer, String> cache3Async;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -84,9 +91,13 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
-        cache3 = ignite3.cache(null);
+        cache1 = ignite1.jcache(null);
+        cache2 = ignite2.jcache(null);
+        cache3 = ignite3.jcache(null);
+
+        cache1Async = cache1.withAsync();
+        cache2Async = cache2.withAsync();
+        cache3Async = cache3.withAsync();
     }
 
     /** {@inheritDoc} */
@@ -183,7 +194,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         for (Ignite ignite : ignites)
             addListener(ignite, lsnr);
 
-        GridCache<Integer, String> cache1 = ignites[0].cache(null);
+        IgniteCache<Integer, String> cache1 = ignites[0].jcache(null);
 
         for (int i = 1; i <= cnt; i++)
             cache1.put(i, "val" + i);
@@ -198,7 +209,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         latch.await(10, SECONDS);
 
         for (Ignite ignite : ignites) {
-            GridCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.jcache(null);
 
             if (cache == cache1)
                 continue;
@@ -211,9 +222,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
             }
         }
 
-        assert !cache1.isLocked(1);
-        assert !cache1.isLocked(2);
-        assert !cache1.isLocked(3);
+        assert !cache1.isLocalLocked(1, false);
+        assert !cache1.isLocalLocked(2, false);
+        assert !cache1.isLocalLocked(3, false);
 
         for (Ignite ignite : ignites)
             ignite.events().stopLocalListen(lsnr);
@@ -233,121 +244,36 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
         addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
-        IgniteInternalFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
+        Lock lock = cache1.lock(1);
 
-        assert f1.get(10000);
+        assert lock.tryLock(10000, MILLISECONDS);
 
-        assert cache1.isLocked(1);
-        assert cache2.isLocked(1);
-        assert cache3.isLocked(1);
+        try {
+            assert cache1.isLocalLocked(1, false);
+            assert cache2.isLocalLocked(1, false);
+            assert cache3.isLocalLocked(1, false);
 
-        assert cache1.isLockedByThread(1);
-        assert !cache2.isLockedByThread(1);
-        assert !cache3.isLockedByThread(1);
+            assert cache1.isLocalLocked(1, true);
+            assert !cache2.isLocalLocked(1, true);
+            assert !cache3.isLocalLocked(1, true);
 
-        info("Acquired lock for cache1.");
-
-        cache1.unlockAll(F.asList(1));
+            info("Acquired lock for cache1.");
+        }
+        finally {
+            lock.unlock();
+        }
 
         Thread.sleep(50);
 
         unlockLsnr.latch.await(10, SECONDS);
 
-        assert !cache1.isLocked(1);
-        assert !cache2.isLocked(2);
-        assert !cache3.isLocked(3);
+        assert !cache1.isLocalLocked(1, false);
+        assert !cache2.isLocalLocked(2, false);
+        assert !cache3.isLocalLocked(3, false);
 
-        assert !cache1.isLockedByThread(1);
-        assert !cache2.isLockedByThread(1);
-        assert !cache3.isLockedByThread(1);
-    }
-
-    /**
-     * Concurrent test for asynchronous locks.
-     *
-     * @throws Exception If test fails.
-     */
-    @SuppressWarnings({"BusyWait"})
-    public void testConcurrentLockAsync() throws Exception {
-        CacheEventListener unlockLsnr = new CacheEventListener(new CountDownLatch(9), EVT_CACHE_OBJECT_UNLOCKED);
-
-        addListener(ignite1, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-        addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
-
-        IgniteInternalFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
-        IgniteInternalFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
-        IgniteInternalFuture<Boolean> f3 = cache3.lockAsync(1, 0L);
-
-        boolean l1 = false;
-        boolean l2 = false;
-        boolean l3 = false;
-
-        int cnt = 0;
-
-        while (!l1 || !l2 || !l3) {
-            if (!l1 && f1.isDone()) {
-                assert cache1.isLocked(1);
-                assert cache2.isLocked(1);
-                assert cache3.isLocked(1);
-
-                assert cache1.isLockedByThread(1);
-                assert !cache2.isLockedByThread(1);
-                assert !cache3.isLockedByThread(1);
-
-                info("Acquired lock for cache1.");
-
-                cache1.unlockAll(F.asList(1));
-
-                l1 = true;
-            }
-
-            if (!l2 && f2.isDone()) {
-                assert cache1.isLocked(1);
-                assert cache2.isLocked(1);
-                assert cache3.isLocked(1);
-
-                assert !cache1.isLockedByThread(1);
-                assert cache2.isLockedByThread(1);
-                assert !cache3.isLockedByThread(1);
-
-                info("Acquired lock for cache2.");
-
-                cache2.unlockAll(F.asList(1));
-
-                l2 = true;
-            }
-
-            if (!l3 && f3.isDone()) {
-                assert cache1.isLocked(1);
-                assert cache2.isLocked(1);
-                assert cache3.isLocked(1);
-
-                assert !cache1.isLockedByThread(1);
-                assert !cache2.isLockedByThread(1);
-                assert cache3.isLockedByThread(1);
-
-                info("Acquired lock for cache3.");
-
-                cache3.unlockAll(F.asList(1));
-
-                l3 = true;
-            }
-
-            info("Acquired locks [cnt=" + ++cnt + ", l1=" + l1 + ", l2=" + l2 + ", l3=" + l3 + ']');
-
-            Thread.sleep(50);
-        }
-
-        unlockLsnr.latch.await(10, SECONDS);
-
-        assert !cache1.isLocked(1);
-        assert !cache2.isLocked(2);
-        assert !cache3.isLocked(3);
-
-        assert !cache1.isLockedByThread(1);
-        assert !cache2.isLockedByThread(1);
-        assert !cache3.isLockedByThread(1);
+        assert !cache1.isLocalLocked(1, true);
+        assert !cache2.isLocalLocked(1, true);
+        assert !cache3.isLocalLocked(1, true);
     }
 
     /**
@@ -362,9 +288,17 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, lsnr);
         addListener(ignite3, lsnr);
 
-        IgniteInternalFuture<String> f1 = cache1.putAsync(2, "val1");
-        IgniteInternalFuture<String> f2 = cache2.putAsync(2, "val2");
-        IgniteInternalFuture<String> f3 = cache3.putAsync(2, "val3");
+        cache1Async.getAndPut(2, "val1");
+
+        IgniteFuture<String> f1 = cache1Async.future();
+
+        cache2Async.getAndPut(2, "val2");
+
+        IgniteFuture<String> f2 = cache2Async.future();
+
+        cache3Async.getAndPut(2, "val3");
+
+        IgniteFuture<String> f3 = cache3Async.future();
 
         String v1 = f1.get(20000);
 
@@ -406,21 +340,21 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache2.put(2, "val2");
         cache3.put(3, "val3");
 
-        assert cache1.size() == 3;
-        assert cache2.size() == 3;
-        assert cache3.size() == 3;
+        assertEquals(3, cache1.localSize());
+        assertEquals(3, cache2.localSize());
+        assertEquals(3, cache3.localSize());
 
         cache1.clear();
 
-        assert cache1.isEmpty();
-        assert cache2.isEmpty();
-        assert cache3.isEmpty();
+        assertEquals(0, cache1.localSize());
+        assertEquals(0, cache2.localSize());
+        assertEquals(0, cache3.localSize());
     }
 
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** */
         @GridToStringExclude
         private final Ignite ignite;
@@ -468,7 +402,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))

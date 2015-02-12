@@ -17,7 +17,6 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -40,7 +39,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
 
     /** Statement. */
     private Statement stmt;
@@ -64,7 +63,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -73,7 +72,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

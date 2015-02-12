@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file.
+    Ignite Spring configuration file.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/default-config.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/default-config.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -37,8 +37,8 @@
         Optional description.
     -->
     <description>
-        Spring file for GridGain node configuration with GGFS and Apache Hadoop map-reduce support enabled.
-        GridGain node will start with this configuration by default.
+        Spring file for Ignite node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        Ignite node will start with this configuration by default.
     </description>
 
     <!--
@@ -52,7 +52,7 @@
     <!--
         Abstract GGFS file system configuration to be used as a template.
     -->
-    <bean id="ggfsCfgBase" class="org.apache.ignite.fs.IgniteFsConfiguration" abstract="true">
+    <bean id="ggfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -64,13 +64,13 @@
     <!--
         Abstract cache configuration for GGFS file data to be used as a template.
     -->
-    <bean id="dataCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="0"/>
         <property name="affinityMapper">
-            <bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper">
+            <bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper">
                 <!-- How many sequential blocks will be stored on the same node. -->
                 <constructor-arg value="512"/>
             </bean>
@@ -80,14 +80,14 @@
     <!--
         Abstract cache configuration for GGFS metadata to be used as a template.
     -->
-    <bean id="metaCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
     </bean>
 
     <!--
-        Configuration of GridGain node.
+        Configuration of Ignite node.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
@@ -101,16 +101,20 @@
         </property>
 
         <!--
-            This port will be used by Apache Hadoop client to connect to GridGain node as if it was a job tracker.
+            This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
-        <property name="restTcpPort" value="11211"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="11211"/>
+            </bean>
+        </property>
 
         <!--
             Configure one GGFS file system instance named "ggfs" on this node.
         -->
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.fs.IgniteFsConfiguration" parent="ggfsCfgBase">
+                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="ggfsCfgBase">
                     <property name="name" value="ggfs"/>
 
                     <!-- Caches with these names must be configured. -->
@@ -135,12 +139,12 @@
         <property name="cacheConfiguration">
             <list>
                 <!-- File system metadata cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="metaCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
                     <property name="name" value="ggfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="dataCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
                     <property name="name" value="ggfs-data"/>
                 </bean>
             </list>
@@ -151,9 +155,9 @@
         -->
         <property name="includeEventTypes">
             <list>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FAILED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FINISHED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_JOB_MAPPED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FINISHED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
 
@@ -162,9 +166,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>127.0.0.1:47500..47509</value>

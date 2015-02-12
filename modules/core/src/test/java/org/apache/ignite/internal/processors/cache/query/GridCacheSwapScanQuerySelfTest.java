@@ -21,8 +21,4 @@ package org.apache.ignite.internal.processors.cache.query;
  *
  */
 public class GridCacheSwapScanQuerySelfTest extends GridCacheSwapScanQueryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean portableEnabled() {
-        return false;
-    }
 }

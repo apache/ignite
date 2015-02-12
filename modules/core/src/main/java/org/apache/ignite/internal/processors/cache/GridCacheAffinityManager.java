@@ -159,7 +159,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to calculate affinity for.
      * @param discoEvt Discovery event that causes this topology change.
      */
-    public List<List<ClusterNode>> calculateAffinity(long topVer, IgniteDiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculateAffinity(long topVer, DiscoveryEvent discoEvt) {
         assert !cctx.isLocal();
 
         return aff.calculate(topVer, discoEvt);
@@ -280,7 +280,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
 
         assert !F.isEmpty(nodes);
 
-        if (nodes.size() <= 1)
+        if (nodes.size() == 1)
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(nodes.get(0)));

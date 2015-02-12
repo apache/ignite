@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -76,7 +75,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -177,7 +176,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
                 return null;
             }
-        }, DataStructureRemovedException.class, null);
+        }, IllegalStateException.class, null);
 
         info("Queue was removed: " + queue);
 
@@ -200,14 +199,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final int retries;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Collection configuration.
          * @param retries  Number of operations.
          */
-        PutJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
+        PutJob(String queueName, CollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
             this.colCfg = colCfg;
             this.retries = retries;
@@ -251,14 +250,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final int retries;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Queue configuration.
          * @param retries  Number of operations.
          */
-        PutTakeJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
+        PutTakeJob(String queueName, CollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
             this.colCfg = colCfg;
             this.retries = retries;
@@ -305,13 +304,13 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final String queueName;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Collection configuration.
          */
-        TakeJob(String queueName, IgniteCollectionConfiguration colCfg) {
+        TakeJob(String queueName, CollectionConfiguration colCfg) {
             this.queueName = queueName;
             this.colCfg = colCfg;
         }

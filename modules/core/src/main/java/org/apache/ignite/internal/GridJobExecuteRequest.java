@@ -19,10 +19,10 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -110,7 +110,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     private IgniteUuid clsLdrId;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private boolean dynamicSiblings;
@@ -181,7 +181,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
             Map<? extends Serializable, ? extends Serializable> jobAttrs,
             String cpSpi,
             IgniteUuid clsLdrId,
-            IgniteDeploymentMode depMode,
+            DeploymentMode depMode,
             boolean dynamicSiblings,
             Map<UUID, IgniteUuid> ldrParticipants,
             boolean forceLocDep,
@@ -357,7 +357,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode getDeploymentMode() {
+    public DeploymentMode getDeploymentMode() {
         return depMode;
     }
 
@@ -413,7 +413,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobExecuteRequest _clone = new GridJobExecuteRequest();
 
         clone0(_clone);
@@ -422,7 +422,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobExecuteRequest _clone = (GridJobExecuteRequest)_msg;
 
         _clone.subjId = subjId;
@@ -456,194 +456,141 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putString(cpSpi))
+                if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putEnum(depMode))
+                if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putBoolean(dynamicSiblings))
+                if (!writer.writeBoolean("dynamicSiblings", dynamicSiblings))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putBoolean(forceLocDep))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putBoolean(internal))
+                if (!writer.writeBoolean("internal", internal))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putByteArray(jobAttrsBytes))
+                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putByteArray(jobBytes))
+                if (!writer.writeByteArray("jobBytes", jobBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putGridUuid(jobId))
+                if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (ldrParticipants != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(ldrParticipants.size()))
-                            return false;
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
+                    return false;
 
-                        commState.it = ldrParticipants.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putGridUuid(e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putByteArray(sesAttrsBytes))
+                if (!writer.writeByteArray("sesAttrsBytes", sesAttrsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putBoolean(sesFullSup))
+                if (!writer.writeBoolean("sesFullSup", sesFullSup))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putGridUuid(sesId))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putByteArray(siblingsBytes))
+                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (!commState.putLong(startTaskTime))
+                if (!writer.writeLong("startTaskTime", startTaskTime))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 15:
-                if (!commState.putUuid(subjId))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                if (!commState.putString(taskClsName))
+                if (!writer.writeString("taskClsName", taskClsName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 17:
-                if (!commState.putString(taskName))
+                if (!writer.writeString("taskName", taskName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                if (!commState.putLong(timeout))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 19:
-                if (top != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(top.size()))
-                            return false;
-
-                        commState.it = top.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putUuid((UUID)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 20:
-                if (!commState.putString(userVer))
+                if (!writer.writeCollection("top", top, UUID.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 20:
+                if (!writer.writeString("userVer", userVer))
+                    return false;
+
+                state++;
 
         }
 
@@ -653,257 +600,176 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                clsLdrId = clsLdrId0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                String cpSpi0 = commState.getString();
+                cpSpi = reader.readString("cpSpi");
 
-                if (cpSpi0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                cpSpi = cpSpi0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                depMode = reader.readEnum("depMode", DeploymentMode.class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte depMode0 = commState.getByte();
-
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (buf.remaining() < 1)
+                dynamicSiblings = reader.readBoolean("dynamicSiblings");
+
+                if (!reader.isLastRead())
                     return false;
 
-                dynamicSiblings = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 1)
+                forceLocDep = reader.readBoolean("forceLocDep");
+
+                if (!reader.isLastRead())
                     return false;
 
-                forceLocDep = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (buf.remaining() < 1)
+                internal = reader.readBoolean("internal");
+
+                if (!reader.isLastRead())
                     return false;
 
-                internal = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 6:
-                byte[] jobAttrsBytes0 = commState.getByteArray();
+                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
 
-                if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                jobAttrsBytes = jobAttrsBytes0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                byte[] jobBytes0 = commState.getByteArray();
+                jobBytes = reader.readByteArray("jobBytes");
 
-                if (jobBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                jobBytes = jobBytes0;
-
-                commState.idx++;
+                state++;
 
             case 8:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                jobId = reader.readIgniteUuid("jobId");
 
-                if (jobId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                jobId = jobId0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (ldrParticipants == null)
-                        ldrParticipants = new HashMap<>(commState.readSize, 1.0f);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
-
-                            if (_val == UUID_NOT_READ)
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        IgniteUuid _val = commState.getGridUuid();
-
-                        if (_val == GRID_UUID_NOT_READ)
-                            return false;
-
-                        ldrParticipants.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
+                state++;
 
             case 10:
-                byte[] sesAttrsBytes0 = commState.getByteArray();
+                sesAttrsBytes = reader.readByteArray("sesAttrsBytes");
 
-                if (sesAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                sesAttrsBytes = sesAttrsBytes0;
-
-                commState.idx++;
+                state++;
 
             case 11:
-                if (buf.remaining() < 1)
+                sesFullSup = reader.readBoolean("sesFullSup");
+
+                if (!reader.isLastRead())
                     return false;
 
-                sesFullSup = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 12:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                sesId = reader.readIgniteUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                sesId = sesId0;
-
-                commState.idx++;
+                state++;
 
             case 13:
-                byte[] siblingsBytes0 = commState.getByteArray();
+                siblingsBytes = reader.readByteArray("siblingsBytes");
 
-                if (siblingsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                siblingsBytes = siblingsBytes0;
-
-                commState.idx++;
+                state++;
 
             case 14:
-                if (buf.remaining() < 8)
+                startTaskTime = reader.readLong("startTaskTime");
+
+                if (!reader.isLastRead())
                     return false;
 
-                startTaskTime = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 15:
-                UUID subjId0 = commState.getUuid();
+                subjId = reader.readUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                subjId = subjId0;
-
-                commState.idx++;
+                state++;
 
             case 16:
-                String taskClsName0 = commState.getString();
+                taskClsName = reader.readString("taskClsName");
 
-                if (taskClsName0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                taskClsName = taskClsName0;
-
-                commState.idx++;
+                state++;
 
             case 17:
-                String taskName0 = commState.getString();
+                taskName = reader.readString("taskName");
 
-                if (taskName0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                taskName = taskName0;
-
-                commState.idx++;
+                state++;
 
             case 18:
-                if (buf.remaining() < 8)
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
                     return false;
 
-                timeout = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 19:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                top = reader.readCollection("top", UUID.class);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (top == null)
-                        top = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        UUID _val = commState.getUuid();
-
-                        if (_val == UUID_NOT_READ)
-                            return false;
-
-                        top.add((UUID)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 20:
-                String userVer0 = commState.getString();
-
-                if (userVer0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                userVer = userVer0;
+                state++;
 
-                commState.idx++;
+            case 20:
+                userVer = reader.readString("userVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -912,7 +778,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 81;
+        return 1;
     }
 
     /** {@inheritDoc} */

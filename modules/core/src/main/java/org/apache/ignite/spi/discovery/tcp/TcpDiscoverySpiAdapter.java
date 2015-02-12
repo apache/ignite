@@ -135,13 +135,13 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    protected final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     protected IgniteLogger log;
 
     /**
@@ -206,7 +206,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * Sets socket operations timeout. This timeout is used to limit connection time and
      * write-to-socket time.
      * <p>
-     * Note that when running GridGain on Amazon EC2, socket timeout must be set to a value
+     * Note that when running Ignite on Amazon EC2, socket timeout must be set to a value
      * significantly greater than the default (e.g. to {@code 30000}).
      * <p>
      * If not specified, default is {@link #DFLT_SOCK_TIMEOUT}.

@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
 /**
- * GridGain benchmark that performs put and get operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIRED}
+ * Ignite benchmark that performs put and get operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIRED}
  * memory mode.
  */
 public class IgnitePutGetOffHeapBenchmark extends IgnitePutGetBenchmark {

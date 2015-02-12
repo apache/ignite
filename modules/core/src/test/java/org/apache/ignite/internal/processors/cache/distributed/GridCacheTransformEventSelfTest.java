@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -82,7 +82,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] caches;
 
     /** Recorded events.*/
-    private ConcurrentHashSet<IgniteCacheEvent> evts;
+    private ConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
     private CacheMode cacheMode;
@@ -104,7 +104,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        TransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
+        TransactionConfiguration tCfg = cfg.getTransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);
@@ -177,9 +177,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             caches[i] = ignites[i].jcache(CACHE_NAME);
 
-            ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
+            ignites[i].events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent evt0 = (CacheEvent)evt;
 
                     if (evt0.closureClassName() != null) {
                         System.out.println("ADDED: [nodeId=" + evt0.node() + ", evt=" + evt0 + ']');
@@ -223,9 +223,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         caches[0].put(key2, 2);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
+            ignites[i].events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent evt0 = (CacheEvent)evt;
 
                     if (evt0.closureClassName() != null)
                         evts.add(evt0);
@@ -242,7 +242,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean primary(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isPrimary(grid(gridIdx).cluster().localNode(), key);
     }
@@ -253,7 +253,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean backup(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isBackup(grid(gridIdx).cluster().localNode(), key);
     }
@@ -541,7 +541,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         else if (cacheMode == REPLICATED) {
             for (int key : keys) {
                 if (primaryOnly)
-                    res.add(grid(0).cache(CACHE_NAME).affinity().mapKeyToNode(key).id());
+                    res.add(grid(0).affinity(CACHE_NAME).mapKeyToNode(key).id());
                 else
                     res.addAll(Arrays.asList(ids));
             }
@@ -562,9 +562,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
             assertEquals(ids.length, evts.size());
 
             for (UUID id : ids) {
-                IgniteCacheEvent foundEvt = null;
+                CacheEvent foundEvt = null;
 
-                for (IgniteCacheEvent evt : evts) {
+                for (CacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
                         assertEquals(CLO_NAME, evt.closureClassName());
 

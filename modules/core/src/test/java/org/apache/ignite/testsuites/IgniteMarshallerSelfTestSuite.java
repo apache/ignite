@@ -34,10 +34,10 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Marshaller Test Suite");
 
         suite.addTest(new TestSuite(GridJdkMarshallerSelfTest.class));
-        suite.addTest(new TestSuite(GridOptimizedMarshallerEnumSelfTest.class));
-        suite.addTest(new TestSuite(GridOptimizedMarshallerSelfTest.class));
-        suite.addTest(new TestSuite(GridOptimizedMarshallerTest.class));
-        suite.addTest(new TestSuite(GridOptimizedObjectStreamSelfTest.class));
+        suite.addTest(new TestSuite(OptimizedMarshallerEnumSelfTest.class));
+        suite.addTest(new TestSuite(OptimizedMarshallerSelfTest.class));
+        suite.addTest(new TestSuite(OptimizedMarshallerTest.class));
+        suite.addTest(new TestSuite(OptimizedObjectStreamSelfTest.class));
         suite.addTest(new TestSuite(GridUnsafeDataOutputArraySizingSelfTest.class));
 
         return suite;

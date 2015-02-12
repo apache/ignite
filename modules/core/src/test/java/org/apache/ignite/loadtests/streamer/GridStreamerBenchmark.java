@@ -121,7 +121,7 @@ public class GridStreamerBenchmark {
             cfgUrl = new URL(cfgPath);
         }
         catch (MalformedURLException ignore) {
-            cfgUrl = U.resolveGridGainUrl(cfgPath);
+            cfgUrl = U.resolveIgniteUrl(cfgPath);
         }
 
         if (cfgUrl == null)

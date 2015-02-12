@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -117,7 +117,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedUnlockRequest _clone = new GridDistributedUnlockRequest();
 
         clone0(_clone);
@@ -126,7 +126,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedUnlockRequest _clone = (GridDistributedUnlockRequest)_msg;
@@ -138,45 +138,24 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (keyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(keyBytes.size()))
-                            return false;
+                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
+                    return false;
 
-                        commState.it = keyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -186,40 +165,19 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                keyBytes = reader.readCollection("keyBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (keyBytes == null)
-                        keyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        keyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -228,7 +186,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 28;
+        return 27;
     }
 
     /** {@inheritDoc} */

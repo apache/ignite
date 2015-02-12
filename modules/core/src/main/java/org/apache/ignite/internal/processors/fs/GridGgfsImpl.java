@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -45,9 +45,9 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
@@ -116,7 +116,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private Object topic;
 
     /** Eviction policy (if set). */
-    private CacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Creates GGFS instance with given context.
@@ -151,12 +151,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
         Map<String, IgniteFsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgniteFsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        dfltModes.put("/gridgain/primary", PRIMARY);
+        dfltModes.put("/ignite/primary", PRIMARY);
 
         if (secondaryFs != null) {
-            dfltModes.put("/gridgain/proxy", PROXY);
-            dfltModes.put("/gridgain/sync", DUAL_SYNC);
-            dfltModes.put("/gridgain/async", DUAL_ASYNC);
+            dfltModes.put("/ignite/proxy", PROXY);
+            dfltModes.put("/ignite/sync", DUAL_SYNC);
+            dfltModes.put("/ignite/async", DUAL_ASYNC);
         }
 
         cfgModes.putAll(dfltModes);
@@ -166,7 +166,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
-                    U.warn(log, "Ignoring path mode because it conflicts with GridGain reserved path " +
+                    U.warn(log, "Ignoring path mode because it conflicts with Ignite reserved path " +
                         "(use another path) [mode=" + e.getValue() + ", path=" + e.getKey() + ']');
             }
         }
@@ -200,8 +200,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
                 CacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 
-                if (evictPlc != null & evictPlc instanceof CacheGgfsPerBlockLruEvictionPolicy)
-                    this.evictPlc = (CacheGgfsPerBlockLruEvictionPolicy)evictPlc;
+                if (evictPlc != null & evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy)
+                    this.evictPlc = (CacheIgniteFsPerBlockLruEvictionPolicy)evictPlc;
 
                 break;
             }
@@ -1788,7 +1788,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1822,7 +1822,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -2169,10 +2169,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     private class FormatDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            IgniteDiscoveryEvent evt0 = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
             if (evt0.eventNode() != null) {
                 if (sameGgfs((GridGgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {

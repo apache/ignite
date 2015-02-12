@@ -50,7 +50,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         String queueName1 = UUID.randomUUID().toString();
         String queueName2 = UUID.randomUUID().toString();
 
-        IgniteCollectionConfiguration colCfg = config(false);
+        CollectionConfiguration colCfg = config(false);
 
         IgniteQueue queue1 = grid(0).queue(queueName1, 0, colCfg);
         IgniteQueue queue2 = grid(0).queue(queueName2, 0, colCfg);
@@ -393,7 +393,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
                         fail("Queue failed");
                     }
-                    catch (IgniteException e) {
+                    catch (IgniteException | IllegalStateException e) {
                         putLatch.countDown();
 
                         assert e.getMessage().contains("removed");
@@ -438,7 +438,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
             fail("Queue must be removed.");
         }
-        catch (IgniteException e) {
+        catch (IgniteException | IllegalStateException e) {
             assert e.getMessage().contains("removed");
 
             assert queue.removed();

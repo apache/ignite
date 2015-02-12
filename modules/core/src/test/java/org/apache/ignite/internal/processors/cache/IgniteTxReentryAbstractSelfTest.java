@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -24,7 +25,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -96,12 +97,12 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGrids(gridCount());
 
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             // Find test key.
             int key = testKey();
 
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // One near lock request.
                 cache.get(key);
 
@@ -134,7 +135,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         private AtomicInteger dhtLocks = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             countMsg((GridIoMessage)msg);
 

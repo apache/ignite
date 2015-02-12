@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -125,7 +124,7 @@ public class GridAffinityAssignmentCache {
      * @param discoEvt Discovery event that caused this topology version change.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(long topVer, IgniteDiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(long topVer, DiscoveryEvent discoEvt) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -277,7 +276,7 @@ public class GridAffinityAssignmentCache {
             try {
                 key = ctx.marshalToPortable(key);
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 U.error(log, "Failed to marshal key to portable: " + key, e);
             }
         }

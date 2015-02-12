@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.configuration.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -66,21 +68,22 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         return PARTITIONED_ONLY;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
 
         super.afterTest();
     }
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
-        GridCache<String, Integer> primary = fullCache();
+        IgniteCache<String, Integer> nearCache = jcache();
+        IgniteCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
-        Map<String, Integer> vals = new HashMap<>(keys.size());
+        Map<String, Integer> vals = new HashMap<>();
 
         int i = 0;
 
@@ -95,12 +98,12 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         i = 0;
 
         for (String key : keys)
-            assertEquals((Integer)i++, nearCache.peek(key));
+            assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.peek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
@@ -108,51 +111,12 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         i = 0;
 
         for (String key : keys)
-            assertEquals((Integer)i++, nearCache.peek(key));
-
-        String first = F.first(keys);
-
-        nearCache.projection(gte100).clearLocally(first);
-
-        assertEquals((Integer)0, nearCache.peek(first));
-        assertEquals(vals.get(first), primary.peek(first));
-
-        nearCache.put(first, 101);
-
-        nearCache.projection(gte100).clearLocally(first);
-
-        assertNull(nearCache.peek(first));
-        assertFalse(primary.isEmpty());
-
-        i = 0;
-
-        for (String key : keys) {
-            nearCache.put(key, i);
-
-            vals.put(key, i);
-
-            i++;
-        }
-
-        nearCache.put(first, 101);
-        vals.put(first, 101);
-
-        nearCache.projection(gte100).clearLocally(first);
-
-        for (String key : keys)
-            assertEquals(vals.get(key), primary.peek(key));
-
-        for (String key : keys) {
-            if (first.equals(key))
-                assertNull(nearCache.peek(key));
-            else
-                assertEquals(vals.get(key), nearCache.peek(key));
-        }
+            assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
     }
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -168,25 +132,23 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        assertTrue(cache.evict(key));
+        cache.localEvict(Collections.singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
-        assertNull(cache.promote(key));
+        cache.localPromote(Collections.singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
-        assertTrue(cache.isEmpty());
+        assertTrue(cache.localSize() == 0);
 
-        // Force reload on primary node.
+        load(cache, key, true);
+
+        CacheAffinity<String> aff = ignite(0).affinity(null);
+
         for (int i = 0; i < gridCount(); i++) {
-            if (cache(i).entry(key).primary())
-                cache(i).reload(key);
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
         }
-
-        // Will do near get request.
-        cache.reload(key);
-
-        assertEquals((Integer)1, cache.peek(key));
     }
 }

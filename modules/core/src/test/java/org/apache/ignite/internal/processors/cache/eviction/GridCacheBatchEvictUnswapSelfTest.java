@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -118,7 +119,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();
 
-        final GridCache<Object, Object> cache = g.cache(null);
+        final IgniteCache<Object, Object> cache = g.jcache(null);
 
         cache.loadCache(null, 0);
 
@@ -134,7 +135,8 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                     keys.add(i);
 
                     if (keys.size() == batchSize) {
-                        cache.evictAll(keys);
+                        for (Long key : keys)
+                            cache.localEvict(Collections.<Object>singleton(key));
 
                         evictedKeysCnt.addAndGet(batchSize);
 
@@ -162,7 +164,8 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                         keys.add(i);
 
                         if (keys.size() == batchSize) {
-                            cache.promoteAll(keys);
+                            for (Long key : keys)
+                                cache.localPromote(Collections.singleton(key));
 
                             unswappedKeys.addAndGet(batchSize);
 
@@ -175,7 +178,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -30,7 +32,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * Test JDBC with several local caches.
@@ -43,7 +45,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -69,7 +71,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -78,21 +80,21 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        GridCache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = grid(0).jcache(CACHE_NAME);
 
         assert cache1 != null;
 
-        assert cache1.putx("key1", 1);
-        assert cache1.putx("key2", 2);
+        cache1.put("key1", 1);
+        cache1.put("key2", 2);
 
-        GridCache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(1).jcache(CACHE_NAME);
 
         assert cache2 != null;
 
-        assert cache2.putx("key1", 3);
-        assert cache2.putx("key2", 4);
+        cache2.put("key1", 3);
+        cache2.put("key2", 4);
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

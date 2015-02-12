@@ -20,11 +20,13 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
@@ -52,7 +54,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
-    protected static final List<CommunicationSpi<GridTcpCommunicationMessageAdapter>> spis = new ArrayList<>();
+    protected static final List<CommunicationSpi<MessageAdapter>> spis = new ArrayList<>();
 
     /** */
     protected static final List<ClusterNode> nodes = new ArrayList<>();
@@ -64,12 +66,11 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      *
      */
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override
-            public GridTcpCommunicationMessageAdapter create(byte type) {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
+            @Override public MessageAdapter apply() {
                 return new GridTestMessage();
             }
-        }, GridTestMessage.DIRECT_TYPE);
+        });
     }
 
     /**
@@ -82,7 +83,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      *
      */
-    private static class MessageListener implements CommunicationListener<GridTcpCommunicationMessageAdapter> {
+    private static class MessageListener implements CommunicationListener<MessageAdapter> {
         /** */
         private final CountDownLatch latch;
 
@@ -100,7 +101,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
             msgC.run();
 
             assertTrue(msg instanceof GridTestMessage);
@@ -229,7 +230,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                             Thread.currentThread().setName("Test thread [idx=" + idx0 + ", grid=" + (idx0 % 2) + ']');
 
-                            CommunicationSpi<GridTcpCommunicationMessageAdapter> spi = spis.get(idx0 % 2);
+                            CommunicationSpi<MessageAdapter> spi = spis.get(idx0 % 2);
 
                             ClusterNode srcNode = nodes.get(idx0 % 2);
 
@@ -315,7 +316,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < SPI_CNT; i++) {
-            CommunicationSpi<GridTcpCommunicationMessageAdapter> spi = createSpi();
+            CommunicationSpi<MessageAdapter> spi = createSpi();
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
@@ -392,7 +393,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
-        for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis) {
+        for (CommunicationSpi<MessageAdapter> spi : spis) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

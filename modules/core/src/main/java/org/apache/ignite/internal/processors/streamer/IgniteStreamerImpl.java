@@ -25,7 +25,6 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.router.*;
 import org.apache.ignite.thread.*;
@@ -43,7 +43,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -284,8 +284,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            @Override public void onEvent(Event evt) {
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridStreamerStageExecutionFuture fut : stageFuts.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());
@@ -1037,7 +1037,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @return Execution request.
      * @throws IgniteCheckedException If failed.
      */
-    private GridTcpCommunicationMessageAdapter createExecutionRequest(GridStreamerExecutionBatch batch)
+    private MessageAdapter createExecutionRequest(GridStreamerExecutionBatch batch)
         throws IgniteCheckedException {
         boolean depEnabled = ctx.deploy().enabled();
 
@@ -1111,7 +1111,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param msg Message to send.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendWithRetries(UUID dstNodeId, GridTcpCommunicationMessageAdapter msg) throws IgniteCheckedException {
+    private void sendWithRetries(UUID dstNodeId, MessageAdapter msg) throws IgniteCheckedException {
         for (int i = 0; i < SEND_RETRY_COUNT; i++) {
             try {
                 ctx.io().send(dstNodeId, topic, msg, GridIoPolicy.SYSTEM_POOL);

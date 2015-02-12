@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Cache+swap load test.
@@ -94,19 +94,19 @@ public class GridCacheSwapLoadTest {
         parseArgs(args);
 
         try (Ignite g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g.events().localListen(new IgnitePredicate<Event>() {
                 private final AtomicInteger cnt = new AtomicInteger(0);
 
                 private final AtomicBoolean getRmvStartedGuard = new AtomicBoolean(false);
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     int cnt = this.cnt.incrementAndGet();
 
                     if (cnt % LOG_MOD == 0)
                         X.println(">>> Swap count: " + cnt);
 
                     if (getRmvEnabled) {
-                        IgniteCacheEvent ce = (IgniteCacheEvent) evt;
+                        CacheEvent ce = (CacheEvent) evt;
 
                         Integer key = ce.key();
 
@@ -203,7 +203,7 @@ public class GridCacheSwapLoadTest {
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> cache = g.cache(null);
+                IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                 assert cache != null;
 
@@ -216,7 +216,7 @@ public class GridCacheSwapLoadTest {
                     if (i > keyCnt)
                         break;
 
-                    cache.putx(i, i);
+                    cache.put(i, i);
                 }
 
                 X.println(">>> Thread '" + Thread.currentThread().getName() + "' stopped.");
@@ -235,7 +235,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                     assert cache != null;
 
@@ -269,14 +269,14 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                     assert cache != null;
 
                     while (true) {
                         Integer i = swappedKeys.take();
 
-                        Integer val = cache.remove(i);
+                        Integer val = cache.getAndRemove(i);
 
                         assert val != null && val.equals(i);
 

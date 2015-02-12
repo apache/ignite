@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.CacheEntryEvent;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -29,6 +28,7 @@ import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import java.io.*;
@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static javax.cache.event.EventType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -102,7 +102,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param prjPred Projection predicate.
      * @return New continuous query.
      */
-    public CacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<CacheEntry<K, V>> prjPred) {
+    public CacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<Cache.Entry<K, V>> prjPred) {
         Object topic = TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);
@@ -145,7 +145,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
             cctx,
-            e.wrap(false),
+            e.wrap(),
             key,
             newVal,
             newBytes,
@@ -186,7 +186,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, -1)) {
             GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
                 cctx,
-                e.wrap(false),
+                e.wrap(),
                 key,
                 null,
                 null,
@@ -363,7 +363,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                 cctx.projectionPerCall(cctx.cache().<K, V>keepPortable0());
             }
 
-            Set<CacheEntry<K, V>> entries;
+            Set<Cache.Entry<K, V>> entries;
 
             if (cctx.isReplicated())
                 entries = internal ? cctx.cache().entrySetx() :
@@ -374,7 +374,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             boolean evt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            for (CacheEntry<K, V> e : entries) {
+            for (Cache.Entry<K, V> e : entries) {
                 GridCacheContinuousQueryEntry<K, V> qryEntry = new GridCacheContinuousQueryEntry<>(cctx,
                     e,
                     e.getKey(),

@@ -21,9 +21,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
-import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -32,7 +32,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.client.GridClientProtocol.*;
+import static org.apache.ignite.internal.client.GridClientProtocol.*;
 import static org.apache.ignite.client.hadoop.GridHadoopClientProtocol.*;
 
 
@@ -54,7 +54,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
             if (F.eq(addr, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
-                    MRConfig.MASTER_ADDRESS + " to real GridGain node.");
+                    MRConfig.MASTER_ADDRESS + " to real Ignite node.");
 
             return createProtocol(addr, conf);
         }
@@ -123,7 +123,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                     catch (GridClientException e) {
                         fut0.onDone(e);
 
-                        throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
+                        throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
                     }
                 }
             }
@@ -131,7 +131,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                 return fut.get();
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
+            throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
         }
     }
 }

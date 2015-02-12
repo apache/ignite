@@ -67,5 +67,5 @@ public interface CacheAffinityFunctionContext {
      * @return Discovery event caused latest topology change or {@code null} if this information is
      *      not available.
      */
-    @Nullable public IgniteDiscoveryEvent discoveryEvent();
+    @Nullable public DiscoveryEvent discoveryEvent();
 }

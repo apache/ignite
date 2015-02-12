@@ -25,7 +25,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -38,7 +37,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 
 import static java.util.Arrays.*;
@@ -150,7 +148,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                                 ", attr=" + e.getKey() + ']' +
                                 ". Attribute set by one SPI implementation has the same name (name collision) as " +
                                 "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your GridGain configuration and/or SPI implementation to avoid " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
                                 "attribute name collisions.");
 
                         attrs.put(e.getKey(), e.getValue());
@@ -318,8 +316,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "topic");
 
                         try {
-                            if (msg instanceof GridTcpCommunicationMessageAdapter)
-                                ctx.io().send(node, topic, (GridTcpCommunicationMessageAdapter)msg, SYSTEM_POOL);
+                            if (msg instanceof MessageAdapter)
+                                ctx.io().send(node, topic, (MessageAdapter)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
@@ -364,7 +362,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return true;
                     }
 
-                    @Override public void recordEvent(IgniteEvent evt) {
+                    @Override public void recordEvent(Event evt) {
                         A.notNull(evt, "evt");
 
                         if (ctx.event().isRecordable(evt.type()))
@@ -501,30 +499,22 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
-                    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
-                            if (!patcher.onSend(nodeId, msg, buf))
-                                return false;
-                        }
-
-                        return true;
-                    }
-
-                    @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
-                            if (!patcher.onReceive(nodeId, msgCls, buf))
-                                return false;
-                        }
-
-                        return true;
-                    }
-
                     @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
-                        return ctx.grid().security().authenticatedSubjects();
+                        try {
+                            return ctx.security().authenticatedSubjects();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
                     }
 
                     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
-                        return ctx.grid().security().authenticatedSubject(subjId);
+                        try {
+                            return ctx.security().authenticatedSubject(subjId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
                     }
 
                     @SuppressWarnings("unchecked")
@@ -547,8 +537,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public GridTcpMessageFactory messageFactory() {
-                        return ctx.messageFactory();
+                    @Override public MessageFormatter messageFormatter() {
+                        return ctx.io().formatter();
+                    }
+
+                    @Override public MessageFactory messageFactory() {
+                        return ctx.io().messageFactory();
                     }
 
                     /**

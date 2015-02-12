@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -56,9 +57,9 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clear();
+        jcache().clear();
 
-        assertTrue(cache().isEmpty());
+        assertTrue(jcache().localSize() == 0);
     }
 
     /** {@inheritDoc} */
@@ -67,11 +68,11 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(LOC_HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -91,7 +92,15 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache.
      */
+    @Deprecated
     @Override protected <K, V> GridCache<K, V> cache() {
-        return grid(0).cache(null);
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return Cache.
+     */
+    @Override protected <K, V> IgniteCache<K, V> jcache() {
+        return grid(0).jcache(null);
     }
 }

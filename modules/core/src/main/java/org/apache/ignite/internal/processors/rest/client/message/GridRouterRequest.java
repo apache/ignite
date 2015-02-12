@@ -37,6 +37,7 @@ public class GridRouterRequest extends GridClientAbstractMessage {
      */
     public GridRouterRequest(byte[] body, Long reqId, UUID clientId, UUID destId) {
         this.body = body;
+
         destinationId(destId);
         clientId(clientId);
         requestId(reqId);

@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
@@ -978,11 +979,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public long licenseGracePeriodLeft() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isJmxRemoteEnabled() {
             return false;
         }
@@ -1218,6 +1214,16 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public <R> IgniteFuture<R> future() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String latestVersion() {
             return null;
         }
     }

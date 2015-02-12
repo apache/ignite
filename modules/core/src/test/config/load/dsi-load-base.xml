@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -33,7 +33,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="classNames">
                     <list>
                         <value>org.apache.ignite.loadtests.dsi.GridDsiSession</value>
@@ -72,35 +72,13 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="restEnabled" value="false"/>
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="deploymentMode" value="CONTINUOUS"/>
 
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
 
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 8}"/>
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 8}"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="systemThreadPoolSize" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 8}"/>
 
         <property name="failoverSpi">
             <bean class="org.apache.ignite.spi.failover.always.AlwaysFailoverSpi">

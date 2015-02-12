@@ -78,10 +78,10 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        assert cfg.getClientConnectionConfiguration() != null;
+        assert cfg.getConnectorConfiguration() != null;
 
         if (customPort != null)
-            cfg.getClientConnectionConfiguration().setRestTcpPort(customPort);
+            cfg.getConnectorConfiguration().setPort(customPort);
 
         return cfg;
     }
@@ -90,8 +90,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        Assert.assertTrue(cache().putx("getKey1", "getVal1"));
-        Assert.assertTrue(cache().putx("getKey2", "getVal2"));
+        jcache().put("getKey1", "getVal1");
+        jcache().put("getKey2", "getVal2");
 
         Assert.assertEquals("getVal1", client.get("getKey1"));
         Assert.assertEquals("getVal2", client.get("getKey2"));
@@ -102,9 +102,9 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
      * @throws Exception If failed.
      */
     public void testGetBulk() throws Exception {
-        Assert.assertTrue(cache().putx("getKey1", "getVal1"));
-        Assert.assertTrue(cache().putx("getKey2", "getVal2"));
-        Assert.assertTrue(cache().putx("getKey3", "getVal3"));
+        jcache().put("getKey1", "getVal1");
+        jcache().put("getKey2", "getVal2");
+        jcache().put("getKey3", "getVal3");
 
         Map<String, Object> map = client.getBulk("getKey1", "getKey2");
 
@@ -120,7 +120,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testSet() throws Exception {
         Assert.assertTrue(client.set("setKey", 0, "setVal").get());
 
-        assertEquals("setVal", cache().get("setKey"));
+        assertEquals("setVal", jcache().get("setKey"));
     }
 
     /**
@@ -129,24 +129,24 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testSetWithExpiration() throws Exception {
         Assert.assertTrue(client.set("setKey", 2000, "setVal").get());
 
-        assertEquals("setVal", cache().get("setKey"));
+        assertEquals("setVal", jcache().get("setKey"));
 
         Thread.sleep(2100);
 
-        Assert.assertNull(cache().get("setKey"));
+        Assert.assertNull(jcache().get("setKey"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAdd() throws Exception {
-        Assert.assertTrue(cache().putx("addKey1", "addVal1"));
+        jcache().put("addKey1", "addVal1");
 
         Assert.assertFalse(client.add("addKey1", 0, "addVal1New").get());
         Assert.assertTrue(client.add("addKey2", 0, "addVal2").get());
 
-        assertEquals("addVal1", cache().get("addKey1"));
-        assertEquals("addVal2", cache().get("addKey2"));
+        assertEquals("addVal1", jcache().get("addKey1"));
+        assertEquals("addVal2", jcache().get("addKey2"));
     }
 
     /**
@@ -155,11 +155,11 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testAddWithExpiration() throws Exception {
         Assert.assertTrue(client.add("addKey", 2000, "addVal").get());
 
-        assertEquals("addVal", cache().get("addKey"));
+        assertEquals("addVal", jcache().get("addKey"));
 
         Thread.sleep(2100);
 
-        Assert.assertNull(cache().get("addKey"));
+        Assert.assertNull(jcache().get("addKey"));
     }
 
     /**
@@ -168,27 +168,27 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testReplace() throws Exception {
         Assert.assertFalse(client.replace("replaceKey", 0, "replaceVal").get());
 
-        Assert.assertNull(cache().get("replaceKey"));
-        Assert.assertTrue(cache().putx("replaceKey", "replaceVal"));
+        Assert.assertNull(jcache().get("replaceKey"));
+        jcache().put("replaceKey", "replaceVal");
 
         Assert.assertTrue(client.replace("replaceKey", 0, "replaceValNew").get());
 
-        assertEquals("replaceValNew", cache().get("replaceKey"));
+        assertEquals("replaceValNew", jcache().get("replaceKey"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplaceWithExpiration() throws Exception {
-        Assert.assertTrue(cache().putx("replaceKey", "replaceVal"));
+        jcache().put("replaceKey", "replaceVal");
 
         Assert.assertTrue(client.set("replaceKey", 2000, "replaceValNew").get());
 
-        assertEquals("replaceValNew", cache().get("replaceKey"));
+        assertEquals("replaceValNew", jcache().get("replaceKey"));
 
         Thread.sleep(2100);
 
-        Assert.assertNull(cache().get("replaceKey"));
+        Assert.assertNull(jcache().get("replaceKey"));
     }
 
     /**
@@ -197,11 +197,11 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testDelete() throws Exception {
         Assert.assertFalse(client.delete("deleteKey").get());
 
-        Assert.assertTrue(cache().putx("deleteKey", "deleteVal"));
+        jcache().put("deleteKey", "deleteVal");
 
         Assert.assertTrue(client.delete("deleteKey").get());
 
-        Assert.assertNull(cache().get("deleteKey"));
+        Assert.assertNull(jcache().get("deleteKey"));
     }
 
     /**
@@ -234,22 +234,22 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
      * @throws Exception If failed.
      */
     public void testFlush() throws Exception {
-        Assert.assertTrue(cache().putx("flushKey1", "flushVal1"));
-        Assert.assertTrue(cache().putx("flushKey2", "flushVal2"));
+        jcache().put("flushKey1", "flushVal1");
+        jcache().put("flushKey2", "flushVal2");
 
         Assert.assertTrue(client.flush().get());
 
-        Assert.assertNull(cache().get("flushKey1"));
-        Assert.assertNull(cache().get("flushKey2"));
-        Assert.assertTrue(cache().isEmpty());
+        Assert.assertNull(jcache().get("flushKey1"));
+        Assert.assertNull(jcache().get("flushKey2"));
+        Assert.assertTrue(jcache().localSize() == 0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testStat() throws Exception {
-        Assert.assertTrue(cache().putx("statKey1", "statVal1"));
-        assertEquals("statVal1", cache().get("statKey1"));
+        jcache().put("statKey1", "statVal1");
+        assertEquals("statVal1", jcache().get("statKey1"));
 
         Map<SocketAddress, Map<String, String>> map = client.getStats();
 
@@ -261,8 +261,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
         Assert.assertTrue(Integer.valueOf(stats.get("writes")) >= 1);
         Assert.assertTrue(Integer.valueOf(stats.get("reads")) >= 1);
 
-        Assert.assertTrue(cache().putx("statKey2", "statVal2"));
-        assertEquals("statVal2", cache().get("statKey2"));
+        jcache().put("statKey2", "statVal2");
+        assertEquals("statVal2", jcache().get("statKey2"));
 
         map = client.getStats();
 
@@ -281,13 +281,13 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testAppend() throws Exception {
         Assert.assertFalse(client.append(0, "appendKey", "_suffix").get());
 
-        Assert.assertTrue(cache().putx("appendKey", "appendVal"));
+        jcache().put("appendKey", "appendVal");
 
         Assert.assertTrue(client.append(0, "appendKey", "_suffix").get());
 
         Assert.assertEquals("appendVal_suffix", client.get("appendKey"));
 
-        assertEquals("appendVal_suffix", cache().get("appendKey"));
+        assertEquals("appendVal_suffix", jcache().get("appendKey"));
     }
 
     /**
@@ -296,13 +296,13 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testPrepend() throws Exception {
         Assert.assertFalse(client.append(0, "prependKey", "_suffix").get());
 
-        Assert.assertTrue(cache().putx("prependKey", "prependVal"));
+        jcache().put("prependKey", "prependVal");
 
         Assert.assertTrue(client.append(0, "prependKey", "_suffix").get());
 
         Assert.assertEquals("prependVal_suffix", client.get("prependKey"));
 
-        assertEquals("prependVal_suffix", cache().get("prependKey"));
+        assertEquals("prependVal_suffix", jcache().get("prependKey"));
     }
 
     /**

@@ -20,14 +20,13 @@ package org.apache.ignite;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
+ * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
@@ -50,13 +49,13 @@ import java.util.*;
  *
  * cfg.setDeploymentSpi(deploySpi);
  *
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
  * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a grid name:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
  *     &lt;property name="gridName" value="grid"/&gt;
  *     &lt;property name="userAttributes"&gt;
@@ -73,16 +72,16 @@ import java.util.*;
  * absolute or relative to IGNITE_HOME.
  * <pre name="code" class="java">
  * ...
- * GridGain.start("/path/to/spring/xml/file.xml");
+ * Ignition.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridGain}.
+ * You can also instantiate grid directly from Spring without using {@code Ignition}.
  * For more information refer to {@ignitelink org.apache.ignite.IgniteSpringBean} documentation.
  */
 public class Ignition {
     /**
      * This is restart code that can be used by external tools, like Shell scripts,
-     * to auto-restart the GridGain JVM process. Note that there is no standard way
+     * to auto-restart the Ignite JVM process. Note that there is no standard way
      * for a JVM to restart itself from Java application and therefore we rely on
      * external tools to provide that capability.
      * <p>
@@ -93,15 +92,9 @@ public class Ignition {
 
     /**
      * This is kill code that can be used by external tools, like Shell scripts,
-     * to auto-stop the GridGain JVM process without restarting.
+     * to auto-stop the Ignite JVM process without restarting.
      */
     public static final int KILL_EXIT_CODE = 130;
-
-    /**
-     * Default License file name. This file will be tried if no
-     * license provided in configuration.
-     */
-    public static final String DFLT_LIC_FILE_NAME = "gridgain-license.xml";
 
     /**
      * Enforces singleton.
@@ -227,8 +220,8 @@ public class Ignition {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
-     * scripts support restarting of JVM GridGain's process.
+     * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
+     * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
@@ -413,7 +406,7 @@ public class Ignition {
     /**
      * Adds a lsnr for grid life cycle events.
      * <p>
-     * Note that unlike other listeners in GridGain this listener will be
+     * Note that unlike other listeners in Ignite this listener will be
      * notified from the same thread that triggers the state change. Because of
      * that it is the responsibility of the user to make sure that listener logic
      * is light-weight and properly handles (catches) any runtime exceptions, if any
@@ -422,17 +415,17 @@ public class Ignition {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(IgniteListener lsnr) {
+    public static void addListener(IgnitionListener lsnr) {
         IgnitionEx.addListener(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.apache.ignite.lifecycle.IgniteListener)} method.
+     * Removes lsnr added by {@link #addListener(IgnitionListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(IgniteListener lsnr) {
+    public static boolean removeListener(IgnitionListener lsnr) {
         return IgnitionEx.removeListener(lsnr);
     }
 }

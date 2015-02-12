@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -30,6 +31,7 @@ import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.CacheManager;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
@@ -41,7 +43,7 @@ import java.util.concurrent.locks.*;
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -131,8 +133,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Nullable @Override public Entry<K, V> randomEntry() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.cache().randomEntry();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -241,14 +249,17 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
-    /** {@inheritDoc} */
-    @Override public Map<K, V> localPartition(int part) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        try {
+            return delegate.localEntries(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -296,21 +307,17 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(Collection<? extends K> keys) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        // TODO IGNITE-1.
-        if (peekModes.length != 0)
-            throw new UnsupportedOperationException();
-
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ctx.cache().globalSize();
+            if (isAsync()) {
+                setFuture(delegate.sizeAsync(peekModes));
+
+                return 0;
+            }
+            else
+                return delegate.size(peekModes);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -322,11 +329,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.size();
+            return delegate.localSize(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -411,7 +420,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<CacheEntry<K, V>> entrySetx(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Set<Entry<K, V>> entrySetx(IgnitePredicate<Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -738,7 +747,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.removeAll();
+            if (isAsync())
+                setFuture(delegate.removeAllAsync());
+            else
+                delegate.removeAll();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -750,11 +762,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clear();
+            if (isAsync())
+                setFuture(delegate.clearAsync());
+            else
+                delegate.clear();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -873,7 +887,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     /** {@inheritDoc} */
     @Override public void close() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        getCacheManager().destroyCache(getName());
+        CacheManager cacheMgr = getCacheManager();
+
+        if (cacheMgr != null) // cacheMgr == null means cache is closed.
+            cacheMgr.destroyCache(getName());
     }
 
     /** {@inheritDoc} */
@@ -885,12 +902,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.equals(IgniteCache.class))
+        if (clazz.isAssignableFrom(IgniteCache.class))
             return (T)this;
-        else if (clazz.equals(Ignite.class))
+        else if (clazz.isAssignableFrom(Ignite.class))
             return (T)ctx.grid();
 
-        throw new IllegalArgumentException("Unsupported class: " + clazz);
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
     }
 
     /** {@inheritDoc} */
@@ -976,9 +993,44 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K1, V1> IgniteCache<K1, V1> keepPortable() {
+    /**
+     * Creates projection that will operate with portable objects.
+     * <p>
+     * Projection returned by this method will force cache not to deserialize portable objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@code PortableObject} for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in portable format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * GridPortableObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@code CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
+     *
+     * @return Projection for portable objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> keepPortable() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

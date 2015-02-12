@@ -20,8 +20,8 @@ package org.apache.ignite.visor.commands.tasks
 import org.apache.ignite.Ignition
 import org.apache.ignite.compute.{ComputeJob, ComputeJobAdapter, ComputeJobResult, ComputeTaskSplitAdapter}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.IgniteEventType
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.EventType
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
@@ -46,7 +46,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
         visor.open(config("grid-visor"), "n/a")
 
         try {
-            val compute = visor.grid.compute().withAsync
+            val compute = visor.ignite.compute().withAsync
 
             compute.withName("TestTask1").execute(new TestTask1(), null)
 

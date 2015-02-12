@@ -34,7 +34,7 @@ public class GridGeneratingTestStore extends CacheStore<String, String> {
     private static final int DFLT_GEN_CNT = 100;
 
     /** */
-    @IgniteCacheNameResource
+    @CacheNameResource
     private String cacheName;
 
     /** {@inheritDoc} */

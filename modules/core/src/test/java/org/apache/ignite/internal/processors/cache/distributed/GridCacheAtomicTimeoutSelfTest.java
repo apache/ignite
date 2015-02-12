@@ -26,10 +26,11 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
@@ -113,7 +114,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
 
@@ -121,7 +123,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipNearRequest = true;
 
-        IgniteInternalFuture<Object> fut = cache.putAsync(key, 1);
+        cacheAsync.put(key, 1);
+
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -134,7 +138,10 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (CacheAtomicUpdateTimeoutCheckedException ignore) {
+        catch (IgniteException e) {
+            if (!(e.getCause() instanceof CacheAtomicUpdateTimeoutCheckedException))
+                throw e;
+
             // Expected exception.
         }
     }
@@ -145,7 +152,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testNearUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
 
@@ -155,7 +163,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipNearResponse = true;
 
-        IgniteInternalFuture<Object> fut = cache.putAsync(key, 1);
+        cacheAsync.put(key, 1);
+
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -168,7 +178,10 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (CacheAtomicUpdateTimeoutCheckedException ignore) {
+        catch (IgniteException e) {
+            if (!(e.getCause() instanceof CacheAtomicUpdateTimeoutCheckedException))
+                throw e;
+
             // Expected exception.
         }
     }
@@ -179,7 +192,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateRequestLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
 
@@ -189,7 +203,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipDhtRequest = true;
 
-        IgniteInternalFuture<Object> fut = cache.putAsync(key, 1);
+        cacheAsync.put(key, 1);
+
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -202,7 +218,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue("Invalid exception thrown: " + e, X.hasCause(e, CacheAtomicUpdateTimeoutCheckedException.class)
                 || X.hasSuppressed(e, CacheAtomicUpdateTimeoutCheckedException.class));
         }
@@ -214,7 +230,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
 
@@ -224,7 +241,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipDhtResponse = true;
 
-        IgniteInternalFuture<Object> fut = cache.putAsync(key, 1);
+        cacheAsync.put(key, 1);
+
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -237,7 +256,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue("Invalid exception thrown: " + e, X.hasCause(e, CacheAtomicUpdateTimeoutCheckedException.class)
                 || X.hasSuppressed(e, CacheAtomicUpdateTimeoutCheckedException.class));
         }
@@ -249,7 +268,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     private int keyForTest() {
         int i = 0;
 
-        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(null);
 
         while (!aff.isPrimary(grid(1).localNode(), i) || !aff.isBackup(grid(2).localNode(), i))
             i++;
@@ -274,7 +293,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         private boolean skipDhtResponse;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             if (!skipMessage((GridIoMessage)msg))
                 super.sendMessage(node, msg);

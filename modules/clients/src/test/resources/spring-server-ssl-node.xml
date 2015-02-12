@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-benchmark.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/example-benchmark.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -63,20 +63,17 @@
         <!-- Set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Enable rest protocol. -->
-        <property name="restEnabled" value="true"/>
-
         <!-- Client configuration. -->
-        <property name="clientConnectionConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration">
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
                 <!-- Configure TCP+SSL rest protocol. -->
-                <property name="restTcpSslEnabled" value="true"/>
+                <property name="sslEnabled" value="true"/>
 
                 <!-- Sets flag indicating whether or not SSL client authentication is required. -->
-                <property name="restTcpSslClientAuth" value="true"/>
+                <property name="sslClientAuth" value="true"/>
 
-                <property name="restTcpSslContextFactory">
-                    <bean class="org.apache.ignite.client.ssl.GridSslBasicContextFactory">
+                <property name="sslContextFactory">
+                    <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
                         <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
@@ -84,7 +81,7 @@
                     </bean>
                 </property>
 
-                <property name="restTcpPort" value="10443"/>
+                <property name="port" value="10443"/>
             </bean>
         </property>
 
@@ -97,7 +94,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is null. -->
                     <!--<property name="name"><null/></property>-->
 
@@ -110,7 +107,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'partitioned'. -->
                     <property name="name" value="partitioned"/>
 
@@ -136,64 +133,60 @@
                     <!-- Enable queries for partitioned cache -->
                     <property name="queryIndexEnabled" value="true"/>
 
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
-                            <property name="typeMetadata">
-                                <list>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                        <property name="textFields">
-                                            <list>
-                                                <value>address</value>
-                                            </list>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridImplicitPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridNoDefPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                </list>
-                            </property>
-                        </bean>
+                    <property name="typeMetadata">
+                        <list>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                                <property name="textFields">
+                                    <list>
+                                        <value>address</value>
+                                    </list>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridImplicitPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridNoDefPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
                     </property>
                 </bean>
 
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated'. -->
                     <property name="name" value="replicated"/>
 
@@ -208,7 +201,7 @@
                 <!--
                     Replicated cache with in-memory store enabled.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated.store'. -->
                     <property name="name" value="replicated.store"/>
 
@@ -221,7 +214,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.apache.ignite.client.HashMapStore"/>
+                        <bean class="org.apache.ignite.internal.client.HashMapStore"/>
                     </property>
                 </bean>
             </list>
@@ -231,7 +224,7 @@
             Use passcode authentication SPI.
         - ->
         <property name="authenticationSpi">
-            <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
+            <bean class="org.apache.ignite.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
                 <property name="passcodes">
                     <map>
                         <entry key="REMOTE_NODE" value="s3cret"/>
@@ -245,7 +238,7 @@
             Use remember me secure session SPI.
         -->
         <property name="secureSessionSpi">
-            <bean class="org.apache.ignite.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
+            <bean class="org.gridgain.grid.rememberme.GridRememberMeSecureSessionSpi">
                 <!-- Session TTL = 1 hour -->
                 <property name="ttl" value="3600000"/>
             </bean>
@@ -282,7 +275,7 @@
             Logger to use.
         -->
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.IgniteLog4jLogger">
+            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
                 <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
             </bean>
         </property>
@@ -291,44 +284,16 @@
             Explicitly set custom public and system thread pools to increase
             possible started nodes count in one VM.
         -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="15"/>
 
-        <property name="executorServiceShutdown" value="true"/>
-
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SYS-SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
-
-        <property name="systemExecutorServiceShutdown" value="true"/>
+        <property name="systemThreadPoolSize" value="15"/>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.PortableConfiguration">
+            <bean class="org.gridgain.grid.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

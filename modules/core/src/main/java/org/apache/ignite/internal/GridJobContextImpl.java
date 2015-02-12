@@ -18,13 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -192,7 +189,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
                             @Override public void onTimeout() {
                                 try {
                                     ExecutorService execSvc = job.isInternal() ?
-                                        ctx.config().getManagementExecutorService() : ctx.config().getExecutorService();
+                                        ctx.getManagementExecutorService() : ctx.getExecutorService();
 
                                     assert execSvc != null;
 
@@ -226,26 +223,6 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
             if (job != null)
                 // Execute in the same thread.
                 job.execute();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String cacheName() {
-        try {
-            return (String)job.getDeployment().annotatedValue(job.getJob(), CacheName.class);
-        }
-        catch (IgniteCheckedException e) {
-            throw F.wrap(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T affinityKey() {
-        try {
-            return (T)job.getDeployment().annotatedValue(job.getJob(), CacheAffinityKeyMapped.class);
-        }
-        catch (IgniteCheckedException e) {
-            throw F.wrap(e);
         }
     }
 

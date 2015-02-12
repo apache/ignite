@@ -32,9 +32,9 @@ public abstract class GridCacheVersionAbstractConflictResolver {
      * @return Conflict resolution context.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCacheVersionConflictContextImpl<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
+    public <K, V> GridCacheVersionConflictContext<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
-        GridCacheVersionConflictContextImpl<K, V> ctx = new GridCacheVersionConflictContextImpl<>(oldEntry, newEntry);
+        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
 
         resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
 
@@ -50,7 +50,7 @@ public abstract class GridCacheVersionAbstractConflictResolver {
      * @param atomicVerComparator Whether to use atomic version comparator.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract <K, V> void resolve0(GridCacheVersionConflictContextImpl<K, V> ctx,
+    protected abstract <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator) throws IgniteCheckedException;
 }

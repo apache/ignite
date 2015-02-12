@@ -63,7 +63,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setIncludeEventTypes();
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         CacheConfiguration cacheCfg1 = defaultCacheConfiguration();
 

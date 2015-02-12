@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -168,7 +168,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         if (isPartitioned())
             return near(idx).isLockedNearOnly(k);
 
-        return cache(idx).isLocked(k);
+        return jcache(idx).isLocalLocked(k, false);
     }
 
     /**
@@ -181,7 +181,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             return near(idx).isAllLockedNearOnly(keys);
 
         for (Integer key : keys) {
-            if (!cache(idx).isLocked(key))
+            if (!jcache(idx).isLocalLocked(key, true))
                 return false;
         }
 

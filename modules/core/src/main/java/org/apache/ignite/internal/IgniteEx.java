@@ -80,7 +80,7 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Checks whether all provided events are user-recordable.
      * <p>
-     * Note that this method supports only predefined GridGain events.
+     * Note that this method supports only predefined Ignite events.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
@@ -94,11 +94,6 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return Compatible versions.
      */
     public Collection<String> compatibleVersions();
-
-    /**
-     * @return Grace period left in minutes if bursting or {@code -1} otherwise.
-     */
-    public long licenseGracePeriodLeft();
 
     /**
      * Whether or not remote JMX management is enabled for this node.
@@ -140,4 +135,11 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return Hadoop.
      */
     public GridHadoop hadoop();
+
+    /**
+     * Get latest version in string form.
+     *
+     * @return Latest version.
+     */
+    @Nullable public String latestVersion();
 }

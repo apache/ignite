@@ -27,6 +27,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -50,8 +51,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
 
         CacheConfiguration cc1 = defaultCacheConfiguration();
 
@@ -83,56 +84,49 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             private Ignite ignite;
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
-                try {
-                    switch (evt) {
-                        case AFTER_GRID_START: {
-                            GridCache<Object, MyValue> c1 = ignite.cache("one");
-                            GridCache<Object, MyValue> c2 = ignite.cache("two");
+                switch (evt) {
+                    case AFTER_GRID_START: {
+                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
 
-                            if (!ignite.name().contains("Test0")) {
-                                if (!quiet) {
-                                    info("Keys already in cache:");
+                        if (!ignite.name().contains("Test0")) {
+                            if (!quiet) {
+                                info("Keys already in cache:");
 
-                                    for (Object k : c1.keySet())
-                                        info("Cache1: " + k.toString());
+                                for (Cache.Entry<Object, MyValue> entry : c1)
+                                    info("Cache1: " + entry.getKey().toString());
 
-                                    for (Object k : c2.keySet())
-                                        info("Cache2: " + k.toString());
-                                }
-
-                                return;
+                                for (Cache.Entry<Object, MyValue> entry : c2)
+                                    info("Cache2: " + entry.getKey().toString());
                             }
 
-                            info("Populating cache data...");
-
-                            int i = 0;
-
-                            for (Object key : keys) {
-                                c1.put(key, new MyValue(value(key)));
-
-                                if (i++ % 2 == 0)
-                                    c2.put(key, new MyValue(value(key)));
-                            }
-
-                            assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() +
-                                ", entries=" + c1.entrySet() + ']';
-                            assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() +
-                                ", entries=" + c2.entrySet() + ']';
-
-                            break;
+                            return;
                         }
 
-                        case BEFORE_GRID_START:
-                        case BEFORE_GRID_STOP:
-                        case AFTER_GRID_STOP: {
-                            info("Lifecycle event: " + evt);
+                        info("Populating cache data...");
 
-                            break;
+                        int i = 0;
+
+                        for (Object key : keys) {
+                            c1.put(key, new MyValue(value(key)));
+
+                            if (i++ % 2 == 0)
+                                c2.put(key, new MyValue(value(key)));
                         }
+
+                        assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() + ']';
+                        assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() + ']';
+
+                        break;
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+
+                    case BEFORE_GRID_START:
+                    case BEFORE_GRID_STOP:
+                    case AFTER_GRID_STOP: {
+                        info("Lifecycle event: " + evt);
+
+                        break;
+                    }
                 }
             }
         };
@@ -153,16 +147,14 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<String, MyValue> c1 = grid(j).cache("one");
-                GridCache<String, MyValue> c2 = grid(j).cache("two");
+                IgniteCache<String, MyValue> c1 = grid(j).jcache("one");
+                IgniteCache<String, MyValue> c2 = grid(j).jcache("two");
 
-                int size1 = c1.size();
-                int size2 = c2.size();
+                int size1 = c1.localSize();
+                int size2 = c2.localSize();
 
-                assert size1 == keys.length : " Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 +
-                    ", cache=" + c1.entrySet() + ']';
-                assert size2 == keys.length / 2 : " Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 +
-                    ", cache=" + c2.entrySet() + ']';
+                assertEquals(" Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']', keys.length, size1);
+                assertEquals(" Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']', keys.length / 2, size2);
             }
         }
     }
@@ -196,7 +188,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                     @IgniteInstanceResource
                     private Ignite grid;
 
-                    @IgniteLoggerResource
+                    @LoggerResource
                     private IgniteLogger log0;
 
                     private int cnt;

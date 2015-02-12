@@ -109,7 +109,13 @@ public class MessageBox extends ModalDialog {
         contentPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
 
         contentPnl.add(hBox(0, true, imageView(iconFile, 48)));
-        contentPnl.add(text(msg, 350));
+
+        TextArea ta = new TextArea(msg);
+        ta.setEditable(false);
+        ta.setWrapText(true);
+        ta.setFocusTraversable(false);
+
+        contentPnl.add(ta);
 
         final CheckBox rememberChoiceCh = checkBox("Remember choice", "", false);
 

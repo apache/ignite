@@ -26,7 +26,7 @@ import org.apache.ignite.lang.utils.*;
 import org.apache.ignite.util.*;
 
 /**
- * Gridgain language test suite.
+ * Ignite language test suite.
  */
 public class IgniteLangSelfTestSuite extends TestSuite {
     /**
@@ -36,7 +36,6 @@ public class IgniteLangSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Lang Test Suite");
 
-        suite.addTest(new TestSuite(GridFuncSelfTest.class));
         suite.addTest(new TestSuite(GridTupleSelfTest.class));
         suite.addTest(new TestSuite(GridByteArrayListSelfTest.class));
         suite.addTest(new TestSuite(GridLeanMapSelfTest.class));

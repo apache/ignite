@@ -33,15 +33,15 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * Job stealing failover SPI needs to always be used in conjunction with
  * {@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi} SPI. When {@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi}
  * receives a <b>steal</b> request and rejects jobs so they can be routed to the
- * appropriate node, it is the responsibility of this {@code GridJobStealingFailoverSpi}
+ * appropriate node, it is the responsibility of this {@code JobStealingFailoverSpi}
  * SPI to make sure that the job is indeed re-routed to the node that has sent the initial
  * request to <b>steal</b> it.
  * <p>
- * {@code GridJobStealingFailoverSpi} knows where to route a job based on the
+ * {@code JobStealingFailoverSpi} knows where to route a job based on the
  * {@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi#THIEF_NODE_ATTR} job context attribute (see {@link org.apache.ignite.compute.ComputeJobContext}).
  * Prior to rejecting a job,  {@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi} will populate this
  * attribute with the ID of the node that wants to <b>steal</b> this job.
- * Then {@code GridJobStealingFailoverSpi} will read the value of this attribute and
+ * Then {@code JobStealingFailoverSpi} will read the value of this attribute and
  * route the job to the node specified.
  * <p>
  * If failure is caused by a node crash, and not by <b>steal</b> request, then this
@@ -56,9 +56,9 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * <ul>
  * <li>Maximum failover attempts for a single job (see {@link #setMaximumFailoverAttempts(int)}).</li>
  * </ul>
- * Here is a Java example on how to configure grid with {@code GridJobStealingFailoverSpi}.
+ * Here is a Java example on how to configure grid with {@code JobStealingFailoverSpi}.
  * <pre name="code" class="java">
- * GridJobStealingFailoverSpi spi = new GridJobStealingFailoverSpi();
+ * JobStealingFailoverSpi spi = new JobStealingFailoverSpi();
  *
  * // Override maximum failover attempts.
  * spi.setMaximumFailoverAttempts(5);
@@ -71,10 +71,10 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * // Starts grid.
  * G.start(cfg);
  </pre>
- * Here is an example of how to configure {@code GridJobStealingFailoverSpi} from Spring XML configuration file.
+ * Here is an example of how to configure {@code JobStealingFailoverSpi} from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi"&gt;
  *         &lt;property name="maximumFailoverAttempts" value="5"/&gt;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
@@ -113,7 +113,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     private static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
 
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */

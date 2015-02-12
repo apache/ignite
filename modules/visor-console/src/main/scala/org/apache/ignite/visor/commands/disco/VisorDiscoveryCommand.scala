@@ -17,20 +17,17 @@
 
 package org.apache.ignite.visor.commands.disco
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.IgniteEventType
-import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.visor.{VisorTag, visor}
-
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -46,14 +43,14 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * | disco | Prints topology change log as seen from the oldest node.                      |
  * |       | Timeframe for querying events can be specified in arguments.                   |
  * |       |                                                                               |
- * |       | Note that this command depends on GridGain events.                            |
+ * |       | Note that this command depends on Ignite events.                            |
  * |       |                                                                               |
- * |       | GridGain events can be individually enabled and disabled and disabled events  |
+ * |       | Ignite events can be individually enabled and disabled and disabled events  |
  * |       | can affect the results produced by this command. Note also that configuration |
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are DISABLED and GridGain stores last 10,000 local     |
+ * |       | By default - all events are DISABLED and Ignite stores last 10,000 local     |
  * |       | events on each node. Both of these defaults can be changed in configuration.  |
  * +---------------------------------------------------------------------------------------+
  * }}}
@@ -138,7 +135,7 @@ class VisorDiscoveryCommand {
             val tm = if (fs.isDefined) timeFilter(fs) else Long.MaxValue
 
             if (tm > 0) {
-                val nodes = grid.nodes()
+                val nodes = ignite.nodes()
 
                 if (nodes.isEmpty) {
                     scold("Topology is empty.")
@@ -146,13 +143,13 @@ class VisorDiscoveryCommand {
                     return
                 }
 
-                val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
+                val oldest = ignite.nodes().maxBy(_.metrics().getUpTime)
 
                 val cntOpt = argValue("c", argLst)
 
                 val cnt =
                     try
-                        cntOpt.map(_.toInt).getOrElse(Int.MaxValue)
+                        cntOpt.fold(Int.MaxValue)(_.toInt)
                     catch {
                         case e: NumberFormatException =>
                             scold("Invalid count: " + cntOpt.get)
@@ -220,13 +217,13 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+        var evts = ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
             toTaskArgument(node.id(), VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
 
         val nodeStartTime = node.metrics().getStartTime
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
-            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, IgniteUtils.gridEventName(EVT_NODE_JOINED),
+            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
                 node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
 
             evts = Seq(root) ++ evts
@@ -249,14 +246,14 @@ object VisorDiscoveryCommand {
             "Prints topology change log as seen from the oldest node.",
             "Timeframe for querying events can be specified in arguments.",
             " ",
-            "Note that this command depends on GridGain events.",
+            "Note that this command depends on Ignite events.",
             " ",
-            "GridGain events can be individually enabled and disabled and disabled events",
+            "Ignite events can be individually enabled and disabled and disabled events",
             "can affect the results produced by this command. Note also that configuration",
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and GridGain stores last 10,000 local",
+            "By default - all events are disabled and Ignite stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
@@ -302,5 +299,5 @@ object VisorDiscoveryCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromDisco2Visor(vs: VisorTag) = cmd
+    implicit def fromDisco2Visor(vs: VisorTag): VisorDiscoveryCommand = cmd
 }

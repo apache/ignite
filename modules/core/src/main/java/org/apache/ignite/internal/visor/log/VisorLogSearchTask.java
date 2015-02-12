@@ -210,12 +210,12 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
         /** {@inheritDoc} */
         @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
-            URL url = U.resolveGridGainUrl(arg.folder);
+            URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
                 throw U.convertException(new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder)));
 
-            UUID uuid = g.localNode().id();
+            UUID uuid = ignite.localNode().id();
             String nid = uuid.toString().toLowerCase();
 
             String filePtrn = arg.filePtrn.replace("@nid8", nid.substring(0, 8)).replace("@nid", nid);
@@ -228,7 +228,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
                 Collection<VisorLogSearchResult> results = new ArrayList<>(arg.limit);
 
-                int resultCnt = 0;
+                int resCnt = 0;
 
                 for (VisorLogFile logFile : matchingFiles) {
                     try {
@@ -237,13 +237,13 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
                         if (textFile(f, false)) {
                             Charset charset = decode(f);
 
-                            if (resultCnt == arg.limit)
+                            if (resCnt == arg.limit)
                                 break;
 
                             List<GridTuple3<String[], Integer, Integer>> searched =
-                                searchInFile(f, charset, arg.searchStr, arg.limit - resultCnt);
+                                searchInFile(f, charset, arg.searchStr, arg.limit - resCnt);
 
-                            resultCnt += searched.size();
+                            resCnt += searched.size();
 
                             String path = f.getAbsolutePath().substring(pathIdx);
                             long sz = f.length(), lastModified = f.lastModified();

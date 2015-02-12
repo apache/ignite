@@ -30,7 +30,7 @@ import java.util.*;
 /**
  *
  */
-public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteCluster> implements IgniteCluster {
+public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster> implements IgniteCluster {
     /** */
     private final IgniteKernal grid;
 

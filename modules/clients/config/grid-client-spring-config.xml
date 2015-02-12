@@ -15,12 +15,12 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Client Spring configuration file to start grid client.
+    Ignite Client Spring configuration file to start grid client.
 
-    When starting GridGain Client from Java IDE, pass configuration bean into GridClientFactory:
+    When starting Ignite Client from Java IDE, pass configuration bean into GridClientFactory:
     GridClientFactory.start(new FileSystemXmlApplicationContext(
         "/path/to/grid-client-spring-config.xml").getBean(GridClientConfiguration.class));
 -->
@@ -39,14 +39,14 @@
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="grid.client.cfg" class="org.apache.ignite.client.GridClientConfiguration">
+    <bean id="grid.client.cfg" class="org.apache.ignite.internal.client.GridClientConfiguration">
         <!-- Data configurations. -->
         <property name="dataConfigurations">
             <list>
-                <bean class="org.apache.ignite.client.GridClientDataConfiguration">
+                <bean class="org.apache.ignite.internal.client.GridClientDataConfiguration">
                     <property name="name" value="partitioned"/>
                     <property name="affinity">
-                        <bean class="org.apache.ignite.client.GridClientPartitionAffinity"/>
+                        <bean class="org.apache.ignite.internal.client.GridClientPartitionAffinity"/>
                     </property>
                 </bean>
             </list>

@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
@@ -332,15 +332,9 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
         Collection<ClusterNode> nodes = meta.metaCacheNodes();
 
-        boolean first = true;
-
         for (ClusterNode node : nodes) {
-            GridGgfsCommunicationMessage msg0 = first ? msg : (GridGgfsCommunicationMessage)msg.clone();
-
-            first = false;
-
             try {
-                ggfsCtx.send(node, topic, msg0, GridIoPolicy.SYSTEM_POOL);
+                ggfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +

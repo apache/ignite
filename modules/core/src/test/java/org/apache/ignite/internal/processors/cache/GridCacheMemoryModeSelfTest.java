@@ -87,19 +87,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
         cacheCfg.setQueryIndexEnabled(memoryMode != CacheMemoryMode.OFFHEAP_VALUES);
-        cacheCfg.setPortableEnabled(portableEnabled());
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
-    }
-
-    /**
-     * @return Portable enabled flag.
-     */
-    protected boolean portableEnabled() {
-        return false;
     }
 
     /**
@@ -185,7 +177,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        CacheConfiguration cfg = g.cache(null).configuration();
+        CacheConfiguration cfg = g.jcache(null).getConfiguration(CacheConfiguration.class);
 
         assertEquals(memoryMode, cfg.getMemoryMode());
         assertEquals(0, cfg.getOffHeapMaxMemory());

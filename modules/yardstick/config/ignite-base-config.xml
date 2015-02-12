@@ -28,7 +28,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="true"/>
                 <property name="classNames">
                     <list>
@@ -58,7 +58,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -70,7 +70,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic-offheap"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -84,7 +84,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic-offheap-values"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -98,7 +98,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -110,7 +110,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx-offheap"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -124,7 +124,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx-offheap-values"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -138,7 +138,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="query"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -153,7 +153,7 @@
                     <property name="indexingSpiName" value="default"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="query-offheap"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -170,7 +170,7 @@
                     <!--<property name="indexingSpiName" value="offheap"/>-->
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="compute"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -184,7 +184,7 @@
             </list>
         </property>
 
-        <property name="restEnabled" value="false"/>
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="includeEventTypes">
             <list/>

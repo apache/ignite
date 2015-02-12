@@ -18,15 +18,14 @@
 package org.apache.ignite.visor.commands.start
 
 import org.apache.ignite._
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 
 import java.io._
 import java.util.concurrent._
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -85,13 +84,13 @@ private case class Result(
  *         If some nodes are started already, then only remaining nodes will be started.
  *         If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen.
  *     -g=<path>
- *         Path to GridGain installation folder.
+ *         Path to Ignite installation folder.
  *         If not defined, IGNITE_HOME environment variable must be set on remote hosts.
  *     -c=<path>
- *         Path to configuration file (relative to GridGain home).
- *         If not provided, default GridGain configuration is used.
+ *         Path to configuration file (relative to Ignite home).
+ *         If not provided, default Ignite configuration is used.
  *     -s=<path>
- *         Path to start script (relative to GridGain home).
+ *         Path to start script (relative to Ignite home).
  *         Default is "bin/ignite.sh" for Unix or
  *         "bin\ignite.bat" for Windows.
  *     -m=<num>
@@ -176,7 +175,7 @@ class VisorStartCommand {
             val passwdOpt = argValue("pw", argLst)
             val keyOpt = argValue("k", argLst)
             val nodesOpt = argValue("n", argLst)
-            val ggHomeOpt = argValue("g", argLst)
+            val igniteHomeOpt = argValue("g", argLst)
             val cfgOpt = argValue("c", argLst)
             val scriptOpt = argValue("s", argLst)
             val maxConnOpt = argValue("m", argLst)
@@ -229,7 +228,7 @@ class VisorStartCommand {
                     scold("File is a directory: " + file.getAbsolutePath).^^
 
                 try
-                    res = grid.startNodes(file, restart, timeout, maxConn).map(t => {
+                    res = ignite.startNodes(file, restart, timeout, maxConn).map(t => {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
@@ -279,13 +278,13 @@ class VisorStartCommand {
                     "passwd" -> passwdOpt.orNull,
                     "key" -> keyFile,
                     "nodes" -> nodes,
-                    "ggHome" -> ggHomeOpt.orNull,
+                    "igniteHome" -> igniteHomeOpt.orNull,
                     "cfg" -> cfgOpt.orNull,
                     "script" -> scriptOpt.orNull
                 )
 
                 try
-                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
+                    res = ignite.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
                     case e: IgniteException => scold(e.getMessage).^^
@@ -311,7 +310,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(IgniteUtils.nl()).toSeq) })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
 
                 errT.render()
             }
@@ -375,15 +374,15 @@ object VisorStartCommand {
                 "If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen."
             ),
             "-g=<path>" -> List(
-                "Path to GridGain installation folder.",
+                "Path to Ignite installation folder.",
                 "If not defined, IGNITE_HOME environment variable must be set on remote hosts."
             ),
             "-c=<path>" -> List(
-                "Path to configuration file (relative to GridGain home).",
-                "If not provided, default GridGain configuration is used."
+                "Path to configuration file (relative to Ignite home).",
+                "If not provided, default Ignite configuration is used."
             ),
             "-s=<path>" -> List(
-                "Path to start script (relative to GridGain home).",
+                "Path to start script (relative to Ignite home).",
                 "Default is \"bin/ignite.sh\" for Unix or",
                 "\"bin\\ignite.bat\" for Windows."
             ),
@@ -425,5 +424,5 @@ object VisorStartCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromStart2Visor(vs: VisorTag) = cmd
+    implicit def fromStart2Visor(vs: VisorTag): VisorStartCommand = cmd
 }

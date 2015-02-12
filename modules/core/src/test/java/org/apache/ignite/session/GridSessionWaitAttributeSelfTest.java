@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Tests waiting for session attributes.
@@ -83,14 +82,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                JOB_NUM * 2,
-                JOB_NUM * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(JOB_NUM * 2);
 
         return c;
     }
@@ -419,15 +411,15 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     public static class TestSessionJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
-        @IgniteJobContextResource
+        @JobContextResource
         private ComputeJobContext jobCtx;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.loadtests.hashmap;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
@@ -57,6 +57,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             defaultCacheConfiguration(),
             new GridCacheEventManager<K, V>(),
             new GridCacheSwapManager<K, V>(false),
+            new IgniteCacheOsSerializationManager<K, V>(),
             new GridCacheStoreManager<K, V>(null,
                 new IdentityHashMap<CacheStore, ThreadLocal>(),
                 null,

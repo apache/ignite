@@ -18,11 +18,11 @@
 package org.apache.ignite.cache.eviction.random;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+
+import javax.cache.*;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache
@@ -77,38 +77,20 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry) {
+    @SuppressWarnings("unchecked")
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!entry.isCached())
             return;
 
-        GridCache<K, V> cache = entry.projection().cache();
+        IgniteCache<K, V> cache = entry.unwrap(IgniteCache.class);
 
         int size = cache.size();
 
         for (int i = max; i < size; i++) {
-            CacheEntry<K, V> e = cache.randomEntry();
+            Cache.Entry<K, V> e = cache.randomEntry();
 
             if (e != null)
-                e.evict();
-        }
-    }
-
-    /**
-     * Checks entry for empty value.
-     *
-     * @param entry Entry to check.
-     * @return {@code True} if entry is empty.
-     */
-    private boolean empty(CacheEntry<K, V> entry) {
-        try {
-            return entry.peek(F.asList(GridCachePeekMode.GLOBAL)) == null;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(null, e.getMessage(), e);
-
-            assert false : "Should never happen: " + e;
-
-            return false;
+                e.unwrap(EvictableEntry.class).evict();
         }
     }
 

@@ -21,9 +21,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -50,7 +49,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="xml">
  * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
- *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *             &lt;property name="gridName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -130,10 +129,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
+    @Override public IgniteProductVersion version() {
         assert g != null;
 
-        return g.product();
+        return g.version();
     }
 
     /** {@inheritDoc} */
@@ -158,10 +157,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         assert g != null;
 
-        return g.managed();
+        return g.services();
     }
 
     /** {@inheritDoc} */
@@ -193,10 +192,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         assert g != null;
 
-        return g.compute(prj);
+        return g.compute(grp);
     }
 
     /** {@inheritDoc} */
@@ -207,24 +206,24 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         assert g != null;
 
-        return g.events(prj);
+        return g.events(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         assert g != null;
 
-        return g.managed(prj);
+        return g.services(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         assert g != null;
 
-        return g.executorService(prj);
+        return g.executorService(grp);
     }
 
     /** {@inheritDoc} */
@@ -232,20 +231,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.scheduler();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        assert g != null;
-
-        return g.security();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        assert g != null;
-
-        return g.portables();
     }
 
     /** {@inheritDoc} */
@@ -365,7 +350,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         assert g != null;
 
@@ -374,7 +359,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         assert g != null;
 

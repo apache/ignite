@@ -76,7 +76,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridCommunicationManagerListenersSelfTest.class);
         suite.addTestSuite(IgniteExecutorServiceTest.class);
         suite.addTestSuite(GridTaskInstantiationSelfTest.class);
-        suite.addTestSuite(GridManagementJobSelfTest.class);
         suite.addTestSuite(GridMultipleJobsSelfTest.class);
         suite.addTestSuite(GridCheckpointManagerSelfTest.class);
         suite.addTestSuite(GridCheckpointTaskSelfTest.class);
@@ -93,6 +92,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridMultinodeRedeployPrivateModeSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeployIsolatedModeSelfTest.class);
         suite.addTestSuite(IgniteComputeEmptyClusterGroupTest.class);
+        suite.addTestSuite(IgniteComputeTopologyExceptionTest.class);
 
         return suite;
     }

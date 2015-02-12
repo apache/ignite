@@ -128,10 +128,10 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            IgniteMarshaller marsh = g0.configuration().getMarshaller();
+            Marshaller marsh = g0.configuration().getMarshaller();
 
-            if (marsh instanceof IgniteOptimizedMarshaller)
-                assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());
+            if (marsh instanceof OptimizedMarshaller)
+                assertTrue(((OptimizedMarshaller)marsh).isRequireSerializable());
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 
@@ -148,7 +148,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            GridCache<Integer, String> c = g0.cache(null);
+            IgniteCache<Integer, String> c = g0.jcache(null);
 
             for (int i = 0; i < KEYS_COUNT; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

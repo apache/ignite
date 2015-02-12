@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -34,13 +33,14 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Deployment manager for cache.
@@ -82,7 +82,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        globalLdr = new CacheClassLoader();
+        globalLdr = new CacheClassLoader(cctx.gridConfig().getClassLoader());
 
         nodeFilter = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -94,10 +94,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         if (depEnabled) {
             discoLsnr = new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
+                @Override public void onEvent(Event evt) {
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT : "Unexpected event: " + evt;
 
-                    UUID id = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                    UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing node departure: " + id);
@@ -141,7 +141,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, org.apache.ignite.configuration.IgniteDeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, org.apache.ignite.configuration.DeploymentMode, Map, boolean)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *
@@ -244,8 +244,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
         Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<CacheEntry<K, V>>() {
-                @Override public boolean apply(CacheEntry<K, V> e) {
+            new P1<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
                         undeploy(e, cacheCtx.cache());
                 }
@@ -255,7 +255,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                  * @param cache Cache.
                  * @return {@code True} if entry should be undeployed.
                  */
-                private boolean undeploy(CacheEntry<K, V> e, GridCacheAdapter<K, V> cache) {
+                private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
                     K k = e.getKey();
 
                     GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());
@@ -342,7 +342,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param participants Node participants.
      * @param locDepOwner {@code True} if local deployment owner.
      */
-    public void p2pContext(UUID sndId, IgniteUuid ldrId, String userVer, IgniteDeploymentMode mode,
+    public void p2pContext(UUID sndId, IgniteUuid ldrId, String userVer, DeploymentMode mode,
         Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         assert depEnabled;
 
@@ -761,7 +761,17 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * Sets context class loader as parent.
          */
         private CacheClassLoader() {
-            super(U.detectClassLoader(GridCacheDeploymentManager.class));
+            this(U.detectClassLoader(GridCacheDeploymentManager.class));
+        }
+
+        /**
+         * Sets context class loader.
+         * If user's class loader is null then will be used default class loader.
+         *
+         * @param classLdr User's class loader.
+         */
+        private CacheClassLoader(ClassLoader classLdr) {
+            super(classLdr != null ? classLdr : U.detectClassLoader(GridCacheDeploymentManager.class));
 
             p2pExclude = cctx.gridConfig().getPeerClassLoadingLocalClassPathExclude();
         }
@@ -791,7 +801,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 UUID sndId = t.senderId();
                 IgniteUuid ldrId = t.loaderId();
                 String userVer = t.userVersion();
-                IgniteDeploymentMode mode = t.mode();
+                DeploymentMode mode = t.mode();
                 Map<UUID, IgniteUuid> participants = t.participants();
 
                 GridDeployment d = cctx.gridDeploy().getGlobalDeployment(
@@ -849,7 +859,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         private final String userVer;
 
         /** */
-        private final IgniteDeploymentMode depMode;
+        private final DeploymentMode depMode;
 
         /** */
         @GridToStringInclude
@@ -865,7 +875,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * @param depMode Deployment mode.
          * @param participants Participants.
          */
-        private CachedDeploymentInfo(UUID sndId, IgniteUuid ldrId, String userVer, IgniteDeploymentMode depMode,
+        private CachedDeploymentInfo(UUID sndId, IgniteUuid ldrId, String userVer, DeploymentMode depMode,
             Map<UUID, IgniteUuid> participants) {
             assert sndId.equals(ldrId.globalId()) || participants != null;
 
@@ -958,7 +968,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         /**
          * @return Deployment mode.
          */
-        public IgniteDeploymentMode mode() {
+        public DeploymentMode mode() {
             return depMode;
         }
 

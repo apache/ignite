@@ -23,7 +23,6 @@ import java.util.*;
 
 /**
  * Security subject representing authenticated node or client with a set of permissions.
- * List of authenticated subjects can be retrieved from {@link GridSecurity#authenticatedSubjects()} method.
  */
 public interface GridSecuritySubject extends Serializable {
     /**

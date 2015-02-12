@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

@@ -28,6 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -182,7 +183,7 @@ import java.util.concurrent.*;
  * </pre>
  * See {@link #keepPortable()} method JavaDoc for more details.
  */
-public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
+public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Gets name of this cache ({@code null} for default cache).
      *
@@ -259,7 +260,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      *      will be {@code 'anded'}.
      * @return Projection based on given filter.
      */
-    public CacheProjection<K, V> projection(@Nullable IgnitePredicate<CacheEntry<K, V>> filter);
+    public CacheProjection<K, V> projection(@Nullable IgnitePredicate<Cache.Entry<K, V>> filter);
 
     /**
      * Gets cache projection base on this one, but with the specified flags turned on.
@@ -289,7 +290,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -314,7 +315,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.
@@ -377,7 +378,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      *
      * @param vis Closure which will be invoked for each cache entry.
      */
-    public void forEach(IgniteInClosure<CacheEntry<K, V>> vis);
+    public void forEach(IgniteInClosure<Cache.Entry<K, V>> vis);
 
     /**
      * Tests whether the predicate holds for all entries. If cache is empty,
@@ -390,7 +391,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param vis Predicate to test for each cache entry.
      * @return {@code True} if the given predicate holds for all visited entries, {@code false} otherwise.
      */
-    public boolean forAll(IgnitePredicate<CacheEntry<K, V>> vis);
+    public boolean forAll(IgnitePredicate<Cache.Entry<K, V>> vis);
 
     /**
      * Reloads a single key from persistent storage. This method
@@ -484,8 +485,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param key Key.
      * @param peekModes Peek modes.
      * @return Value.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Entries iterable.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
      * Peeks at cached value using optional set of peek modes. This method will sequentially
@@ -636,7 +645,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    @Nullable public V put(K key, V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable public V put(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException;
 
     /**
@@ -672,7 +681,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -704,7 +713,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public boolean putx(K key, V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    public boolean putx(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException;
 
     /**
@@ -736,7 +745,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -1031,7 +1040,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If projection flags validation failed.
      */
     public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pairs in cache. If filters are provided, then entries will
@@ -1054,7 +1063,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
@@ -1086,7 +1095,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * that filter is checked atomically together with get operation.
      * @return Key set for this cache projection.
      */
-    public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public Set<K> keySet(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Set of keys for which this node is primary.
@@ -1151,7 +1160,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      *
      * @return Entries that pass through key filter.
      */
-    public Set<CacheEntry<K, V>> entrySet();
+    public Set<Cache.Entry<K, V>> entrySet();
 
     /**
      * Gets set containing cache entries that belong to provided partition or {@code null}
@@ -1163,7 +1172,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Set containing partition's entries or {@code null} if partition is
      *      not found locally.
      */
-    @Nullable public Set<CacheEntry<K, V>> entrySet(int part);
+    @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
 
     /**
      * Gets set of cache entries for which this node is primary.
@@ -1175,11 +1184,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      *
      * @return Primary cache entries that pass through key filter.
      */
-    public Set<CacheEntry<K, V>> primaryEntrySet();
+    public Set<Cache.Entry<K, V>> primaryEntrySet();
 
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link CacheConfiguration} at startup.
+     * All defaults are set in {@link org.apache.ignite.configuration.CacheConfiguration} at startup.
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.
@@ -1313,13 +1322,13 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param key Entry key.
      * @return Cache entry or {@code null} if projection pre-filtering was not passed.
      */
-    @Nullable public CacheEntry<K, V> entry(K key);
+    @Nullable public Cache.Entry<K, V> entry(K key);
 
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1336,7 +1345,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * evicted only if it's not used (not participating in any locks or
      * transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1350,7 +1359,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1365,7 +1374,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -1382,7 +1391,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -1416,11 +1425,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void clear() throws IgniteCheckedException;
 
     /**
+     * @return Clear future.
+     */
+    public IgniteInternalFuture<?> clearAsync();
+
+    /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
      * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
      * <p>
-     * GridGain will make the best attempt to clearLocally caches on all nodes. If some caches
+     * Ignite will make the best attempt to clearLocally caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      *
      * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
@@ -1474,7 +1488,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If remove operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    @Nullable public V remove(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable public V remove(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException;
 
     /**
@@ -1505,7 +1519,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<V> removeAsync(K key, IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<V> removeAsync(K key, IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache.
@@ -1531,7 +1545,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public boolean removex(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    public boolean removex(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException;
 
     /**
@@ -1559,7 +1573,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> removexAsync(K key,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -1627,7 +1641,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mappings from cache for entries for which the optionally
@@ -1650,7 +1664,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Removes mappings from cache for entries for which the optionally passed in filters do
@@ -1677,6 +1691,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void removeAll() throws IgniteCheckedException;
 
     /**
+     * @return Remove future.
+     */
+    public IgniteInternalFuture<?> removeAllAsync();
+
+    /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do
      * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
      * into transaction.
@@ -1699,7 +1718,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      *      remove operation completes.
      * @throws CacheFlagException If flags validation failed.
      */
-    public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Synchronously acquires lock on a cached object with given
@@ -1724,7 +1743,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public boolean lock(K key, long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    public boolean lock(K key, long timeout, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException;
 
     /**
@@ -1751,7 +1770,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1777,7 +1796,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1803,7 +1822,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
 
     /**
      * Unlocks given key only if current thread owns the lock. If optional filter
@@ -1823,7 +1842,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public void unlock(K key, IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+    public void unlock(K key, IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
@@ -1846,7 +1865,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws CacheFlagException If flags validation failed.
      */
     public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Checks if any node owns a lock for this key.
@@ -1880,6 +1899,26 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Size of cache on this node.
      */
     public int size();
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Local cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Global cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
 
     /**
      * Gets the number of all entries cached across all nodes.

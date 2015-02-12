@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -258,16 +258,11 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
     /**
      * Performs all the initialization logic for write-behind cache store.
      * This class must not be used until this method returns.
-     *
-     * @throws IgniteCheckedException If cache cannot be started due to some reasons.
      */
     @Override public void start() {
         assert cacheFlushFreq != 0 || cacheMaxSize != 0;
 
         if (stopping.compareAndSet(true, false)) {
-            if (store instanceof LifecycleAware)
-                ((LifecycleAware)store).start();
-
             if (log.isDebugEnabled())
                 log.debug("Starting write-behind store for cache '" + cacheName + '\'');
 
@@ -337,9 +332,6 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
             if (!graceful)
                 log.warning("Shutdown was aborted");
-
-            if (store instanceof LifecycleAware)
-                ((LifecycleAware)store).stop();
         }
     }
 
@@ -351,14 +343,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         wakeUp();
     }
 
-    /**
-     * Default empty implementation. This method needs to be overridden only if
-     * {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method
-     * is explicitly called.
-     *
-     * @param clo {@inheritDoc}
-     * @param args {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) {
         store.loadCache(clo, args);
     }

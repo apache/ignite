@@ -24,11 +24,11 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Metadata for GridGain cache.
+ * Metadata for Ignite cache.
  * <p>
  * Metadata describes objects stored in the cache and
  * can be used to gather information about what can
- * be queried using GridGain cache queries feature.
+ * be queried using Ignite cache queries feature.
  */
 public interface GridCacheSqlMetadata extends Externalizable {
     /**

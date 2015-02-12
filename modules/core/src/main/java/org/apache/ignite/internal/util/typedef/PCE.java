@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.*;
+
+
 /**
- * Defines {@code alias} for <tt>GridPredicate&lt;CacheEntry&lt;K, V&gt;&gt;</tt> by extending
+ * Defines {@code alias} for <tt>GridPredicate&lt;Entry&lt;K, V&gt;&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.cache.CacheEntry}.
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.cache.Entry}.
  * @see org.apache.ignite.lang.IgnitePredicate
  * @see GridFunc
- * @see org.apache.ignite.cache.CacheEntry
  */
-public interface PCE<K, V> extends IgnitePredicate<CacheEntry<K, V>> { /* No-op. */ }
+public interface PCE<K, V> extends IgnitePredicate<Cache.Entry<K, V>> { /* No-op. */ }

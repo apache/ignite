@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -58,13 +57,13 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static Ignite[] ignites;
 
     /** Regular caches. */
-    private static GridCache<Integer, String>[] caches;
+    private static IgniteCache<Integer, String>[] caches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -93,12 +92,12 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         ignites = new Ignite[GRID_CNT];
-        caches = new GridCache[GRID_CNT];
+        caches = new IgniteCache[GRID_CNT];
 
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i] = startGrid(i);
 
-            caches[i] = ignites[i].cache(CACHE);
+            caches[i] = ignites[i].jcache(CACHE);
         }
     }
 
@@ -116,8 +115,8 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testOptimisticTransaction() throws Exception {
-        for (GridCache<Integer, String> cache : caches) {
-            IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+        for (IgniteCache<Integer, String> cache : caches) {
+            IgniteTx tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.put(KEY, VAL);
@@ -128,8 +127,8 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
                 tx.close();
             }
 
-            for (GridCache<Integer, String> cacheInner : caches) {
-                tx = cacheInner.txStart(OPTIMISTIC, REPEATABLE_READ);
+            for (IgniteCache<Integer, String> cacheInner : caches) {
+                tx = cacheInner.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
                 try {
                     assert F.eq(VAL, cacheInner.get(KEY));
@@ -141,7 +140,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
                 }
             }
 
-            tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+            tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.remove(KEY);

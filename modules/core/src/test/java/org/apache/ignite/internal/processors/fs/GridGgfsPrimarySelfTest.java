@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Tests for PRIMARY mode.

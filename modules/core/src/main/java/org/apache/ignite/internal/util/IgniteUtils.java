@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -31,6 +30,10 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -38,10 +41,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -66,7 +65,6 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
-import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -79,8 +77,8 @@ import java.util.regex.*;
 import java.util.zip.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Collection of utility methods used throughout the system.
@@ -134,7 +132,7 @@ public abstract class IgniteUtils {
     private static volatile GridTuple<String> ggHome;
 
     /** Project work directory. */
-    private static volatile String ggWork;
+    private static volatile String igniteWork;
 
     /** OS JDK string. */
     private static String osJdkStr;
@@ -238,7 +236,7 @@ public abstract class IgniteUtils {
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
-    /** JMX domain as 'xxx.gridgain'. */
+    /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
@@ -276,20 +274,17 @@ public abstract class IgniteUtils {
     /** Boxed class map. */
     private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
 
-    /** Class loader used to load GridGain. */
+    /** Class loader used to load Ignite. */
     private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
 
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
 
-    /** Portable classes. */
-    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
-
-    /** GridGain Logging Directory. */
+    /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 
-    /** GridGain Work Directory. */
+    /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Clock timer. */
@@ -456,7 +451,7 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        for (Field field : IgniteEventType.class.getFields()) {
+        for (Field field : EventType.class.getFields()) {
             if (field.getType().equals(int.class)) {
                 try {
                     assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
@@ -486,8 +481,8 @@ public abstract class IgniteUtils {
         // because they may have been initialized to null before GRID_EVTS were initialized.
         if (EVTS_ALL == null || EVTS_ALL_MINUS_METRIC_UPDATE == null) {
             try {
-                Field f1 = IgniteEventType.class.getDeclaredField("EVTS_ALL");
-                Field f2 = IgniteEventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
+                Field f1 = EventType.class.getDeclaredField("EVTS_ALL");
+                Field f2 = EventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
 
                 assert f1 != null;
                 assert f2 != null;
@@ -518,31 +513,6 @@ public abstract class IgniteUtils {
                 throw new IgniteException(e);
             }
         }
-
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
     }
@@ -1314,31 +1284,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads array from input stream.
-     *
-     * @param in Input stream.
-     * @return Deserialized array.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If class not found.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        int len = in.readInt();
-
-        IgnitePredicate<CacheEntry<K, V>>[] arr = null;
-
-        if (len > 0) {
-            arr = new IgnitePredicate[len];
-
-            for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
-        }
-
-        return arr;
-    }
-
-    /**
      *
      * @param out Output.
      * @param col Set to write.
@@ -1713,8 +1658,8 @@ public abstract class IgniteUtils {
         assert loc != null;
         assert rmt != null;
 
-        String locMacs = loc.attribute(GridNodeAttributes.ATTR_MACS);
-        String rmtMacs = rmt.attribute(GridNodeAttributes.ATTR_MACS);
+        String locMacs = loc.attribute(IgniteNodeAttributes.ATTR_MACS);
+        String rmtMacs = rmt.attribute(IgniteNodeAttributes.ATTR_MACS);
 
         return locMacs != null && locMacs.equals(rmtMacs);
     }
@@ -1924,7 +1869,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Class loader used to load GridGain itself.
+     * @return Class loader used to load Ignite itself.
      */
     public static ClassLoader gridClassLoader() {
         return gridClassLoader;
@@ -2167,7 +2112,7 @@ public abstract class IgniteUtils {
                             }
                         }
                     }
-                }, "gridgain-clock");
+                }, "ignite-clock");
 
                 timer.setDaemon(true);
 
@@ -2394,7 +2339,7 @@ public abstract class IgniteUtils {
     @Nullable private static String resolveProjectHome() {
         assert Thread.holdsLock(IgniteUtils.class);
 
-        // Resolve GridGain home via environment variables.
+        // Resolve Ignite home via environment variables.
         String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (!F.isEmpty(ggHome0))
@@ -2474,7 +2419,7 @@ public abstract class IgniteUtils {
      *
      * @return {@code IGNITE_HOME} property.
      */
-    @Nullable public static String getGridGainHome() {
+    @Nullable public static String getIgniteHome() {
         GridTuple<String> ggHomeTup = ggHome;
 
         String ggHome0;
@@ -2485,7 +2430,7 @@ public abstract class IgniteUtils {
                 ggHomeTup = ggHome;
 
                 if (ggHomeTup == null) {
-                    // Resolve GridGain installation home directory.
+                    // Resolve Ignite installation home directory.
                     ggHome = F.t(ggHome0 = resolveProjectHome());
 
                     if (ggHome0 != null)
@@ -2502,9 +2447,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param path GridGain home. May be {@code null}.
+     * @param path Ignite home. May be {@code null}.
      */
-    public static void setGridGainHome(@Nullable String path) {
+    public static void setIgniteHome(@Nullable String path) {
         GridTuple<String> ggHomeTup = ggHome;
 
         String ggHome0;
@@ -2533,7 +2478,7 @@ public abstract class IgniteUtils {
 
         if (ggHome0 != null && !ggHome0.equals(path))
             throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
+                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
     }
 
     /**
@@ -2543,19 +2488,19 @@ public abstract class IgniteUtils {
      * If not, check if path is absolute.
      * If all checks fail, then {@code null} is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
      */
-    @Nullable public static File resolveGridGainPath(String path) {
+    @Nullable public static File resolveIgnitePath(String path) {
         assert path != null;
 
         /*
          * 1. Check relative to IGNITE_HOME specified in configuration, if any.
          */
 
-        String home = getGridGainHome();
+        String home = getIgniteHome();
 
         if (home != null) {
             File file = new File(home, path);
@@ -2590,14 +2535,14 @@ public abstract class IgniteUtils {
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
-    @Nullable public static URL resolveGridGainUrl(String path) {
-        return resolveGridGainUrl(path, true);
+    @Nullable public static URL resolveIgniteUrl(String path) {
+        return resolveIgniteUrl(path, true);
     }
 
     /**
@@ -2607,19 +2552,19 @@ public abstract class IgniteUtils {
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
     @SuppressWarnings({"UnusedCatchParameter"})
-    @Nullable public static URL resolveGridGainUrl(String path, boolean metaInf) {
-        File f = resolveGridGainPath(path);
+    @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
+        File f = resolveIgnitePath(path);
 
         if (f == null)
-            f = resolveGridGainPath("os/" + path);
+            f = resolveIgnitePath("os/" + path);
 
         if (f != null) {
             try {
@@ -4422,7 +4367,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            return GridUuidCache.onGridUuidRead(new UUID(most, least));
+            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
         }
 
         return null;
@@ -4462,7 +4407,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            UUID globalId = GridUuidCache.onGridUuidRead(new UUID(most, least));
+            UUID globalId = IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
 
             long locId = in.readLong();
 
@@ -4476,10 +4421,26 @@ public abstract class IgniteUtils {
      * Converts GridUuid to bytes.
      *
      * @param uuid GridUuid to convert.
+     * @return Bytes.
+     */
+    public static byte[] igniteUuidToBytes(IgniteUuid uuid) {
+        assert uuid != null;
+
+        byte[] out = new byte[24];
+
+        igniteUuidToBytes(uuid, out, 0);
+
+        return out;
+    }
+
+    /**
+     * Converts GridUuid to bytes.
+     *
+     * @param uuid GridUuid to convert.
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
-    public static void gridUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
+    public static void igniteUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
         assert uuid != null;
 
         U.longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
@@ -4494,12 +4455,12 @@ public abstract class IgniteUtils {
      * @param off Offset from which start reading.
      * @return GridUuid instance.
      */
-    public static IgniteUuid bytesToGridUuid(byte[] in, int off) {
+    public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
         long most = U.bytesToLong(in, off);
         long least = U.bytesToLong(in, off + 8);
         long locId = U.bytesToLong(in, off + 16);
 
-        return new IgniteUuid(GridUuidCache.onGridUuidRead(new UUID(most, least)), locId);
+        return new IgniteUuid(IgniteUuidCache.onIgniteUuidRead(new UUID(most, least)), locId);
     }
 
     /**
@@ -5652,7 +5613,7 @@ public abstract class IgniteUtils {
                     }
             }
         }
-        // Don't go into internal GridGain structures.
+        // Don't go into internal Ignite structures.
         else if (isIgnite(obj.getClass()))
             return null;
         else if (obj instanceof Iterable)
@@ -5687,7 +5648,7 @@ public abstract class IgniteUtils {
      * Checks if given class is of {@code Ignite} type.
      *
      * @param cls Class to check.
-     * @return {@code True} if given class is of {@code GridGain} type.
+     * @return {@code True} if given class is of {@code Ignite} type.
      */
     public static boolean isIgnite(Class<?> cls) {
         return cls.getName().startsWith("org.apache.ignite");
@@ -5704,18 +5665,19 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.gridgain.} with {@code o.g.},
-     * {@code org.gridgain.grid.} with {@code o.g.g.}, {@code org.gridgain.visor.} with {@code o.g.v.} and
-     * {@code org.gridgain.scalar.} with {@code o.g.s.}.
+     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
+     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
+     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
+     * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
      */
     public static String compact(String s) {
-        return s.replace("org.gridgain.grid.", "o.g.g.").
-            replace("org.gridgain.visor.", "o.g.v.").
-            replace("org.gridgain.scalar.", "o.g.s.").
-            replace("org.gridgain.", "o.g.");
+        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
+            replace("org.apache.ignite.internal.", "o.a.i.i.").
+            replace("org.apache.ignite.scalar.", "o.a.i.s.").
+            replace("org.apache.ignite.", "o.a.i.");
     }
 
     /**
@@ -6045,7 +6007,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Indicates that GridGain has been sufficiently tested on the current OS.
+     * Indicates that Ignite has been sufficiently tested on the current OS.
      *
      * @return {@code true} if current OS was sufficiently tested - {@code false} otherwise.
      */
@@ -7215,19 +7177,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets portable enabled flag from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Portable enabled flag.
-     */
-    @Nullable public static Boolean portableEnabled(ClusterNode n, @Nullable String cacheName) {
-        GridCacheAttributes attrs = cacheAttributes(n, cacheName);
-
-        return attrs == null ? false : attrs.portableEnabled();
-    }
-
-    /**
      * Gets view on all cache names started on the node.
      *
      * @param n Node to get cache names for.
@@ -8010,7 +7959,7 @@ public abstract class IgniteUtils {
      * @param msg Message to start string.
      * @param args Even length array where the odd elements are parameter names
      *      and even elements are parameter values.
-     * @return Log message, formatted as recommended by GridGain guidelines.
+     * @return Log message, formatted as recommended by Ignite guidelines.
      */
     public static String fl(String msg, Object... args) {
         assert args.length % 2 == 0;
@@ -8313,7 +8262,7 @@ public abstract class IgniteUtils {
      * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
-     * @param objs Object passed to GridGain configuration.
+     * @param objs Object passed to Ignite configuration.
      */
     public static void stopLifecycleAware(IgniteLogger log, Iterable<?> objs) {
         for (Object obj : objs) {
@@ -8332,7 +8281,7 @@ public abstract class IgniteUtils {
      * Groups given nodes by the node's physical computer (host).
      * <p>
      * Detection of the same physical computer (host) is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, GridGain considers these nodes running on the same
+     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
      * physical computer.
      *
      * @param nodes Nodes.
@@ -8474,7 +8423,7 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
-        IgniteAddressResolver addrRslvr,
+        AddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
     ) throws IgniteCheckedException {
@@ -8549,19 +8498,19 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param userWorkDir GridGain work folder provided by user.
-     * @param userGgHome GridGain home folder provided by user.
+     * @param userWorkDir Ignite work folder provided by user.
+     * @param userIgniteHome Ignite home folder provided by user.
      */
-    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userGgHome)
+    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
         throws IgniteCheckedException {
-        String ggWork0 = ggWork;
+        String igniteWork0 = igniteWork;
 
-        if (ggWork0 == null) {
+        if (igniteWork0 == null) {
             synchronized (IgniteUtils.class) {
                 // Double check.
-                ggWork0 = ggWork;
+                igniteWork0 = igniteWork;
 
-                if (ggWork0 != null)
+                if (igniteWork0 != null)
                     return;
 
                 File workDir;
@@ -8570,8 +8519,8 @@ public abstract class IgniteUtils {
                     workDir = new File(userWorkDir);
                 else if (!F.isEmpty(IGNITE_WORK_DIR))
                     workDir = new File(IGNITE_WORK_DIR);
-                else if (!F.isEmpty(userGgHome))
-                    workDir = new File(userGgHome, "work");
+                else if (!F.isEmpty(userIgniteHome))
+                    workDir = new File(userIgniteHome, "work");
                 else {
                     String tmpDirPath = System.getProperty("java.io.tmpdir");
 
@@ -8579,7 +8528,7 @@ public abstract class IgniteUtils {
                         throw new IgniteCheckedException("Failed to create work directory in OS temp " +
                             "(property 'java.io.tmpdir' is null).");
 
-                    workDir = new File(tmpDirPath, "gridgain" + File.separator + "work");
+                    workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
                 }
 
                 if (!workDir.isAbsolute())
@@ -8594,15 +8543,15 @@ public abstract class IgniteUtils {
                 if (!workDir.canWrite())
                     throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
 
-                ggWork = workDir.getAbsolutePath();
+                igniteWork = workDir.getAbsolutePath();
             }
         }
     }
 
     /**
-     * Nullifies GridGain home directory. For test purposes only.
+     * Nullifies Ignite home directory. For test purposes only.
      */
-    static void nullifyHomeDirectory() {
+    public static void nullifyHomeDirectory() {
         ggHome = null;
     }
 
@@ -8610,7 +8559,7 @@ public abstract class IgniteUtils {
      * Nullifies work directory. For test purposes only.
      */
     static void nullifyWorkDirectory() {
-        ggWork = null;
+        igniteWork = null;
     }
 
     /**
@@ -8625,7 +8574,7 @@ public abstract class IgniteUtils {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String ggWork0 = ggWork;
+            String ggWork0 = igniteWork;
 
             if (F.isEmpty(ggWork0))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
@@ -8777,36 +8726,6 @@ public abstract class IgniteUtils {
         }
 
         return youngest;
-    }
-
-    /**
-     * Tells whether provided type is portable.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable.
-     */
-    public static boolean isPortableType(Class<?> cls) {
-        assert cls != null;
-
-        return PortableObject.class.isAssignableFrom(cls) ||
-            PORTABLE_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
-    }
-    /**
-     * Tells whether provided type is portable or a collection.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable or a collection.
-     */
-    public static boolean isPortableOrCollectionType(Class<?> cls) {
-        assert cls != null;
-
-        return isPortableType(cls) ||
-            cls == Object[].class ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls);
     }
 
     /**
@@ -9218,5 +9137,36 @@ public abstract class IgniteUtils {
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
 
         return sb.toString();
+    }
+
+    /**
+     * Fully writes communication message to provided stream.
+     *
+     * @param msg Message.
+     * @param out Stream to write to.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
+     * @return Number of written bytes.
+     * @throws IOException In case of error.
+     */
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
+        assert msg != null;
+        assert out != null;
+        assert buf != null;
+        assert buf.hasArray();
+
+        boolean finished = false;
+        int cnt = 0;
+
+        while (!finished) {
+            finished = msg.writeTo(buf);
+
+            out.write(buf.array(), 0, buf.position());
+
+            cnt += buf.position();
+
+            buf.clear();
+        }
+
+        return cnt;
     }
 }

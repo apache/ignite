@@ -17,10 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Transactions facade.
@@ -141,7 +139,7 @@ public interface IgniteTransactions {
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    @Nullable public IgniteTx tx();
+    public IgniteTx tx();
 
     /**
      * @return Transaction metrics.

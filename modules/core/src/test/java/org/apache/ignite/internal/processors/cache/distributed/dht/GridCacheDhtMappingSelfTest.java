@@ -78,7 +78,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodeCnt);
 
-        GridCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).jcache(null);
 
         int kv = 1;
 

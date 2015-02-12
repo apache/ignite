@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS per-block LR eviction policy.
@@ -71,7 +71,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private static CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Start a grid with the primary file system.
@@ -104,7 +104,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheGgfsPerBlockLruEvictionPolicy();
+        evictPlc = new CacheIgniteFsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
@@ -133,7 +133,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
@@ -191,7 +191,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 

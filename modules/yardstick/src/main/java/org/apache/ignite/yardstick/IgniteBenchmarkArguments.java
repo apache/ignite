@@ -86,6 +86,14 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
     private int jobs = 10;
 
+    /** */
+    @Parameter(names = {"-cs", "--cacheStore"}, description = "Enable or disable cache store readThrough, writeThrough")
+    private boolean storeEnabled;
+
+    /** */
+    @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
+    private boolean writeBehind;
+
     /**
      * @return Transaction concurrency.
      */
@@ -196,6 +204,20 @@ public class IgniteBenchmarkArguments {
      */
     public int jobs() {
         return jobs;
+    }
+
+    /**
+     * @return {@code True} if enabled readThrough, writeThrough for cache.
+     */
+    public boolean isStoreEnabled() {
+        return storeEnabled;
+    }
+
+    /**
+     * @return {@code True} if enabled writeBehind for cache store.
+     */
+    public boolean isWriteBehind() {
+        return writeBehind;
     }
 
     /**

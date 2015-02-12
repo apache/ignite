@@ -25,9 +25,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -120,7 +121,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -151,11 +152,11 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridCache<Integer, String> cache = txIgniteNode.cache(null);
+                IgniteCache<Integer, String> cache = txIgniteNode.jcache(null);
 
                 assertNotNull(cache);
 
-                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)cache.txStart();
+                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)txIgniteNode.transactions().txStart();
 
                 IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
 
@@ -205,17 +206,17 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             assertFalse(e.getValue().isEmpty());
 
             for (ClusterNode node : e.getValue()) {
-                compute(G.ignite(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(node.id()).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.peek(key));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
@@ -228,7 +229,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.cache(null).get(e.getKey()));
+                    g.jcache(null).get(e.getKey()));
             }
         }
     }
@@ -238,14 +239,14 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
                 throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
                     super.sendMessage(node, msg);
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         return cfg;
     }

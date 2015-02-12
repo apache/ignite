@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -59,14 +62,14 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
      */
     public void testIteration()  throws Exception {
         try {
-            final GridCache<String, Integer> cache = cache();
+            final IgniteCache<String, Integer> cache = jcache();
 
             final int entryCnt = 1000;
 
             for (int i = 0; i < entryCnt; i++)
                 cache.put(String.valueOf(i), i);
 
-            Collection<CacheEntry<String, Integer>> entries = new ArrayList<>(10_000);
+            Collection<Cache.Entry<String, Integer>> entries = new ArrayList<>(10_000);
 
             for (int i = 0; i < 10_000; i++)
                 entries.add(cache.randomEntry());
@@ -75,8 +78,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             startGrid(2);
             startGrid(3);
 
-            for (CacheEntry<String, Integer> entry : entries)
-                entry.partition();
+            for (Cache.Entry<String, Integer> entry : entries)
+                entry.getValue();
 
             for (int i = 0; i < entryCnt; i++)
                 cache.remove(String.valueOf(i));

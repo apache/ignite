@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -288,29 +287,24 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
                     long threadId = Thread.currentThread().getId();
 
-                    try {
-                        long itNum;
+                    long itNum;
 
-                        while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
-                            Collections.shuffle(threadKeys);
+                    while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
+                        Collections.shuffle(threadKeys);
 
-                            List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
+                        List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
 
-                            Collections.sort(iterKeys);
+                        Collections.sort(iterKeys);
 
-                            Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
+                        Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
 
-                            for (Integer key : iterKeys)
-                                vals.put(key, String.valueOf(key) + threadId);
+                        for (Integer key : iterKeys)
+                            vals.put(key, String.valueOf(key) + threadId);
 
-                            cache(0).putAll(vals);
+                        jcache(0).putAll(vals);
 
-                            if (itNum > 0 && itNum % 5000 == 0)
-                                info(">>> " + itNum + " iterations completed.");
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail("Unexpected exception caught: " + e);
+                        if (itNum > 0 && itNum % 5000 == 0)
+                            info(">>> " + itNum + " iterations completed.");
                     }
                 }
             }, THREAD_CNT);
@@ -405,8 +399,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             assert !lock.tryLock();
 
-            assert g0.cache(null).isLocked(key);
-            assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
+            assert g0.jcache(null).isLocalLocked(key, false);
+            assert !g0.jcache(null).isLocalLocked(key, true) : "Key can not be locked by current thread.";
 
             unlockLatch.countDown();
             unlockFut.get();
@@ -432,11 +426,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < 100; i++)
-                g0.cache(null).put(i, i);
+                g0.jcache(null).put(i, i);
 
             for (int i = 0; i < 100; i++) {
-                try (IgniteTx tx = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Integer val = (Integer) g0.cache(null).get(i);
+                try (IgniteTx tx = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Integer val = (Integer) g0.jcache(null).get(i);
 
                     assertEquals((Integer) i, val);
                 }
@@ -458,19 +452,21 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = explicitTx ? cache().txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? grid().transactions().txStart(concurrency, isolation) : null;
 
             try {
-                cache().putAll(F.asMap(1, "Hello", 2, "World"));
+                IgniteCache<Object, Object> cache = jcache();
+
+                cache.putAll(F.asMap(1, "Hello", 2, "World"));
 
                 if (tx != null)
                     tx.commit();
 
-                System.out.println(cache().metrics());
+                System.out.println(cache.metrics());
 
-                assertEquals("Hello", cache().get(1));
-                assertEquals("World", cache().get(2));
-                assertNull(cache().get(3));
+                assertEquals("Hello", cache.get(1));
+                assertEquals("World", cache.get(2));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)
@@ -491,26 +487,28 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = cache().txStart(concurrency, isolation);
+            IgniteTx tx = grid().transactions().txStart(concurrency, isolation);
 
             try {
-                String old = (String)cache().get(1);
+                IgniteCache<Object, Object> cache = jcache();
+
+                String old = (String)cache.get(1);
 
                 assert old == null;
 
-                String replaced = (String)cache().put(1, "newVal");
+                String replaced = (String)cache.getAndPut(1, "newVal");
 
                 assert replaced == null;
 
-                replaced = (String)cache().put(1, "newVal2");
+                replaced = (String)cache.getAndPut(1, "newVal2");
 
                 assertEquals("newVal", replaced);
 
                 if (tx != null)
                     tx.commit();
 
-                assertEquals("newVal2", cache().get(1));
-                assertNull(cache().get(3));
+                assertEquals("newVal2", cache.get(1));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)
@@ -547,16 +545,16 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k0, "val" + k0, k1, "val" + k1, k2, "val" + k2);
 
-            IgniteTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
-                    g0.cache(null).put(k0, "val" + k0);
-                    g0.cache(null).put(k1, "val" + k1);
-                    g0.cache(null).put(k2, "val" + k2);
+                    g0.jcache(null).put(k0, "val" + k0);
+                    g0.jcache(null).put(k1, "val" + k1);
+                    g0.jcache(null).put(k2, "val" + k2);
                 }
                 else
-                    g0.cache(null).putAll(map);
+                    g0.jcache(null).putAll(map);
 
                 if (tx != null)
                     tx.commit();
@@ -567,26 +565,26 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals("val" + k0, g0.cache(null).get(k0));
-                assertEquals("val" + k1, g0.cache(null).get(k1));
-                assertEquals("val" + k2, g0.cache(null).get(k2));
+                assertEquals("val" + k0, g0.jcache(null).get(k0));
+                assertEquals("val" + k1, g0.jcache(null).get(k1));
+                assertEquals("val" + k2, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertEquals(map, res);
             }
 
-            tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
-                    g0.cache(null).remove(k0);
-                    g0.cache(null).remove(k1);
-                    g0.cache(null).remove(k2);
+                    g0.jcache(null).remove(k0);
+                    g0.jcache(null).remove(k1);
+                    g0.jcache(null).remove(k2);
                 }
                 else
-                    g0.cache(null).removeAll(map.keySet());
+                    g0.jcache(null).removeAll(map.keySet());
 
                 if (tx != null)
                     tx.commit();
@@ -597,12 +595,12 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals(null, g0.cache(null).get(k0));
-                assertEquals(null, g0.cache(null).get(k1));
-                assertEquals(null, g0.cache(null).get(k2));
+                assertEquals(null, g0.jcache(null).get(k0));
+                assertEquals(null, g0.jcache(null).get(k1));
+                assertEquals(null, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertTrue(res.isEmpty());
             }
@@ -636,15 +634,15 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k1, "val" + k1, k2, "val" + k2);
 
-            IgniteTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
-                    g0.cache(null).put(k1, "val" + k1);
-                    g0.cache(null).put(k2, "val" + k2);
+                    g0.jcache(null).put(k1, "val" + k1);
+                    g0.jcache(null).put(k2, "val" + k2);
                 }
                 else
-                    g0.cache(null).putAll(map);
+                    g0.jcache(null).putAll(map);
 
                 if (tx != null)
                     tx.commit();
@@ -655,24 +653,24 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals("val" + k1, g0.cache(null).get(k1));
-                assertEquals("val" + k2, g0.cache(null).get(k2));
+                assertEquals("val" + k1, g0.jcache(null).get(k1));
+                assertEquals("val" + k2, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertEquals(map, res);
             }
 
-            tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
-                    g0.cache(null).remove(k1);
-                    g0.cache(null).remove(k2);
+                    g0.jcache(null).remove(k1);
+                    g0.jcache(null).remove(k2);
                 }
                 else
-                    g0.cache(null).removeAll(map.keySet());
+                    g0.jcache(null).removeAll(map.keySet());
 
                 if (tx != null)
                     tx.commit();
@@ -683,11 +681,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals(null, g0.cache(null).get(k1));
-                assertEquals(null, g0.cache(null).get(k2));
+                assertEquals(null, g0.jcache(null).get(k1));
+                assertEquals(null, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertTrue(res.isEmpty());
             }
@@ -741,7 +739,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
-        g0.cache(null).putAll(map);
+        g0.jcache(null).putAll(map);
 
         checkStore(g0, map);
         checkStore(g1, Collections.<Integer, String>emptyMap());
@@ -749,8 +747,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         clearStores(3);
 
-        try (IgniteTx tx = g0.cache(null).txStart(OPTIMISTIC, READ_COMMITTED)) {
-            g0.cache(null).putAll(map);
+        try (IgniteTx tx = g0.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            g0.jcache(null).putAll(map);
 
             tx.commit();
 
@@ -818,20 +816,20 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map0 = F.asMap(k0, "val" + k0, k1, "val" + k1, k2, "val" + k2);
 
-            g0.cache(null).putAll(map0);
+            g0.jcache(null).putAll(map0);
 
             Map<Integer, String> map = F.asMap(k0, "value" + k0, k1, "value" + k1, k2, "value" + k2);
 
-            IgniteTx tx = g0.cache(null).txStart(concurrency, isolation);
+            IgniteTx tx = g0.transactions().txStart(concurrency, isolation);
 
             try {
                 if (separate) {
-                    g0.cache(null).put(k0, "value" + k0);
-                    g0.cache(null).put(k1, "value" + k1);
-                    g0.cache(null).put(k2, "value" + k2);
+                    g0.jcache(null).put(k0, "value" + k0);
+                    g0.jcache(null).put(k1, "value" + k1);
+                    g0.jcache(null).put(k2, "value" + k2);
                 }
                 else
-                    g0.cache(null).putAll(map);
+                    g0.jcache(null).putAll(map);
 
                 tx.rollback();
             }
@@ -840,26 +838,26 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals("val" + k0, g0.cache(null).get(k0));
-                assertEquals("val" + k1, g0.cache(null).get(k1));
-                assertEquals("val" + k2, g0.cache(null).get(k2));
+                assertEquals("val" + k0, g0.jcache(null).get(k0));
+                assertEquals("val" + k1, g0.jcache(null).get(k1));
+                assertEquals("val" + k2, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertEquals(map0, res);
             }
 
-            tx = g0.cache(null).txStart(concurrency, isolation);
+            tx = g0.transactions().txStart(concurrency, isolation);
 
             try {
                 if (separate) {
-                    g0.cache(null).remove(k0);
-                    g0.cache(null).remove(k1);
-                    g0.cache(null).remove(k2);
+                    g0.jcache(null).remove(k0);
+                    g0.jcache(null).remove(k1);
+                    g0.jcache(null).remove(k2);
                 }
                 else
-                    g0.cache(null).removeAll(map.keySet());
+                    g0.jcache(null).removeAll(map.keySet());
 
                 tx.rollback();
             }
@@ -868,12 +866,12 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             }
 
             if (separate) {
-                assertEquals("val" + k0, g0.cache(null).get(k0));
-                assertEquals("val" + k1, g0.cache(null).get(k1));
-                assertEquals("val" + k2, g0.cache(null).get(k2));
+                assertEquals("val" + k0, g0.jcache(null).get(k0));
+                assertEquals("val" + k1, g0.jcache(null).get(k1));
+                assertEquals("val" + k2, g0.jcache(null).get(k2));
             }
             else {
-                Map<Object, Object> res = g0.cache(null).getAll(map.keySet());
+                Map<Object, Object> res = g0.jcache(null).getAll(map.keySet());
 
                 assertEquals(map0, res);
             }
@@ -972,7 +970,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private static Integer forPrimary(Ignite g, int prev) {
         for (int i = prev + 1; i < 10000; i++) {
-            if (g.cache(null).affinity().mapKeyToNode(i).id().equals(g.cluster().localNode().id()))
+            if (g.affinity(null).mapKeyToNode(i).id().equals(g.cluster().localNode().id()))
                 return i;
         }
 

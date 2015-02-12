@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -27,11 +27,11 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="restEnabled" value="false"/>
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -49,7 +49,7 @@
                     <property name="preloadMode" value="SYNC"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -67,7 +67,7 @@
                     <property name="preloadMode" value="SYNC"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <property name="cacheMode" value="REPLICATED"/>

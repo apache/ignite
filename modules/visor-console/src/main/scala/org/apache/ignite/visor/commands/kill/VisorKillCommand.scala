@@ -17,8 +17,8 @@
 
 package org.apache.ignite.visor.commands.kill
 
-import org.apache.ignite.internal.GridNodeAttributes
-import GridNodeAttributes._
+import org.apache.ignite.internal.IgniteNodeAttributes
+import IgniteNodeAttributes._
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
@@ -162,7 +162,7 @@ class VisorKillCommand {
                 }
                 else if (id.isDefined)
                     try {
-                        node = grid.node(java.util.UUID.fromString(id.get))
+                        node = ignite.node(java.util.UUID.fromString(id.get))
 
                         if (node == null)
                             scold("'id' does not match any node : " + args).^^
@@ -185,7 +185,7 @@ class VisorKillCommand {
                 val op = if (restart) "restart" else "kill"
 
                 try
-                    killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
+                    killOrRestart(if (node == null) ignite.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
                     case _: IgniteException => scold("Failed to " + op + " due to system error.").^^
                 }
@@ -219,7 +219,7 @@ class VisorKillCommand {
 
         val op = if (restart) "restart" else "kill"
 
-        if (nodes.size() == grid.nodes().size())
+        if (nodes.size() == ignite.nodes().size())
             ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" =>  ask("You are about to " + op + " ALL nodes. " +
                     "Are you 100% sure? (y/n) [n]: ", "n") match {
@@ -244,9 +244,9 @@ class VisorKillCommand {
             }
 
         if (restart)
-            grid.restartNodes(nodes)
+            ignite.restartNodes(nodes)
         else
-            grid.stopNodes(nodes)
+            ignite.stopNodes(nodes)
     }
 
     /**

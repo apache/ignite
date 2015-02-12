@@ -86,7 +86,7 @@ import java.util.concurrent.atomic.*;
  *               &lt;property name=&quot;mappingResources&quot;&gt;
  *                   &lt;list&gt;
  *                       &lt;value&gt;
- *                           org/gridgain/grid/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml
+ *                           org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml
  *                       &lt;/value&gt;
  *                   &lt;/list&gt;
  *               &lt;/property&gt;
@@ -185,7 +185,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private String hibernateCfgPath;
 
     /** Log. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */

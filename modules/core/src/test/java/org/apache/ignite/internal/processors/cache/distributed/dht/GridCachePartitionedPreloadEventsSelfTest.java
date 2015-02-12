@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -30,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -99,7 +100,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Collection<Integer> keys = new HashSet<>();
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.jcache(null);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);
@@ -108,16 +109,16 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Ignite g2 = startGrid("g2");
 
-        Map<ClusterNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(keys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(keys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
 
         for (Object key : g2Keys)
-            g2.cache(null).put(key, "changed val");
+            g2.jcache(null).put(key, "changed val");
 
-        Collection<IgniteEvent> evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, g2Keys);
     }

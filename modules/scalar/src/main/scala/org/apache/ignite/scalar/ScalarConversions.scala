@@ -17,6 +17,8 @@
 
 package org.apache.ignite.scalar
 
+import javax.cache.Cache
+
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache._
 import org.apache.ignite.cluster.ClusterGroup
@@ -36,7 +38,7 @@ import scala.util.control.Breaks._
 /**
  * ==Overview==
  * Mixin for `scalar` object providing `implicit` and `explicit` conversions between
- * Java and Scala GridGain components.
+ * Java and Scala Ignite components.
  *
  * It is very important to review this class as it defines what `implicit` conversions
  * will take place when using Scalar. Note that object `scalar` mixes in this
@@ -270,8 +272,8 @@ trait ScalarConversions {
      *
      * @param p Cache KV-pair predicate to convert.
      */
-    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: CacheEntry[K, V]) => Boolean =
-        (e: CacheEntry[K, V]) =>
+    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: Cache.Entry[K, V]) => Boolean =
+        (e: Cache.Entry[K, V]) =>
             p(e.getKey, e.getValue)
 
     /**
@@ -700,7 +702,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toCallable[R](f: () => R): Callable[R] =
+    implicit def toCallable[R](f: () => R): IgniteCallable[R] =
         f match {
             case p: ScalarOutClosureFunction[R] => p.inner
             case _ => new ScalarOutClosure[R](f)
@@ -722,7 +724,7 @@ trait ScalarConversions {
      *
      * @param f Grid closure to convert.
      */
-    implicit def fromOutClosure[R](f: Callable[R]): () => R =
+    implicit def fromOutClosure[R](f: IgniteCallable[R]): () => R =
         new ScalarOutClosureFunction[R](f)
 
     /**
@@ -738,7 +740,7 @@ trait ScalarConversions {
       *
       * @param f Java-side closure to pimp.
       */
-    implicit def outClosureDotScala[R](f: Callable[R]) = new {
+    implicit def outClosureDotScala[R](f: IgniteCallable[R]) = new {
         def scala: () => R =
             fromOutClosure(f)
     }
@@ -758,7 +760,7 @@ trait ScalarConversions {
      *
      * @param f Scala function to convert.
      */
-    implicit def toRunnable(f: () => Unit): Runnable =
+    implicit def toRunnable(f: () => Unit): IgniteRunnable =
         f match {
             case (f: ScalarAbsClosureFunction) => f.inner
             case _ => new ScalarAbsClosure(f)

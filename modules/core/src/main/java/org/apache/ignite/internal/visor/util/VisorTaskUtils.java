@@ -44,8 +44,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.fs.IgniteFsConfiguration.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
@@ -86,10 +86,6 @@ public class VisorTaskUtils {
     private static final int[] VISOR_NON_TASK_EVTS = {
         EVT_CLASS_DEPLOY_FAILED,
         EVT_TASK_DEPLOY_FAILED,
-
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED,
 
         EVT_AUTHORIZATION_FAILED,
         EVT_AUTHENTICATION_FAILED,
@@ -315,11 +311,11 @@ public class VisorTaskUtils {
     /**
      * Checks for explicit events configuration.
      *
-     * @param g Grid instance.
+     * @param ignite Grid instance.
      * @return {@code true} if all task events explicitly specified in configuration.
      */
-    public static boolean checkExplicitTaskMonitoring(Ignite g) {
-        int[] evts = g.configuration().getIncludeEventTypes();
+    public static boolean checkExplicitTaskMonitoring(Ignite ignite) {
+        int[] evts = ignite.configuration().getIncludeEventTypes();
 
         if (F.isEmpty(evts))
             return false;
@@ -333,8 +329,8 @@ public class VisorTaskUtils {
     }
 
     /** */
-    private static final Comparator<IgniteEvent> EVENTS_ORDER_COMPARATOR = new Comparator<IgniteEvent>() {
-        @Override public int compare(IgniteEvent o1, IgniteEvent o2) {
+    private static final Comparator<Event> EVENTS_ORDER_COMPARATOR = new Comparator<Event>() {
+        @Override public int compare(Event o1, Event o2) {
             return Long.compare(o1.localOrder(), o2.localOrder());
         }
     };
@@ -342,17 +338,17 @@ public class VisorTaskUtils {
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
-     * @param g Target grid.
+     * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
      * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite g, String evtOrderKey, String evtThrottleCntrKey,
+    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        assert g != null;
+        assert ignite != null;
 
-        ClusterNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -365,8 +361,8 @@ public class VisorTaskUtils {
         // Flag for detecting gaps between events.
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
-        IgnitePredicate<IgniteEvent> p = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))
                     lastFound.set(true);
@@ -377,11 +373,11 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<IgniteEvent> evts = g.events().localQuery(p);
+        Collection<Event> evts = ignite.events().localQuery(p);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
-            IgniteEvent maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
+            Event maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
 
             nl.put(evtOrderKey, maxEvt.localOrder());
         }
@@ -395,9 +391,9 @@ public class VisorTaskUtils {
         Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
-            res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
+            res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
 
-        for (IgniteEvent e : evts) {
+        for (Event e : evts) {
             int tid = e.type();
             IgniteUuid id = e.id();
             String name = e.name();
@@ -406,42 +402,37 @@ public class VisorTaskUtils {
             String msg = e.message();
             String shortDisplay = e.shortDisplay();
 
-            if (e instanceof IgniteTaskEvent) {
-                IgniteTaskEvent te = (IgniteTaskEvent)e;
+            if (e instanceof TaskEvent) {
+                TaskEvent te = (TaskEvent)e;
 
                 res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                     te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
             }
-            else if (e instanceof IgniteJobEvent) {
-                IgniteJobEvent je = (IgniteJobEvent)e;
+            else if (e instanceof JobEvent) {
+                JobEvent je = (JobEvent)e;
 
                 res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
                     je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
             }
-            else if (e instanceof IgniteDeploymentEvent) {
-                IgniteDeploymentEvent de = (IgniteDeploymentEvent)e;
+            else if (e instanceof DeploymentEvent) {
+                DeploymentEvent de = (DeploymentEvent)e;
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
             }
-            else if (e instanceof IgniteLicenseEvent) {
-                IgniteLicenseEvent le = (IgniteLicenseEvent)e;
-
-                res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
-            }
-            else if (e instanceof IgniteAuthorizationEvent) {
-                IgniteAuthorizationEvent ae = (IgniteAuthorizationEvent)e;
+            else if (e instanceof AuthorizationEvent) {
+                AuthorizationEvent ae = (AuthorizationEvent)e;
 
                 res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                     ae.subject()));
             }
-            else if (e instanceof IgniteAuthenticationEvent) {
-                IgniteAuthenticationEvent ae = (IgniteAuthenticationEvent)e;
+            else if (e instanceof AuthenticationEvent) {
+                AuthenticationEvent ae = (AuthenticationEvent)e;
 
                 res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
                     ae.subjectId(), ae.login()));
             }
-            else if (e instanceof IgniteSecureSessionEvent) {
-                IgniteSecureSessionEvent se = (IgniteSecureSessionEvent)e;
+            else if (e instanceof SecureSessionEvent) {
+                SecureSessionEvent se = (SecureSessionEvent)e;
 
                 res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
                     se.subjectId()));
@@ -622,7 +613,7 @@ public class VisorTaskUtils {
         else
             throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
 
-        URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
+        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }

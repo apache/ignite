@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -162,7 +162,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** {@inheritDoc} */
         @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) {
             try {
-                Path logsDir = resolveGgfsProfilerLogsDir(g.fileSystem(arg));
+                Path logsDir = resolveGgfsProfilerLogsDir(ignite.fileSystem(arg));
 
                 if (logsDir != null)
                     return parse(logsDir, arg);
@@ -485,7 +485,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                             // Files was deleted, skip it.
                         }
                         catch (Exception e) {
-                            g.log().warning("Failed to parse GGFS profiler log file: " + p, e);
+                            ignite.log().warning("Failed to parse GGFS profiler log file: " + p, e);
                         }
                     }
                 }

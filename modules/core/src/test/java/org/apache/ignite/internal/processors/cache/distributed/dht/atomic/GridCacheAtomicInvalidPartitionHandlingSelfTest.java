@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -24,8 +25,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -157,7 +158,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         startGrids(gridCnt);
 
         try {
-            final GridCache<Object, Object> cache = grid(0).cache(null);
+            final IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             final int range = 100_000;
 
@@ -199,7 +200,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 cache.putAll(upd);
                             }
                         }
-                        catch (CachePartialUpdateCheckedException ignored) {
+                        catch (CachePartialUpdateException ignored) {
                             // No-op.
                         }
                     }
@@ -228,7 +229,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             fut.get();
 
             for (int k = 0; k < range; k++) {
-                Collection<ClusterNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(k);
+                Collection<ClusterNode> affNodes = affinity(cache).mapKeyToPrimaryAndBackups(k);
 
                 // Test is valid with at least one backup.
                 assert affNodes.size() >= 2;
@@ -296,7 +297,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     private static class DelayCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -45,7 +44,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -54,7 +53,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
     /** Cache updater. */
-    private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
+    private Updater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -177,17 +176,13 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
-
-        assert attrs != null : cacheName;
-
-        portableEnabled = attrs.portableEnabled();
+        portableEnabled = ctx.portable().portableEnabled(node, cacheName);
 
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 UUID id = discoEvt.eventNode().id();
 
@@ -276,7 +271,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void updater(IgniteDataLoadCacheUpdater<K, V> updater) {
+    @Override public void updater(Updater<K, V> updater) {
         A.notNull(updater, "updater");
 
         this.updater = updater;

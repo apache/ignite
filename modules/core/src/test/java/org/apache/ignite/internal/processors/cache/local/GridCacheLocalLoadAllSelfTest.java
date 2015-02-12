@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -52,7 +51,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         assert ignite != null;
 
-        ignite.cache("test-cache").getAll(Collections.singleton(1));
+        ignite.jcache("test-cache").getAll(Collections.singleton(1));
     }
 
     /** {@inheritDoc} */

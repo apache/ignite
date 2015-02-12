@@ -19,6 +19,7 @@ package org.apache.ignite.cache.eviction.lru;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -33,14 +34,11 @@ import java.util.*;
  */
 public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
     CacheLruEvictionPolicyMBean {
-    /** Tag. */
-    private final String meta = UUID.randomUUID().toString();
-
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<CacheEntry<K, V>> queue =
+    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /**
@@ -86,22 +84,17 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
         return queue.size();
     }
 
-    /** {@inheritDoc} */
-    @Override public String getMetaAttributeName() {
-        return meta;
-    }
-
     /**
      * Gets read-only view on internal {@code FIFO} queue in proper order.
      *
      * @return Read-only view ono internal {@code 'FIFO'} queue.
      */
-    public Collection<CacheEntry<K, V>> queue() {
+    public Collection<EvictableEntry<K, V>> queue() {
         return Collections.unmodifiableCollection(queue);
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -110,7 +103,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                 shrink();
         }
         else {
-            Node<CacheEntry<K, V>> node = entry.removeMeta(meta);
+            Node<EvictableEntry<K, V>> node = entry.removeMeta();
 
             if (node != null)
                 queue.unlinkx(node);
@@ -121,15 +114,15 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(CacheEntry<K, V> entry) {
-        Node<CacheEntry<K, V>> node = entry.meta(meta);
+    private boolean touch(EvictableEntry<K, V> entry) {
+        Node<EvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.
         if (node == null) {
             while (true) {
                 node = queue.offerLastx(entry);
 
-                if (entry.putMetaIfAbsent(meta, node) != null) {
+                if (entry.putMetaIfAbsent(node) != null) {
                     // Was concurrently added, need to clear it from queue.
                     queue.unlinkx(node);
 
@@ -147,15 +140,15 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                     return true;
                 }
                 // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
-                else if (!entry.removeMeta(meta, node))
+                else if (!entry.removeMeta(node))
                     return false;
             }
         }
         else if (queue.unlinkx(node)) {
             // Move node to tail.
-            Node<CacheEntry<K, V>> newNode = queue.offerLastx(entry);
+            Node<EvictableEntry<K, V>> newNode = queue.offerLastx(entry);
 
-            if (!entry.replaceMeta(meta, node, newNode))
+            if (!entry.replaceMeta(node, newNode))
                 // Was concurrently added, need to clear it from queue.
                 queue.unlinkx(newNode);
         }
@@ -173,13 +166,13 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
         int startSize = queue.sizex();
 
         for (int i = 0; i < startSize && queue.sizex() > max; i++) {
-            CacheEntry<K, V> entry = queue.poll();
+            EvictableEntry<K, V> entry = queue.poll();
 
             if (entry == null)
                 break;
 
             if (!entry.evict()) {
-                entry.removeMeta(meta);
+                entry.removeMeta();
 
                 touch(entry);
             }

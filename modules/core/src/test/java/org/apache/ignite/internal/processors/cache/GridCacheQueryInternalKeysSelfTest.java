@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -32,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
- * Test for http://gridgain.jira.com/browse/GG-3979.
+ * Cache query internal keys self test.
  */
 public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTest {
     /** Grid count. */

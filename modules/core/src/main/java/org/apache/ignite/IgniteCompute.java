@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
@@ -35,7 +34,7 @@ import java.util.concurrent.*;
  * in the {@link ClusterGroup}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
- * GridCompute c = GridGain.grid().compute();
+ * GridCompute c = Ignition.ignite().compute();
  * </pre>
  * The methods are grouped as follows:
  * <ul>
@@ -55,20 +54,20 @@ import java.util.concurrent.*;
  * not have any alive nodes), then {@link org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
- * by the configured marshaller. For example, {@link IgniteOptimizedMarshaller} requires {@link Serializable}
+ * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
- * GridGain provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
+ * Ignite provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
  * {@link Serializable} and should be used to run computations on the grid.
  * <h1 class="header">Load Balancing</h1>
- * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation
+ * In all cases other than {@code broadcast(...)}, Ignite must select a node for a computation
  * to be executed. The node will be selected based on the underlying {@link LoadBalancingSpi},
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom
  * load balancing behavior, consider implementing {@link ComputeTask} directly.
  * <h1 class="header">Fault Tolerance</h1>
- * GridGain guarantees that as long as there is at least one grid node standing, every job will be
+ * Ignite guarantees that as long as there is at least one grid node standing, every job will be
  * executed. Jobs will automatically failover to another node if a remote node crashed
  * or has rejected execution due to lack of resources. By default, in case of failover, next
  * load balanced node will be picked for job execution. Also jobs will never be re-routed to the
@@ -79,11 +78,11 @@ import java.util.concurrent.*;
  * ignite resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
- * <li>{@link IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
- * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteSpringApplicationContextResource}</li>
- * <li>{@link IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * Here is an example of how to inject instance of {@link Ignite} into a computation:
@@ -123,7 +122,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteException;
+    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
@@ -140,7 +139,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @see ComputeJobContext#affinityKey()
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws IgniteException;
+    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -201,7 +200,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void broadcast(Runnable job) throws IgniteException;
+    public void broadcast(IgniteRunnable job) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
@@ -214,7 +213,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> broadcast(Callable<R> job) throws IgniteException;
+    public <R> Collection<R> broadcast(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -240,7 +239,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Runnable job) throws IgniteException;
+    public void run(IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
@@ -251,7 +250,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Collection<? extends Runnable> jobs) throws IgniteException;
+    public void run(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
      * Executes provided job on a node in this grid projection. The result of the
@@ -264,7 +263,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> R call(Callable<R> job) throws IgniteException;
+    public <R> R call(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection.
@@ -277,7 +276,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws IgniteException;
+    public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection. The returned
@@ -291,7 +290,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
+    public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
      * Executes provided closure job on a node in this grid projection. This method is different
@@ -356,7 +355,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withName("MyTask").run(new MyRunnable() {...});
+     * Ignition.ignite().withName("MyTask").run(new MyRunnable() {...});
      * </pre>
      *
      * @param taskName Task name.
@@ -372,7 +371,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withTimeout(10000).run(new MyRunnable() {...});
+     * Ignition.ignite().withTimeout(10000).run(new MyRunnable() {...});
      * </pre>
      *
      * @param timeout Computation timeout in milliseconds.
@@ -388,7 +387,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
+     * Ignition.ignite().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
      * @return This {@code GridCompute} instance for chaining calls.
@@ -407,7 +406,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Another way of class deployment is deployment from local class path.
      * Classes from local class path always have a priority over P2P deployed ones.
      * <p>
-     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. GridGain
+     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. Ignition
      * maintains internal version of deployment for each instance of deployment (analogous to
      * class and class loader in Java). Execution happens always on the latest deployed instance.
      * <p>

@@ -59,10 +59,10 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@code GridFifoQueueCollisionSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *       ...
  *       &lt;property name="collisionSpi"&gt;
- *           &lt;bean class="org.gridgain.grid.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
+ *           &lt;bean class="org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
  *               &lt;property name="parallelJobsNumber" value="1"/&gt;
  *           &lt;/bean&gt;
  *       &lt;/property&gt;
@@ -93,7 +93,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     private volatile int waitJobsNum = DFLT_WAIT_JOBS_NUM;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that were active last time. */

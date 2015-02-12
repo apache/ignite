@@ -52,7 +52,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private static final String TEST_LATCH_NAME = "test-latch";
 
     /** */
-    private static final IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
+    private static final CollectionConfiguration colCfg = new CollectionConfiguration();
 
     /** Maximum added value. */
     private static final int MAX_INT = 1000;
@@ -379,7 +379,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
         final Ignite ignite = G.ignite();
 
-        final GridCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
         assert cache != null;
 
@@ -390,7 +390,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
                     while (!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 writeClos.apply(ignite);
 
                                 tx.commit();
@@ -412,7 +412,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
                     while(!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 readClos.apply(ignite);
 
                                 tx.commit();

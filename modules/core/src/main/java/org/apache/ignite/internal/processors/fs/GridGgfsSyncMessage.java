@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -73,7 +73,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsSyncMessage _clone = new GridGgfsSyncMessage();
 
         clone0(_clone);
@@ -82,7 +82,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridGgfsSyncMessage _clone = (GridGgfsSyncMessage)_msg;
@@ -94,30 +94,30 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putLong(order))
+                if (!writer.writeLong("order", order))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(res))
+                if (!writer.writeBoolean("res", res))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -127,27 +127,27 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (buf.remaining() < 8)
+                order = reader.readLong("order");
+
+                if (!reader.isLastRead())
                     return false;
 
-                order = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                res = reader.readBoolean("res");
+
+                if (!reader.isLastRead())
                     return false;
 
-                res = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -156,6 +156,6 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 72;
+        return 71;
     }
 }

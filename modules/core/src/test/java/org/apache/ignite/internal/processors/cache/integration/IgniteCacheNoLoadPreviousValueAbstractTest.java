@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -45,7 +44,7 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }
@@ -191,16 +190,16 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
      * @throws Exception If failed.
      */
     protected Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
-        ArrayList<Integer> keys = new ArrayList<>();
+        Collection<Integer> keys = new ArrayList<>();
 
         keys.add(primaryKeys(cache, 1, lastKey).get(0));
 
         if (gridCount() > 1) {
             keys.add(backupKeys(cache, 1, lastKey).get(0));
 
-            if (cache.configuration().getCacheMode() != REPLICATED)
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != REPLICATED)
                 keys.add(nearKeys(cache, 1, lastKey).get(0));
         }
 

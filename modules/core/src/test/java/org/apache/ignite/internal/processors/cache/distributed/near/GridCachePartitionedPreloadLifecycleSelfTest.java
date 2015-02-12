@@ -46,8 +46,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(IgniteTxConcurrency.OPTIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(IgniteTxIsolation.READ_COMMITTED);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(IgniteTxConcurrency.OPTIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(IgniteTxIsolation.READ_COMMITTED);
 
         CacheConfiguration cc1 = defaultCacheConfiguration();
 
@@ -82,54 +82,47 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             private Ignite ignite;
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
-                try {
-                    switch (evt) {
-                        case AFTER_GRID_START: {
-                            GridCache<Object, MyValue> c1 = ignite.cache("one");
-                            GridCache<Object, MyValue> c2 = ignite.cache("two");
+                switch (evt) {
+                    case AFTER_GRID_START: {
+                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
 
-                            if (!ignite.name().contains("Test0")) {
-                                info("Keys already in cache:");
+                        if (!ignite.name().contains("Test0")) {
+                            info("Keys already in cache:");
 
-                                for (Object k : c1.keySet())
-                                    info("Cache1: " + k.toString());
+                            for (Object k : entrySet(c1))
+                                info("Cache1: " + k.toString());
 
-                                for (Object k : c2.keySet())
-                                    info("Cache2: " + k.toString());
+                            for (Object k : entrySet(c2))
+                                info("Cache2: " + k.toString());
 
-                                return;
-                            }
-
-                            info("Populating cache data...");
-
-                            int i = 0;
-
-                            for (Object key : keys) {
-                                c1.put(key, new MyValue(value(key)));
-
-                                if (i++ % 2 == 0)
-                                    c2.put(key, new MyValue(value(key)));
-                            }
-
-                            assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() +
-                                ", entries=" + c1.entrySet() + ']';
-                            assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() +
-                                ", entries=" + c2.entrySet() + ']';
-
-                            break;
+                            return;
                         }
 
-                        case BEFORE_GRID_START:
-                        case BEFORE_GRID_STOP:
-                        case AFTER_GRID_STOP: {
-                            info("Lifecycle event: " + evt);
+                        info("Populating cache data...");
 
-                            break;
+                        int i = 0;
+
+                        for (Object key : keys) {
+                            c1.put(key, new MyValue(value(key)));
+
+                            if (i++ % 2 == 0)
+                                c2.put(key, new MyValue(value(key)));
                         }
+
+                        assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() + ']';
+                        assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() + ']';
+
+                        break;
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+
+                    case BEFORE_GRID_START:
+                    case BEFORE_GRID_STOP:
+                    case AFTER_GRID_STOP: {
+                        info("Lifecycle event: " + evt);
+
+                        break;
+                    }
                 }
             }
         };
@@ -150,8 +143,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c1 = grid(j).cache("one");
-                GridCache<Object, MyValue> c2 = grid(j).cache("two");
+                IgniteCache<Object, MyValue> c1 = grid(j).jcache("one");
+                IgniteCache<Object, MyValue> c2 = grid(j).jcache("two");
 
                 int k = 0;
 

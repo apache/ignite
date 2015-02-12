@@ -37,6 +37,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -88,14 +89,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        assert cache().tx() == null;
-        assert cache().isEmpty() : "Cache is not empty: " + cache().entrySet();
-        assert cache().keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+        assert jcache().unwrap(Ignite.class).transactions().tx() == null;
+        assert jcache().localSize() == 0;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteTx tx = cache().tx();
+        IgniteTx tx = jcache().unwrap(Ignite.class).transactions().tx();
 
         if (tx != null) {
             tx.close();
@@ -114,10 +114,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
-                                    //<Object, Object> to support remove(key)
-                                    GridCache<Object, Object> cache = grid(fi).cache(null);
+                                    jcache(fi).removeAll();
 
-                                    cache.removeAll();
+                                    GridCache<Object, Object> cache = internalCache(fi);
 
                                     // Fix for tests where mapping was removed at primary node
                                     // but was not removed at others.
@@ -185,10 +184,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        assert cache().tx() == null;
-        assert cache().isEmpty() : "Cache is not empty: " + cache().entrySet();
-        assertEquals("Cache is not empty: " + cache().entrySet(), 0, cache().size());
-        assert cache().keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+        assert jcache().unwrap(Ignite.class).transactions().tx() == null;
+        assertEquals("Cache is not empty", 0, jcache().localSize());
 
         resetStore();
     }
@@ -227,7 +224,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -255,7 +252,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
-        cfg.setPortableEnabled(portableEnabled());
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -345,13 +341,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Whether portable mode is enabled.
-     */
-    protected boolean portableEnabled() {
-        return false;
-    }
-
-    /**
      * @return {@code True} for partitioned caches.
      */
     protected final boolean partitionedMode() {
@@ -364,7 +353,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected GridCache<String, Integer> cache(int idx) {
-        return grid(idx).cache(null);
+        return ((IgniteKernal)grid(idx)).cache(null);
     }
 
     /**
@@ -384,11 +373,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Transactions instance.
+     */
+    protected IgniteTransactions transactions() {
+        return grid(0).transactions();
+    }
+
+    /**
      * @param idx Index of grid.
      * @return Default cache.
      */
     @SuppressWarnings({"unchecked"})
-    protected IgniteCache<String, Integer> jcache(int idx) {
+    @Override protected IgniteCache<String, Integer> jcache(int idx) {
         return ignite(idx).jcache(null);
     }
 
@@ -418,15 +414,24 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
+     */
+    protected <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
+        return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
+    }
+
+    /**
      * Executes regular peek or peek from swap.
      *
-     * @param prj Cache projection.
+     * @param cache Cache projection.
      * @param key Key.
      * @return Value.
      * @throws Exception If failed.
      */
-    @Nullable protected <K, V> V peek(CacheProjection<K, V> prj, K key) throws Exception {
-        return offheapTiered(prj.cache()) ? prj.peek(key, F.asList(GridCachePeekMode.SWAP)) : prj.peek(key);
+    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP) : cache.localPeek(key,
+            CachePeekMode.ONHEAP);
     }
 
     /**
@@ -436,8 +441,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsKey(GridCache cache, Object key) throws Exception {
-        return offheapTiered(cache) ? containsOffheapKey(cache, key) : cache.containsKey(key);
+    protected boolean containsKey(IgniteCache cache, Object key) throws Exception {
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
     }
 
     /**
@@ -449,24 +454,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected boolean containsValue(GridCache cache, Object val) throws Exception {
         return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @return {@code True} if offheap contains given key.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsOffheapKey(GridCache cache, Object key) throws Exception {
-        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
-            Map.Entry e = it.next();
-
-            if (key.equals(e.getKey()))
-                return true;
-        }
-
-        return false;
     }
 
     /**
@@ -490,9 +477,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with keys containing 'key'.
      */
-    protected static IgnitePredicate<CacheEntry<String, Integer>> entryKeyFilter =
-        new P1<CacheEntry<String, Integer>>() {
-        @Override public boolean apply(CacheEntry<String, Integer> entry) {
+    protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilter =
+        new P1<Cache.Entry<String, Integer>>() {
+        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
             return entry.getKey().contains("key");
         }
     };
@@ -500,9 +487,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with keys not containing 'key'.
      */
-    protected static IgnitePredicate<CacheEntry<String, Integer>> entryKeyFilterInv =
-        new P1<CacheEntry<String, Integer>>() {
-        @Override public boolean apply(CacheEntry<String, Integer> entry) {
+    protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilterInv =
+        new P1<Cache.Entry<String, Integer>>() {
+        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
             return !entry.getKey().contains("key");
         }
     };
@@ -510,10 +497,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
      */
-    protected static final IgnitePredicate<CacheEntry<String, Integer>> lt50 =
-        new P1<CacheEntry<String, Integer>>() {
-            @Override public boolean apply(CacheEntry<String, Integer> entry) {
-                Integer i = entry.peek();
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> lt50 =
+        new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                Integer i = entry.getValue();
 
                 return i != null && i < 50;
             }
@@ -522,10 +509,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 100.
      */
-    protected static final IgnitePredicate<CacheEntry<String, Integer>> gte100 =
-        new P1<CacheEntry<String, Integer>>() {
-            @Override public boolean apply(CacheEntry<String, Integer> entry) {
-                Integer i = entry.peek();
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte100 =
+        new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                Integer i = entry.getValue();
 
                 return i != null && i >= 100;
             }
@@ -538,10 +525,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 200.
      */
-    protected static final IgnitePredicate<CacheEntry<String, Integer>> gte200 =
-        new P1<CacheEntry<String, Integer>>() {
-            @Override public boolean apply(CacheEntry<String, Integer> entry) {
-                Integer i = entry.peek();
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte200 =
+        new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                Integer i = entry.getValue();
 
                 return i != null && i >= 200;
             }
@@ -555,7 +542,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.
      */
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
-    protected static final class SumVisitor implements CI1<CacheEntry<String, Integer>> {
+    protected static final class SumVisitor implements CI1<Cache.Entry<String, Integer>> {
         /** */
         private final AtomicInteger sum;
 
@@ -567,7 +554,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(CacheEntry<String, Integer> entry) {
+        @Override public void apply(Cache.Entry<String, Integer> entry) {
             if (entry.getValue() != null) {
                 Integer i = entry.getValue();
 
@@ -582,7 +569,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * {@link org.apache.ignite.lang.IgniteReducer} for calculating sum.
      */
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
-    protected static final class SumReducer implements R1<CacheEntry<String, Integer>, Integer> {
+    protected static final class SumReducer implements R1<Cache.Entry<String, Integer>, Integer> {
         /** */
         private int sum;
 
@@ -592,7 +579,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean collect(CacheEntry<String, Integer> entry) {
+        @Override public boolean collect(Cache.Entry<String, Integer> entry) {
             if (entry.getValue() != null) {
                 Integer i = entry.getValue();
 

@@ -17,9 +17,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
-
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -67,9 +64,9 @@ import java.util.concurrent.*;
  * Instances of distributed cache queues can be created by calling the following method
  * on {@link Ignite} API:
  * <ul>
- *     <li>{@link Ignite#queue(String, IgniteCollectionConfiguration, int, boolean)}</li>
+ *     <li>{@link Ignite#queue(String, CollectionConfiguration, int, boolean)}</li>
  * </ul>
- * @see Ignite#queue(String, IgniteCollectionConfiguration, int, boolean)
+ * @see Ignite#queue(String, CollectionConfiguration, int, boolean)
  */
 public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     /**
@@ -125,19 +122,19 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     @Override public int size() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll() throws IgniteException;
+    @Override public T poll() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T peek() throws IgniteException;
+    @Override public T peek() throws IgniteException;
 
     /** {@inheritDoc} */
     @Override public void put(T item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T take() throws IgniteException;
+    @Override public T take() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll(long timeout, TimeUnit unit) throws IgniteException;
+    @Override public T poll(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Removes all of the elements from this queue. Method is used in massive queues with huge numbers of elements.

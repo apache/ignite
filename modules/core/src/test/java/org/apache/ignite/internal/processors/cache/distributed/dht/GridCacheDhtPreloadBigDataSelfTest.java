@@ -28,11 +28,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Test large cache counts.
@@ -138,12 +138,12 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                GridCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).jcache(null);
 
                 if (backups + 1 <= gridCnt)
-                    assert c.size() < cnt : "Cache size: " + c.size();
+                    assert c.localSize() < cnt : "Cache size: " + c.localSize();
                 else
-                    assert c.size() == cnt;
+                    assert c.localSize() == cnt;
             }
         }
         finally {
@@ -184,17 +184,17 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).jcache(null).size() + ']');
 
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                GridCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).jcache(null);
 
                 if (backups + 1 <= gridCnt)
-                    assert c.size() < cnt;
+                    assert c.localSize() < cnt;
                 else
-                    assert c.size() == cnt;
+                    assert c.localSize() == cnt;
             }
         }
         finally {

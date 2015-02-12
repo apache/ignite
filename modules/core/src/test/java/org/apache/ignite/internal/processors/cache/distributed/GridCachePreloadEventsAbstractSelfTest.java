@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -96,7 +96,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.jcache(null);
 
         cache.put(1, "val1");
         cache.put(2, "val2");
@@ -104,7 +104,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         Ignite g2 = startGrid("g2");
 
-        Collection<IgniteEvent> evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, U.toIntList(new int[]{1, 2, 3}));
     }
@@ -114,13 +114,13 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
      * @param g Grid.
      * @param keys Keys.
      */
-    protected void checkPreloadEvents(Collection<IgniteEvent> evts, Ignite g, Collection<? extends Object> keys) {
+    protected void checkPreloadEvents(Collection<Event> evts, Ignite g, Collection<? extends Object> keys) {
         assertEquals(keys.size(), evts.size());
 
-        for (IgniteEvent evt : evts) {
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+        for (Event evt : evts) {
+            CacheEvent cacheEvt = (CacheEvent)evt;
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
-            assertEquals(g.cache(null).name(), cacheEvt.cacheName());
+            assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());

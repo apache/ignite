@@ -23,6 +23,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -339,9 +340,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).size());
+                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
-                primaryCacheSize += g.cache(CACHE_NAME).primarySize();
+                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
@@ -539,9 +540,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).size());
+                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
-                primaryCacheSize += g.cache(CACHE_NAME).primarySize();
+                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
@@ -564,7 +565,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.
@@ -595,7 +596,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
@@ -651,7 +652,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private IgnitePredicate<? super ClusterNode>[] filter;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

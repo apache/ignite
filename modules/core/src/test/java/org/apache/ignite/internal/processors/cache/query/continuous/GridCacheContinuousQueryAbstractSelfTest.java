@@ -27,8 +27,8 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -55,7 +56,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.query.CacheQueryType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Continuous queries tests.
@@ -95,7 +96,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -1114,9 +1115,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         CacheProjection<Integer, Integer> cache = grid(0).cache(null);
 
         CacheContinuousQuery<Integer, Integer> qry = cache.projection(
-            new P1<CacheEntry<Integer, Integer>>() {
-                @Override public boolean apply(CacheEntry<Integer, Integer> e) {
-                    Integer i = e.peek();
+            new P1<Cache.Entry<Integer, Integer>>() {
+                @Override public boolean apply(Cache.Entry<Integer, Integer> e) {
+                    Integer i = e.getValue();
 
                     return i != null && i > 10;
                 }
@@ -1267,56 +1268,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     }
 
     /**
-     * @throws Exception If filter.
-     */
-    public void testUpdateInFilter() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        cache.putx(1, 1);
-
-        CacheProjection<Integer, Integer> prj = cache.projection(new P1<CacheEntry<Integer, Integer>>() {
-            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public boolean apply(final CacheEntry<Integer, Integer> e) {
-                GridTestUtils.assertThrows(
-                    log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            e.set(1000);
-
-                            return null;
-                        }
-                    },
-                    CacheFlagException.class,
-                    null
-                );
-
-                return true;
-            }
-        });
-
-        CacheContinuousQuery<Integer, Integer> qry = prj.queries().createContinuousQuery();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                latch.countDown();
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testNodeJoin() throws Exception {
@@ -1422,11 +1373,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(50);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteCacheQueryReadEvent;
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof CacheQueryReadEvent;
 
-                IgniteCacheQueryReadEvent qe = (IgniteCacheQueryReadEvent)evt;
+                CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());
@@ -1446,11 +1397,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         };
 
-        IgnitePredicate<IgniteEvent> execLsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteCacheQueryExecutedEvent;
+        IgnitePredicate<Event> execLsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof CacheQueryExecutedEvent;
 
-                IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());

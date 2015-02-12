@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -47,7 +48,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /** SQL query. */
     private static final String SQL =
@@ -76,7 +77,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -85,7 +86,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).jcache(null);
 
         assert cache != null;
 
@@ -94,7 +95,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.put(1, o);
         cache.put(2, new TestObject(2));
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

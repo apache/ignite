@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
@@ -91,7 +90,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @return Affinity.
      */
     static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
+        return ignite.affinity(null);
     }
 
     /**

@@ -22,9 +22,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -61,21 +61,6 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (portableEnabled()) {
-            PortableConfiguration pCfg = new PortableConfiguration();
-
-            pCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
-
-            cfg.setPortableConfiguration(pCfg);
-        }
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
@@ -91,7 +76,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         vals = new ArrayList<>(VALS);
 
@@ -128,7 +113,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -139,9 +124,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, false);
-
-                    cache.putx(key, val, p);
+                    cache.put(key, val);
                 }
 
                 return null;
@@ -153,7 +136,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testRemove() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -164,12 +147,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, true);
-
                     if (rnd.nextBoolean())
-                        cache.removex(key, p);
+                        cache.remove(key);
                     else
-                        cache.putx(key, val, p);
+                        cache.put(key, val);
                 }
 
                 return null;
@@ -207,10 +188,8 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @param acceptNull If {@code true} value can be null;
      * @return Predicate.
      */
-    private TestPredicate testPredicate(String expVal, boolean acceptNull) {
-        return portableEnabled() ?
-            new PortableValuePredicate(expVal, acceptNull) :
-            new TestValuePredicate(expVal, acceptNull);
+    protected TestPredicate testPredicate(String expVal, boolean acceptNull) {
+        return new TestValuePredicate(expVal, acceptNull);
     }
 
     /**
@@ -218,10 +197,8 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @param acceptNull If {@code true} value can be null;
      * @return Predicate.
      */
-    private TestProcessor testClosure(String expVal, boolean acceptNull) {
-        return portableEnabled() ?
-            new PortableValueClosure(expVal, acceptNull) :
-            new TestValueClosure(expVal, acceptNull);
+    protected TestProcessor testClosure(String expVal, boolean acceptNull) {
+        return new TestValueClosure(expVal, acceptNull);
     }
 
     /**
@@ -251,7 +228,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestPredicate implements P1<CacheEntry<Integer, Object>> {
+    protected abstract static class TestPredicate implements P1<Cache.Entry<Integer, Object>> {
         /** */
         protected String expVal;
 
@@ -268,10 +245,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public final boolean apply(CacheEntry<Integer, Object> e) {
+        @Override public final boolean apply(Cache.Entry<Integer, Object> e) {
             assertNotNull(e);
 
-            Object val = e.peek();
+            Object val = e.getValue();
 
             if (val == null) {
                 if (!acceptNull)
@@ -288,28 +265,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         /**
          * @param val Value.
          */
-        abstract void checkValue(Object val);
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("PackageVisibleInnerClass")
-    static class PortableValuePredicate extends TestPredicate {
-        /**
-         * @param expVal Expected value.
-         * @param acceptNull If {@code true} value can be null;
-         */
-        PortableValuePredicate(String expVal, boolean acceptNull) {
-            super(expVal, acceptNull);
-        }
-
-        /** {@inheritDoc} */
-        @Override void checkValue(Object val) {
-            PortableObject obj = (PortableObject)val;
-
-            assertEquals(expVal, obj.field("val"));
-        }
+        public abstract void checkValue(Object val);
     }
 
     /**
@@ -326,7 +282,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override void checkValue(Object val) {
+        @Override public void checkValue(Object val) {
             TestValue obj = (TestValue)val;
 
             assertEquals(expVal, obj.val);
@@ -375,28 +331,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         /**
          * @param val Value.
          */
-        abstract void checkValue(Object val);
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("PackageVisibleInnerClass")
-    static class PortableValueClosure extends TestProcessor {
-        /**
-         * @param expVal Expected value.
-         * @param acceptNull If {@code true} value can be null;
-         */
-        PortableValueClosure(String expVal, boolean acceptNull) {
-            super(expVal, acceptNull);
-        }
-
-        /** {@inheritDoc} */
-        @Override void checkValue(Object val) {
-            PortableObject obj = (PortableObject)val;
-
-            assertEquals(expVal, obj.field("val"));
-        }
+        public abstract void checkValue(Object val);
     }
 
     /**
@@ -413,7 +348,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override void checkValue(Object val) {
+        @Override public void checkValue(Object val) {
             TestValue obj = (TestValue)val;
 
             assertEquals(expVal, obj.val);

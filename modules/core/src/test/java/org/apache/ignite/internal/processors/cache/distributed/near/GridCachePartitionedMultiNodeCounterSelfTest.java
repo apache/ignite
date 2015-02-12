@@ -241,7 +241,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         X.println("*** Retries: " + RETRIES);
         X.println("*** Log frequency: " + LOG_FREQ);
 
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
+        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>jcache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
@@ -261,7 +261,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         final UUID priId = pri.cluster().localNode().id();
 
         // Initialize.
-        pri.cache(null).put(CNTR_KEY, 0);
+        pri.jcache(null).put(CNTR_KEY, 0);
 //        nears.get(0).cache(null).put(CNTR_KEY, 0);
 
         assertNull(near(pri).peekEx(CNTR_KEY));
@@ -306,13 +306,13 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                 if (DEBUG)
                                     info("***");
 
-                                GridCache<String, Integer> c = pri.cache(null);
+                                IgniteCache<String, Integer> c = pri.jcache(null);
 
-                                Integer oldCntr = c.peek(CNTR_KEY);
+                                Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                                 GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                                try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = pri.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     if (DEBUG)
                                         info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                             ", oldCntr=" + oldCntr + ", node=" + priId + ", dhtEntry=" + dhtEntry +
@@ -343,7 +343,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                     assert globalCntr.compareAndSet(global, newCntr) : invalid("Invalid global counter",
                                         pri, true, newCntr, global);
 
-                                    int prev = c.put(CNTR_KEY, newCntr);
+                                    int prev = c.getAndPut(CNTR_KEY, newCntr);
 
                                     if (DEBUG)
                                         info("Put new value [grid=" + pri.name() + ", primary=true, prev=" + prev +
@@ -403,11 +403,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                     if (DEBUG)
                                         info("***");
 
-                                    GridCache<String, Integer> c = near.cache(null);
+                                    IgniteCache<String, Integer> c = near.jcache(null);
 
-                                    Integer oldCntr = c.peek(CNTR_KEY);
+                                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
-                                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    try (IgniteTx tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                         if (DEBUG)
                                             info("Started tx [grid=" + near.name() + ", primary=false, xid=" +
                                                 tx.xid() + ", oldCntr=" + oldCntr + ", node=" + nearId +
@@ -441,7 +441,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                         assert globalCntr.compareAndSet(global, newCntr) :
                                             invalid("Invalid global counter", near, false, newCntr, global);
 
-                                        int prev = c.put(CNTR_KEY, newCntr);
+                                        int prev = c.getAndPut(CNTR_KEY, newCntr);
 
                                         if (DEBUG)
                                             info("Put new value [grid=" + near.name() + ", primary=false, prev=" +
@@ -488,9 +488,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
             dht(g).context().tm().printMemoryStats();
             near(g).context().tm().printMemoryStats();
 
-            GridCache<String, Integer> cache = grid(i).cache(null);
+            IgniteCache<String, Integer> cache = grid(i).jcache(null);
 
-            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.peek(CNTR_KEY);
+            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
             X.println("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -543,7 +543,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void checkNearAndPrimaryMultiNode(int gridCnt) throws Exception {
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
+        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>jcache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
@@ -552,7 +552,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         Ignite pri = G.ignite(F.first(affNodes).id());
 
         // Initialize.
-        pri.cache(null).put(CNTR_KEY, 0);
+        pri.jcache(null).put(CNTR_KEY, 0);
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
@@ -576,9 +576,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         for (int i = 0; i < gridCnt; i++) {
             Ignite g = grid(i);
 
-            GridCache<String, Integer> cache = grid(i).cache(null);
+            IgniteCache<String, Integer> cache = grid(i).jcache(null);
 
-            int cntr = cache.peek(CNTR_KEY);
+            int cntr = cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
             info("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -595,7 +595,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -640,11 +640,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    GridCache<String, Integer> c = near.cache(null);
+                    IgniteCache<String, Integer> c = near.jcache(null);
 
-                    Integer oldCntr = c.peek(CNTR_KEY);
+                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
-                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + near.name() + ", primary=false, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + nearId + ", nearEntry=" + nearEntry + ']');
@@ -670,7 +670,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                         assert globalCntrMultiNode.compareAndSet(global, newCntr) : invalid("Invalid global counter",
                             near, false, newCntr, global);
 
-                        int prev = c.put(CNTR_KEY, newCntr);
+                        int prev = c.getAndPut(CNTR_KEY, newCntr);
 
                         if (DEBUG)
                             log.info("Put new value [grid=" + near.name() + ", primary=false, prev=" + prev +
@@ -709,13 +709,13 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    GridCache<String, Integer> c = pri.cache(null);
+                    IgniteCache<String, Integer> c = pri.jcache(null);
 
-                    Integer oldCntr = c.peek(CNTR_KEY);
+                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                     GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = pri.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + pri.name() + ", dhtEntry=" +
@@ -746,7 +746,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                         assert globalCntrMultiNode.compareAndSet(global, newCntr) : invalid("Invalid global counter",
                             pri, true, newCntr, global);
 
-                        int prev = c.put(CNTR_KEY, newCntr);
+                        int prev = c.getAndPut(CNTR_KEY, newCntr);
 
                         if (DEBUG) {
                             log.info("Put new value [grid=" + pri.name() + ", primary=true, prev=" + prev +

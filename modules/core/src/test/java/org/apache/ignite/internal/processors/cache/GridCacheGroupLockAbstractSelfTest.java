@@ -45,7 +45,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -158,12 +158,12 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         CacheAffinityKey<String> key1;
         CacheAffinityKey<String> key2;
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -189,13 +189,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
     }
 
@@ -226,7 +226,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.putAll(F.asMap(
@@ -237,19 +237,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -258,7 +258,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
 
-            cache.removeAll(F.asList(key1, key2));
+            cache.removeAll(F.asSet(key1, key2));
 
             tx.commit();
         }
@@ -270,13 +270,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertNull("For index: " + i, gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertNull("For index: " + i, gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertNull("For index: " + i, gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertNull("For index: " + i, gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
     }
 
@@ -307,7 +307,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.putAll(F.asMap(
@@ -318,19 +318,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -383,10 +383,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
         }
 
         final CountDownLatch unlockLatch = new CountDownLatch(1);
@@ -474,10 +474,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
         }
 
         Lock lock = cache.lock(key1);
@@ -494,10 +494,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             for (int i = 0; i < gridCount(); i++) {
                 Ignite g = grid(i);
 
-                GridCache<Object, Object> gCache = g.cache(null);
+                IgniteCache<Object, Object> gCache = g.jcache(null);
 
-                if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                    assertEquals("For index: " + i, "val01", gCache.peek(key1));
+                if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                    assertEquals("For index: " + i, "val01", gCache.localPeek(key1, CachePeekMode.ONHEAP));
             }
         }
         finally {
@@ -532,13 +532,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        GridCache<UUID, String> cache = grid(0).cache(null);
+        IgniteCache<UUID, String> cache = grid(0).jcache(null);
 
         UUID key1;
         UUID key2;
 
-        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), concurrency,
-            READ_COMMITTED, 0, 2)) {
+        CacheAffinity<UUID> affinity = grid(0).affinity(null);
+
+        try (IgniteTx tx = grid(0).transactions().txStartPartition(null, affinity.partition(affinityKey),
+            concurrency, READ_COMMITTED, 0, 2)) {
             // Note that events are not generated for internal keys.
             assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
             assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0,
@@ -548,7 +550,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
 
-            GridPartitionLockKey partAffKey = affMgr.partitionAffinityKey(cache.affinity().partition(affinityKey));
+            GridPartitionLockKey partAffKey = affMgr.partitionAffinityKey(affinity.partition(affinityKey));
 
             if (concurrency == PESSIMISTIC)
                 assertTrue(cacheAdapter.entryEx(partAffKey).lockedByThread());
@@ -556,12 +558,12 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             do {
                 key1 = UUID.randomUUID();
             }
-            while (cache.affinity().partition(key1) != cache.affinity().partition(affinityKey));
+            while (affinity.partition(key1) != affinity.partition(affinityKey));
 
             do {
                 key2 = UUID.randomUUID();
             }
-            while (cache.affinity().partition(key2) != cache.affinity().partition(affinityKey));
+            while (affinity.partition(key2) != affinity.partition(affinityKey));
 
             cache.putAll(F.asMap(
                 key1, "val1",
@@ -578,13 +580,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
     }
 
@@ -658,7 +660,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.putAll(F.asMap(
@@ -669,19 +671,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, isolation, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -719,12 +721,12 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, isolation, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -750,13 +752,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val01", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val01", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val02", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val02", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
     }
 
@@ -802,7 +804,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.putAll(F.asMap(
@@ -813,19 +815,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, isolation, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -845,10 +847,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key1) + ']', cache(i).peek(key1));
-            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key2) + ']', cache(i).peek(key2));
+            IgniteCache<Object, Object> cacheI = jcache(i);
 
-            assertTrue("For cache [idx=" + i + ", keySet=" + cache(i).keySet() + ']', cache(i).size() <= 1);
+            assertNull("For cache [i=" + i + ", val=" + cacheI.localPeek(key1, CachePeekMode.ONHEAP) + ']', cacheI.localPeek(key1, CachePeekMode.ONHEAP));
+            assertNull("For cache [i=" + i + ", val=" + cacheI.localPeek(key2, CachePeekMode.ONHEAP) + ']', cacheI.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         // Check that there are no further locks after transaction commit.
@@ -883,7 +885,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.putAll(F.asMap(
@@ -894,19 +896,20 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+        try (IgniteTx tx = grid(0).transactions()
+            .txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
             if (concurrency == PESSIMISTIC)
                 assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
             else
@@ -959,11 +962,11 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkGetRepeatableRead(IgniteTxConcurrency concurrency) throws Exception {
         UUID key = primaryKeyForCache(grid(0));
 
-        cache(0).put(key, "val");
+        jcache(0).put(key, "val");
 
-        try (IgniteTx ignored = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency,
-            REPEATABLE_READ, 0, 1)) {
-            assertEquals("val", cache(0).get(key));
+        try (IgniteTx ignored = ignite(0).transactions().txStartPartition(null, ignite(0).affinity(null).partition(key),
+            concurrency, REPEATABLE_READ, 0, 1)) {
+            assertEquals("val", jcache(0).get(key));
         }
     }
 
@@ -988,19 +991,20 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkGroupLockPutWrongKey(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        final GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        final IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
-        try (IgniteTx ignored = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+        try (IgniteTx ignored = grid(0).transactions()
+            .txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.put(new CacheAffinityKey<>("key1", UUID.randomUUID()), "val1");
 
             fail("Exception should be thrown");
         }
-        catch (IgniteCheckedException ignored) {
+        catch (CacheException ignored) {
             // Expected exception.
         }
 
-        assertNull(cache.tx());
+        assertNull(grid(0).transactions().tx());
     }
 
     /**
@@ -1024,23 +1028,24 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkGroupLockRemoveWrongKey(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        final GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        final IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         final CacheAffinityKey<String> key = new CacheAffinityKey<>("key1", UUID.randomUUID());
 
         cache.put(key, "val");
 
-        try (IgniteTx ignored = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+        try (IgniteTx ignored = grid(0).transactions()
+            .txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.remove(key);
 
             fail("Exception should be thrown.");
         }
-        catch (IgniteCheckedException ignored) {
+        catch (CacheException ignored) {
             // Expected exception.
         }
 
-        assertNull(cache.tx());
+        assertNull(grid(0).transactions().tx());
     }
 
     /**
@@ -1080,7 +1085,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        final GridCache<Object, String> cache = grid(0).cache(null);
+        final IgniteCache<Object, String> cache = grid(0).jcache(null);
 
         final CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         final CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
@@ -1089,7 +1094,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cache.put(key1, "0");
         cache.put(key2, "0");
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 3)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, isolation, 0, 3)) {
             assertEquals("0", cache.get(affinityKey));
             assertEquals("0", cache.get(key1));
             assertEquals("0", cache.get(key2));
@@ -1131,7 +1136,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkGroupLockWriteThrough(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
@@ -1144,7 +1149,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             key3, "val3",
             key4, "val4");
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 4)) {
+        try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 4)) {
             cache.put(key1, "val1");
             cache.put(key2, "val2");
             cache.put(key3, "val3");
@@ -1156,19 +1161,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            GridCache<Object, Object> gCache = g.cache(null);
+            IgniteCache<Object, Object> gCache = g.jcache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
-                assertEquals("For index: " + i, "val1", gCache.peek(key1));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key1))
+                assertEquals("For index: " + i, "val1", gCache.localPeek(key1, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
-                assertEquals("For index: " + i, "val2", gCache.peek(key2));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key2))
+                assertEquals("For index: " + i, "val2", gCache.localPeek(key2, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key3))
-                assertEquals("For index: " + i, "val3", gCache.peek(key3));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key3))
+                assertEquals("For index: " + i, "val3", gCache.localPeek(key3, CachePeekMode.ONHEAP));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key4))
-                assertEquals("For index: " + i, "val4", gCache.peek(key4));
+            if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key4))
+                assertEquals("For index: " + i, "val4", gCache.localPeek(key4, CachePeekMode.ONHEAP));
         }
 
         // Check the store.
@@ -1234,15 +1239,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Event listener that collects all incoming events. */
-    protected static class CollectingEventListener implements IgnitePredicate<IgniteEvent> {
+    protected static class CollectingEventListener implements IgnitePredicate<Event> {
         /** Collected events. */
         private final Collection<Object> affectedKeys = new GridConcurrentLinkedHashSet<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_OBJECT_LOCKED || evt.type() == EVT_CACHE_OBJECT_UNLOCKED;
 
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+            CacheEvent cacheEvt = (CacheEvent)evt;
 
             synchronized (this) {
                 affectedKeys.add(cacheEvt.key());
@@ -1300,15 +1305,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<javax.cache.Cache.Entry<?, ?>> entries) {
-            for (javax.cache.Cache.Entry<?, ?> e : entries)
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
+            for (Cache.Entry<?, ?> e : entries)
                 storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<?, ?> e) {
+        @Override public void write(Cache.Entry<?, ?> e) {
             storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();

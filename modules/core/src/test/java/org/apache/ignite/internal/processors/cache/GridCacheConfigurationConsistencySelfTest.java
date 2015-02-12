@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  *
@@ -67,7 +67,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private CacheMode cacheMode = REPLICATED;
 
     /** */
-    private IgniteDeploymentMode depMode = SHARED;
+    private DeploymentMode depMode = SHARED;
 
     /** */
     private C1<CacheConfiguration, Void> initCache;
@@ -187,7 +187,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = null;
         depMode = SHARED;
 
-        assert startGrid(1).cache("myCache").configuration().getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
+        assert startGrid(1).jcache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -397,7 +397,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return false;
                         }
                     });
@@ -408,7 +408,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return true;
                         }
                     });

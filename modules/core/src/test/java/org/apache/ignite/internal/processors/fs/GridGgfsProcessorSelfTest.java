@@ -21,7 +21,7 @@ import org.apache.commons.io.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -411,7 +412,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.delete(path("/"), false);
         assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
 
-        for (CacheEntry<Object, Object> e : metaCache)
+        for (Cache.Entry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
     }
 

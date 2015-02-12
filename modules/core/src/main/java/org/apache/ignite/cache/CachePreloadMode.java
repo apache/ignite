@@ -22,8 +22,8 @@ import org.jetbrains.annotations.*;
 /**
  * Cache preload mode. When preloading is enabled (i.e. has value other than {@link #NONE}), distributed caches
  * will attempt to preload all necessary values from other grid nodes. This enumeration is used to configure
- * preloading via {@link CacheConfiguration#getPreloadMode()} configuration property. If not configured
- * explicitly, then {@link CacheConfiguration#DFLT_PRELOAD_MODE} is used.
+ * preloading via {@link org.apache.ignite.configuration.CacheConfiguration#getPreloadMode()} configuration property. If not configured
+ * explicitly, then {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_PRELOAD_MODE} is used.
  * <p>
  * Replicated caches will try to load the full set of cache entries from other nodes (or as defined by
  * pluggable {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}), while partitioned caches will only load the entries for which

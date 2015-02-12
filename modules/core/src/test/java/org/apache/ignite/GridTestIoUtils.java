@@ -123,7 +123,7 @@ public final class GridTestIoUtils {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T externalize(Externalizable obj, IgniteMarshaller marshaller) throws Exception {
+    public static <T> T externalize(Externalizable obj, Marshaller marshaller) throws Exception {
         assert marshaller != null;
 
         byte[] buf = marshaller.marshal(obj);

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -393,7 +394,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 add(fut); // Append new future.
 
                 try {
-                    cctx.io().send(n, req);
+                    cctx.io().send(n, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.

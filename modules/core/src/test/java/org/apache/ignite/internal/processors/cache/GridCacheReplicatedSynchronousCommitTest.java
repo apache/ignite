@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -104,7 +104,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         try {
             Ignite firstIgnite = startGrid("1");
 
-            GridCache<Integer, String> firstCache = firstIgnite.cache(null);
+            IgniteCache<Integer, String> firstCache = firstIgnite.jcache(null);
 
             for (int i = 0; i < ADDITION_CACHE_NUMBER; i++)
                 startGrid(String.valueOf(i + 2));
@@ -134,8 +134,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
             Ignite ignite3 = startGrid("3");
 
-            GridCache<Integer, String> cache1 = ignite1.cache(null);
-            GridCache<Integer, String> cache3 = ignite3.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, String> cache3 = ignite3.jcache(null);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -185,7 +185,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             Object obj = ((GridIoMessage)msg).message();
 

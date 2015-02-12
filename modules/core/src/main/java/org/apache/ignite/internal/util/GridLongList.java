@@ -19,16 +19,18 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-public class GridLongList implements Externalizable {
+public class GridLongList extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -377,10 +379,14 @@ public class GridLongList implements Externalizable {
     }
 
     /**
-     * @return Internal array.
+     * @return Array copy.
      */
-    public long[] internalArray() {
-        return arr;
+    public long[] array() {
+        long[] res = new long[idx];
+
+        System.arraycopy(arr, 0, res, 0, idx);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -496,5 +502,83 @@ public class GridLongList implements Externalizable {
             idx = 0;
         else
             idx -= cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeLongArray("arr", arr))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeInt("idx", idx))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                arr = reader.readLongArray("arr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                idx = reader.readInt("idx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 85;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override public MessageAdapter clone() {
+        GridLongList _clone = new GridLongList();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridLongList _clone = (GridLongList)_msg;
+
+        _clone.arr = arr;
+        _clone.idx = idx;
     }
 }

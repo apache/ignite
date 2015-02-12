@@ -117,7 +117,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    IgniteCache<Object, Object> cache = jcache(rnd.nextInt(GRID_CNT));
 
                     cache.put(rnd.nextInt(1000), "value");
                 }
@@ -131,7 +131,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    IgniteCache<Object, Object> cache = jcache(rnd.nextInt(GRID_CNT));
 
                     cache.putIfAbsent(rnd.nextInt(1000), "value");
                 }
@@ -160,7 +160,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                     for (int j = 0; j < 10; j++)
                         map.put(rnd.nextInt(1000), "value");
 
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    IgniteCache<Object, Object> cache = jcache(rnd.nextInt(GRID_CNT));
 
                     cache.putAll(map);
                 }
@@ -181,9 +181,11 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    IgniteEx ignite = grid(rnd.nextInt(GRID_CNT));
 
-                    try (IgniteTx tx = cache.txStart()) {
+                    IgniteCache<Object, Object> cache = ignite.jcache(null);
+
+                    try (IgniteTx tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");
                         cache.put(2, "value");
                         cache.put(3, "value");

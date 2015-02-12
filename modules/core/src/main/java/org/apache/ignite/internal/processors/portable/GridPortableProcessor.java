@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.processors.portable;
 
-import org.apache.ignite.client.marshaller.*;
+import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
-import java.util.*;
 
 /**
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
+    /** {@inheritDoc} */
+    public void onCacheProcessorStarted();
+
     /**
      * @param typeName Type name.
      * @return Type ID.
@@ -36,44 +39,50 @@ public interface GridPortableProcessor extends GridProcessor {
     public int typeId(String typeName);
 
     /**
+     * @param obj Object to get type ID for.
+     * @return Type ID.
+     */
+    public int typeId(Object obj);
+
+    /**
      * @param obj Object to marshal.
      * @param trim If {@code true} trims result byte buffer.
      * @return Object bytes.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws PortableException;
+    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws IgniteException;
 
     /**
      * @param arr Byte array.
      * @param off Offset.
      * @return Unmarshalled object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public Object unmarshal(byte[] arr, int off) throws PortableException;
+    public Object unmarshal(byte[] arr, int off) throws IgniteException;
 
     /**
      * @param ptr Offheap pointer.
      * @param forceHeap If {@code true} creates heap-based object.
      * @return Unmarshalled object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public Object unmarshal(long ptr, boolean forceHeap) throws PortableException;
+    public Object unmarshal(long ptr, boolean forceHeap) throws IgniteException;
 
     /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
      * @return Heap-based object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws PortableException;
+    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws IgniteException;
 
     /**
      * @param obj Object to marshal.
      * @return Portable object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public Object marshalToPortable(@Nullable Object obj) throws PortableException;
+    public Object marshalToPortable(@Nullable Object obj) throws IgniteException;
 
     /**
      * @param obj Object (portable or not).
@@ -94,57 +103,31 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean isPortable(GridClientMarshaller marsh);
 
     /**
-     * @return Builder.
+     * @param node Node to check.
+     * @param cacheName Cache name to check.
+     * @return {@code True} if portable enabled for the specified cache, {@code false} otherwise.
      */
-    public PortableBuilder builder(int typeId);
+    public boolean portableEnabled(ClusterNode node, String cacheName);
 
     /**
-     * @return Builder.
-     */
-    public PortableBuilder builder(String clsName);
-
-    /**
-     * Creates builder initialized by existing portable object.
+     * Checks whether object is portable object.
      *
-     * @param portableObj Portable object to edit.
-     * @return Portable builder.
+     * @param obj Object to check.
+     * @return {@code True} if object is already a portable object, {@code false} otherwise.
      */
-    public PortableBuilder builder(PortableObject portableObj);
+    public boolean isPortableObject(Object obj);
 
     /**
-     * @param typeId Type ID.
-     * @param newMeta New meta data.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * Gets affinity key of portable object.
+     *
+     * @param obj Object to get affinity key for.
+     * @return Affinity key.
      */
-    public void addMeta(int typeId, final PortableMetadata newMeta) throws PortableException;
+    public Object affinityKey(Object obj);
 
     /**
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param affKeyFieldName Affinity key field name.
-     * @param fieldTypeIds Fields map.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @param obj Portable object to get field from.
+     * @return Field value.
      */
-    public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws PortableException;
-
-    /**
-     * @param typeId Type ID.
-     * @return Meta data.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
-     */
-    @Nullable public PortableMetadata metadata(int typeId) throws PortableException;
-
-    /**
-     * @param typeIds Type ID.
-     * @return Meta data.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
-     */
-    public Map<Integer, PortableMetadata> metadata(Collection<Integer> typeIds) throws PortableException;
-
-    /**
-     * @return Metadata for all types.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
-     */
-    public Collection<PortableMetadata> metadata() throws PortableException;
+    public Object field(Object obj, String fieldName);
 }

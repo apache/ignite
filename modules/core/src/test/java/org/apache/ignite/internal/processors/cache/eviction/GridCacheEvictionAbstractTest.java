@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -28,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -36,7 +40,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -151,14 +155,14 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<CacheEntry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<EvictableEntry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)grid().cache(null).configuration().getEvictionPolicy();
+        return (T)internalCache().configuration().getEvictionPolicy();
     }
 
     /**
@@ -167,7 +171,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)grid(i).cache(null).configuration().getEvictionPolicy();
+        return (T)internalCache(i).configuration().getEvictionPolicy();
     }
 
     /**
@@ -176,14 +180,14 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        return (T)grid(i).cache(null).configuration().getNearEvictionPolicy();
+        return (T)internalCache(i).configuration().getNearEvictionPolicy();
     }
 
     /**
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<CacheEntry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<EvictableEntry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
@@ -191,7 +195,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         int i = 0;
 
         // Check order.
-        for (CacheEntry<String, String> e : c1)
+        for (Cache.Entry<String, String> e : c1)
             assertEquals(e, c2.get(i++));
     }
 
@@ -199,12 +203,18 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c Collection.
      * @return String.
      */
-    protected String string(Iterable<? extends CacheEntry> c) {
-        return "[" + F.fold(c, "", new C2<CacheEntry, String, String>() {
-            @Override public String apply(CacheEntry e, String b) {
-                return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
-            }
-        }) + "]]";
+    @SuppressWarnings("unchecked")
+    protected String string(Iterable<? extends Cache.Entry> c) {
+        return "[" +
+            F.fold(
+                c,
+                "",
+                new C2<Cache.Entry, String, String>() {
+                    @Override public String apply(Cache.Entry e, String b) {
+                        return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
+                    }
+                }) +
+            "]]";
     }
 
     /** @throws Exception If failed. */
@@ -295,7 +305,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).jcache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -346,12 +356,14 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                     int cnt = 100;
 
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
-                        GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                        IgniteEx grid = grid(rand.nextInt(2));
+
+                        IgniteCache<Integer, String> cache = grid.jcache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
 
-                        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             String v = cache.get(key);
 
                             assert v == null || v.equals(Integer.toString(key)) : "Invalid value for key [key=" + key +
@@ -407,7 +419,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static class MockEntry extends GridCacheMockEntry<String, String> {
         /** */
-        private final CacheProjection<String, String> parent;
+        private IgniteCache<String, String> parent;
 
         /** Entry value. */
         private String val;
@@ -415,8 +427,6 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         /** @param key Key. */
         public MockEntry(String key) {
             super(key);
-
-            parent = null;
         }
 
         /**
@@ -427,17 +437,25 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             super(key);
 
             this.val = val;
-            parent = null;
         }
 
         /**
          * @param key Key.
          * @param parent Parent.
          */
-        public MockEntry(String key, @Nullable CacheProjection<String, String> parent) {
+        public MockEntry(String key, @Nullable IgniteCache<String, String> parent) {
             super(key);
 
             this.parent = parent;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public <T> T unwrap(Class<T> clazz) {
+            if (clazz.isAssignableFrom(IgniteCache.class))
+                return (T)parent;
+
+            return super.unwrap(clazz);
         }
 
         /** {@inheritDoc} */
@@ -446,17 +464,8 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         }
 
         /** {@inheritDoc} */
-        @Override public String setValue(String val) {
-            String old = this.val;
-
-            this.val = val;
-
-            return old;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheProjection<String, String> projection() {
-            return parent;
+        @Override public String toString() {
+            return S.toString(MockEntry.class, this, super.toString());
         }
     }
 }

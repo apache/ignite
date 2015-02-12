@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -41,7 +41,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /** Partition. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> parts;
+    private Collection<Integer> parts;
 
     /** Topic. */
     @GridDirectTransient
@@ -112,7 +112,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Partition.
      */
-    Set<Integer> partitions() {
+    Collection<Integer> partitions() {
         return parts;
     }
 
@@ -191,7 +191,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtPartitionDemandMessage _clone = new GridDhtPartitionDemandMessage();
 
         clone0(_clone);
@@ -200,7 +200,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtPartitionDemandMessage _clone = (GridDhtPartitionDemandMessage)_msg;
@@ -217,75 +217,54 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (parts != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(parts.size()))
-                            return false;
+                if (!writer.writeCollection("parts", parts, int.class))
+                    return false;
 
-                        commState.it = parts.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt((int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putLong(timeout))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putLong(topVer))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putByteArray(topicBytes))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong(updateSeq))
+                if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putInt(workerId))
+                if (!writer.writeInt("workerId", workerId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -295,82 +274,59 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                parts = reader.readCollection("parts", int.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (parts == null)
-                        parts = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        int _val = commState.getInt();
-
-                        parts.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 8)
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
                     return false;
 
-                timeout = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (buf.remaining() < 8)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 6:
-                byte[] topicBytes0 = commState.getByteArray();
+                topicBytes = reader.readByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                topicBytes = topicBytes0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (buf.remaining() < 8)
+                updateSeq = reader.readLong("updateSeq");
+
+                if (!reader.isLastRead())
                     return false;
 
-                updateSeq = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 8:
-                if (buf.remaining() < 4)
+                workerId = reader.readInt("workerId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                workerId = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -379,7 +335,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 43;
+        return 44;
     }
 
     /** {@inheritDoc} */

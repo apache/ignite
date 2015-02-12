@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -52,8 +51,10 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     private long originatingThreadId;
 
     /** Flag indicating that this is near-only check. */
-    @GridDirectVersion(1)
     private boolean nearOnlyCheck;
+
+    /** System transaction flag. */
+    private boolean sys;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -76,6 +77,8 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         nearXidVer = tx.nearXidVersion();
         originatingNodeId = tx.eventNodeId();
+        sys = tx.system();
+
         this.originatingThreadId = originatingThreadId;
     }
 
@@ -129,9 +132,16 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
         return nearOnlyCheck;
     }
 
+    /**
+     * @return System transaction flag.
+     */
+    public boolean system() {
+        return sys;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCachePessimisticCheckCommittedTxRequest _clone = new GridCachePessimisticCheckCommittedTxRequest();
 
         clone0(_clone);
@@ -140,70 +150,77 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCachePessimisticCheckCommittedTxRequest _clone = (GridCachePessimisticCheckCommittedTxRequest)_msg;
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.originatingNodeId = originatingNodeId;
         _clone.originatingThreadId = originatingThreadId;
         _clone.nearOnlyCheck = nearOnlyCheck;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putCacheVersion(nearXidVer))
+                if (!writer.writeBoolean("nearOnlyCheck", nearOnlyCheck))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putUuid(originatingNodeId))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putLong(originatingThreadId))
+                if (!writer.writeUuid("originatingNodeId", originatingNodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putBoolean(nearOnlyCheck))
+                if (!writer.writeLong("originatingThreadId", originatingThreadId))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 14:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                state++;
 
         }
 
@@ -213,67 +230,67 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 10:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion();
+                nearOnlyCheck = reader.readBoolean("nearOnlyCheck");
 
-                if (nearXidVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nearXidVer = nearXidVer0;
-
-                commState.idx++;
+                state++;
 
             case 11:
-                UUID originatingNodeId0 = commState.getUuid();
+                nearXidVer = reader.readMessage("nearXidVer");
 
-                if (originatingNodeId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                originatingNodeId = originatingNodeId0;
-
-                commState.idx++;
+                state++;
 
             case 12:
-                if (buf.remaining() < 8)
+                originatingNodeId = reader.readUuid("originatingNodeId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                originatingThreadId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 13:
-                if (buf.remaining() < 1)
+                originatingThreadId = reader.readLong("originatingThreadId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                nearOnlyCheck = commState.getBoolean();
+                state++;
 
-                commState.idx++;
+            case 14:
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -282,7 +299,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 20;
+        return 18;
     }
 
     /** {@inheritDoc} */

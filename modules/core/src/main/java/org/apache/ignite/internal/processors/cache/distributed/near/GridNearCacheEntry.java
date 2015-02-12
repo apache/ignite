@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -31,9 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Near cache entry.
@@ -609,16 +609,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
         dhtVer = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = null;
-
-        if (prjAware)
-            prjPerCall = cctx.projectionPerCall();
-
-        return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
     }
 
     /** {@inheritDoc} */

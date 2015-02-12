@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
@@ -43,7 +44,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -63,7 +64,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -72,14 +73,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).jcache(null);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).jcache(null);
 
         assert personCache != null;
 
@@ -87,7 +88,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
