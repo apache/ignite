@@ -47,15 +47,6 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (!cls.equals(getClass()))
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
-
-        return (T)this;
-    }
-
-    /** {@inheritDoc} */
     public String toString() {
         return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", ver=" + ver + ']';
     }
