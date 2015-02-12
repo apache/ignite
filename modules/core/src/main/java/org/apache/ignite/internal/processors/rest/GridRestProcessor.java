@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
+import org.apache.ignite.authentication.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
