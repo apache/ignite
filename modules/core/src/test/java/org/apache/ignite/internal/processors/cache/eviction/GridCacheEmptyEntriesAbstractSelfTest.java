@@ -34,6 +34,8 @@ import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 
+import java.util.*;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
@@ -170,13 +172,13 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                GridCache<String, String> cache = g.cache(null);
+                IgniteCache<String, String> cache = g.jcache(null);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +
                         ", plc=" + plc + ", nearPlc=" + nearPlc + ']');
 
-                    checkExplicitTx(cache);
+                    checkExplicitTx(g, cache);
 
                     checkImplicitTx(cache);
                 }
@@ -193,12 +195,20 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkImplicitTx(GridCache<String, String> cache) throws Exception {
+    private void checkImplicitTx(IgniteCache<String, String> cache) throws Exception {
         assertNull(cache.get("key1"));
-        assertNull(cache.getAsync("key2").get());
 
-        assertTrue(cache.getAll(F.asList("key3", "key4")).isEmpty());
-        assertTrue(cache.getAllAsync(F.asList("key5", "key6")).get().isEmpty());
+        IgniteCache<String, String> asyncCache = cache.withAsync();
+
+        asyncCache.get("key2");
+
+        assertNull(asyncCache.future().get());
+
+        assertTrue(cache.getAll(F.asSet("key3", "key4")).isEmpty());
+
+        asyncCache.getAll(F.asSet("key5", "key6"));
+
+        assertTrue(((Map)asyncCache.future().get()).isEmpty());
 
         cache.put("key7", "key7");
         cache.remove("key7", "key7");
@@ -213,8 +223,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkExplicitTx(GridCache<String, String> cache) throws Exception {
-        IgniteTx tx = cache.txStart();
+    private void checkExplicitTx(Ignite ignite, IgniteCache<String, String> cache) throws Exception {
+        IgniteCache<String, String> asyncCache = cache.withAsync();
+
+        IgniteTx tx = ignite.transactions().txStart();
 
         try {
             assertNull(cache.get("key1"));
@@ -225,10 +237,12 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             tx.close();
         }
 
-        tx = cache.txStart();
+        tx = ignite.transactions().txStart();
 
         try {
-            assertNull(cache.getAsync("key2").get());
+            asyncCache.get("key2");
+
+            assertNull(asyncCache.future().get());
 
             tx.commit();
         }
@@ -236,10 +250,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             tx.close();
         }
 
-        tx = cache.txStart();
+        tx = ignite.transactions().txStart();
 
         try {
-            assertTrue(cache.getAll(F.asList("key3", "key4")).isEmpty());
+            assertTrue(cache.getAll(F.asSet("key3", "key4")).isEmpty());
 
             tx.commit();
         }
@@ -247,10 +261,12 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             tx.close();
         }
 
-        tx = cache.txStart();
+        tx = ignite.transactions().txStart();
 
         try {
-            assertTrue(cache.getAllAsync(F.asList("key5", "key6")).get().isEmpty());
+            asyncCache.getAll(F.asSet("key5", "key6"));
+
+            assertTrue(((Map)asyncCache.future().get()).isEmpty());
 
             tx.commit();
         }
@@ -258,7 +274,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             tx.close();
         }
 
-        tx = cache.txStart();
+        tx = ignite.transactions().txStart();
 
         try {
             cache.put("key7", "key7");
@@ -283,10 +299,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted while sleeping.
      */
     @SuppressWarnings({"ErrorNotRethrown", "TypeMayBeWeakened"})
-    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedCheckedException {
+    private void checkEmpty(IgniteCache<String, String> cache) throws IgniteInterruptedCheckedException {
         for (int i = 0; i < 3; i++) {
             try {
-                assertTrue(cache.entrySet().toString(), cache.entrySet().isEmpty());
+                assertTrue(!cache.iterator().hasNext());
 
                 break;
             }

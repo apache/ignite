@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.transactions.*;
@@ -209,7 +210,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      */
     // TODO: GG-8063, enabled when fixed.
     public void _testOptimisticSerializableConsistency() throws Exception {
-        final GridCache<Integer, Long> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Long> cache = grid(0).jcache(null);
 
         final int THREADS = 2;
 
@@ -228,7 +229,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                     for (int i = 0; i < ITERATIONS; i++) {
                         while (true) {
-                            try (IgniteTx tx = cache.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                                 long val = cache.get(key);
 
                                 cache.put(key, val + 1);
@@ -239,7 +240,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                                 break;
                             }
-                            catch(IgniteTxOptimisticCheckedException e) {
+                            catch(IgniteTxOptimisticException e) {
                                 log.info("Got error, will retry: " + e);
                             }
                         }

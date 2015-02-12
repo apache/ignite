@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.springframework.cache.annotation.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -148,12 +149,16 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
             }
         });
 
-        return F.concat(false, names, F.transform(metaCache.entrySetx(),
-            new IgniteClosure<Map.Entry<MetaKey, org.springframework.cache.Cache>, String>() {
-                @Override public String apply(Map.Entry<MetaKey, org.springframework.cache.Cache> e) {
-                    return e.getKey().name;
-                }
-            }));
+        return F.concat(
+            false,
+            names,
+            F.transform(
+                metaCache.entrySetx(),
+                new IgniteClosure<Cache.Entry<MetaKey, org.springframework.cache.Cache>, String>() {
+                    @Override public String apply(Cache.Entry<MetaKey, org.springframework.cache.Cache> e) {
+                        return e.getKey().name;
+                    }
+                }));
     }
 
     /**

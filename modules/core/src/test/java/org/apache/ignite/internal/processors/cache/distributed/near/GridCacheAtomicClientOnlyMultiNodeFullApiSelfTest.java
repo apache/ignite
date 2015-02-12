@@ -296,8 +296,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
         }
 
-        cache.localEvict(Collections.<String>singleton(k2));
-        cache.localEvict(Collections.<String>singleton(k3));
+        cache.localEvict(Collections.singleton(k2));
+        cache.localEvict(Collections.singleton(k3));
 
         assert !cache.containsKey(k1);
         assert !cache.containsKey(k2);
@@ -335,7 +335,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        cache.localEvict(Collections.<String>singleton(k1));
+        cache.localEvict(Collections.singleton(k1));
 
         assertEquals((Integer)1, cache.get(k1));
 
@@ -355,8 +355,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         swapEvts.set(0);
         unswapEvts.set(0);
 
-        cache.localEvict(Collections.<String>singleton(k2));
-        cache.localEvict(Collections.<String>singleton(k3));
+        cache.localEvict(Collections.singleton(k2));
+        cache.localEvict(Collections.singleton(k3));
 
         assert !cache.containsKey(k1);
         assert !cache.containsKey(k2);

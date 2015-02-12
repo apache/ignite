@@ -58,12 +58,9 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
         try {
             ExecutorCompletionService<Object> completeSvc = new ExecutorCompletionService<>(execSvc);
 
-            GridCache<GridTestKey, Long> cache = ignite.cache("partitioned");
+            final IgniteCache<GridTestKey, Long> cache = ignite.jcache("partitioned");
 
             assert cache != null;
-
-            // Get projection just to check affinity for Integer.
-            final CacheProjection<Integer, Long> prj = cache.projection(Integer.class, Long.class);
 
             final LongAdder adder = new LongAdder();
 
@@ -83,7 +80,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
                             end += mod;
 
                         for (long i = start; i < end; i++) {
-                            if (prj.cache().affinity().mapKeyToNode(GridTestKey.affinityKey(i)).isLocal()) { // Only add if key is local.
+                            if (ignite.affinity(cache.getName()).mapKeyToNode(GridTestKey.affinityKey(i)).isLocal()) { // Only add if key is local.
                                 clo.apply(new GridTestKey(i), i);
 
                                 adder.increment();

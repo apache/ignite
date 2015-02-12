@@ -79,7 +79,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
      * @param ttl TTL.
      */
     public GridCacheTtlUpdateRequest(long topVer, long ttl) {
-        assert ttl >= 0 : ttl;
+        assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
         this.topVer = topVer;
         this.ttl = ttl;

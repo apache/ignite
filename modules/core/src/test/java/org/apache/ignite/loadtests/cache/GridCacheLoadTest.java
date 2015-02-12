@@ -45,14 +45,14 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     }
 
     /** Write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> writeClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<IgniteCache<Integer, Integer>> writeClos =
+        new CIX1<IgniteCache<Integer, Integer>>() {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache)
             throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int kv = RAND.nextInt(KEY_RANGE);
 
-                assert cache.putx(kv, kv);
+                cache.put(kv, kv);
 
                 long cnt = writes.incrementAndGet();
 
@@ -63,9 +63,9 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     };
 
     /** Read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> readClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<IgniteCache<Integer, Integer>> readClos =
+        new CIX1<IgniteCache<Integer, Integer>>() {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache)
             throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int k = RAND.nextInt(KEY_RANGE);
@@ -102,7 +102,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private void memoryTest() {
         Ignite ignite = G.ignite();
 
-        final GridCache<Integer, byte[]> cache = ignite.cache(null);
+        final IgniteCache<Integer, byte[]> cache = ignite.jcache(null);
 
         assert cache != null;
 
@@ -114,16 +114,18 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
                     while (true) {
                         int idx;
 
-                        cache.putx(idx = cnt.getAndIncrement(), newArray());
+                        cache.put(idx = cnt.getAndIncrement(), newArray());
 
                         if (idx % 1000 == 0)
-                            info("Stored '" + idx + "' objects in cache [cache-size=" + cache.keySet().size() + ']');
+                            info("Stored '" + idx + "' objects in cache [cache-size=" + cache.size()
+                                + ']');
                     }
                 }
             }, threads, "memory-test-worker");
         }
         catch (OutOfMemoryError ignore) {
-            info("Populated '" + cnt.get() + "' 1K objects into cache [cache-size=" + cache.keySet().size() + ']');
+            info("Populated '" + cnt.get() + "' 1K objects into cache [cache-size=" + cache.size()
+                + ']');
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -150,7 +152,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
             if (LOAD)
                 test.loadTest(test.writeClos, test.readClos);
 
-            G.ignite().cache(null).clear();
+            G.ignite().jcache(null).clear();
 
             System.gc();
 

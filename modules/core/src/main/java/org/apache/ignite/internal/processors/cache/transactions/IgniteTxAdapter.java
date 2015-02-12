@@ -34,6 +34,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -1221,6 +1222,22 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 }
 
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+                if (op == NOOP) {
+                    ExpiryPolicy expiry = txEntry.expiry();
+
+                    if (expiry == null)
+                        expiry = cacheCtx.expiry();
+
+                    if (expiry != null) {
+                        long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                        txEntry.ttl(ttl);
+
+                        if (ttl == CU.TTL_ZERO)
+                            op = DELETE;
+                    }
+                }
 
                 return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }

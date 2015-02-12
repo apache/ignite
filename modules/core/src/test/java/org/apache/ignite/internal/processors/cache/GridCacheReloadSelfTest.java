@@ -163,10 +163,10 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
-                cache.reload(i);
+                load(cache, i, true);
 
             assertEquals(MAX_CACHE_ENTRIES, cache.size());
         }

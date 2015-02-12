@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.integration;
 
 import junit.framework.*;
 import net.sf.json.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
@@ -128,8 +129,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         for (HashMapStore cacheStore : cacheStores.values())
             cacheStore.map.clear();
 
-        grid().cache(null).clear();
-        grid().cache(CACHE_NAME).clear();
+        grid().jcache(null).clear();
+        grid().jcache(CACHE_NAME).clear();
 
         INTERCEPTED_OBJECTS.clear();
     }
@@ -456,8 +457,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        GridCache<String, String> dfltCache = grid().cache(null);
-        GridCache<Object, Object> namedCache = grid().cache(CACHE_NAME);
+        IgniteCache<String, String> dfltCache = grid().jcache(null);
+        IgniteCache<Object, Object> namedCache = grid().jcache(CACHE_NAME);
 
         GridClientData dfltData = client.data();
 
@@ -537,7 +538,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         dfltData.putAll(F.asMap("key1", "val1", "key2", "val2"));
 
-        Map<String, String> map = grid().<String, String>cache(null).getAll(F.asList("key1", "key2"));
+        Map<String, String> map = grid().<String, String>jcache(null).getAll(F.asSet("key1", "key2"));
 
         assertEquals(2, map.size());
         assertEquals("val1", map.get("key1"));
@@ -545,7 +546,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         dfltData.putAllAsync(F.asMap("key3", "val3", "key4", "val4")).get();
 
-        map = grid().<String, String>cache(null).getAll(F.asList("key3", "key4"));
+        map = grid().<String, String>jcache(null).getAll(F.asSet("key3", "key4"));
 
         assertEquals(2, map.size());
         assertEquals("val3", map.get("key3"));
@@ -553,7 +554,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         namedData.putAll(F.asMap("key1", "val1", "key2", "val2"));
 
-        map = grid().<String, String>cache(CACHE_NAME).getAll(F.asList("key1", "key2"));
+        map = grid().<String, String>jcache(CACHE_NAME).getAll(F.asSet("key1", "key2"));
 
         assertEquals(2, map.size());
         assertEquals("val1", map.get("key1"));
@@ -561,7 +562,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         namedData.putAllAsync(F.asMap("key3", "val3", "key4", "val4")).get();
 
-        map = grid().<String, String>cache(CACHE_NAME).getAll(F.asList("key3", "key4"));
+        map = grid().<String, String>jcache(CACHE_NAME).getAll(F.asSet("key3", "key4"));
 
         assertEquals(2, map.size());
         assertEquals("val3", map.get("key3"));
@@ -582,7 +583,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         dfltData.putAll(F.asMap("", "val1"));
 
-        assertEquals(F.asMap("", "val1"), grid().<String, String>cache(null).getAll(F.asList("")));
+        assertEquals(F.asMap("", "val1"), grid().<String, String>jcache(null).getAll(F.asSet("")));
 
         GridClientProtocol proto = clientConfiguration().getProtocol();
 
@@ -623,12 +624,12 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(namedData);
 
-        assertTrue(grid().cache(null).putx("key", "val"));
+        grid().jcache(null).put("key", "val");
 
         Assert.assertEquals("val", dfltData.get("key"));
         Assert.assertEquals("val", dfltData.getAsync("key").get());
 
-        assertTrue(grid().cache(CACHE_NAME).putx("key", "val"));
+        grid().jcache(CACHE_NAME).put("key", "val");
 
         Assert.assertEquals("val", namedData.get("key"));
         Assert.assertEquals("val", namedData.getAsync("key").get());
@@ -646,8 +647,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(namedData);
 
-        assertTrue(grid().cache(null).putx("key1", "val1"));
-        assertTrue(grid().cache(null).putx("key2", "val2"));
+        grid().jcache(null).put("key1", "val1");
+        grid().jcache(null).put("key2", "val2");
 
         Map<String, String> map = dfltData.getAll(F.asList("key1", "key2"));
 
@@ -655,8 +656,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", map.get("key1"));
         assertEquals("val2", map.get("key2"));
 
-        assertTrue(grid().cache(null).putx("key3", "val3"));
-        assertTrue(grid().cache(null).putx("key4", "val4"));
+        grid().jcache(null).put("key3", "val3");
+        grid().jcache(null).put("key4", "val4");
 
         map = dfltData.getAll(F.asList("key3", "key4"));
 
@@ -669,8 +670,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertEquals(1, map.size());
         assertEquals("val1", map.get("key1"));
 
-        assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key2", "val2"));
+        grid().jcache(CACHE_NAME).put("key1", "val1");
+        grid().jcache(CACHE_NAME).put("key2", "val2");
 
         map = namedData.getAll(F.asList("key1", "key2"));
 
@@ -678,8 +679,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", map.get("key1"));
         assertEquals("val2", map.get("key2"));
 
-        assertTrue(grid().cache(CACHE_NAME).putx("key3", "val3"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key4", "val4"));
+        grid().jcache(CACHE_NAME).put("key3", "val3");
+        grid().jcache(CACHE_NAME).put("key4", "val4");
 
         map = namedData.getAll(F.asList("key3", "key4"));
 
@@ -706,27 +707,27 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(namedData);
 
-        assertTrue(grid().cache(null).putx("key1", "val1"));
-        assertTrue(grid().cache(null).putx("key2", "val2"));
+        grid().jcache(null).put("key1", "val1");
+        grid().jcache(null).put("key2", "val2");
 
         assertTrue(dfltData.remove("key1"));
         assertTrue(dfltData.removeAsync("key2").get());
         assertFalse(dfltData.remove("wrongKey"));
         assertFalse(dfltData.removeAsync("wrongKey").get());
 
-        assertNull(grid().cache(null).get("key1"));
-        assertNull(grid().cache(null).get("key2"));
+        assertNull(grid().jcache(null).get("key1"));
+        assertNull(grid().jcache(null).get("key2"));
 
-        assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key2", "val2"));
+        grid().jcache(CACHE_NAME).put("key1", "val1");
+        grid().jcache(CACHE_NAME).put("key2", "val2");
 
         assertTrue(namedData.remove("key1"));
         assertTrue(namedData.removeAsync("key2").get());
         assertFalse(namedData.remove("wrongKey"));
         assertFalse(namedData.removeAsync("wrongKey").get());
 
-        assertNull(grid().cache(CACHE_NAME).get("key1"));
-        assertNull(grid().cache(CACHE_NAME).get("key2"));
+        assertNull(grid().jcache(CACHE_NAME).get("key1"));
+        assertNull(grid().jcache(CACHE_NAME).get("key2"));
     }
 
     /**
@@ -736,7 +737,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         GridClientData namedData = client.data(CACHE_NAME).flagsOn(GridClientCacheFlag.SKIP_STORE);
 
         // test keyA
-        assertTrue(grid().cache(CACHE_NAME).putx("keyA", "valA"));
+        grid().jcache(CACHE_NAME).put("keyA", "valA");
         assertTrue(namedData.remove("keyA"));
         assertEquals("valA", cacheStores.get(CACHE_NAME).map.get("keyA"));
         assertNull(namedData.get("keyA"));
@@ -755,7 +756,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertTrue(namedData.put("k", "v"));
 
-        assertTrue(grid().cache(CACHE_NAME).evict("k"));
+        grid().jcache(CACHE_NAME).localEvict(Collections.<Object>singleton("k"));
 
         assertNull(namedData.flagsOn(GridClientCacheFlag.SKIP_SWAP, GridClientCacheFlag.SKIP_STORE).get("k"));
         assertEquals("v", namedData.flagsOn(GridClientCacheFlag.SKIP_STORE).get("k"));
@@ -773,31 +774,31 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(namedData);
 
-        assertTrue(grid().cache(null).putx("key1", "val1"));
-        assertTrue(grid().cache(null).putx("key2", "val2"));
-        assertTrue(grid().cache(null).putx("key3", "val3"));
-        assertTrue(grid().cache(null).putx("key4", "val4"));
+        grid().jcache(null).put("key1", "val1");
+        grid().jcache(null).put("key2", "val2");
+        grid().jcache(null).put("key3", "val3");
+        grid().jcache(null).put("key4", "val4");
 
         dfltData.removeAll(F.asList("key1", "key2"));
         dfltData.removeAllAsync(F.asList("key3", "key4")).get();
 
-        assertNull(grid().cache(null).get("key1"));
-        assertNull(grid().cache(null).get("key2"));
-        assertNull(grid().cache(null).get("key3"));
-        assertNull(grid().cache(null).get("key4"));
+        assertNull(grid().jcache(null).get("key1"));
+        assertNull(grid().jcache(null).get("key2"));
+        assertNull(grid().jcache(null).get("key3"));
+        assertNull(grid().jcache(null).get("key4"));
 
-        assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key2", "val2"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key3", "val3"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key4", "val4"));
+        grid().jcache(CACHE_NAME).put("key1", "val1");
+        grid().jcache(CACHE_NAME).put("key2", "val2");
+        grid().jcache(CACHE_NAME).put("key3", "val3");
+        grid().jcache(CACHE_NAME).put("key4", "val4");
 
         namedData.removeAll(F.asList("key1", "key2"));
         namedData.removeAllAsync(F.asList("key3", "key4")).get();
 
-        assertNull(grid().cache(CACHE_NAME).get("key1"));
-        assertNull(grid().cache(CACHE_NAME).get("key2"));
-        assertNull(grid().cache(CACHE_NAME).get("key3"));
-        assertNull(grid().cache(CACHE_NAME).get("key4"));
+        assertNull(grid().jcache(CACHE_NAME).get("key1"));
+        assertNull(grid().jcache(CACHE_NAME).get("key2"));
+        assertNull(grid().jcache(CACHE_NAME).get("key3"));
+        assertNull(grid().jcache(CACHE_NAME).get("key4"));
     }
 
     /**
@@ -813,46 +814,48 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(namedData);
 
         assertFalse(dfltData.replace("key1", "val1"));
-        assertTrue(grid().cache(null).putx("key1", "val1"));
+        grid().jcache(null).put("key1", "val1");
         assertTrue(dfltData.replace("key1", "val2"));
-        assertEquals("val2", grid().cache(null).get("key1"));
+        assertEquals("val2", grid().jcache(null).get("key1"));
 
         assertFalse(dfltData.replace("key2", "val1"));
-        assertTrue(grid().cache(null).putx("key2", "val1"));
+        grid().jcache(null).put("key2", "val1");
         assertTrue(dfltData.replace("key2", "val2"));
-        assertEquals("val2", grid().cache(null).get("key2"));
+        assertEquals("val2", grid().jcache(null).get("key2"));
 
-        grid().cache(null).removeAll(F.asList("key1", "key2"));
+        grid().jcache(null).removeAll(F.asSet("key1", "key2"));
 
         assertFalse(dfltData.replaceAsync("key1", "val1").get());
-        assertTrue(grid().cache(null).putx("key1", "val1"));
+        grid().jcache(null).put("key1", "val1");
         assertTrue(dfltData.replaceAsync("key1", "val2").get());
-        assertEquals("val2", grid().cache(null).get("key1"));
+        assertEquals("val2", grid().jcache(null).get("key1"));
 
         assertFalse(dfltData.replaceAsync("key2", "val1").get());
-        assertTrue(grid().cache(null).putx("key2", "val1"));
+        grid().jcache(null).put("key2", "val1");
         assertTrue(dfltData.replaceAsync("key2", "val2").get());
-        assertEquals("val2", grid().cache(null).get("key2"));
+        assertEquals("val2", grid().jcache(null).get("key2"));
 
         assertFalse(namedData.replace("key1", "val1"));
-        assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
+        IgniteCache<Object, Object> cache = grid().jcache(CACHE_NAME);
+
+        cache.put("key1", "val1");
         assertTrue(namedData.replace("key1", "val2"));
-        assertEquals("val2", grid().cache(CACHE_NAME).get("key1"));
+        assertEquals("val2", cache.get("key1"));
 
         assertFalse(namedData.replaceAsync("key2", "val1").get());
-        assertTrue(grid().cache(CACHE_NAME).putx("key2", "val1"));
+        cache.put("key2", "val1");
         assertTrue(namedData.replaceAsync("key2", "val2").get());
-        assertEquals("val2", grid().cache(CACHE_NAME).get("key2"));
+        assertEquals("val2", cache.get("key2"));
 
-        grid().cache(CACHE_NAME).removeAll(F.asList("key1", "key2"));
+        cache.removeAll(F.asSet("key1", "key2"));
 
         assertFalse(namedData.replaceAsync("key1", "val1").get());
-        assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
+        cache.put("key1", "val1");
         assertTrue(namedData.replaceAsync("key1", "val2").get());
-        assertEquals("val2", grid().cache(CACHE_NAME).get("key1"));
+        assertEquals("val2", cache.get("key1"));
 
         assertFalse(namedData.replaceAsync("key2", "val1").get());
-        assertTrue(grid().cache(CACHE_NAME).putx("key2", "val1"));
+        cache.put("key2", "val1");
         assertTrue(namedData.replaceAsync("key2", "val2").get());
     }
 
@@ -869,22 +872,22 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(datas[0]);
         assertNotNull(datas[1]);
 
-        GridCache[] caches = new GridCache[] {
-            grid().cache(null),
-            grid().cache(CACHE_NAME)
+        IgniteCache[] caches = new IgniteCache[] {
+            grid().jcache(null),
+            grid().jcache(CACHE_NAME)
         };
 
         for (int i = 0; i < datas.length; i++) {
             GridClientData data = datas[i];
-            GridCache<String, String> cache = (GridCache<String, String>)caches[i];
+            IgniteCache<String, String> cache = (IgniteCache<String, String>)caches[i];
 
             assertFalse(data.cas("key", null, null));
-            assertTrue(cache.putx("key", "val"));
+            cache.put("key", "val");
             assertTrue(data.cas("key", null, null));
             assertNull(cache.get("key"));
 
             assertFalse(data.cas("key", null, "val"));
-            assertTrue(cache.putx("key", "val"));
+            cache.put("key", "val");
             assertFalse(data.cas("key", null, "wrongVal"));
             assertEquals("val", cache.get("key"));
             assertTrue(data.cas("key", null, "val"));
@@ -894,23 +897,23 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             assertEquals("val", cache.get("key"));
             assertFalse(data.cas("key", "newVal", null));
             assertEquals("val", cache.get("key"));
-            assertTrue(cache.removex("key"));
+            cache.remove("key");
 
             assertFalse(data.cas("key", "val1", "val2"));
-            assertTrue(cache.putx("key", "val2"));
+            cache.put("key", "val2");
             assertFalse(data.cas("key", "val1", "wrongVal"));
             assertEquals("val2", cache.get("key"));
             assertTrue(data.cas("key", "val1", "val2"));
             assertEquals("val1", cache.get("key"));
-            assertTrue(cache.removex("key"));
+            cache.remove("key");
 
             assertFalse(data.casAsync("key", null, null).get());
-            assertTrue(cache.putx("key", "val"));
+            cache.put("key", "val");
             assertTrue(data.casAsync("key", null, null).get());
             assertNull(cache.get("key"));
 
             assertFalse(data.casAsync("key", null, "val").get());
-            assertTrue(cache.putx("key", "val"));
+            cache.put("key", "val");
             assertFalse(data.casAsync("key", null, "wrongVal").get());
             assertEquals("val", cache.get("key"));
             assertTrue(data.casAsync("key", null, "val").get());
@@ -920,15 +923,15 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             assertEquals("val", cache.get("key"));
             assertFalse(data.casAsync("key", "newVal", null).get());
             assertEquals("val", cache.get("key"));
-            assertTrue(cache.removex("key"));
+            cache.remove("key");
 
             assertFalse(data.casAsync("key", "val1", "val2").get());
-            assertTrue(cache.putx("key", "val2"));
+            cache.put("key", "val2");
             assertFalse(data.casAsync("key", "val1", "wrongVal").get());
             assertEquals("val2", cache.get("key"));
             assertTrue(data.casAsync("key", "val1", "val2").get());
             assertEquals("val1", cache.get("key"));
-            assertTrue(cache.removex("key"));
+            cache.remove("key");
         }
     }
 
@@ -939,28 +942,28 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         GridClientData dfltData = client.data();
         GridClientData namedData = client.data(CACHE_NAME);
 
-        grid().cache(null).mxBean().clear();
-        grid().cache(CACHE_NAME).mxBean().clear();
+        grid().jcache(null).mxBean().clear();
+        grid().jcache(CACHE_NAME).mxBean().clear();
 
-        grid().cache(null).putx("key1", "val1");
-        grid().cache(null).putx("key2", "val2");
-        grid().cache(null).putx("key2", "val3");
+        grid().jcache(null).put("key1", "val1");
+        grid().jcache(null).put("key2", "val2");
+        grid().jcache(null).put("key2", "val3");
 
-        assertEquals("val1", grid().cache(null).get("key1"));
-        assertEquals("val3", grid().cache(null).get("key2"));
-        assertEquals("val3", grid().cache(null).get("key2"));
+        assertEquals("val1", grid().jcache(null).get("key1"));
+        assertEquals("val3", grid().jcache(null).get("key2"));
+        assertEquals("val3", grid().jcache(null).get("key2"));
 
-        grid().cache(CACHE_NAME).putx("key1", "val1");
-        grid().cache(CACHE_NAME).putx("key2", "val2");
-        grid().cache(CACHE_NAME).putx("key2", "val3");
+        grid().jcache(CACHE_NAME).put("key1", "val1");
+        grid().jcache(CACHE_NAME).put("key2", "val2");
+        grid().jcache(CACHE_NAME).put("key2", "val3");
 
-        assertEquals("val1", grid().cache(CACHE_NAME).get("key1"));
-        assertEquals("val3", grid().cache(CACHE_NAME).get("key2"));
-        assertEquals("val3", grid().cache(CACHE_NAME).get("key2"));
+        assertEquals("val1", grid().jcache(CACHE_NAME).get("key1"));
+        assertEquals("val3", grid().jcache(CACHE_NAME).get("key2"));
+        assertEquals("val3", grid().jcache(CACHE_NAME).get("key2"));
 
         GridClientDataMetrics m = dfltData.metrics();
 
-        CacheMetrics metrics = grid().cache(null).metrics();
+        CacheMetrics metrics = grid().jcache(null).metrics();
 
         assertNotNull(m);
         assertEquals(metrics.getCacheGets(), m.reads());
@@ -974,7 +977,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         m = namedData.metrics();
 
-        metrics = grid().cache(CACHE_NAME).metrics();
+        metrics = grid().jcache(CACHE_NAME).metrics();
 
         assertNotNull(m);
         assertEquals(metrics.getCacheGets(), m.reads());
@@ -1297,7 +1300,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInterception() throws Exception {
-        grid().cache(null).put("rem1", "rem1");
+        grid().jcache(null).put("rem1", "rem1");
 
         GridClientData data = client.data();
 
@@ -1319,9 +1322,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             assert INTERCEPTED_OBJECTS.containsKey(obj);
         }
 
-        assert ("nval1" + INTERCEPTED_SUF).equals(grid().cache(null).get("key1" + INTERCEPTED_SUF));
-        assert ("val2" + INTERCEPTED_SUF).equals(grid().cache(null).get("key2" + INTERCEPTED_SUF));
-        assert "rem1".equals(grid().cache(null).get("rem1"));
+        assert ("nval1" + INTERCEPTED_SUF).equals(grid().jcache(null).get("key1" + INTERCEPTED_SUF));
+        assert ("val2" + INTERCEPTED_SUF).equals(grid().jcache(null).get("key2" + INTERCEPTED_SUF));
+        assert "rem1".equals(grid().jcache(null).get("rem1"));
 
         overwriteIntercepted = false;
     }

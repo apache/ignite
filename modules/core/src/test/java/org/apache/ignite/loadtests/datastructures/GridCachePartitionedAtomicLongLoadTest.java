@@ -109,7 +109,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         @Override public Boolean call() throws Exception {
             Ignite ignite = grid();
 
-            GridCache cache = ignite.cache(null);
+            IgniteCache cache = ignite.jcache(null);
 
             assert cache != null;
 
@@ -118,7 +118,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < DURATION && !Thread.currentThread().isInterrupted()) {
-                IgniteTx tx = cache.txStart();
+                IgniteTx tx = ignite.transactions().txStart();
 
                 long seqVal = seq.incrementAndGet();
 

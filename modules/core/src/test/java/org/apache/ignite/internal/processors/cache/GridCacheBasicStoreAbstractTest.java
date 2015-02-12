@@ -125,7 +125,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cache.put(100, "hacuna matata");
         assertEquals(1, map.size());
 
-        cache.localEvict(Collections.<Integer>singleton(100));
+        cache.localEvict(Collections.singleton(100));
         assertEquals(1, map.size());
 
         assertEquals("hacuna matata", cache.getAndRemove(100));

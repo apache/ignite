@@ -17,7 +17,8 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.CacheEntry
+import javax.cache.Cache
+
 import org.apache.ignite.events.Event
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
@@ -74,7 +75,7 @@ object ScalarCacheExample extends App {
         // Put one more value.
         c += (3.toString -> 11)
 
-        val gt10 = (e: CacheEntry[String, Int]) => e.peek() > 10
+        val gt10 = (e: Cache.Entry[String, Int]) => e.getValue() > 10
 
         // These should pass the predicate.
         // Note that the predicate checks current state of entry, not the new value.

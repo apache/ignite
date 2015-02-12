@@ -104,7 +104,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        GridCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.jcache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -112,14 +112,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        GridCache<String, Integer> c1 = g1.cache(null);
-        GridCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.jcache(null);
+        IgniteCache<String, Integer> c2 = g2.jcache(null);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c1.peek(Integer.toString(i)));
+            assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c2.peek(Integer.toString(i)));
+            assertNull(c2.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -149,7 +149,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         checkMaps(false, d0, d1, d2);
 
         // Force preload.
-        c1.forceRepartition();
+        internalCache(c1).forceRepartition();
 
         l1.await();
 
@@ -160,7 +160,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         info("Beginning to wait for cache2 repartition.");
 
         // Force preload.
-        c2.forceRepartition();
+        internalCache(c2).forceRepartition();
 
         l2.await();
 
@@ -181,7 +181,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        GridCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.jcache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -189,14 +189,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        GridCache<String, Integer> c1 = g1.cache(null);
-        GridCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.jcache(null);
+        IgniteCache<String, Integer> c2 = g2.jcache(null);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c1.peek(Integer.toString(i)));
+            assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c2.peek(Integer.toString(i)));
+            assertNull(c2.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -251,7 +251,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        GridCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.jcache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -259,8 +259,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        GridCache<String, Integer> c1 = g1.cache(null);
-        GridCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.jcache(null);
+        IgniteCache<String, Integer> c2 = g2.jcache(null);
 
         GridDhtCacheAdapter<String, Integer> d0 = dht(0);
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
@@ -352,7 +352,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
             long start = System.currentTimeMillis();
 
-            g.cache(null).forceRepartition().get();
+            internalCache(g.jcache(null)).forceRepartition().get();
 
             info(">>> Finished preloading of empty cache in " + (System.currentTimeMillis() - start) + "ms.");
         }
@@ -374,7 +374,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private CacheAffinity<Object> affinity(Ignite g) {
-        return g.cache(null).affinity();
+        return g.affinity(null);
     }
 
     /**
@@ -392,14 +392,14 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param c Cache.
      * @param keyCnt Key count.
      */
-    private void checkCache(GridCache<String, Integer> c, int keyCnt) {
-        Ignite g = c.gridProjection().ignite();
+    private void checkCache(IgniteCache<String, Integer> c, int keyCnt) {
+        Ignite g = c.unwrap(Ignite.class);
 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);
 
-            if (c.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(Integer.valueOf(i), c.peek(key));
+            if (affinity(c).isPrimaryOrBackup(g.cluster().localNode(), key))
+                assertEquals(Integer.valueOf(i), c.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 
