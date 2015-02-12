@@ -107,7 +107,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     private static final long serialVersionUID = 0L;
 
     /** Compatible versions. */
-    private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
+    private static final String COMPATIBLE_VERS = GridProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
