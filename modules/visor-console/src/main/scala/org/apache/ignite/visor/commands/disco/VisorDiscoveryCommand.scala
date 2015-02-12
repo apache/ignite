@@ -17,20 +17,17 @@
 
 package org.apache.ignite.visor.commands.disco
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.EventType
-import org.apache.ignite.events.EventType._
-import org.apache.ignite.visor.{VisorTag, visor}
-
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -152,7 +149,7 @@ class VisorDiscoveryCommand {
 
                 val cnt =
                     try
-                        cntOpt.map(_.toInt).getOrElse(Int.MaxValue)
+                        cntOpt.fold(Int.MaxValue)(_.toInt)
                     catch {
                         case e: NumberFormatException =>
                             scold("Invalid count: " + cntOpt.get)
@@ -226,7 +223,7 @@ class VisorDiscoveryCommand {
         val nodeStartTime = node.metrics().getStartTime
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
-            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, IgniteUtils.gridEventName(EVT_NODE_JOINED),
+            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
                 node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
 
             evts = Seq(root) ++ evts
@@ -302,5 +299,5 @@ object VisorDiscoveryCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromDisco2Visor(vs: VisorTag) = cmd
+    implicit def fromDisco2Visor(vs: VisorTag): VisorDiscoveryCommand = cmd
 }

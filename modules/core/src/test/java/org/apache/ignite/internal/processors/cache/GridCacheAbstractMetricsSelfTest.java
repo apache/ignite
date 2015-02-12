@@ -697,7 +697,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @param inTx
+     * @param inTx {@code true} for tx.
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx) throws Exception {
@@ -711,7 +711,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         c.put(key, 1);
 
-        GridCacheEntryEx entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+        GridCacheAdapter<Object, Object> c0 = ((IgniteKernal)grid(0)).internalCache();
+
+        if (c0.isNear())
+            c0 = c0.context().near().dht();
+
+        GridCacheEntryEx entry = c0.entryEx(key);
 
         assert entry != null;
 
@@ -752,8 +757,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+                c0 = ((IgniteKernal)grid(i)).internalCache();
+
+                if (c0.isNear())
+                    c0 = c0.context().near().dht();
+
+                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -778,8 +787,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+                c0 = ((IgniteKernal)grid(i)).internalCache();
+
+                if (c0.isNear())
+                    c0 = c0.context().near().dht();
+
+                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -804,8 +817,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+                c0 = ((IgniteKernal)grid(i)).internalCache();
+
+                if (c0.isNear())
+                    c0 = c0.context().near().dht();
+
+                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -834,8 +851,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+                c0 = ((IgniteKernal)grid(i)).internalCache();
+
+                if (c0.isNear())
+                    c0 = c0.context().near().dht();
+
+                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());
