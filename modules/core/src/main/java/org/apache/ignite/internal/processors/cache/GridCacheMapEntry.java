@@ -1401,7 +1401,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass) {
-                    if (expiryPlc != null && !readThrough && filter != cctx.noPeekArray() && hasValueUnlocked()) {
+                    if (expiryPlc != null && !cctx.readThrough() && filter != cctx.noPeekArray() && hasValueUnlocked()) {
                         long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
 
                         if (ttl != CU.TTL_NOT_CHANGED)
@@ -1440,7 +1440,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
 
                 if (!entry.modified()) {
-                    if (expiryPlc != null && !readThrough && hasValueUnlocked()) {
+                    if (expiryPlc != null && !cctx.readThrough() && hasValueUnlocked()) {
                         long newTtl = CU.toTtl(expiryPlc.getExpiryForAccess());
 
                         if (newTtl != CU.TTL_NOT_CHANGED)

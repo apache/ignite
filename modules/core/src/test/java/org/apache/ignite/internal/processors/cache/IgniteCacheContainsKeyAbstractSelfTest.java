@@ -43,11 +43,11 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
         cfg.setCommunicationSpi(commSpi);
 
-        TransactionsConfiguration tcfg = new TransactionsConfiguration();
+        TransactionConfiguration tcfg = new TransactionConfiguration();
 
         tcfg.setTxSerializableEnabled(true);
 
-        cfg.setTransactionsConfiguration(tcfg);
+        cfg.setTransactionConfiguration(tcfg);
 
         return cfg;
     }

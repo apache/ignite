@@ -5311,7 +5311,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 null,
                 null,
                 null,
-                null,
                 null);
 
             if (val == null)
