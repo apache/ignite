@@ -81,10 +81,10 @@ public class GridCacheConcurrentMap<K, V> {
     protected final GridCacheContext<K, V> ctx;
 
     /** */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final AtomicLong mapPubSize = new AtomicLong();
 
     /** */
-    private final LongAdder mapSize = new LongAdder();
+    private final AtomicLong mapSize = new AtomicLong();
 
     /** Filters cache internal entry. */
     private static final P1<Cache.Entry<?, ?>> NON_INTERNAL =
@@ -329,7 +329,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return {@code True} if this map is empty.
      */
     public boolean isEmpty() {
-        return mapSize.sum() == 0;
+        return mapSize.get() == 0;
     }
 
     /**
@@ -345,7 +345,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Public size.
      */
     public int publicSize() {
-        return mapPubSize.intValue();
+        return (int)mapPubSize.get();
     }
 
     /**
@@ -357,7 +357,9 @@ public class GridCacheConcurrentMap<K, V> {
         assert e.deletedUnlocked();
         assert ctx.deferredDelete();
 
-        mapPubSize.decrement();
+        long l = mapPubSize.decrementAndGet();
+
+        assert l >= 0 : l;
 
         segmentFor(e.hash()).decrementPublicSize();
     }
@@ -371,7 +373,9 @@ public class GridCacheConcurrentMap<K, V> {
         assert !e.deletedUnlocked();
         assert ctx.deferredDelete();
 
-        mapPubSize.increment();
+        long l = mapPubSize.incrementAndGet();
+
+        assert l > 0 : l;
 
         segmentFor(e.hash()).incrementPublicSize();
     }
@@ -407,7 +411,7 @@ public class GridCacheConcurrentMap<K, V> {
         checkWeakQueue();
 
         while (true) {
-            if (mapPubSize.sum() == 0)
+            if (mapPubSize.get() == 0)
                 return null;
 
             // Desired and current indexes.
@@ -640,7 +644,7 @@ public class GridCacheConcurrentMap<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheConcurrentMap.class, this, "size", mapSize, "pubSize", mapPubSize);
+        return S.toString(GridCacheConcurrentMap.class, this, "size", mapSize, "pubSize", mapPubSize.get());
     }
 
     /**
@@ -777,7 +781,7 @@ public class GridCacheConcurrentMap<K, V> {
         private volatile SegmentHeader<K, V> hdr;
 
         /** The number of public elements in this segment's region. */
-        private final LongAdder pubSize = new LongAdder();
+        private final AtomicLong pubSize = new AtomicLong();
 
         /**
          * The load factor for the hash table. Even though this value
@@ -958,13 +962,15 @@ public class GridCacheConcurrentMap<K, V> {
 
                         // Modify counters.
                         if (!retVal.isInternal()) {
-                            mapPubSize.increment();
+                            long l = mapPubSize.incrementAndGet();
 
-                            pubSize.increment();
+                            assert l > 0 : l;
+
+                            pubSize.incrementAndGet();
                         }
                     }
 
-                    mapSize.increment();
+                    mapSize.incrementAndGet();
 
                     hdr.size(c);
                 }
@@ -1148,13 +1154,17 @@ public class GridCacheConcurrentMap<K, V> {
                     // Modify counters.
                     synchronized (e) {
                         if (!e.isInternal() && !e.deleted()) {
-                            mapPubSize.decrement();
+                            long l = mapPubSize.decrementAndGet();
 
-                            pubSize.decrement();
+                            assert l >= 0 : l;
+
+                            pubSize.decrementAndGet();
                         }
                     }
 
-                    mapSize.decrement();
+                    long l = mapSize.decrementAndGet();
+
+                    assert l >= 0 : l;
 
                     hdr.decrementSize();
                 }
@@ -1187,14 +1197,16 @@ public class GridCacheConcurrentMap<K, V> {
          * Decrements segment public size.
          */
         void decrementPublicSize() {
-            pubSize.decrement();
+            long l = pubSize.decrementAndGet();
+
+            assert l >= 0 : l;
         }
 
         /**
          * Decrements segment public size.
          */
         void incrementPublicSize() {
-            pubSize.increment();
+            pubSize.incrementAndGet();
         }
 
         /**
@@ -2294,6 +2306,11 @@ public class GridCacheConcurrentMap<K, V> {
         /** {@inheritDoc} */
         @Override public void clear() {
             set.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return set.isEmpty();
         }
 
         /** {@inheritDoc} */
