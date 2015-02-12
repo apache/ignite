@@ -2404,10 +2404,6 @@ object visor extends VisorTag {
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
 
-                EVT_LIC_CLEARED,
-                EVT_LIC_VIOLATION,
-                EVT_LIC_GRACE_EXPIRED,
-
                 EVT_CACHE_PRELOAD_STARTED,
                 EVT_CACHE_PRELOAD_STOPPED,
                 EVT_CLASS_DEPLOY_FAILED
