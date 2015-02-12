@@ -32,7 +32,8 @@ import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
-import org.apache.ignite.internal.product.IgniteProduct._
+import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
+import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}

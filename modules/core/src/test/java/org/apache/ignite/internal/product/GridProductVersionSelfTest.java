@@ -20,7 +20,7 @@ package org.apache.ignite.internal.product;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.junit.Assert.*;
 
 /**

@@ -26,7 +26,7 @@ import java.nio.file.*;
 import java.text.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * Setup tool to configure Hadoop client.

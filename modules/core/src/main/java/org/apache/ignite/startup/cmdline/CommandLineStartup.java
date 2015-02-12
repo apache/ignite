@@ -18,7 +18,6 @@
 package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * This class defines command-line Ignite startup. This startup can be used to start Ignite

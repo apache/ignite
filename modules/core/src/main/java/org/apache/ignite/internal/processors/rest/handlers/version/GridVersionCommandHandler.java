@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 
 /**

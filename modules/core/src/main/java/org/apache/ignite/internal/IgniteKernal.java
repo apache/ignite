@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -92,7 +91,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.GridKernalState.*;
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;

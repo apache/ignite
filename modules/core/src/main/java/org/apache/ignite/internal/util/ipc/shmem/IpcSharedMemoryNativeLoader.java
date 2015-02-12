@@ -26,7 +26,7 @@ import java.nio.channels.*;
 import java.security.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.product.IgniteProduct.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * Shared memory native loader.

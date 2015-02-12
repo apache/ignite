@@ -23,7 +23,8 @@ import java.text.SimpleDateFormat
 import java.util
 import javax.swing.ImageIcon
 
-import org.apache.ignite.internal.product.IgniteProduct._
+import org.apache.ignite.internal.IgniteVersionUtils
+import IgniteVersionUtils._
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.startup.cmdline.AboutDialog
