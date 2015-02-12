@@ -367,16 +367,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridCollisionManager collision();
 
     /**
-     * Gets authentication manager.
+     * Gets authentication processor.
      *
-     * @return Authentication manager.
+     * @return Authentication processor.
      */
     public GridSecurityProcessor security();
 
     /**
-     * Gets secure session manager.
+     * Gets secure session processor.
      *
-     * @return Secure session manager.
+     * @return Secure session processor.
      */
     public GridSecureSessionProcessor secureSession();
 

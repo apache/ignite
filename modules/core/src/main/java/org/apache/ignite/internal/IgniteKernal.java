@@ -73,7 +73,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
@@ -1025,6 +1024,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getCommunicationSpi(), "cfg.getCommunicationSpi()");
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
+        A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
         A.notNull(cfg.getFailoverSpi(), "cfg.getFailoverSpi()");
         A.notNull(cfg.getLoadBalancingSpi(), "cfg.getLoadBalancingSpi()");
