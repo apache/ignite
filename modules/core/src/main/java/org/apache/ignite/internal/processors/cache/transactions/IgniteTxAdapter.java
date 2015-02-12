@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -425,6 +427,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridIoPolicy ioPolicy() {
+        return sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean storeUsed() {
         return storeEnabled() && store() != null;
     }
@@ -497,7 +504,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markPreparing() {
+    @Override
+    public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -1636,6 +1644,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean system() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        @Override public GridIoPolicy ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

@@ -26,7 +26,7 @@ import java.nio.file.*;
 import java.text.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * Setup tool to configure Hadoop client.
@@ -56,7 +56,7 @@ public class GridHadoopSetup {
             "                for Apache Hadoop        ",
             "  ");
 
-        println("Version " + ACK_VER);
+        println("Version " + ACK_VER_STR);
 
         configureHadoop();
     }

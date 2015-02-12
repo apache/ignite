@@ -27,7 +27,6 @@ import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -43,7 +42,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Fully operational Ignite file system processor.
@@ -78,9 +76,6 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         IgniteFsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
-
-        // Register HDFS edition usage with license manager.
-        GridLicenseUseRegistry.onUsage(HADOOP, getClass());
 
         validateLocalGgfsConfigurations(cfgs);
 

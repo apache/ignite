@@ -827,30 +827,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testProduct() throws Exception {
-        IgniteProduct product = grid().product();
-
-        GridMarshallerTestBean inBean = newTestBean(product);
-
-        byte[] buf = marshal(inBean);
-
-        GridMarshallerTestBean outBean = unmarshal(buf);
-
-        assert inBean.getObjectField() != null;
-        assert outBean.getObjectField() != null;
-
-        assert inBean.getObjectField().getClass().equals(GridProductImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridProductImpl.class);
-
-        assert inBean != outBean;
-        assert inBean.equals(outBean);
-
-        outBean.checkNullResources();
-    }
-
-    /**
      * @param obj Object field to use.
      * @return New test bean.
      */

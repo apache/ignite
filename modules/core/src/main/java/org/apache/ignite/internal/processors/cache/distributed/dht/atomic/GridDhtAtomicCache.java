@@ -2525,7 +2525,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         try {
             if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)
-                ctx.io().send(nodeId, res);
+                ctx.io().send(nodeId, res, ctx.ioPolicy());
             else {
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
@@ -2636,7 +2636,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse<K, V> res) {
         try {
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
         catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +
@@ -2919,7 +2919,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.gate().enter();
 
                 try {
-                    ctx.io().send(nodeId, msg);
+                    ctx.io().send(nodeId, msg, ctx.ioPolicy());
                 }
                 finally {
                     ctx.gate().leave();

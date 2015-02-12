@@ -890,8 +890,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
+        c0 = ((IgniteKernal)grid(0)).internalCache();
+
+        if (c0.isNear())
+            c0 = c0.context().near().dht();
+
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+        entry = c0.entryEx(key);
 
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());

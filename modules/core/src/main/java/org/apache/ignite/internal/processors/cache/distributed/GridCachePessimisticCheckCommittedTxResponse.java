@@ -49,6 +49,9 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     /** Serialized transaction info. */
     private byte[] committedTxInfoBytes;
 
+    /** System transaction flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -61,14 +64,16 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param committedTxInfo Committed transaction info.
+     * @param sys System transaction flag.
      */
     public GridCachePessimisticCheckCommittedTxResponse(GridCacheVersion txId, IgniteUuid futId, IgniteUuid miniId,
-        @Nullable GridCacheCommittedTxInfo<K, V> committedTxInfo) {
+        @Nullable GridCacheCommittedTxInfo<K, V> committedTxInfo, boolean sys) {
         super(txId, 0);
 
         this.futId = futId;
         this.miniId = miniId;
         this.committedTxInfo = committedTxInfo;
+        this.sys = sys;
     }
 
     /**
@@ -90,6 +95,13 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
      */
     public GridCacheCommittedTxInfo<K, V> committedTxInfo() {
         return committedTxInfo;
+    }
+
+    /**
+     * @return System transaction flag.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /** {@inheritDoc}
@@ -135,6 +147,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
         _clone.miniId = miniId;
         _clone.committedTxInfo = committedTxInfo;
         _clone.committedTxInfoBytes = committedTxInfoBytes;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -171,6 +184,12 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
                 state++;
 
+            case 11:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                state++;
+
         }
 
         return true;
@@ -203,6 +222,14 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
             case 10:
                 miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 11:
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;

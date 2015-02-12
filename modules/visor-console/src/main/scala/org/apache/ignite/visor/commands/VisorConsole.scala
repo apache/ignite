@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands
 
-import org.apache.ignite.internal.GridProductImpl
+import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
@@ -56,13 +56,13 @@ import scala.tools.jline.internal.Configuration
  */
 object VisorConsole extends App {
     /** Version number. */
-    private final val VISOR_VER = GridProductImpl.VER
+    private final val VISOR_VER = VER_STR
 
     /** Release date. */
-    private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
+    private final val VISOR_RELEASE_DATE = RELEASE_DATE_STR
 
     /** Copyright. */
-    private final val VISOR_COPYRIGHT = GridProductImpl.COPYRIGHT
+    private final val VISOR_COPYRIGHT = COPYRIGHT
 
     /** Release date (another format). */
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)

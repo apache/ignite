@@ -476,7 +476,7 @@ class VisorAlertCommand {
         assert(n != null)
 
         val subj = "Visor alert triggered: '" + a.spec + '\''
-        val headline = "Ignite ver. " + ignite.product().version()
+        val headline = "Ignite ver. " + ignite.version()
 
         val stat = stats(a.id)
 
