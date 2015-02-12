@@ -138,7 +138,7 @@ class VisorDiscoveryCommand {
             val tm = if (fs.isDefined) timeFilter(fs) else Long.MaxValue
 
             if (tm > 0) {
-                val nodes = grid.nodes()
+                val nodes = ignite.nodes()
 
                 if (nodes.isEmpty) {
                     scold("Topology is empty.")
@@ -146,7 +146,7 @@ class VisorDiscoveryCommand {
                     return
                 }
 
-                val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
+                val oldest = ignite.nodes().maxBy(_.metrics().getUpTime)
 
                 val cntOpt = argValue("c", argLst)
 
@@ -220,7 +220,7 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+        var evts = ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
             toTaskArgument(node.id(), VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
 
         val nodeStartTime = node.metrics().getStartTime

@@ -55,7 +55,7 @@ public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
         /** {@inheritDoc} */
         @Override protected Void run(String streamerName) {
             try {
-                IgniteStreamer streamer = g.streamer(streamerName);
+                IgniteStreamer streamer = ignite.streamer(streamerName);
 
                 streamer.reset();
 
@@ -63,7 +63,7 @@ public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
             }
             catch (IllegalArgumentException iae) {
                 throw new IgniteException("Failed to reset streamer: " + escapeName(streamerName)
-                    + " on node: " + g.localNode().id(), iae);
+                    + " on node: " + ignite.localNode().id(), iae);
             }
         }
 

@@ -470,11 +470,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridPerformanceSuggestions performance();
 
     /**
-     * @return Enterprise release flag.
-     */
-    public boolean isEnterprise();
-
-    /**
      * Gets user version for given class loader by checking
      * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
      * {@code ignite.xml} file is not found, or user version is not specified there,
