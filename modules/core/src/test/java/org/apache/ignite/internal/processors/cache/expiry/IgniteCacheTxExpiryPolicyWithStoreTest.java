@@ -15,46 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.expiry;
 
-import javax.cache.*;
-import java.util.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
-    /** */
-    private final Map.Entry<K, V> e;
-
-    /**
-     * @param e Entry.
-     */
-    public CacheEntryImpl0(Map.Entry<K, V> e) {
-        this.e = e;
+public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPolicyWithStoreAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */
-    @Override public K getKey() {
-        return e.getKey();
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override public V getValue() {
-        return e.getValue();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
-            return cls.cast(this);
-
-        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
-    }
-
-    /** {@inheritDoc} */
-    public String toString() {
-        return "CacheEntry [key=" + getKey() + ", val=" + getValue() + ']';
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

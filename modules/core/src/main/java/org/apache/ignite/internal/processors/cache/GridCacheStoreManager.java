@@ -489,6 +489,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
 
+            initSession(null);
+
             try {
                 store.loadCache(new IgniteBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
@@ -514,6 +516,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (Exception e) {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
+            finally {
+                sesHolder.set(null);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Loaded all values from store.");
@@ -522,7 +527,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         LT.warn(log, null, "Calling Cache.loadCache() method will have no effect, " +
-            "GridCacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
 
         return false;
     }
@@ -784,8 +789,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
-        if (cctx.portableEnabled() && e.getMessage() != null &&
-            e.getMessage().startsWith("org.gridgain.grid.util.portable.GridPortableObjectImpl")) {
+        if (cctx.portableEnabled() && e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }

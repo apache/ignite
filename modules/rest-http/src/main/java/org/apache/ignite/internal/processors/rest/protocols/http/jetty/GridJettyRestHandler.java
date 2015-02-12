@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
 
 /**
  * Jetty REST handler. The following URL format is supported:
- * {@code /gridgain?cmd=cmdName&param1=abc&param2=123}
+ * {@code /ignite?cmd=cmdName&param1=abc&param2=123}
  */
 public class GridJettyRestHandler extends AbstractHandler {
     /** JSON value processor that does not transform input object. */

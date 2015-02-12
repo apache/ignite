@@ -786,14 +786,24 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class Name", "keyClassName", "Key class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
-                    return checkClassName(rowVal, newVal, true);
+                    boolean valid = checkClassName(rowVal, newVal, true);
+
+                    if (valid)
+                        rowVal.keyClassName(newVal);
+
+                    return valid;
                 }
             });
 
         TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class Name", "valueClassName", "Value class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
-                    return checkClassName(rowVal, newVal, false);
+                    boolean valid = checkClassName(rowVal, newVal, true);
+
+                    if (valid)
+                        rowVal.valueClassName(newVal);
+
+                    return valid;
                 }
             });
 
@@ -825,6 +835,8 @@ public class SchemaLoadApp extends Application {
 
                             return false;
                         }
+
+                    rowVal.javaName(newVal);
 
                     return true;
                 }
@@ -907,11 +919,13 @@ public class SchemaLoadApp extends Application {
 
                         String target = "\"" + sel + "\"";
 
-                        Collection<PojoDescriptor> selPojos = isFields
-                            ? Collections.singleton(curPojo)
-                            : pojosTbl.getSelectionModel().getSelectedItems();
+                        Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
 
-                        if (selPojos.isEmpty()) {
+                        Collection<PojoField> selFields = fieldsTbl.getSelectionModel().getSelectedItems();
+
+                        boolean isEmpty = isFields ? selFields.isEmpty() : selPojos.isEmpty();
+
+                        if (isEmpty) {
                             MessageBox.warningDialog(owner, "Please select " + src + " to rename " + target + "!");
 
                             return;
@@ -936,7 +950,10 @@ public class SchemaLoadApp extends Application {
                                     break;
 
                                 default:
-                                    renameJavaNames(selPojos, regex, replace);
+                                    if (isFields)
+                                        renameFieldsJavaNames(selFields, regex, replace);
+                                    else
+                                        renamePojosJavaNames(selPojos, regex, replace);
                             }
                         }
                         catch (Exception e) {
@@ -948,15 +965,19 @@ public class SchemaLoadApp extends Application {
                 @Override public void handle(ActionEvent evt) {
                     String sel = replaceCb.getSelectionModel().getSelectedItem();
 
-                    boolean renFields = "Java names".equals(sel);
+                    boolean isFields = "Java names".equals(sel) && curTbl == fieldsTbl;
 
-                    String src = (renFields && curTbl == fieldsTbl ? "fields" : "tables");
+                    String src = isFields ? "fields" : "tables";
 
                     String target = "\"" + sel + "\"";
 
                     Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
 
-                    if (selPojos.isEmpty()) {
+                    Collection<PojoField> selFields = fieldsTbl.getSelectionModel().getSelectedItems();
+
+                    boolean isEmpty = isFields ? selFields.isEmpty() : selPojos.isEmpty();
+
+                    if (isEmpty) {
                         MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
 
                         return;
@@ -976,7 +997,10 @@ public class SchemaLoadApp extends Application {
                             break;
 
                         default:
-                            revertJavaNames(selPojos);
+                            if (isFields)
+                                revertFieldsJavaNames(selFields);
+                            else
+                                revertPojosJavaNames(selPojos);
                     }
                 }
             })
@@ -1040,7 +1064,7 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Rename key class name for selected tables.
+     * Rename key class name for selected POJOs.
      *
      * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
@@ -1052,7 +1076,7 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Rename value class name for selected tables.
+     * Rename value class name for selected POJOs.
      *
      * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
@@ -1064,20 +1088,32 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Rename fields java name for current or selected tables.
+     * Rename fields java name for selected POJOs.
      *
      * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameJavaNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+    private void renamePojosJavaNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
         for (PojoDescriptor pojo : selPojos)
             for (PojoField field : pojo.fields())
                 field.javaName(field.javaName().replaceAll(regex, replace));
     }
 
     /**
-     * Revert key class name for selected tables to initial value.
+     * Rename fields java name for current POJO.
+     *
+     * @param selFields Selected fields for current POJO to rename.
+     * @param regex Regex to search.
+     * @param replace Text for replacement.
+     */
+    private void renameFieldsJavaNames(Collection<PojoField> selFields, String regex, String replace) {
+        for (PojoField field : selFields)
+            field.javaName(field.javaName().replaceAll(regex, replace));
+    }
+
+    /**
+     * Revert key class name for selected POJOs to initial value.
      *
      * @param selPojos Selected POJOs to revert.
      */
@@ -1087,7 +1123,7 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Revert value class name for selected tables to initial value.
+     * Revert value class name for selected POJOs to initial value.
      *
      * @param selPojos Selected POJOs to revert.
      */
@@ -1097,13 +1133,23 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Revert fields java name for selected or current table to initial value.
+     * Revert fields java name for selected POJOs to initial value.
      *
      * @param selPojos Selected POJOs to revert.
      */
-    private void revertJavaNames(Collection<PojoDescriptor> selPojos) {
+    private void revertPojosJavaNames(Collection<PojoDescriptor> selPojos) {
         for (PojoDescriptor pojo : selPojos)
             pojo.revertJavaNames();
+    }
+
+    /**
+     * Revert fields java name for current POJO to initial value.
+     *
+     * @param selFields Selected POJO fields to revert.
+     */
+    private void revertFieldsJavaNames(Collection<PojoField> selFields) {
+        for (PojoField field : selFields)
+            field.resetJavaName();
     }
 
     /**
@@ -1157,7 +1203,7 @@ public class SchemaLoadApp extends Application {
             try {
                 return Integer.parseInt(val);
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 return dflt;
             }
 

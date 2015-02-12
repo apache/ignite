@@ -173,6 +173,12 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         cache.removeAll(keys);
 
         assertTrue(expData.isEmpty());
+
+        expectedData(false, "loadCache", cache.getName());
+
+        cache.localLoadCache(null);
+
+        assertTrue(expData.isEmpty());
     }
 
     /**
@@ -223,7 +229,9 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     private class TestStore extends CacheStore<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
-            fail();
+            log.info("Load cache [tx=" + session().transaction() + ']');
+
+            checkSession("loadCache");
         }
 
         /** {@inheritDoc} */

@@ -54,7 +54,7 @@ private case class Pinger(n: ClusterNode, res: Result) extends Runnable {
     assert(res != null)
 
     override def run() {
-        val ok = grid.pingNode(n.id())
+        val ok = ignite.pingNode(n.id())
 
         res.synchronized {
             res.total += 1
@@ -133,7 +133,7 @@ class VisorPingCommand {
             var pings = List.empty[Pinger]
 
             if (argLst.isEmpty)
-                pings ++= grid.nodes().map(Pinger(_, res))
+                pings ++= ignite.nodes().map(Pinger(_, res))
             else {
                 for (id8 <- argLst) {
                     if (id8._1 != null || id8._2 == null)

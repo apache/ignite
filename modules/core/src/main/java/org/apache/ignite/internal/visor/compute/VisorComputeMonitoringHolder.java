@@ -44,37 +44,37 @@ public class VisorComputeMonitoringHolder {
     /**
      * Start collect events for Visor instance.
      *
-     * @param g grid.
+     * @param ignite Grid.
      * @param visorKey unique Visor instance key.
      */
-    public void startCollect(IgniteEx g, String visorKey) {
+    public void startCollect(IgniteEx ignite, String visorKey) {
         synchronized(listenVisor) {
             if (cleanupStopped) {
-                scheduleCleanupJob(g);
+                scheduleCleanupJob(ignite);
 
                 cleanupStopped = false;
             }
 
             listenVisor.put(visorKey, true);
 
-            g.events().enableLocal(VISOR_TASK_EVTS);
+            ignite.events().enableLocal(VISOR_TASK_EVTS);
         }
     }
 
     /**
      * Check if collect events may be disable.
-     * @param g grid.
+     * @param ignite Grid.
      * @return {@code true} if task events should remain enabled.
      */
-    private boolean tryDisableEvents(IgniteEx g) {
+    private boolean tryDisableEvents(IgniteEx ignite) {
         if (!listenVisor.values().contains(true)) {
             listenVisor.clear();
 
-            g.events().disableLocal(VISOR_TASK_EVTS);
+            ignite.events().disableLocal(VISOR_TASK_EVTS);
         }
 
         // Return actual state. It could stay the same if events explicitly enabled in configuration.
-        return g.allEventsUserRecordable(VISOR_TASK_EVTS);
+        return ignite.allEventsUserRecordable(VISOR_TASK_EVTS);
     }
 
     /**

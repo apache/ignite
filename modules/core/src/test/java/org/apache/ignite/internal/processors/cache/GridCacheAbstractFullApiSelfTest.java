@@ -2194,6 +2194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @param async If {@code true} uses asynchronous operation.
      * @throws Exception In case of error.
      */
     private void globalRemoveAll(boolean async) throws Exception {
@@ -2204,6 +2205,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key3", 3);
 
         checkSize(F.asSet("key1", "key2", "key3"));
+
+        atomicClockModeDelay(cache);
 
         IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
@@ -2226,6 +2229,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
+        atomicClockModeDelay(cache);
+
         if (async) {
             IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
@@ -2245,6 +2250,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
 
+        atomicClockModeDelay(cache);
+
         if (async) {
             asyncCache.removeAll();
 
@@ -2258,7 +2265,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Provides count on entities to be removed in removeAll() test
+     * @return Count of entries to be removed in removeAll() test.
      */
     protected long hugeRemoveAllEntryCount(){
         return 1000L;
@@ -3908,8 +3915,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * Checks iterators are cleared after using.
+     *
+     * @param cache Cache.
+     * @throws Exception If failed.
      */
-    private void checkIteratorEmpty(IgniteCache<String, Integer> cache) throws InterruptedException, InterruptedException {
+    private void checkIteratorEmpty(IgniteCache<String, Integer> cache) throws Exception {
         int cnt = 5;
 
         for (int i = 0; i < cnt; ++i) {
@@ -3937,5 +3947,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 Thread.sleep(500);
             }
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
+        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        if (ccfg.getCacheMode() != LOCAL &&
+            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
+            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
+            U.sleep(100);
     }
 }
