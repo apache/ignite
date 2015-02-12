@@ -310,11 +310,6 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
                 }
-                else if (e instanceof LicenseEvent) {
-                    LicenseEvent le = (LicenseEvent)e;
-
-                    res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
-                }
                 else if (e instanceof DiscoveryEvent) {
                     DiscoveryEvent de = (DiscoveryEvent)e;
 
