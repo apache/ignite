@@ -30,12 +30,11 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.GridCache}.
+ * Data transfer object for {@link IgniteCache}.
  */
 public class VisorCache implements Serializable {
     /** */
@@ -189,22 +188,21 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<Cache.Entry> set = ca.entrySet();
+        Set<GridCacheEntryEx> set = ca.map().entries0();
 
         long memSz = 0;
 
-        Iterator<Cache.Entry> it = set.iterator();
+        Iterator<GridCacheEntryEx> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 
         int cnt = 0;
 
-//        TODO ignite-96
-//        while (it.hasNext() && cnt < sz) {
-//            memSz += it.next().memorySize();
-//
-//            cnt++;
-//        }
+        while (it.hasNext() && cnt < sz) {
+            memSz += it.next().memorySize();
+
+            cnt++;
+        }
 
         if (cnt > 0)
             memSz = (long)((double)memSz / cnt * size);
