@@ -172,4 +172,85 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${ignite.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>properties-augmentation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <exec executable="${git.exec}" outputproperty="ignite.build"
+                                              failonerror="yes">
+                                            <arg line="log -1 --format=%ct"/>
+                                        </exec>
+
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision"
+                                              failonerror="yes">
+                                            <arg line="log -1 --format=%H"/>
+                                        </exec>
+
+                                        <tstamp>
+                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en"/>
+                                        </tstamp>
+
+                                        <property name="props.file"
+                                                  value="../../modules/core/target/classes/ignite.properties"/>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.version=.*"/>
+                                            <substitution expression="ignite.version=${ignite.version}"/>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.build=.*"/>
+                                            <substitution expression="ignite.build=${ignite.build}"/>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.revision=.*"/>
+                                            <substitution expression="ignite.revision=${ignite.revision}"/>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.rel.date=.*"/>
+                                            <substitution expression="ignite.rel.date=${ignite.rel.date}"/>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.update.status.params=.*"/>
+                                            <substitution
+                                                    expression="ignite.update.status.params=ver=${ignite.version}"/>
+                                        </replaceregexp>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
