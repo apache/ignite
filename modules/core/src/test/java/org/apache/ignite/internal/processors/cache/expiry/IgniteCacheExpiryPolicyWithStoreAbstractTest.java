@@ -1,0 +1,236 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.expiry;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import javax.cache.configuration.*;
+import javax.cache.expiry.*;
+import javax.cache.integration.*;
+import javax.cache.processor.*;
+
+import java.util.concurrent.*;
+
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+
+/**
+ *
+ */
+public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends IgniteCacheAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheStore<?, ?> cacheStore() {
+        return new TestStore();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setExpiryPolicyFactory(new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return new Duration(TimeUnit.MILLISECONDS, 500);
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return new Duration(TimeUnit.MILLISECONDS, 600);
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return new Duration(TimeUnit.MILLISECONDS, 700);
+                    }
+                };
+            }
+        });
+
+        return ccfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadAll() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        final Integer key = primaryKey(cache);
+
+        storeMap.put(key, 100);
+
+        try {
+            CompletionListenerFuture fut = new CompletionListenerFuture();
+
+            cache.loadAll(F.asSet(key), false, fut);
+
+            fut.get();
+
+            checkTtl(key, 500, false);
+
+            assertEquals((Integer)100, cache.localPeek(key, CachePeekMode.ONHEAP));
+
+            U.sleep(600);
+
+            checkExpired(key);
+
+            cache = cache.withExpiryPolicy(new ExpiryPolicy() {
+                @Override public Duration getExpiryForCreation() {
+                    return new Duration(TimeUnit.MILLISECONDS, 501);
+                }
+
+                @Override public Duration getExpiryForAccess() {
+                    return new Duration(TimeUnit.MILLISECONDS, 601);
+                }
+
+                @Override public Duration getExpiryForUpdate() {
+                    return new Duration(TimeUnit.MILLISECONDS, 701);
+                }
+            });
+
+            fut = new CompletionListenerFuture();
+
+            cache.loadAll(F.asSet(key), false, fut);
+
+            fut.get();
+
+            checkTtl(key, 501, false);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCache() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        final Integer key = primaryKey(cache);
+
+        storeMap.put(key, 100);
+
+        try {
+            cache.loadCache(null);
+
+            checkTtl(key, 500, false);
+
+            assertEquals((Integer)100, cache.localPeek(key, CachePeekMode.ONHEAP));
+
+            U.sleep(600);
+
+            checkExpired(key);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testReadThrough() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        final Integer key = primaryKeys(cache, 1, 100_000).get(0);
+
+        storeMap.put(key, 100);
+
+        try {
+            Integer res = cache.invoke(key, new EntryProcessor<Integer, Integer, Integer>() {
+                @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+                    return e.getValue();
+                }
+            });
+
+            assertEquals((Integer)100, res);
+
+            checkTtl(key, 500, true);
+
+            assertEquals((Integer)100, cache.localPeek(key, CachePeekMode.ONHEAP));
+
+            U.sleep(600);
+
+            checkExpired(key);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
+     * @param key Key.
+     */
+    private void checkExpired(Integer key) {
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteCache<Integer, Integer> cache = jcache(i);
+
+            assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @param ttl TTL.
+     * @throws Exception If failed.
+     */
+    private void checkTtl(Object key, final long ttl, boolean primaryOnly) throws Exception {
+        boolean found = false;
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteKernal grid = (IgniteKernal)grid(i);
+
+            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
+
+            GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+
+            if (e == null && cache.context().isNear())
+                e = cache.context().near().dht().peekEx(key);
+
+            if (e == null) {
+                if (primaryOnly)
+                    assertTrue("Not found " + key, !cache.affinity().isPrimary(grid.localNode(), key));
+                else
+                    assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+            }
+            else {
+                found = true;
+
+                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
+
+                if (ttl > 0)
+                    assertTrue(e.expireTime() > 0);
+                else
+                    assertEquals(0, e.expireTime());
+            }
+        }
+
+        assertTrue(found);
+    }
+}

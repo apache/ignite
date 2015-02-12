@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.scalar.tests
+package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.apache.ignite.scalar.scalar
-import org.apache.ignite.scalar.scalar._
-import org.junit.runner.RunWith
-import org.scalatest.FlatSpec
-import org.scalatest.junit.JUnitRunner
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test for using grid.cache(..).projection(...) from scala code.
+ *
  */
-@RunWith(classOf[JUnitRunner])
-class ScalarCacheProjectionSpec extends FlatSpec {
-    behavior of "Cache projection"
+public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPolicyWithStoreAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
 
-    it should "work properly via grid.cache(...).viewByType(...)" in scalar("examples/config/example-cache.xml") {
-        val cache = ignite$.cache("local").viewByType(classOf[String], classOf[Int])
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
 
-        assert(cache.putx("1", 1))
-        assert(cache.get("1") == 1)
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

@@ -87,15 +87,15 @@ public class VisorGridConfiguration implements Serializable {
     private Properties sysProps;
 
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
      */
-    public VisorGridConfiguration from(IgniteEx g) {
-        assert g != null;
+    public VisorGridConfiguration from(IgniteEx ignite) {
+        assert ignite != null;
 
-        IgniteConfiguration c = g.configuration();
+        IgniteConfiguration c = ignite.configuration();
 
-        basic(VisorBasicConfiguration.from(g, c));
+        basic(VisorBasicConfiguration.from(ignite, c));
         metrics(VisorMetricsConfiguration.from(c));
         spis(VisorSpisConfiguration.from(c));
         p2p(VisorPeerToPeerConfiguration.from(c));

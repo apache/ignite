@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
@@ -108,7 +109,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
         try {
             int i = 0;
 
-            GridCache<Object, Object> cache = grid(0).cache(CACHE_NAME);
+            IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_NAME);
 
             while (!Thread.currentThread().isInterrupted()) {
                 UUID key = UUID.randomUUID();

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 
 /**
@@ -54,6 +54,6 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
 
         assert SUPPORTED_COMMANDS.contains(req.command());
 
-        return new GridFinishedFuture<>(ctx, new GridRestResponse(COMPOUND_VER));
+        return new GridFinishedFuture<>(ctx, new GridRestResponse(VER_STR));
     }
 }

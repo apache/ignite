@@ -63,10 +63,10 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
 
         /** {@inheritDoc} */
         @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) {
-            Set<IgniteUuid> sesIds = arg.get(g.localNode().id());
+            Set<IgniteUuid> sesIds = arg.get(ignite.localNode().id());
 
             if (sesIds != null && !sesIds.isEmpty()) {
-                IgniteCompute compute = g.compute(g.forLocal());
+                IgniteCompute compute = ignite.compute(ignite.forLocal());
 
                 Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
 

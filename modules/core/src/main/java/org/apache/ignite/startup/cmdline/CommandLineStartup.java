@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * This class defines command-line Ignite startup. This startup can be used to start Ignite
@@ -84,7 +84,7 @@ public final class CommandLineStartup {
 
         // Mac OS specific customizations: app icon and about dialog.
         try {
-            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE);
+            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE_STR);
 
             Class<?> appCls = Class.forName("com.apple.eawt.Application");
 
@@ -110,7 +110,7 @@ public final class CommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER,
+                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER_STR,
                             releaseDate, COPYRIGHT);
 
                         return null;
@@ -247,7 +247,7 @@ public final class CommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("Ignite Command Line Startup, ver. " + ACK_VER);
+            X.println("Ignite Command Line Startup, ver. " + ACK_VER_STR);
             X.println(COPYRIGHT);
             X.println();
         }

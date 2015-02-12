@@ -128,7 +128,7 @@ public class GridGgfsServer {
         if (srvEndpoint.getPort() >= 0)
             ggfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
-        hnd = new GridGgfsIpcHandler(ggfsCtx, mgmt);
+        hnd = new GridGgfsIpcHandler(ggfsCtx);
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();

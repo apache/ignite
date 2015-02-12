@@ -392,14 +392,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
         // Schedule block request BEFORE prefetch requests.
         final GridGgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
-        if (log.isDebugEnabled()) {
-            CacheEntry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
-
-            assert entry != null;
-
-            if (!entry.primary() && !entry.backup())
-                log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
-                    ", blockIdx=" + blockIdx + ']');
+        if (log.isDebugEnabled() &&
+            dataCache.affinity().isPrimaryOrBackup(ggfsCtx.kernalContext().discovery().localNode(), key)) {
+            log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
+                ", blockIdx=" + blockIdx + ']');
         }
 
         IgniteInternalFuture<byte[]> fut = dataCachePrj.getAsync(key);

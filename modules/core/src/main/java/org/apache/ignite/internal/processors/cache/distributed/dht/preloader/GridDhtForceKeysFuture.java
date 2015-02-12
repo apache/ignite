@@ -261,7 +261,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             log.debug("Sending force key request [cacheName=" + cctx.name() + "node=" + n.id() +
                                 ", req=" + req + ']');
 
-                        cctx.io().send(n, req);
+                        cctx.io().send(n, req, cctx.ioPolicy());
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.

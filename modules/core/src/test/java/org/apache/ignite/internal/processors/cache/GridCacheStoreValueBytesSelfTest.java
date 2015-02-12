@@ -78,7 +78,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        GridCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.jcache(null);
 
         c.put(1, "Cached value");
 
@@ -99,7 +99,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        GridCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.jcache(null);
 
         c.put(1, "Cached value");
 

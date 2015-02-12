@@ -42,6 +42,7 @@ import java.util.*;
 /**
  * Store manager.
  */
+@SuppressWarnings("AssignmentToCatchBlockParameter")
 public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
     private static final String SES_ATTR = "STORE_SES";
@@ -80,7 +81,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     public GridCacheStoreManager(GridKernalContext ctx,
-        IdentityHashMap<CacheStore, ThreadLocal> sesHolders,
+        Map<CacheStore, ThreadLocal> sesHolders,
         @Nullable CacheStore<K, Object> cfgStore,
         CacheConfiguration cfg) throws IgniteCheckedException {
         this.cfgStore = cfgStore;
@@ -89,9 +90,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
-        ThreadLocal<SessionData> sesHolder0 = null;
-
         writeThrough = cfg.isWriteThrough();
+
+        ThreadLocal<SessionData> sesHolder0 = null;
 
         if (cfgStore != null) {
             try {
@@ -173,10 +174,6 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     if (!cctx.isNear())
                         ((LifecycleAware)store).start();
                 }
-                else {
-                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
-                        ((LifecycleAware)store).start();
-                }
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start cache store: " + e, e);
@@ -192,6 +189,22 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 "be ignored because portable mode is not enabled for cache: " + cctx.namex());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (store instanceof LifecycleAware) {
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((LifecycleAware)store).stop();
+                }
+            }
+            catch (Exception e) {
+                U.error(log(), "Failed to stop cache store.", e);
+            }
+        }
+    }
+
     /**
      * @return Convert-portable flag.
      */
@@ -204,26 +217,6 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     public void convertPortable(boolean convertPortable) {
         this.convertPortable = convertPortable;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
-        if (store instanceof LifecycleAware) {
-            try {
-                // Avoid second start() call on store in case when near cache is enabled.
-                if (cctx.config().isWriteBehindEnabled()) {
-                    if (!cctx.isNear())
-                        ((LifecycleAware)store).stop();
-                }
-                else {
-                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
-                        ((LifecycleAware)store).stop();
-                }
-            }
-            catch (Exception e) {
-                U.error(log(), "Failed to stop cache store.", e);
-            }
-        }
     }
 
     /**
@@ -278,9 +271,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + key);
 
-            Object val = null;
-
             initSession(tx);
+
+            Object val = null;
 
             try {
                 val = singleThreadGate.load(key);
@@ -384,8 +377,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     @SuppressWarnings("unchecked")
     private void loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends K> keys,
-        final @Nullable IgniteBiInClosure<K, V> vis,
-        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis)
+        @Nullable final IgniteBiInClosure<K, V> vis,
+        @Nullable final GridInClosure3<K, V, GridCacheVersion> verVis)
         throws IgniteCheckedException {
         assert vis != null ^ verVis != null;
         assert verVis == null || locStore;
@@ -423,7 +416,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             initSession(tx);
 
             try {
-                CI2<K, Object> c = new CI2<K, Object>() {
+                IgniteBiInClosure<K,Object> c = new CI2<K, Object>() {
                     @SuppressWarnings("ConstantConditions")
                     @Override public void apply(K k, Object val) {
                         if (convert) {
@@ -489,6 +482,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
 
+            initSession(null);
+
             try {
                 store.loadCache(new IgniteBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
@@ -514,6 +509,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (Exception e) {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
+            finally {
+                sesHolder.set(null);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Loaded all values from store.");
@@ -522,7 +520,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         LT.warn(log, null, "Calling Cache.loadCache() method will have no effect, " +
-            "GridCacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
 
         return false;
     }
@@ -784,8 +782,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
-        if (cctx.portableEnabled() && e.getMessage() != null &&
-            e.getMessage().startsWith("org.gridgain.grid.util.portable.GridPortableObjectImpl")) {
+        if (cctx.portableEnabled() && e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }

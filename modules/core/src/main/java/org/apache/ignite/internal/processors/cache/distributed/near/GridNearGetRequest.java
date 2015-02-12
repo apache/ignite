@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -73,7 +73,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
     /** Filters. */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Subject ID. */
     private UUID subjId;
@@ -114,7 +114,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         boolean readThrough,
         boolean reload,
         long topVer,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash,
         long accessTtl
@@ -204,7 +204,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @return Filters.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] filter() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
         return filter;
     }
 

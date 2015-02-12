@@ -257,9 +257,9 @@ class VisorAlertCommand {
                 adviseToConnect()
             else {
                 // Warn but don't halt.
-                if (F.isEmpty(grid.configuration().getAdminEmails))
+                if (F.isEmpty(ignite.configuration().getAdminEmails))
                     warn("Admin emails are not configured (ignoring).")
-                else if (!grid.isSmtpEnabled)
+                else if (!ignite.isSmtpEnabled)
                     warn("SMTP is not configured (ignoring).")
 
                 val dfltNodeF = (_: ClusterNode) => true
@@ -276,11 +276,11 @@ class VisorAlertCommand {
 
                         n match {
                             // Grid-wide metrics (not node specific).
-                            case "cc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, grid.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(grid.nodes()).size)
+                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.metrics().getTotalCpus)
+                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.nodes().size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(ignite.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
-                                () => (grid.metrics().getAverageCpuLoad * 100).toLong)
+                                () => (ignite.metrics().getAverageCpuLoad * 100).toLong)
 
                             // Per-node current metrics.
                             case "aj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentActiveJobs)
@@ -358,7 +358,7 @@ class VisorAlertCommand {
                 override def apply(evt: Event): Boolean = {
                     val discoEvt = evt.asInstanceOf[DiscoveryEvent]
 
-                    val node = grid.node(discoEvt.eventNode().id())
+                    val node = ignite.node(discoEvt.eventNode().id())
 
                     if (node != null)
                         alerts foreach (t => {
@@ -440,7 +440,7 @@ class VisorAlertCommand {
                 }
             }
 
-            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
+            ignite.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 
@@ -451,7 +451,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(true, false)) {
             assert(lsnr != null)
 
-            assert(grid.events().stopLocalListen(lsnr))
+            assert(ignite.events().stopLocalListen(lsnr))
 
             lsnr = null
         }
@@ -476,7 +476,7 @@ class VisorAlertCommand {
         assert(n != null)
 
         val subj = "Visor alert triggered: '" + a.spec + '\''
-        val headline = "Ignite ver. " + grid.product().version()
+        val headline = "Ignite ver. " + ignite.version()
 
         val stat = stats(a.id)
 
@@ -499,7 +499,7 @@ class VisorAlertCommand {
             "First send: " + (if (stat.firstSnd == 0) "n/a" else formatDateTime(stat.firstSnd)) + NL +
             "Last send: " + (if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)) + NL +
             "----" + NL +
-            "Grid name: " + grid.name + NL
+            "Grid name: " + ignite.name + NL
 
         body +=
             "----" + NL +
@@ -512,7 +512,7 @@ class VisorAlertCommand {
             "| support@gridgain.com" + NL
 
         // Schedule sending.
-        grid.sendAdminEmailAsync(subj, body, false)
+        ignite.sendAdminEmailAsync(subj, body, false)
     }
 
     /**

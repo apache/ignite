@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
@@ -86,7 +87,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).jcache(null);
 
         assert cache != null;
 

@@ -634,7 +634,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 nearFinMiniId, err);
 
             try {
-                cctx.io().send(nearNodeId, res, system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                cctx.io().send(nearNodeId, res, ioPolicy());
             }
             catch (ClusterTopologyCheckedException ignored) {
                 if (log.isDebugEnabled())
