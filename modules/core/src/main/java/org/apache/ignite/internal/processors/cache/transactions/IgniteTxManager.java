@@ -893,7 +893,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param tx Transaction.
      */
     private void removeObsolete(IgniteInternalTx<K, V> tx) {
-        Collection<IgniteTxEntry<K, V>> entries = (tx.local() && !tx.dht()) ? tx.allEntries() : tx.writeEntries();
+        Collection<IgniteTxEntry<K, V>> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
         for (IgniteTxEntry<K, V> entry : entries) {
             GridCacheEntryEx<K, V> cached = entry.cached();
