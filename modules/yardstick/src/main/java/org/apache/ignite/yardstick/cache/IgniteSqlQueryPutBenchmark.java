@@ -33,7 +33,7 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
     private ThreadLocal<SqlQuery> qry = new ThreadLocal<SqlQuery>() {
         @Override protected SqlQuery initialValue() {
-            return new SqlQuery("salary >= ? and salary <= ?");
+            return new SqlQuery(Person.class, "salary >= ? and salary <= ?");
         }
     };
 
