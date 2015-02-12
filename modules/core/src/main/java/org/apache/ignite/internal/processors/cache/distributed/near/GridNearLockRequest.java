@@ -404,12 +404,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 state++;
 
-            case 29:
-                if (!commState.putBoolean(syncCommit))
-                    return false;
-
-                commState.idx++;
-
             case 30:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;

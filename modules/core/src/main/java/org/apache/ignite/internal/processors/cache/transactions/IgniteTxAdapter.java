@@ -1833,11 +1833,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> recoveryWrites() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
             return null;
         }

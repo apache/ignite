@@ -1045,7 +1045,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 // Fail the whole compound future.
                 onError(res.error());
             else {
-                Set<Integer> invalidParts = res.invalidPartitions();
+                Collection<Integer> invalidParts = res.invalidPartitions();
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {

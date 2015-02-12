@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -46,7 +45,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  *
@@ -326,7 +324,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
-                                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(key, val);
+                                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), key, val);
 
                                     EntryProcessor<K, V, ?> processor = t.get1();
 
@@ -530,11 +528,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             onComplete();
 
             if (!tx.near()) {
-                if (tx.markFinalizing(IgniteTxEx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
+                if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
+                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
 
-                    fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteTx>>() {
-                        @Override public void applyx(IgniteInternalFuture<IgniteTx> gridCacheTxGridFuture) {
+                    fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> gridCacheTxGridFuture) {
                             try {
                                 if (replied.compareAndSet(false, true))
                                     sendPrepareResponse(res);

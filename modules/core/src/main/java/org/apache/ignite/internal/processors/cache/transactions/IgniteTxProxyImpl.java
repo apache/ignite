@@ -75,7 +75,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     /**
      * @return Transaction.
      */
-    public IgniteTxEx<K, V> tx() {
+    public IgniteInternalTx<K, V> tx() {
         return tx;
     }
 

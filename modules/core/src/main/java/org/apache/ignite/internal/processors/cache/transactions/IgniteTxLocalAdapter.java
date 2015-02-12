@@ -2705,8 +2705,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         return new GridFinishedFutureEx<>(new GridCacheReturn<V>(), e);
                     }
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
@@ -2922,8 +2922,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     // with prepare response, if required.
                     assert loadFut.isDone();
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;

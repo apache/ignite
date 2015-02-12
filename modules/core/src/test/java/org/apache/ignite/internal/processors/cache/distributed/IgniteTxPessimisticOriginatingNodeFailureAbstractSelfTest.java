@@ -330,7 +330,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             IgniteTxProxyImpl txProxy = (IgniteTxProxyImpl)tx;
 
-            IgniteTxEx txEx = txProxy.tx();
+            IgniteInternalTx txEx = txProxy.tx();
 
             if (commmit) {
                 txEx.prepare();

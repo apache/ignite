@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -246,13 +245,10 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.sysInvalidate = sysInvalidate;
         _clone.topVer = topVer;
         _clone.pendingVers = pendingVers;
-        _clone.onePhaseCommit = onePhaseCommit;
         _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
         _clone.writeVer = writeVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
-        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
-        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -289,24 +285,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 24:
-                if (!writer.writeMessage("nearTtls", nearTtls))
-                    return false;
-
-                state++;
-
-            case 25:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, byte[].class))
-                    return false;
-
-                state++;
-
-            case 26:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                state++;
-
             case 27:
                 if (!writer.writeCollection("pendingVers", pendingVers, GridCacheVersion.class))
                     return false;
@@ -333,12 +311,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 31:
                 if (!writer.writeLong("topVer", topVer))
-                    return false;
-
-                state++;
-
-            case 32:
-                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 state++;
@@ -387,30 +359,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 24:
-                nearTtls = reader.readMessage("nearTtls");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 25:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 26:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
             case 27:
                 pendingVers = reader.readCollection("pendingVers", GridCacheVersion.class);
 
@@ -445,14 +393,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 31:
                 topVer = reader.readLong("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 32:
-                ttls = reader.readMessage("ttls");
 
                 if (!reader.isLastRead())
                     return false;

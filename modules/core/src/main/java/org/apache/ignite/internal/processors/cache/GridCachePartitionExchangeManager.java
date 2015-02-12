@@ -281,13 +281,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
-        super.stop0(cancel);
-
-        exchFuts = null;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);

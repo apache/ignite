@@ -173,16 +173,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 18:
-                msg = new GridCachePessimisticCheckCommittedTxRequest();
-
-                break;
-
-            case 19:
-                msg = new GridCachePessimisticCheckCommittedTxResponse();
-
-                break;
-
             case 20:
                 msg = new GridCacheTtlUpdateRequest();
 

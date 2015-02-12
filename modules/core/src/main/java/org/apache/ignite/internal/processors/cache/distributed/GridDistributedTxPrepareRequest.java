@@ -469,12 +469,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         }
 
         switch (state) {
-            case 8:
-                if (!writer.writeMessage("commitVer", commitVer))
-                    return false;
-
-                state++;
-
             case 9:
                 if (!writer.writeEnum("concurrency", concurrency))
                     return false;
@@ -567,14 +561,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             return false;
 
         switch (state) {
-            case 8:
-                commitVer = reader.readMessage("commitVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
             case 9:
                 concurrency = reader.readEnum("concurrency", IgniteTxConcurrency.class);
 

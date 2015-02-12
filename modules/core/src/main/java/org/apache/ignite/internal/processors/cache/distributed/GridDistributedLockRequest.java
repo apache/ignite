@@ -397,12 +397,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         }
 
         switch (state) {
-            case 8:
-                if (!writer.writeObjectArray("drVersByIdx", drVersByIdx, GridCacheVersion.class))
-                    return false;
-
-                state++;
-
             case 9:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
@@ -486,13 +480,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     return false;
 
                 state++;
-
-            case 23:
-                if (!writer.writeByteArray("writeEntriesBytes", writeEntriesBytes))
-                    return false;
-
-                state++;
-
         }
 
         return true;
@@ -507,14 +494,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             return false;
 
         switch (state) {
-            case 8:
-                drVersByIdx = reader.readObjectArray("drVersByIdx", GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
             case 9:
                 futId = reader.readIgniteUuid("futId");
 
@@ -626,15 +605,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     return false;
 
                 state++;
-
-            case 23:
-                writeEntriesBytes = reader.readByteArray("writeEntriesBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
         }
 
         return true;

@@ -328,12 +328,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 14:
-                if (!writer.writeCollection("recoveryWritesBytes", recoveryWritesBytes, byte[].class))
-                    return false;
-
-                state++;
-
             case 15:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
@@ -363,13 +357,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     return false;
 
                 state++;
-
-            case 20:
-                if (!writer.writeCollection("writeEntriesBytes", writeEntriesBytes, byte[].class))
-                    return false;
-
-                state++;
-
         }
 
         return true;
@@ -432,14 +419,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 14:
-                recoveryWritesBytes = reader.readCollection("recoveryWritesBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
             case 15:
                 syncCommit = reader.readBoolean("syncCommit");
 
@@ -481,15 +460,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     return false;
 
                 state++;
-
-            case 20:
-                writeEntriesBytes = reader.readCollection("writeEntriesBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
         }
 
         return true;

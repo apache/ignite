@@ -406,11 +406,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         // Now do the same checks but within transaction.
         if (txEnabled()) {
-            tx = transactions().txStart();
+            try (IgniteTx tx0 = transactions().txStart()) {
+                assert cache.getAll(Collections.<String>emptySet()).isEmpty();
 
-            assert cache.getAll(Collections.<String>emptySet()).isEmpty();
-
-            map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
                 info("Retrieved map1: " + map1);
 
@@ -420,7 +419,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals(2, (int)map1.get("key2"));
                 assertNull(map1.get("key9999"));
 
-            map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
                 info("Retrieved map2: " + map2);
 
@@ -430,11 +429,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals(2, (int)map2.get("key2"));
                 assertNull(map2.get("key9999"));
 
-                tx.commit();
-            }
-            finally {
-                if (tx != null)
-                    tx.close();
+                tx0.commit();
             }
         }
     }
