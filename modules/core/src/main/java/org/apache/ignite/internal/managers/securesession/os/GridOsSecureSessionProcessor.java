@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * No-op implementation for {@link org.apache.ignite.internal.managers.securesession.GridSecureSessionProcessor}.
+ * No-op implementation for {@link GridSecureSessionProcessor}.
  */
 public class GridOsSecureSessionProcessor extends GridNoopManagerAdapter implements GridSecureSessionProcessor {
     /** Empty bytes. */
