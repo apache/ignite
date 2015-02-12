@@ -30,7 +30,10 @@ import java.net.*;
  */
 public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCacheAbstractTest {
     /** */
-    public static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheTestValue";
+    public static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
+
+    /** */
+    public static final int ITER_CNT = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -42,8 +45,17 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cacheConfiguration = super.cacheConfiguration(gridName);
+
+        cacheConfiguration.setBackups(1);
+
+        return cacheConfiguration;
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 2;
     }
 
     /**
@@ -56,11 +68,11 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
 
         IgniteCache<Object, Object> jcache = grid(0).jcache(null);
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < ITER_CNT; i++)
             jcache.put(i, val);
 
-        for (int i = 0; i < 1000; i++) {
-            int idx = i % 3;
+        for (int i = 0; i < ITER_CNT; i++) {
+            int idx = i % gridCount();
 
             if (idx == 0)
                 assertEquals(jcache.get(i).getClass().getClassLoader(), testClassLdr);
