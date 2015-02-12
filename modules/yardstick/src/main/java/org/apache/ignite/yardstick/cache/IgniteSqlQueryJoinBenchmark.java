@@ -19,7 +19,6 @@ package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.yardstick.cache.model.*;
 import org.yardstickframework.*;
 
@@ -33,7 +32,16 @@ import static org.yardstickframework.BenchmarkUtils.*;
  */
 public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
-    private CacheQuery qry;
+    private ThreadLocal<SqlFieldsQuery> qry = new ThreadLocal<SqlFieldsQuery>() {
+        @Override protected SqlFieldsQuery initialValue() {
+            return new SqlFieldsQuery(
+                "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
+                "from Person p " +
+                "left join Organization o " +
+                "on p.id = o.id " +
+                "where salary >= ? and salary <= ?");
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -53,9 +61,8 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
             dataLdr.flush();
 
             // Populate persons.
-            for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
-                Person p =
-                    new Person(i, ThreadLocalRandom.current().nextInt(orgRange), "firstName" + i, "lastName" + i, i * 1000);
+            for (int i = orgRange; i < orgRange + args.range() && !Thread.currentThread().isInterrupted(); i++) {
+                Person p = new Person(i, nextRandom(orgRange), "firstName" + i, "lastName" + i, (i - orgRange) * 1000);
 
                 dataLdr.addData(i, p);
 
@@ -65,11 +72,6 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
         }
 
         println(cfg, "Finished populating join query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
-
-        qry = null; // TODO: should be fixed after IGNITE-2 cache.queries().createSqlFieldsQuery(
-            // "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
-            //    "from Person p, Organization o " +
-            //    "where p.id = o.id and salary >= ? and salary <= ?");
     }
 
     /** {@inheritDoc} */
@@ -107,9 +109,9 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     private Collection<List<?>> executeQueryJoin(double minSalary, double maxSalary) throws Exception {
-        CacheQuery<List<?>> q = (CacheQuery<List<?>>)qry;
+        qry.get().setArgs(minSalary, maxSalary);
 
-        return q.execute(minSalary, maxSalary).get();
+        return cache.queryFields(qry.get()).getAll();
     }
 
     /** {@inheritDoc} */

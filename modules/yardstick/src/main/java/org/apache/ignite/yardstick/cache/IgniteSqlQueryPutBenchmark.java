@@ -19,10 +19,10 @@ package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.yardstick.cache.model.*;
 import org.yardstickframework.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -31,13 +31,15 @@ import java.util.concurrent.*;
  */
 public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
-    private CacheQuery qry;
+    private ThreadLocal<SqlQuery> qry = new ThreadLocal<SqlQuery>() {
+        @Override protected SqlQuery initialValue() {
+            return new SqlQuery("salary >= ? and salary <= ?");
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-
-        qry = null; // TODO: should be fixed after IGNITE-2 cache.queries().createSqlQuery(Person.class, "salary >= ? and salary <= ?");
     }
 
     /** {@inheritDoc} */
@@ -49,10 +51,10 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
 
             double maxSalary = salary + 1000;
 
-            Collection<Map.Entry<Integer, Person>> entries = executeQuery(salary, maxSalary);
+            Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
 
-            for (Map.Entry<Integer, Person> entry : entries) {
-                Person p = entry.getValue();
+            for (Cache.Entry<Integer, Object> entry : entries) {
+                Person p = (Person)entry.getValue();
 
                 if (p.getSalary() < salary || p.getSalary() > maxSalary)
                     throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
@@ -74,10 +76,10 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
      * @return Query result.
      * @throws Exception If failed.
      */
-    private Collection<Map.Entry<Integer, Person>> executeQuery(double minSalary, double maxSalary) throws Exception {
-        CacheQuery<Map.Entry<Integer, Person>> q = (CacheQuery<Map.Entry<Integer, Person>>)qry;
+    private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
+        qry.get().setArgs(minSalary, maxSalary);
 
-        return q.execute(minSalary, maxSalary).get();
+        return cache.query(qry.get()).getAll();
     }
 
     /** {@inheritDoc} */
