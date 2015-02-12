@@ -1338,6 +1338,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cache.preloader().syncFuture().get();
             }
         }
+
+        ctx.portable().onCacheProcessorStarted();
     }
 
     /** {@inheritDoc} */
@@ -1429,7 +1431,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr.stop(cancel);
             }
 
-            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup()));
+            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
+                ctx.store().configuredStore()));
 
             if (log.isInfoEnabled())
                 log.info("Stopped cache: " + cache.name());
@@ -1638,7 +1641,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);

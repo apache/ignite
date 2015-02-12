@@ -165,7 +165,7 @@ public class GridCacheStoreValueBytesTest {
 
             int sizeRange = maxSize - minSize;
 
-            GridCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.jcache(null);
 
             if (sizeRange == 0) {
                 for (Integer key : KEYS)
@@ -202,8 +202,8 @@ public class GridCacheStoreValueBytesTest {
 
         final Semaphore sem = new Semaphore(concurrentGetNum);
 
-        final IgniteInClosure<IgniteInternalFuture> lsnr = new CI1<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture t) {
+        final IgniteInClosure<Object> lsnr = new CI1<Object>() {
+            @Override public void apply(Object t) {
                 sem.release();
             }
         };
@@ -217,12 +217,12 @@ public class GridCacheStoreValueBytesTest {
         for (int i = 0; i < threadsNum; i++) {
             futs.add(exec.submit(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    GridCache<Integer, String> cache = ignite.cache(null);
+                    IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                     Random random = new Random();
 
                     while (!finish.get()) {
-                        Collection<Integer> keys = new ArrayList<>(getKeyNum);
+                        Set<Integer> keys = new TreeSet<>();
 
                         for (int i = 0; i < KEYS_NUM; i++) {
                             Integer key = KEYS[randomGet ? random.nextInt(KEYS_NUM) : i];
@@ -232,7 +232,11 @@ public class GridCacheStoreValueBytesTest {
                             if (keys.size() == getKeyNum) {
                                 sem.acquire();
 
-                                IgniteInternalFuture<Map<Integer, String>> f = cache.getAllAsync(keys);
+                                IgniteCache<Integer, String> asyncCache = cache.withAsync();
+
+                                asyncCache.getAll(keys);
+
+                                IgniteFuture<Object> f = asyncCache.future();
 
                                 f.listenAsync(lsnr);
 

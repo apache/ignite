@@ -166,7 +166,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         store.reset();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).transactions().tx();
 
             if (tx != null) {
                 error("Ending zombie transaction: " + tx);
@@ -199,7 +199,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private CacheAffinity<Object> affinity(int idx) {
-        return grid(idx).cache(null).affinity();
+        return grid(idx).affinity(null);
     }
 
     /** @param cnt Count. */
@@ -319,11 +319,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             backup = grid(0);
         }
 
-        assertEquals(String.valueOf(key), backup.cache(null).get(key));
+        assertEquals(String.valueOf(key), backup.jcache(null).get(key));
 
-        primary.cache(null).put(key, "a");
+        primary.jcache(null).put(key, "a");
 
-        assertEquals("a", backup.cache(null).get(key));
+        assertEquals("a", backup.jcache(null).get(key));
     }
 
     /** @throws Exception If failed. */

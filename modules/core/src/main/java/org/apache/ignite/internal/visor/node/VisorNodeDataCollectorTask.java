@@ -52,7 +52,8 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             return map;
         }
         finally {
-            logMapped(g.log(), getClass(), map.values());
+            if (debug)
+                logMapped(g.log(), getClass(), map.values());
         }
     }
 

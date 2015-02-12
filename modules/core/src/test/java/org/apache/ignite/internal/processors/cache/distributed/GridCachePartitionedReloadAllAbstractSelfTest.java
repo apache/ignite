@@ -211,9 +211,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             cache.reloadAll(map.keySet());
 
             for (Integer key : map.keySet()) {
-                CacheEntry entry = cache.entry(key);
-
-                if (entry.primary() || entry.backup() || nearEnabled())
+                if (cache.affinity().isPrimaryOrBackup(grid(caches.indexOf(cache)).localNode(), key) ||
+                    nearEnabled())
                     assertEquals(map.get(key), cache.peek(key));
                 else
                     assertNull(cache.peek(key));
@@ -230,11 +229,11 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    private Iterable<Integer> primaryKeysForCache(CacheProjection<Integer,String> cache, int cnt) {
+    private Iterable<Integer> primaryKeysForCache(GridCache<Integer,String> cache, int cnt) {
         Collection<Integer> found = new ArrayList<>(cnt);
 
         for (int i = 0; i < 10000; i++) {
-            if (cache.entry(i).primary()) {
+            if (cache.affinity().isPrimary(grid(caches.indexOf(cache)).localNode(), i)) {
                 found.add(i);
 
                 if (found.size() == cnt)

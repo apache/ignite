@@ -51,7 +51,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     behavior of "A 'cache' visor command"
 
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.ignite.cache[String, String]("partitioned")
+        val c = Ignition.ignite.jcache[String, String]("partitioned")
 
         for (i <- 0 to 3) {
             val kv = "" + i

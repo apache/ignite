@@ -130,11 +130,11 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        GridCache<Object, Object> c = g4.cache(null);
+                        IgniteCache<Object, Object> c = g4.jcache(null);
 
                         info(">>>> Checking tx in new grid.");
 
-                        try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = g4.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             assertEquals(2, c.get("a"));
                             assertEquals(4, c.get("b"));
                             assertEquals(6, c.get("c"));
@@ -151,11 +151,11 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                GridCache<Object, Object> cache0 = g.cache(null);
+                IgniteCache<Object, Object> cache0 = g.jcache(null);
 
                 info(">>>> Checking tx commit.");
 
-                IgniteTx tx = cache0.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     cache0.put("a", 1);
@@ -172,7 +172,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                 assertFalse(started.get());
 
-                tx = cache0.txStart(PESSIMISTIC, REPEATABLE_READ);
+                tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     cache0.put("a", 2);

@@ -234,8 +234,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             f1.get();
 
-            int s2 = g2.cache(null).primaryKeySet().size();
-            int s3 = g3.cache(null).primaryKeySet().size();
+            int s2 = internalCache(2).primaryKeySet().size();
+            int s3 = internalCache(3).primaryKeySet().size();
             int total = threads * cnt;
 
             assertEquals(total, s2 + s3);
@@ -272,8 +272,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             f2.get();
 
-            s2 = g2.cache(null).primaryKeySet().size();
-            s3 = g3.cache(null).primaryKeySet().size();
+            s2 = internalCache(2).primaryKeySet().size();
+            s3 = internalCache(3).primaryKeySet().size();
 
             assert s2 == 0 && s3 == 0 : "Incorrect entries count [s2=" + s2 + ", s3=" + s3 + ']';
         }
@@ -465,8 +465,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             finally {
                 ldr.close(false);
             }
-
-            info("Cache size on second grid: " + grid(nodesCntNoCache + 1).cache(null).primaryKeySet().size());
         }
         finally {
             stopAllGrids();
@@ -638,7 +636,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            final GridCache<Integer, Integer> c = g.cache(null);
+            final IgniteCache<Integer, Integer> c = g.jcache(null);
 
             final IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -647,7 +645,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             multithreaded(new Callable<Void>() {
                 @Override
@@ -690,7 +688,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            IgniteCache<Integer, Integer> c = g.jcache(null);
 
             IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -699,7 +697,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             ldr.tryFlush();
 
@@ -735,9 +733,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_PUT);
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            IgniteCache<Integer, Integer> c = g.jcache(null);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -747,11 +745,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             assertFalse(latch.await(1000, MILLISECONDS));
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             assertTrue(latch.await(3000, MILLISECONDS));
 

@@ -62,7 +62,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(String arg) {
-            System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
+            System.out.println("<visor>: ack: " + (arg == null ? ignite.localNode().id() : arg));
 
             return null;
         }

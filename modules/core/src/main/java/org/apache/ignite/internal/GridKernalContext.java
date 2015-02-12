@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.*;
 
@@ -90,20 +88,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Grid name.
      */
     public String gridName();
-
-    /**
-     * Gets grid product.
-     *
-     * @return Grid product.
-     */
-    public IgniteProduct product();
-
-    /**
-     * Gets list of compatible versions.
-     *
-     * @return Compatible versions.
-     */
-    public Collection<String> compatibleVersions();
 
     /**
      * Gets logger.
@@ -152,13 +136,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Task processor.
      */
     public GridTaskProcessor task();
-
-    /**
-     * Gets license processor.
-     *
-     * @return License processor.
-     */
-    public GridLicenseProcessor license();
 
     /**
      * Gets cache data affinity processor.

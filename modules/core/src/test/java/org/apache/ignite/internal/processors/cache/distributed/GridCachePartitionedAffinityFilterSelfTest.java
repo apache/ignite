@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
@@ -126,12 +127,12 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
         CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
         for (int i = 0; i < partCnt; i++) {
             assertEquals(i, aff.partition(i));
 
-            Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
+            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
 
             assertEquals(2, nodes.size());
 

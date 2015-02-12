@@ -17,6 +17,8 @@
 
 package org.apache.ignite.scalar
 
+import javax.cache.Cache
+
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache._
 import org.apache.ignite.cluster.ClusterGroup
@@ -270,8 +272,8 @@ trait ScalarConversions {
      *
      * @param p Cache KV-pair predicate to convert.
      */
-    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: CacheEntry[K, V]) => Boolean =
-        (e: CacheEntry[K, V]) =>
+    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: Cache.Entry[K, V]) => Boolean =
+        (e: Cache.Entry[K, V]) =>
             p(e.getKey, e.getValue)
 
     /**

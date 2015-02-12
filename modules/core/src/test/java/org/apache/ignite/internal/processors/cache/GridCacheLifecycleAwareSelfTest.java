@@ -172,7 +172,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
     }
@@ -187,7 +187,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(CacheEntry entry) {
+        @Override public boolean evictAllowed(Cache.Entry entry) {
             return false;
         }
     }
