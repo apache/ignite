@@ -135,4 +135,11 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return Hadoop.
      */
     public GridHadoop hadoop();
+
+    /**
+     * Get latest version in string form.
+     *
+     * @return Latest version.
+     */
+    @Nullable public String latestVersion();
 }

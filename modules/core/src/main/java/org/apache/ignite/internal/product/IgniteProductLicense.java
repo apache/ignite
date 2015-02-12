@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.product;
 
+import org.apache.ignite.internal.*;
+
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -25,8 +27,8 @@ import java.util.*;
 /**
  * Ignite license descriptor. Ignite license is available for
  * information purposes and is checked automatically by Ignite software.
- * License descriptor can be obtains by calling {@link IgniteProduct#license()} method.
- * @see IgniteProduct#license()
+ * License descriptor can be obtains by calling {@link GridProduct#license()} method.
+ * @see GridProduct#license()
  */
 public interface IgniteProductLicense extends Serializable {
     /**

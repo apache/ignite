@@ -23,14 +23,11 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * {@link IgniteProduct} implementation.
+ * {@link GridProduct} implementation.
  */
-public class GridProductImpl extends IgniteProduct {
+public class GridProductImpl implements GridProduct {
     /** */
     private GridKernalContext ctx;
-
-    /** Update notifier. */
-    private GridUpdateNotifier verChecker;
 
     /**
      * Required by {@link Externalizable}.
@@ -41,11 +38,9 @@ public class GridProductImpl extends IgniteProduct {
 
     /**
      * @param ctx Kernal context.
-     * @param verChecker Update notifier.
      */
-    public GridProductImpl(GridKernalContext ctx, GridUpdateNotifier verChecker) {
+    public GridProductImpl(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.verChecker = verChecker;
     }
 
     /** {@inheritDoc} */
@@ -78,18 +73,6 @@ public class GridProductImpl extends IgniteProduct {
 
         try {
             ctx.license().updateLicense(lic);
-        }
-        finally {
-            ctx.gateway().readUnlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public String latestVersion() {
-        ctx.gateway().readLock();
-
-        try {
-            return verChecker != null ? verChecker.latestVersion() : null;
         }
         finally {
             ctx.gateway().readUnlock();

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.product.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -44,7 +46,7 @@ public class GridProperties {
      * @param throwExc Flag indicating whether to throw an exception or not.
      */
     private static void readProperties(String path, boolean throwExc) {
-        try (InputStream is = GridProductImpl.class.getClassLoader().getResourceAsStream(path)) {
+        try (InputStream is = IgniteProduct.class.getClassLoader().getResourceAsStream(path)) {
             if (is == null) {
                 if (throwExc)
                     throw new RuntimeException("Failed to find properties file: " + path);

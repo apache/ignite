@@ -298,7 +298,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private ExecutorService utilityCachePool;
 
     /** */
-    private IgniteProduct product;
+    private GridProduct product;
 
     /** */
     private IgniteConfiguration cfg;
@@ -764,12 +764,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * @param product Product.
      */
-    public void product(IgniteProduct product) {
+    public void product(GridProduct product) {
         this.product = product;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
+    @Override public GridProduct product() {
         return product;
     }
 

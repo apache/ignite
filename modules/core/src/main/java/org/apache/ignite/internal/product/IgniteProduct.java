@@ -94,12 +94,4 @@ public abstract class IgniteProduct {
      * @return Grace period left.
      */
     public abstract long gracePeriodLeft();
-
-    /**
-     * Gets latest version available for download or
-     * {@code null} if information is not available.
-     *
-     * @return Latest version string or {@code null} if information is not available.
-     */
-    @Nullable public abstract String latestVersion();
 }

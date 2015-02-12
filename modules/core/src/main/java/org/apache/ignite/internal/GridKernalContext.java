@@ -96,7 +96,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Grid product.
      */
-    public IgniteProduct product();
+    public GridProduct product();
 
     /**
      * Gets list of compatible versions.

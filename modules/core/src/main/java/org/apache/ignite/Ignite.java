@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -178,7 +179,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Instance of product.
      */
-    public IgniteProduct product();
+    public GridProduct product();
 
     /**
      * Gets Ignite version.

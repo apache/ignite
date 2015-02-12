@@ -207,6 +207,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
+    /** Version checker. */
+    @GridToStringExclude
+    private GridUpdateNotifier verChecker;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -267,7 +271,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Override public String getCopyright() {
-        return IgniteProduct.COPYRIGHT;
+        return COPYRIGHT;
     }
 
     /** {@inheritDoc} */
@@ -602,13 +606,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
 
-        GridUpdateNotifier verChecker0 = null;
+        verChecker = null;
 
         if (notifyEnabled) {
             try {
-                verChecker0 = new GridUpdateNotifier(gridName, VER_STR, SITE, gw, false);
+                verChecker = new GridUpdateNotifier(gridName, VER_STR, SITE, gw, false);
 
-                verChecker0.checkForNewVersion(execSvc, log);
+                verChecker.checkForNewVersion(execSvc, log);
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
@@ -616,7 +620,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             }
         }
 
-        final GridUpdateNotifier verChecker = verChecker0;
+        final GridUpdateNotifier verChecker0 = verChecker;
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -657,7 +661,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             rsrcProc.setSpringContext(rsrcCtx);
 
-            ctx.product(new GridProductImpl(ctx, verChecker));
+            ctx.product(new GridProductImpl(ctx));
 
             scheduler = new IgniteSchedulerImpl(ctx);
 
@@ -812,30 +816,30 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         startTime = U.currentTimeMillis();
 
         // Ack latest version information.
-        if (verChecker != null)
-            verChecker.reportStatus(log);
+        if (verChecker0 != null)
+            verChecker0.reportStatus(log);
 
         if (notifyEnabled) {
-            assert verChecker != null;
+            assert verChecker0 != null;
 
-            verChecker.reportOnlyNew(true);
-            verChecker.licenseProcessor(ctx.license());
+            verChecker0.reportOnlyNew(true);
+            verChecker0.licenseProcessor(ctx.license());
 
             updateNtfTimer = new Timer("ignite-update-notifier-timer");
 
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
                 @Override public void safeRun() throws InterruptedException {
-                    verChecker.topologySize(nodes().size());
+                    verChecker0.topologySize(nodes().size());
 
-                    verChecker.checkForNewVersion(execSvc, log);
+                    verChecker0.checkForNewVersion(execSvc, log);
 
                     // Just wait for 10 secs.
                     Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
 
                     // Report status if one is available.
                     // No-op if status is NOT available.
-                    verChecker.reportStatus(log);
+                    verChecker0.reportStatus(log);
                 }
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
@@ -1438,7 +1442,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         // Set all node attributes into discovery manager,
         // so they can be distributed to all nodes.
         if (mgr instanceof GridDiscoveryManager)
-            ((GridDiscoveryManager)mgr).setNodeAttributes(attrs, IgniteProduct.VER);
+            ((GridDiscoveryManager)mgr).setNodeAttributes(attrs, VER);
 
         // Add manager to registry before it starts to avoid
         // cases when manager is started but registry does not
@@ -1581,7 +1585,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
-                    IgniteProduct.COPYRIGHT,
+                    COPYRIGHT,
                     "",
                     "Quiet mode.");
 
@@ -1601,7 +1605,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                     ">>> " + NL +
                     ">>> " + ver + NL +
-                    ">>> " + IgniteProduct.COPYRIGHT + NL
+                    ">>> " + COPYRIGHT + NL
                 );
             }
         }
@@ -3045,13 +3049,25 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
+    @Override public GridProduct product() {
         return ctx.product();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
-        return IgniteProduct.VER;
+        return VER;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String latestVersion() {
+        ctx.gateway().readLock();
+
+        try {
+            return verChecker != null ? verChecker.latestVersion() : null;
+        }
+        finally {
+            ctx.gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */

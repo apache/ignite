@@ -105,7 +105,7 @@ public class GridRouterCommandLineStartup {
             " ",
             "Ignite Router Command Line Loader",
             "ver. " + ACK_VER_STR,
-            IgniteProduct.COPYRIGHT,
+            COPYRIGHT,
             " "
         );
 

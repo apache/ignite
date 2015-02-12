@@ -17,20 +17,16 @@
 
 package org.apache.ignite.visor.commands
 
-import org.apache.ignite.internal.GridProductImpl
-import org.apache.ignite.internal.product.IgniteProduct
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
-import org.apache.ignite.internal.util.scala.impl
-
-import org.apache.ignite.startup.cmdline.AboutDialog
-
-import javax.swing.ImageIcon
 import java.awt.Image
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util
+import javax.swing.ImageIcon
 
+import org.apache.ignite.internal.product.IgniteProduct._
+import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.util.scala.impl
+import org.apache.ignite.startup.cmdline.AboutDialog
 import org.apache.ignite.visor.visor
 
 import scala.tools.jline.console.ConsoleReader
@@ -60,13 +56,13 @@ import org.apache.ignite.visor.commands.vvm.VisorVvmCommand
  */
 object VisorConsole extends App {
     /** Version number. */
-    private final val VISOR_VER = IgniteProduct.VER_STR
+    private final val VISOR_VER = VER_STR
 
     /** Release date. */
-    private final val VISOR_RELEASE_DATE = IgniteProduct.RELEASE_DATE_STR
+    private final val VISOR_RELEASE_DATE = RELEASE_DATE_STR
 
     /** Copyright. */
-    private final val VISOR_COPYRIGHT = IgniteProduct.COPYRIGHT
+    private final val VISOR_COPYRIGHT = COPYRIGHT
 
     /** Release date (another format). */
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)

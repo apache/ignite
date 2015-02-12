@@ -112,7 +112,7 @@ public final class CommandLineStartup {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER_STR,
-                            releaseDate, IgniteProduct.COPYRIGHT);
+                            releaseDate, COPYRIGHT);
 
                         return null;
                     }
@@ -249,7 +249,7 @@ public final class CommandLineStartup {
     public static void main(String[] args) {
         if (!QUITE) {
             X.println("Ignite Command Line Startup, ver. " + ACK_VER_STR);
-            X.println(IgniteProduct.COPYRIGHT);
+            X.println(COPYRIGHT);
             X.println();
         }
 
