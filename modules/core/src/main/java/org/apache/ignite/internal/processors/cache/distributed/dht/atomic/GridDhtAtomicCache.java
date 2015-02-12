@@ -3028,6 +3028,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean readyToFlush(int cnt) {
+            return (entries != null && entries.size() > cnt) || (rdrsMap != null && rdrsMap.size() > cnt);
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(UpdateExpiryPolicy.class, this);
         }

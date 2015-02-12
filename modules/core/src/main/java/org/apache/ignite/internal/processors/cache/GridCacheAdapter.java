@@ -712,7 +712,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Nullable @Override public V localPeek(K key,
+        CachePeekMode[] peekModes,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws IgniteCheckedException
+    {
         A.notNull(key, "key");
 
         if (keyCheck)
@@ -783,7 +787,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
 
                     if (e != null) {
-                        val = e.peek(modes.heap, modes.offheap, modes.swap, topVer);
+                        val = e.peek(modes.heap, modes.offheap, modes.swap, topVer, plc);
 
                         modes.offheap = false;
                         modes.swap = false;
@@ -799,7 +803,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             }
             else
-                val = localCachePeek0(key, modes.heap, modes.offheap, modes.swap);
+                val = localCachePeek0(key, modes.heap, modes.offheap, modes.swap, plc);
 
             if (ctx.portableEnabled())
                 val = (V)ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -819,11 +823,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param heap Read heap flag.
      * @param offheap Read offheap flag.
      * @param swap Read swap flag.
+     * @param plc Optional expiry policy.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private V localCachePeek0(K key, boolean heap, boolean offheap, boolean swap)
+    @Nullable private V localCachePeek0(K key,
+        boolean heap,
+        boolean offheap,
+        boolean swap,
+        IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert ctx.isLocal();
         assert heap || offheap || swap;
@@ -832,7 +841,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             GridCacheEntryEx<K, V> e = peekEx(key);
 
             if (e != null)
-                return e.peek(heap, offheap, swap, -1);
+                return e.peek(heap, offheap, swap, -1, plc);
         }
 
         if (offheap || swap) {
@@ -2117,9 +2126,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                 filter,
                                 expiry);
 
-                            GridCacheVersion ver = entry.version();
-
                             if (val == null) {
+                                GridCacheVersion ver = entry.version();
+
                                 if (misses == null)
                                     misses = new GridLeanMap<>();
 
@@ -6077,6 +6086,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /** {@inheritDoc} */
         @Nullable @Override public synchronized Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
             return rdrsMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized boolean readyToFlush(int cnt) {
+            return (entries != null && entries.size() > cnt) || (rdrsMap != null && rdrsMap.size() > cnt);
         }
 
         /** {@inheritDoc} */
