@@ -1284,7 +1284,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (expiry != null && entry.hasValue()) {
                         long ttl = expiry.forAccess();
 
-                        if (ttl != -1L) {
+                        if (ttl != CU.TTL_NOT_CHANGED) {
                             entry.updateTtl(null, ttl);
 
                             expiry.ttlUpdated(entry.key(),

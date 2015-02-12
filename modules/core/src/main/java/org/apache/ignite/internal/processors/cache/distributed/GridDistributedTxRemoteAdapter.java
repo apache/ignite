@@ -505,6 +505,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                                     GridCacheVersion explicitVer = txEntry.drVersion();
 
+                                    if (txEntry.ttl() == CU.TTL_ZERO)
+                                        op = DELETE;
+
                                     if (finalizationStatus() == FinalizationStatus.RECOVERY_FINISH || optimistic()) {
                                         // Primary node has left the grid so we have to process conflicts on backups.
                                         if (explicitVer == null)

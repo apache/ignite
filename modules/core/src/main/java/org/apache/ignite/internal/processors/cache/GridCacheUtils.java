@@ -60,10 +60,10 @@ import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
  */
 public class GridCacheUtils {
     /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
+    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
     /** System cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
@@ -73,6 +73,12 @@ public class GridCacheUtils {
 
     /** Peek flags. */
     private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
+
+    /** */
+    public static final long TTL_NOT_CHANGED = -1L;
+
+    /** */
+    public static final long TTL_ZERO = -2L;
 
     /** Per-thread generated UID store. */
     private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
@@ -1680,7 +1686,7 @@ public class GridCacheUtils {
      */
     public static long toTtl(Duration duration) {
         if (duration == null)
-            return -1;
+            return TTL_NOT_CHANGED;
 
         if (duration.getDurationAmount() == 0) {
             if (duration.isEternal())
@@ -1688,10 +1694,10 @@ public class GridCacheUtils {
 
             assert duration.isZero();
 
-            return 1L;
+            return TTL_ZERO;
         }
 
-        assert duration.getTimeUnit() != null;
+        assert duration.getTimeUnit() != null : duration;
 
         return duration.getTimeUnit().toMillis(duration.getDurationAmount());
     }

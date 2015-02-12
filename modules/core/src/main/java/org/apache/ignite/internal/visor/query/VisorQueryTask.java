@@ -195,7 +195,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" +
                     UUID.randomUUID();
 
-                GridCache<Object, Object> c = g.cachex(arg.cacheName());
+                GridCache<Object, Object> c = ignite.cachex(arg.cacheName());
 
                 if (c == null)
                     return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " +
@@ -206,7 +206,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 if (scan) {
                     CacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
-                        .projection(g.forNodeIds(arg.proj()))
+                        .projection(ignite.forNodeIds(arg.proj()))
                         .execute();
 
                     long start = U.currentTimeMillis();
@@ -220,19 +220,19 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     Map.Entry<Object, Object> next = rows.get2();
 
-                    g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                    ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                         new VisorFutureResultSetHolder<>(fut, next, false));
 
                     scheduleResultSetHolderRemoval(qryId);
 
-                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
+                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
                         VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
                     CacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
                         .createSqlFieldsQuery(arg.queryTxt(), true)
                         .pageSize(arg.pageSize())
-                        .projection(g.forNodeIds(arg.proj()))
+                        .projection(ignite.forNodeIds(arg.proj()))
                         .execute();
 
                     List<Object> firstRow = (List<Object>)fut.next();
@@ -260,12 +260,12 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                         long duration = fut.duration() + fetchDuration; // Query duration + fetch duration.
 
-                        g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                        ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, rows.get2(), false));
 
                         scheduleResultSetHolderRemoval(qryId);
 
-                        return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
+                        return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
                             names, rows.get1(), rows.get2() != null, duration));
                     }
                 }
@@ -280,10 +280,10 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * @param id Uniq query result id.
          */
         private void scheduleResultSetHolderRemoval(final String id) {
-            ((IgniteKernal)g).context().timeout()
+            ((IgniteKernal)ignite).context().timeout()
                 .addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
                     @Override public void onTimeout() {
-                        ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();
+                        ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = ignite.nodeLocalMap();
 
                         VisorFutureResultSetHolder<?> t = storage.get(id);
 

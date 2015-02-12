@@ -89,11 +89,11 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.equals(Ignite.class))
-            return (T)cctx.kernalContext().grid();
+    @Override public <T> T unwrap(Class<T> cls) {
+        if(cls.isAssignableFrom(getClass()))
+            return cls.cast(this);
 
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /**

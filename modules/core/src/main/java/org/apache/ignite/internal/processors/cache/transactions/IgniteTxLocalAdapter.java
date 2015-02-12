@@ -730,7 +730,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             Duration duration = cached.hasValue() ?
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
-                                            txEntry.ttl(CU.toTtl(duration));
+                                            long ttl = CU.toTtl(duration);
+
+                                            txEntry.ttl(ttl);
+
+                                            if (ttl == CU.TTL_ZERO)
+                                                op = DELETE;
                                         }
                                     }
 
@@ -880,7 +885,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
-                                        if (txEntry.ttl() != -1L)
+                                        if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
                                             cached.updateTtl(null, txEntry.ttl());
 
                                         if (log.isDebugEnabled())
@@ -1596,7 +1601,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (expiryPlc == null)
                     expiryPlc = cacheCtx.expiry();
 
-                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : -1L;
+                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     lockTimeout(),
@@ -2402,7 +2407,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         txEntry.filters(CU.<K, V>empty());
                         txEntry.filtersSet(false);
 
-                        updateTtl = true;
+                        updateTtl = filter != cacheCtx.noPeekArray();
                     }
 
                     if (updateTtl) {

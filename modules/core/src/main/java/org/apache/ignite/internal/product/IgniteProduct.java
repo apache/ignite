@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.product;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -64,4 +65,11 @@ public interface IgniteProduct {
      * @return Latest version string or {@code null} if information is not available.
      */
     @Nullable public String latestVersion();
+
+    /**
+     * Acks Visor instructions.
+     *
+     * @param log Logger.
+     */
+    public void ackVisor(IgniteLogger log);
 }

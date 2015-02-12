@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
-    protected transient IgniteEx g;
+    protected transient IgniteEx ignite;
 
     /** Job start time. */
     protected transient long start;
@@ -58,18 +58,18 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
 
         try {
             if (debug)
-                logStart(g.log(), getClass(), start);
+                logStart(ignite.log(), getClass(), start);
 
             return run(arg);
         }
         finally {
             if (debug)
-                logFinish(g.log(), getClass(), start);
+                logFinish(ignite.log(), getClass(), start);
         }
     }
 
     /**
-     * Execution logic of concrete task.
+     * Execution logic of concrete job.
      *
      * @param arg Task argument.
      * @return Result.

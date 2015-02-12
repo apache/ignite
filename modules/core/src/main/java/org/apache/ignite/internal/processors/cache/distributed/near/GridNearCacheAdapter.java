@@ -315,8 +315,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoad(Collection<? extends K> keys) throws IgniteCheckedException {
-        dht().localLoad(keys);
+    @Override public void localLoad(Collection<? extends K> keys, ExpiryPolicy plc) throws IgniteCheckedException {
+        dht().localLoad(keys, plc);
     }
 
     /** {@inheritDoc} */

@@ -227,7 +227,7 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = grid.forPredicate(new IgnitePredicate[ClusterNode] {
+        var nodes = ignite.forPredicate(new IgnitePredicate[ClusterNode] {
             override def apply(e: ClusterNode) = f(e)
         }).nodes()
 
@@ -329,15 +329,15 @@ class VisorTopologyCommand {
 
         nl()
 
-        val m = grid.forNodes(nodes).metrics()
+        val m = ignite.forNodes(nodes).metrics()
 
         val freeHeap = (m.getHeapMemoryMaximum - m.getHeapMemoryUsed) * 100 /
           m.getHeapMemoryMaximum
 
         val sumT = VisorTextTable()
 
-        sumT += ("Total hosts", IgniteUtils.neighborhood(grid.nodes()).size)
-        sumT += ("Total nodes", grid.nodes().size)
+        sumT += ("Total hosts", IgniteUtils.neighborhood(ignite.nodes()).size)
+        sumT += ("Total nodes", ignite.nodes().size)
         sumT += ("Total CPUs", m.getTotalCpus)
         sumT += ("Avg. CPU load", safePercent(m.getAverageCpuLoad * 100))
         sumT += ("Avg. free heap", formatDouble(freeHeap) + " %")
