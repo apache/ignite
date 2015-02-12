@@ -151,7 +151,7 @@ class VisorNodeCommand {
                     }
                     else if (id.isDefined)
                         try
-                            node = grid.node(UUID.fromString(id.get))
+                            node = ignite.node(UUID.fromString(id.get))
                         catch {
                             case e: IllegalArgumentException => warn("Invalid node ID: " + id.get).^^
                         }

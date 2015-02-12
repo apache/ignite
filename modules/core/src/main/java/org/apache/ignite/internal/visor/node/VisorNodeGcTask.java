@@ -71,7 +71,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Long, Long> run(Void arg) {
-            ClusterNode locNode = g.localNode();
+            ClusterNode locNode = ignite.localNode();
 
             long before = freeHeap(locNode);
 

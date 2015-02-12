@@ -52,7 +52,7 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
         /** {@inheritDoc} */
         @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
             try {
-                ((GridGgfsEx)g.fileSystem(arg.get1())).globalSampling(arg.get2());
+                ((GridGgfsEx)ignite.fileSystem(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }
