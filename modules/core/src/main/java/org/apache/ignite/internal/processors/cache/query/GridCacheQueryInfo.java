@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -32,7 +32,7 @@ class GridCacheQueryInfo {
     private boolean loc;
 
     /** */
-    private IgnitePredicate<CacheEntry<Object, Object>> prjPred;
+    private IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
     /** */
     private IgniteClosure<Object, Object> trans;
@@ -76,7 +76,7 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         IgniteClosure<Object, Object> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
@@ -124,7 +124,7 @@ class GridCacheQueryInfo {
     /**
      * @return Projection predicate.
      */
-    IgnitePredicate<CacheEntry<Object, Object>> projectionPredicate() {
+    IgnitePredicate<Cache.Entry<Object, Object>> projectionPredicate() {
         return prjPred;
     }
 

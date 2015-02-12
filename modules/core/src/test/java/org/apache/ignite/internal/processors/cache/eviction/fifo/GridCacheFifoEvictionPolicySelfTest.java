@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.eviction.fifo;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.internal.processors.cache.eviction.*;
 
@@ -240,19 +240,13 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             MockEntry e1 = new MockEntry("1");
 
-            e1.setValue("val");
-
             MockEntry e2 = new MockEntry("2");
 
             MockEntry e3 = new MockEntry("3");
 
-            e3.setValue("val");
-
             MockEntry e4 = new MockEntry("4");
 
             MockEntry e5 = new MockEntry("5");
-
-            e5.setValue("val");
 
             CacheFifoEvictionPolicy<String, String> p = policy();
 
@@ -300,7 +294,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.jcache(null);
 
             int cnt = 500;
 
@@ -324,7 +318,6 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             info("Min cache size [min=" + min + ", idx=" + minIdx + ']');
             info("Current cache size " + cache.size());
             info("Current cache key size " + cache.size());
-            info("Current cache entry set size " + cache.entrySet().size());
 
             min = Integer.MAX_VALUE;
 
@@ -346,7 +339,6 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             info("Min cache size [min=" + min + ", idx=" + minIdx + ']');
             info("Current cache size " + cache.size());
             info("Current cache key size " + cache.size());
-            info("Current cache entry set size " + cache.entrySet().size());
 
             assert min >= plcMax : "Min cache size is too small: " + min;
         }
@@ -368,7 +360,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
     /** {@inheritDoc} */
     @Override protected void checkNearPolicies(int endNearPlcSize) {
         for (int i = 0; i < gridCnt; i++)
-            for (CacheEntry<String, String> e : nearPolicy(i).queue())
+            for (EvictableEntry<String, String> e : nearPolicy(i).queue())
                 assert !e.isCached() : "Invalid near policy size: " + nearPolicy(i).queue();
     }
 

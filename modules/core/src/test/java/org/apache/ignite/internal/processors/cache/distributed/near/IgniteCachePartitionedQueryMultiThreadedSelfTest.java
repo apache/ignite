@@ -104,7 +104,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -202,7 +202,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         for (Cache.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 

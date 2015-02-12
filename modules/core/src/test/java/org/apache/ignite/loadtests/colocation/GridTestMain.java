@@ -43,7 +43,7 @@ public class GridTestMain {
 
         // Initialize Spring factory.
         try (Ignite g = G.start((IgniteConfiguration)ctx.getBean("grid.cfg"))) {
-            final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
+            final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
 
             assert cache != null;
 
@@ -71,7 +71,7 @@ public class GridTestMain {
 
         Ignite g = G.ignite();
 
-        final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
 
         final BlockingQueue<IgniteFuture> q = new ArrayBlockingQueue<>(400);
 
@@ -86,7 +86,7 @@ public class GridTestMain {
             comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
-                    Long val = cache.peek(new GridTestKey(key));
+                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
 
                     if (val == null || val != key)
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
@@ -133,7 +133,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        final GridCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = G.ignite().jcache("partitioned");
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
@@ -141,7 +141,7 @@ public class GridTestMain {
 
             exe.submit(new Runnable() {
                 @Override public void run() {
-                    Long val = cache.peek(new GridTestKey(key));
+                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
 
                     if (val == null || val != key)
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
@@ -164,7 +164,7 @@ public class GridTestMain {
      * @param cache Cache to load.
      * @throws IgniteCheckedException If failed.
      */
-    private static void loadFromStore(GridCache<GridTestKey, Long> cache) throws IgniteCheckedException {
+    private static void loadFromStore(IgniteCache<GridTestKey, Long> cache) throws IgniteCheckedException {
         cache.loadCache(null, 0, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
     }
 

@@ -59,7 +59,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
             int notDeleted = 0;
 
             try {
-                IgniteFs ggfs = g.fileSystem(arg);
+                IgniteFs ggfs = ignite.fileSystem(arg);
 
                 Path logsDir = resolveGgfsProfilerLogsDir(ggfs);
 
@@ -84,7 +84,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
                                 catch (IOException io) {
                                     notDeleted++;
 
-                                    g.log().warning("Profiler log file was not deleted: " + p, io);
+                                    ignite.log().warning("Profiler log file was not deleted: " + p, io);
                                 }
                             }
                         }

@@ -187,7 +187,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = null;
         depMode = SHARED;
 
-        assert startGrid(1).cache("myCache").configuration().getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
+        assert startGrid(1).jcache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -397,7 +397,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return false;
                         }
                     });
@@ -408,7 +408,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return true;
                         }
                     });

@@ -175,7 +175,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            if (ctx.isEnterprise()) {
+            if (ctx.secureSession().enabled()) {
                 try {
                     res.sessionTokenBytes(updateSessionToken(req, subjCtx));
                 }
@@ -653,8 +653,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
-                "module to classpath).");
+            if (log.isDebugEnabled())
+                log.debug("Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
+                    "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to initialize HTTP REST protocol.", e);

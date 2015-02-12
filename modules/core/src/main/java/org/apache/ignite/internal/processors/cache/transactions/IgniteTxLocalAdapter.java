@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -37,6 +36,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -287,7 +287,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         GridCacheContext<K, V> cacheCtx,
         boolean failFast,
         K key,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) throws GridCacheFilterFailedException {
         IgniteTxEntry<K, V> e = txMap == null ? null : txMap.get(cacheCtx.txKey(key));
 
@@ -295,7 +295,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             // We should look at tx entry previous value. If this is a user peek then previous
             // value is the same as value. If this is a filter evaluation peek then previous value holds
             // value visible to filter while value contains value enlisted for write.
-            if (!F.isAll(e.cached().wrap(false), filter))
+            if (!F.isEmpty(filter) && !F.isAll(e.cached().wrapLazyValue(), filter))
                 return e.hasPreviousValue() ? F.t(CU.<V>failed(failFast, e.previousValue())) : null;
 
             return e.hasPreviousValue() ? F.t(e.previousValue()) : null;
@@ -418,10 +418,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     private void uncommit() {
         for (IgniteTxEntry<K, V> e : writeMap().values()) {
             try {
-                GridCacheEntryEx<K, V> cacheEntry = e.cached();
+                GridCacheEntryEx<K, V> Entry = e.cached();
 
                 if (e.op() != NOOP)
-                    cacheEntry.invalidate(null, xidVer);
+                    Entry.invalidate(null, xidVer);
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
@@ -570,7 +570,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             }
 
                             if (rmvCol == null)
-                                rmvCol = new LinkedList<>();
+                                rmvCol = new ArrayList<>();
 
                             rmvCol.add(key);
 
@@ -730,7 +730,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             Duration duration = cached.hasValue() ?
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
-                                            txEntry.ttl(CU.toTtl(duration));
+                                            long ttl = CU.toTtl(duration);
+
+                                            txEntry.ttl(ttl);
+
+                                            if (ttl == CU.TTL_ZERO)
+                                                op = DELETE;
                                         }
                                     }
 
@@ -880,7 +885,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
-                                        if (txEntry.ttl() != -1L)
+                                        if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
                                             cached.updateTtl(null, txEntry.ttl());
 
                                         if (log.isDebugEnabled())
@@ -1099,7 +1104,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Map<K, GridCacheVersion> missed,
         int keysCnt,
         boolean deserializePortable,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1373,7 +1378,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final Map<K, GridCacheVersion> missedMap,
         @Nullable final Collection<K> redos,
         final boolean deserializePortable,
-        final IgnitePredicate<CacheEntry<K, V>>[] filter
+        final IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         assert redos != null || pessimistic();
 
@@ -1557,7 +1562,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean deserializePortable,
-        final IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1596,7 +1601,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (expiryPlc == null)
                     expiryPlc = cacheCtx.expiry();
 
-                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : -1L;
+                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     lockTimeout(),
@@ -1740,7 +1745,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             else {
                 assert optimistic() || readCommitted() || groupLock();
 
-                final Collection<K> redos = new LinkedList<>();
+                final Collection<K> redos = new ArrayList<>();
 
                 if (!missed.isEmpty()) {
                     if (!readCommitted())
@@ -1810,7 +1815,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         return (IgniteInternalFuture<GridCacheReturn<V>>)putAllAsync0(cacheCtx,
             map,
@@ -1871,7 +1876,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      */
     private boolean filter(GridCacheEntryEx<K, V> cached,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         return pessimistic() || cached.context().isAll(cached, filter);
     }
 
@@ -1906,7 +1911,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable Object[] invokeArgs,
         boolean retval,
         boolean lockOnly,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         final GridCacheReturn<V> ret,
         Collection<K> enlisted,
         @Nullable Map<? extends K, GridCacheDrInfo<V>> drPutMap,
@@ -2307,7 +2312,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean retval,
         boolean read,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         boolean computeInvoke
     ) throws IgniteCheckedException {
         for (K k : keys) {
@@ -2402,7 +2407,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         txEntry.filters(CU.<K, V>empty());
                         txEntry.filtersSet(false);
 
-                        updateTtl = true;
+                        updateTtl = filter != cacheCtx.noPeekArray();
                     }
 
                     if (updateTtl) {
@@ -2482,7 +2487,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         assert filter == null || invokeMap == null;
 
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_PUT);
@@ -2576,7 +2581,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         try {
             Set<? extends K> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
 
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
 
@@ -2692,7 +2697,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean retval,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         return removeAllAsync0(cacheCtx, keys, null, cached, retval, filter);
     }
@@ -2712,7 +2717,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable Map<? extends  K, GridCacheVersion> drMap,
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         final Collection<? extends K> keys0;
@@ -2774,7 +2779,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         init();
 
         try {
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             ExpiryPolicy plc;
 
@@ -2953,7 +2958,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             Set<K> skipped = enlistWrite(
                 cacheCtx,
@@ -3100,7 +3105,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Object[] invokeArgs,
         GridCacheEntryEx<K, V> entry,
         @Nullable ExpiryPolicy expiryPlc,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         boolean filtersSet,
         long drTtl,
         long drExpireTime,

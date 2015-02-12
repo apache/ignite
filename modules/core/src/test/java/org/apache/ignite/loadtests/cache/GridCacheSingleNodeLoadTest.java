@@ -17,7 +17,7 @@
 
 package org.apache.ignite.loadtests.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -76,14 +76,14 @@ public class GridCacheSingleNodeLoadTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                GridCache<Integer, Student> cache = G.ignite().cache(null);
+                IgniteCache<Integer, Student> cache = G.ignite().jcache(null);
 
                 assert cache != null;
 
                 long startTime = System.currentTimeMillis();
 
                 for (int i = 0; i < putCnt; i++) {
-                    cache.putx(keyGen.incrementAndGet(), new Student());
+                    cache.put(keyGen.incrementAndGet(), new Student());
 
                     int cnt = txCntr.incrementAndGet();
 

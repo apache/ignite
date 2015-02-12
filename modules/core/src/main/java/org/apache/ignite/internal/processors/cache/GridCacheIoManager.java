@@ -36,7 +36,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  * Cache communication manager.
@@ -184,6 +183,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Cache message.
      * @param c Handler closure.
      */
+    @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage<K, V> cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         rw.readLock();
@@ -337,18 +337,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws IgniteCheckedException If sending failed.
      * @throws ClusterTopologyCheckedException If receiver left.
      */
-    public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
-        send(node, msg, SYSTEM_POOL);
-    }
-
-    /**
-     * Sends communication message.
-     *
-     * @param node Node to send the message to.
-     * @param msg Message to send.
-     * @throws IgniteCheckedException If sending failed.
-     * @throws ClusterTopologyCheckedException If receiver left.
-     */
+    @SuppressWarnings("unchecked")
     public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
@@ -389,13 +378,14 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param nodes Nodes to send to.
      * @param msg Message to send.
+     * @param plc IO policy.
      * @param fallback Callback for failed nodes.
      * @return {@code True} if nodes are empty or message was sent, {@code false} if
      *      all nodes have left topology while sending this message.
      * @throws IgniteCheckedException If send failed.
      */
-    @SuppressWarnings( {"BusyWait"})
-    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg,
+    @SuppressWarnings({"BusyWait", "unchecked"})
+    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg, GridIoPolicy plc,
         @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
@@ -424,7 +414,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     }
                 });
 
-                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg, SYSTEM_POOL);
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg, plc);
 
                 boolean added = false;
 
@@ -506,29 +496,12 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
      */
-    public void send(UUID nodeId, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
-        ClusterNode n = cctx.discovery().node(nodeId);
-
-        if (n == null)
-            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [node=" + n + ", msg=" +
-                msg + ']');
-
-        send(n, msg);
-    }
-
-    /**
-     * Sends communication message.
-     *
-     * @param nodeId ID of node to send the message to.
-     * @param msg Message to send.
-     * @throws IgniteCheckedException If sending failed.
-     */
     public void send(UUID nodeId, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [node=" + n + ", msg=" +
-                msg + ']');
+            throw new ClusterTopologyException("Failed to send message because node left grid [nodeId=" + nodeId +
+                ", msg=" + msg + ']');
 
         send(n, msg, plc);
     }
@@ -537,10 +510,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param msg Message to send.
+     * @param plc IO policy.
      * @param timeout Timeout to keep a message on receiving queue.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage<K, V> msg,
+    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage<K, V> msg, GridIoPolicy plc,
         long timeout) throws IgniteCheckedException {
         onSend(msg, node.id());
 
@@ -550,7 +524,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             try {
                 cnt++;
 
-                cctx.gridIO().sendOrderedMessage(node, topic, msg, SYSTEM_POOL, timeout, false);
+                cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
@@ -650,30 +624,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     }
 
     /**
-     * Removes message handler.
-     *
-     * @param type Type of message.
-     * @param c Handler.
-     */
-    public void removeHandler(Class<?> type, IgniteBiInClosure<UUID, ?> c) {
-        assert type != null;
-        assert c != null;
-
-        boolean res = clsHandlers.remove(type, c);
-
-        if (log != null && log.isDebugEnabled()) {
-            if (res) {
-                log.debug("Removed cache communication handler " +
-                    "[type=" + type + ", handler=" + c + ']');
-            }
-            else {
-                log.debug("Cache communication handler is not registered " +
-                    "[type=" + type + ", handler=" + c + ']');
-            }
-        }
-    }
-
-    /**
      * Adds ordered message handler.
      *
      * @param topic Topic.
@@ -715,7 +665,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Message.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("ErrorNotRethrown")
+    @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
     private void unmarshall(UUID nodeId, GridCacheMessage<K, V> cacheMsg) throws IgniteCheckedException {
         if (cctx.localNodeId().equals(nodeId))
             return;

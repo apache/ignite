@@ -31,18 +31,6 @@ import static org.yardstickframework.BenchmarkUtils.*;
  * Ignite benchmark that performs query operations with joins.
  */
 public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
-    /** */
-    private ThreadLocal<SqlFieldsQuery> qry = new ThreadLocal<SqlFieldsQuery>() {
-        @Override protected SqlFieldsQuery initialValue() {
-            return new SqlFieldsQuery(
-                "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
-                "from Person p " +
-                "left join Organization o " +
-                "on p.id = o.id " +
-                "where salary >= ? and salary <= ?");
-        }
-    };
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -109,9 +97,16 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     private Collection<List<?>> executeQueryJoin(double minSalary, double maxSalary) throws Exception {
-        qry.get().setArgs(minSalary, maxSalary);
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
+            "from Person p " +
+            "left join Organization o " +
+            "on p.id = o.id " +
+            "where salary >= ? and salary <= ?");
 
-        return cache.queryFields(qry.get()).getAll();
+        qry.setArgs(minSalary, maxSalary);
+
+        return cache.queryFields(qry).getAll();
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -54,7 +55,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
     private final Object topic;
 
     /** Projection predicate */
-    private final IgnitePredicate<CacheEntry<K, V>> prjPred;
+    private final IgnitePredicate<Cache.Entry<K, V>> prjPred;
 
     /** Keep portable flag. */
     private final boolean keepPortable;
@@ -93,7 +94,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
      * @param prjPred Projection predicate.
      */
     GridCacheContinuousQueryAdapter(GridCacheContext<K, V> ctx, Object topic,
-        @Nullable IgnitePredicate<CacheEntry<K, V>> prjPred) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>> prjPred) {
         assert ctx != null;
         assert topic != null;
 

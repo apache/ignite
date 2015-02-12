@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -123,8 +124,11 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             int cnt2 = 0;
 
-            for (CacheEntry<Object, Object> e : cache(0).entrySet()) {
-                assert e.primary() || e.backup();
+            ClusterNode locNode = grid(0).localNode();
+
+            for (Cache.Entry<Integer, String> e : this.<Integer, String>cache(0).entrySet()) {
+                assert aff.isPrimary(locNode, e.getKey()) ||
+                    aff.isBackup(locNode, e.getKey());
 
                 cnt2++;
             }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -34,6 +35,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -424,6 +427,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridIoPolicy ioPolicy() {
+        return sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean storeUsed() {
         return storeEnabled() && store() != null;
     }
@@ -496,7 +504,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markPreparing() {
+    @Override
+    public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -1222,6 +1231,22 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
+                if (op == NOOP) {
+                    ExpiryPolicy expiry = txEntry.expiry();
+
+                    if (expiry == null)
+                        expiry = cacheCtx.expiry();
+
+                    if (expiry != null) {
+                        long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                        txEntry.ttl(ttl);
+
+                        if (ttl == CU.TTL_ZERO)
+                            op = DELETE;
+                    }
+                }
+
                 return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }
             catch (GridCacheFilterFailedException e) {
@@ -1619,6 +1644,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean system() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        @Override public GridIoPolicy ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

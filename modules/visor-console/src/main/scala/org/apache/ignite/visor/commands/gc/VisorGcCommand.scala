@@ -129,7 +129,7 @@ class VisorGcCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(UUID.fromString(id.get))
+                    node = ignite.node(UUID.fromString(id.get))
 
                     if (node == null)
                         scold("'id' does not match any node: " + id.get).^^
@@ -143,13 +143,13 @@ class VisorGcCommand {
 
                 t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                val prj = grid.forRemotes()
+                val prj = ignite.forRemotes()
 
                 val nids = prj.nodes().map(_.id())
 
                 val NULL: Void = null
 
-                grid.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
+                ignite.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
                     toTaskArgument(nids, NULL)).foreach { case (nid, stat) =>
                     val roundHb = stat.get1() / (1024L * 1024L)
                     val roundHa = stat.get2() / (1024L * 1024L)

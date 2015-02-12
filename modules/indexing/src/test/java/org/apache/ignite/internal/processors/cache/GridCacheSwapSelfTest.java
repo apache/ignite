@@ -32,6 +32,7 @@ import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.noop.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -427,11 +428,12 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             assert val != null;
             assert val.value() == i;
 
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            Cache.Entry<Integer, CacheValue> entry = cache.entry(i);
 
             assert entry != null;
 
-            versions.put(i, entry.version());
+            assert false : "ignite-96";
+            // versions.put(i, entry.version());
         }
 
         assert swapCnt.get() == 0;
@@ -637,7 +639,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     private void checkEntries(CacheProjection<Integer, CacheValue> cache,
         int lowerBound, int upperBound) throws Exception {
         for (int i = lowerBound; i < upperBound; i++) {
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            Cache.Entry<Integer, CacheValue> entry = cache.entry(i);
 
             assert entry != null;
             assert entry.getKey() != null;
@@ -646,7 +648,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             assert val != null;
             assert entry.getKey() == val.value();
-            assert entry.version().equals(versions.get(i));
+            assert false : "ignite-96";
+//            assert entry.version().equals(versions.get(i));
         }
     }
 

@@ -83,7 +83,7 @@ public class GridCacheGroupLockComparisonTest {
         X.println(">>> Testing putAll");
         X.println(">>>");
 
-        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final IgniteCache<CacheAffinityKey<Long>, Long> cache = ignite.jcache(CACHE);
 
         assert cache != null;
 
@@ -133,12 +133,12 @@ public class GridCacheGroupLockComparisonTest {
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void igniteGroupLock(Ignite ignite, final long max, int threads) throws Exception {
+    private static void igniteGroupLock(final Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing group lock");
         X.println(">>>");
 
-        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final IgniteCache<CacheAffinityKey<Long>, Long> cache = ignite.jcache(CACHE);
 
         assert cache != null;
 
@@ -172,7 +172,8 @@ public class GridCacheGroupLockComparisonTest {
 
                     // Threads should not lock the same key.
 
-                    try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
+                    try (IgniteTx tx = ignite.transactions().txStartAffinity(cache.getName(), affKey, PESSIMISTIC,
+                        REPEATABLE_READ, 0, BATCH_SIZE)) {
                         for (long i = 0; i < BATCH_SIZE; i++) {
                             cache.put(new CacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
 

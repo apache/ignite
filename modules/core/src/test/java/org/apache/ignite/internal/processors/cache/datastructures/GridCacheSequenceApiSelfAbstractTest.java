@@ -243,7 +243,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      * @throws Exception If failed.
      */
     public void testGetAndAddInTx() throws Exception {
-        try (IgniteTx tx = grid().cache(TRANSACTIONAL_CACHE_NAME).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
                 for (IgniteAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);
@@ -368,16 +368,13 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         }, IllegalStateException.class, null);
 
         for (Object o : cache.keySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong keys [key=" + o + ", keySet=" + grid().cache(null).keySet() +
-                ']';
+            assert !(o instanceof GridCacheInternal) : "Wrong keys [key=" + o + ']';
 
         for (Object o : cache.values())
-            assert !(o instanceof GridCacheInternal) : "Wrong values [value=" + o + ", values=" +
-                grid().cache(null).values() + ']';
+            assert !(o instanceof GridCacheInternal) : "Wrong values [value=" + o + ']';
 
         for (Object o : cache.entrySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong entries [entry=" + o + ", entries=" +
-                grid().cache(null).values() + ']';
+            assert !(o instanceof GridCacheInternal) : "Wrong entries [entry=" + o + ']';
 
         assert cache.keySet().isEmpty();
 

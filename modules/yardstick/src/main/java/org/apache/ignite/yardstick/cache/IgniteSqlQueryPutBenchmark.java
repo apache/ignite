@@ -30,13 +30,6 @@ import java.util.concurrent.*;
  * Ignite benchmark that performs put and query operations.
  */
 public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
-    /** */
-    private ThreadLocal<SqlQuery> qry = new ThreadLocal<SqlQuery>() {
-        @Override protected SqlQuery initialValue() {
-            return new SqlQuery(Person.class, "salary >= ? and salary <= ?");
-        }
-    };
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -77,9 +70,11 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
-        qry.get().setArgs(minSalary, maxSalary);
+        SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
 
-        return cache.query(qry.get()).getAll();
+        qry.setArgs(minSalary, maxSalary);
+
+        return cache.query(qry).getAll();
     }
 
     /** {@inheritDoc} */

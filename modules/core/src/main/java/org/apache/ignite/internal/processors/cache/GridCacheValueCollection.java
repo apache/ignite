@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -39,18 +38,18 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Base map. */
-    private final Map<K, CacheEntry<K, V>> map;
+    private final Map<K, Cache.Entry<K, V>> map;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheValueCollection(GridCacheContext<K, V> ctx, Collection<? extends CacheEntry<K, V>> c,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    public GridCacheValueCollection(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -58,7 +57,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
         this.ctx = ctx;
         this.filter = filter;
 
-        for (CacheEntry<K, V> e : c) {
+        for (Cache.Entry<K, V> e : c) {
             if (e != null)
                 map.put(e.getKey(), e);
         }
@@ -67,6 +66,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     /** {@inheritDoc} */
     @Override public Iterator<V> iterator() {
         return new GridCacheIterator<K, V, V>(
+            ctx,
             map.values(),
             F.<K, V>cacheEntry2Get(),
             ctx.vararg(F0.and(filter, F.<K, V>cacheHasPeekValue()))
@@ -118,7 +118,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
+        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K, V>cacheEntry2Key(), filter), CU.<K, V>empty());
 
         map.clear();
     }
@@ -129,18 +129,13 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
 
         boolean rmv = false;
 
-        for (Iterator<CacheEntry<K, V>> it = map.values().iterator(); it.hasNext();) {
-            CacheEntry<K, V> e = it.next();
+        for (Iterator<Cache.Entry<K, V>> it = map.values().iterator(); it.hasNext();) {
+            Cache.Entry<K, V> e = it.next();
 
             if (F.isAll(e, filter) && F.eq(o, e.getValue())) {
                 it.remove();
 
-                try {
-                    e.removex();
-                }
-                catch (IgniteCheckedException ex) {
-                    throw new IgniteException(ex);
-                }
+                ctx.grid().jcache(ctx.name()).remove(e.getKey(), e.getValue());
 
                 rmv = true;
             }
@@ -158,7 +153,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     @Override public boolean contains(Object o) {
         A.notNull(o, "o");
 
-        for (CacheEntry<K, V> e : map.values())
+        for (Cache.Entry<K, V> e : map.values())
             if (F.isAll(e, filter) && F.eq(e.getValue(), o))
                 return true;
 

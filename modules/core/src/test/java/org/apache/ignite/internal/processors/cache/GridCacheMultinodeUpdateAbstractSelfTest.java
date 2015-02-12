@@ -96,7 +96,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
             expVal += ITERATIONS_PER_THREAD * THREADS;
 
             for (int j = 0; j < gridCount(); j++) {
-                Integer val = (Integer)grid(j).cache(null).get(key);
+                Integer val = (Integer)grid(j).jcache(null).get(key);
 
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }

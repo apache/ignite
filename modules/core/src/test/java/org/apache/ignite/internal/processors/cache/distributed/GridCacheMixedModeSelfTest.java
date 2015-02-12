@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -64,7 +65,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBasicOps() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
@@ -73,7 +74,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
             assertEquals(i, cache.get(i));
 
         for (int i = 0; i < 1000; i++)
-            assertEquals(i, cache.remove(i));
+            assertEquals(i, cache.getAndRemove(i));
 
         for (int i = 0; i < 1000; i++)
             assertNull(cache.get(i));

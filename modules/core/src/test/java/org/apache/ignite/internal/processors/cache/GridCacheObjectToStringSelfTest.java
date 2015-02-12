@@ -30,8 +30,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import java.util.*;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -154,7 +152,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            GridCache<Object, Object> cache = g.cache(null);
+            IgniteCache<Object, Object> cache = g.jcache(null);
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
@@ -166,22 +164,17 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());
             }
 
-            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
+            assertFalse(cache.toString().isEmpty());
+            assertFalse(cache.iterator().toString().isEmpty());
 
-            assertNotNull(entries);
-            assertFalse(entries.toString().isEmpty());
-
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, cache.get(1));
 
                 cache.put(2, 22);
 
                 assertFalse(tx.toString().isEmpty());
 
-                entries = cache.entrySet();
-
-                assertNotNull(entries);
-                assertFalse(entries.toString().isEmpty());
+                assertFalse(cache.toString().isEmpty());
 
                 tx.commit();
             }

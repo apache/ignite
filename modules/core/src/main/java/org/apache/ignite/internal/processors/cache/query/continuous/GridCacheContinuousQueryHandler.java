@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
@@ -61,7 +61,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private IgnitePredicate<CacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
-    private IgnitePredicate<CacheEntry<K, V>> prjPred;
+    private IgnitePredicate<Cache.Entry<K, V>> prjPred;
 
     /** Deployable object for filter. */
     private DeployableObject filterDep;
@@ -116,7 +116,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         Object topic,
         IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> cb,
         @Nullable IgnitePredicate<CacheContinuousQueryEntry<K, V>> filter,
-        @Nullable IgnitePredicate<CacheEntry<K, V>> prjPred,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>> prjPred,
         boolean internal,
         boolean entryLsnr,
         boolean sync,
@@ -195,7 +195,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx.isReplicated() && !skipPrimaryCheck && !e.primary())
+                if (cctx.isReplicated() &&
+                    !skipPrimaryCheck &&
+                    !cctx.affinity().primary(cctx.localNode(), e.getKey(), cctx.topology().topologyVersion()))
                     return;
 
                 boolean notify;
@@ -283,7 +285,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
 
                 GridCacheProjectionImpl.KeyValueFilter<K, V> kvFilter = filter.keyValueFilter();
-                IgnitePredicate<? super CacheEntry<K, V>> entryFilter = filter.entryFilter();
+                IgnitePredicate<? super Cache.Entry<K, V>> entryFilter = filter.entryFilter();
 
                 boolean ret = true;
 
@@ -465,7 +467,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             prjPredDep = (DeployableObject)in.readObject();
         else
-            prjPred = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
+            prjPred = (IgnitePredicate<Cache.Entry<K, V>>)in.readObject();
 
         internal = in.readBoolean();
 
