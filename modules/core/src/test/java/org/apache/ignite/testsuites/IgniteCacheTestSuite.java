@@ -83,6 +83,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
         // Common tests.
+        suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
         suite.addTestSuite(GridCacheAffinityRoutingSelfTest.class);
         suite.addTestSuite(GridCacheMvccSelfTest.class);
