@@ -61,12 +61,10 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
-        QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.localQuery(sql(Person.class, "salary < 2000"));
-
-        Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();
+        Collection<Cache.Entry<UUID, Person>> entries =
+            cache0.localQuery(sql(Person.class, "salary < 2000")).getAll();
 
         assert entries != null;
 
@@ -93,7 +91,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
@@ -132,7 +130,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
         assert grid(0).nodes().size() == gridCount();
 
@@ -147,7 +145,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         info("Queried entries: " + entries);
 
         // Expect result including backup persons.
-        assertEquals(3 * gridCount(), entries.size());
+        assertEquals(gridCount(), entries.size());
 
         checkResult(entries, p1, p3, p4);
     }
