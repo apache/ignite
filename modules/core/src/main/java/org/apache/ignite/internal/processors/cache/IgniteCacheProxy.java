@@ -370,6 +370,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
+
+            if (!ctx.config().isQueryIndexEnabled())
+                throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
+
             if (ctx.isReplicated() || ctx.isLocal())
                 return doLocalFieldsQuery(qry);
 

@@ -98,6 +98,19 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (Exception e) {
             assert false;
         }
+
+        try {
+            List<List<?>> res =
+                cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
+
+            assert false;
+        }
+        catch (CacheException e) {
+            X.println("Caught expected exception: " + e);
+        }
+        catch (Exception e) {
+            assert false;
+        }
     }
 
     /**
