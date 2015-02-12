@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 public class IgniteCacheTxExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.LOCAL;
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */

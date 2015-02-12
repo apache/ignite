@@ -18,38 +18,19 @@
 package org.apache.ignite.internal.processors.cache.context;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.cache.expiry.*;
-import javax.cache.processor.*;
 import java.net.*;
-import java.util.*;
 
 /**
  *
  */
 public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCacheAbstractTest {
-    /**  */
-    public static final int ITERATIONS = 1000;
-
     /** */
-    public static final String EXPIRY_POLICY_CLASS = "org.apache.ignite.tests.p2p.CacheExpirePolicyNoop";
-
-    /** */
-    public static final String ENTRY_LISTENER_CLASS = "org.apache.ignite.tests.p2p.CacheEntryListenerConfiguration";
-
-    /** */
-    public static final String ENTRY_PROCESSOR_CLASS = "org.apache.ignite.tests.p2p.CacheEntryProcessorNoop";
-
-    /** */
-    public static final String CACHE_STORE_CLASS = "org.apache.ignite.tests.p2p.CacheStoreNoop";
+    public static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheTestValue";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -65,99 +46,28 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
         return 3;
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        try {
-            return loadClass(new UsersClassLoader(), CACHE_STORE_CLASS);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUsersClassLoader() throws Exception {
+        UsersClassLoader testClassLdr = new UsersClassLoader();
+
+        Object val = testClassLdr.loadClass(TEST_VALUE).newInstance();
+
+        IgniteCache<Object, Object> jcache = grid(0).jcache(null);
+
+        for (int i = 0; i < 1000; i++)
+            jcache.put(i, val);
+
+        for (int i = 0; i < 1000; i++) {
+            int idx = i % 3;
+
+            if (idx == 0)
+                assertEquals(jcache.get(i).getClass().getClassLoader(), testClassLdr);
+            else
+                assertEquals(grid(idx).jcache(null).get(i).getClass().getClassLoader(),
+                    grid(idx).configuration().getClassLoader());
         }
-        catch (Exception e){
-            throw new CacheException(e);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEntryProcessor() throws Exception {
-        UsersClassLoader classLdr = (UsersClassLoader)ignite(0).configuration().getClassLoader();
-
-        IgniteCache<Object, Object> cache = ignite(0).jcache(null);
-
-        Set<Integer> keys = new TreeSet<>();
-
-        for (int i = 0; i < ITERATIONS; i++) {
-            cache.put(i, i);
-
-            keys.add(i);
-        }
-
-        Map<Object, EntryProcessorResult<Object>> res = cache.invokeAll(
-            keys,
-            this.<EntryProcessor<Object, Object, Object>>loadClass(classLdr, ENTRY_PROCESSOR_CLASS));
-
-        assertEquals(ITERATIONS, res.size());
-
-        for (EntryProcessorResult<Object> val : res.values())
-            assertEquals(42, (long)val.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheEntryListener() throws Exception {
-        UsersClassLoader classLdr = (UsersClassLoader)ignite(0).configuration().getClassLoader();
-
-        IgniteCache<Object, Object> cache = ignite(0).jcache(null);
-
-        CacheEntryListenerConfiguration<Object, Object> list = loadClass(ignite(0).configuration().getClassLoader(),
-            ENTRY_LISTENER_CLASS);
-
-        cache.registerCacheEntryListener(list);
-
-        for (int i = ITERATIONS; i < 2 * ITERATIONS; i++)
-            cache.put(i, i);
-
-        assertEquals(ITERATIONS, U.invoke(list.getClass(), list, "getCnt", null));
-        assertEquals(2, (int)classLdr.classUsedCnt(ENTRY_LISTENER_CLASS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExpirePolicies() throws Exception {
-        UsersClassLoader classLdr = (UsersClassLoader)ignite(0).configuration().getClassLoader();
-
-        IgniteCache<Object, Object> cache = ignite(0).jcache(null);
-
-        cache.withExpiryPolicy(this.<ExpiryPolicy>loadClass(classLdr, EXPIRY_POLICY_CLASS));
-
-        assertEquals(2, (int)classLdr.classUsedCnt(EXPIRY_POLICY_CLASS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheLoaderWriter() throws Exception {
-        IgniteCache<Object, Object> cache = ignite(0).jcache(null);
-
-        UsersClassLoader classLdr = (UsersClassLoader)ignite(0).configuration().getClassLoader();
-
-        assertEquals(42L, cache.get(99999999999999L));
-
-        assertEquals(1, (int)classLdr.classUsedCnt(CACHE_STORE_CLASS));
-    }
-
-    /**
-     * @return Loaded class.
-     * @throws Exception Thrown if any exception occurs.
-     */
-    private <T> T loadClass(ClassLoader usersClassLdr, String className)
-        throws Exception {
-        assertNotNull(usersClassLdr);
-
-        assertNotNull(usersClassLdr.loadClass(className));
-
-        return (T)usersClassLdr.loadClass(className).newInstance();
     }
 
     /**
@@ -166,32 +76,10 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     private static class UsersClassLoader extends GridTestExternalClassLoader {
         /**
          *
-         */
-        private Map<String, Integer> loadedClasses = new HashMap<>();
-
-        /**
-         *
          * @throws MalformedURLException If failed
          */
         public UsersClassLoader() throws MalformedURLException {
             super(new URL[]{new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
-        }
-
-        /**
-         *
-         */
-        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            int count = !loadedClasses.containsKey(name) ? 0 : loadedClasses.get(name);
-
-            ++count;
-
-            loadedClasses.put(name, count);
-
-            return super.loadClass(name);
-        }
-
-        public Integer classUsedCnt(String name){
-            return loadedClasses.get(name);
         }
     }
 }

@@ -28,11 +28,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
@@ -600,14 +595,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             initialize(cfg);
 
             CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
-
-            if (ctx.config().getClassLoader() != null && cfg.getCacheStoreFactory() != null) {
-                IgniteMarshaller marsh = ctx.config().getMarshaller();
-
-                byte[] bytes = marsh.marshal(cfgStore);
-
-                cfgStore = marsh.unmarshal(bytes, ctx.config().getClassLoader());
-            }
 
             validate(ctx.config(), cfg, cfgStore);
 

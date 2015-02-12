@@ -17,29 +17,10 @@
 
 package org.apache.ignite.tests.p2p;
 
-import javax.cache.expiry.*;
+import java.io.Serializable;
+
 /**
- * Entry processor for testing user's class loader.
+ * Value object for {@code IgniteCacheAbstractExecutionContextTest}.
  */
-public class CacheExpirePolicyNoop implements ExpiryPolicy {
-    /**
-     *
-     */
-    public CacheExpirePolicyNoop() {
-    }
-
-    /** {@inheritDoc} */
-    @Override public Duration getExpiryForCreation() {
-        return Duration.ETERNAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Duration getExpiryForAccess() {
-        return Duration.ETERNAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Duration getExpiryForUpdate() {
-        return Duration.ETERNAL;
-    }
+public class CacheTestValue implements Serializable {
 }

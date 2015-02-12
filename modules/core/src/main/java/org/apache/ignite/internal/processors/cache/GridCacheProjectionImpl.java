@@ -22,12 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -150,26 +144,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         this.keepPortable = keepPortable;
 
-        if (cctx.gridConfig().getClassLoader() == null)
-            this.expiryPlc = expiryPlc;
-        else
-            this.expiryPlc = loadExpiryPolicy(expiryPlc);
-    }
-
-    private ExpiryPolicy loadExpiryPolicy(ExpiryPolicy expiryPlc) {
-        try {
-            if (expiryPlc == null)
-                return null;
-
-            IgniteMarshaller marsh = cctx.gridConfig().getMarshaller();
-
-            byte[] bytes = marsh.marshal(expiryPlc);
-
-            return marsh.unmarshal(bytes, cctx.gridConfig().getClassLoader());
-        }
-        catch (Exception e){
-            throw new CacheException("Failed to load expiry policy by user's class loader.", e);
-        }
+        this.expiryPlc = expiryPlc;
     }
 
     /**

@@ -21,9 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.cache.CacheEntryEvent;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -223,18 +220,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             A.notNull(factory, "cacheEntryListenerFactory");
 
-            CacheEntryListener lsnr;
-
-            if (cctx.gridConfig().getClassLoader() == null)
-                lsnr = factory.create();
-            else {
-                IgniteMarshaller marsh = cctx.gridConfig().getMarshaller();
-
-                byte[] bytes = marsh.marshal(factory);
-
-                lsnr = ((Factory<CacheEntryListener<? super K, ? super V>>)marsh
-                    .unmarshal(bytes, cctx.gridConfig().getClassLoader())).create();
-            }
+            CacheEntryListener lsnr = factory.create();
 
             A.notNull(lsnr, "lsnr");
 
