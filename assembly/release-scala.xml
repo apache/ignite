@@ -21,36 +21,30 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>dependencies-schema-load</id>
+    <id>scala</id>
+
+    <includeBaseDirectory>false</includeBaseDirectory>
 
     <formats>
         <format>dir</format>
     </formats>
 
-    <includeBaseDirectory>false</includeBaseDirectory>
-
-    <moduleSets>
-        <moduleSet>
+    <fileSets>
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/</outputDirectory>
             <includes>
-                <include>org.apache.ignite:ignite-schema-load</include>
+                <include>**/ignitevisorcmd.bat</include>
             </includes>
-            <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
-                <fileSets>
-                    <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>/schema-load</outputDirectory>
-                        <includes>
-                            <include>*.jar</include>
-                        </includes>
-                        <excludes>
-                            <exclude>*-tests.jar</exclude>
-                            <exclude>*-javadoc.jar</exclude>
-                            <exclude>*-sources.jar</exclude>
-                        </excludes>
-                    </fileSet>
-                </fileSets>
-            </sources>
-        </moduleSet>
-    </moduleSets>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>**/ignitevisorcmd.sh</include>
+            </includes>
+        </fileSet>
+    </fileSets>
 </assembly>
