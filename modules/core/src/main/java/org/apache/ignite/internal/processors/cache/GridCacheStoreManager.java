@@ -482,6 +482,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
 
+            initSession(null);
+
             try {
                 store.loadCache(new IgniteBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
@@ -507,6 +509,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (Exception e) {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
+            finally {
+                sesHolder.set(null);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Loaded all values from store.");
@@ -515,7 +520,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         LT.warn(log, null, "Calling Cache.loadCache() method will have no effect, " +
-            "GridCacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
 
         return false;
     }
