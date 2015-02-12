@@ -2194,6 +2194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @param async If {@code true} uses asynchronous operation.
      * @throws Exception In case of error.
      */
     private void globalRemoveAll(boolean async) throws Exception {
