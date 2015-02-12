@@ -1504,9 +1504,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             catch (IgniteCheckedException e) {
                 res.addFailedKey(entry.key(), e);
             }
-            catch (GridCacheFilterFailedException ignore) {
-                assert false : "Filter should never fail with failFast=false and empty filter.";
-            }
         }
 
         // Store final batch.
