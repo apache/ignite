@@ -49,6 +49,9 @@ public class GridQueryRequest implements Serializable {
     public GridQueryRequest(long reqId, int pageSize, Collection<GridCacheSqlQuery> qrys) {
         this.reqId = reqId;
         this.pageSize = pageSize;
+
+        assert qrys instanceof Serializable;
+
         this.qrys = qrys;
     }
 
