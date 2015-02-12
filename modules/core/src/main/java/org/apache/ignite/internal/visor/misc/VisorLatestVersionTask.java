@@ -50,10 +50,9 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
         }
 
         /** {@inheritDoc} */
-        // TODO: IGNITE-191: Move to ENT visor.
         @Override protected String run(Void arg) {
-            //return g.product().latestVersion();
-            return null;
+            return g.latestVersion();
+
         }
 
         /** {@inheritDoc} */

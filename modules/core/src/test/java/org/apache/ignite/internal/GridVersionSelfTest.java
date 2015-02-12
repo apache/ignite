@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -31,40 +30,39 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    // TODO: IGNITE-191: Move to ENT.
-    public void _testVersions() throws Exception {
-//        String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
-//
-//        System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
-//
-//        try {
-//            Ignite ignite = startGrid();
-//
-//            IgniteProductVersion currVer = ignite.product().version();
-//
-//            String newVer = null;
-//
-//            for (int i = 0; i < 30; i++) {
-//                newVer = ignite.product().latestVersion();
-//
-//                if (newVer != null)
-//                    break;
-//
-//                U.sleep(100);
-//            }
-//
-//            info("Versions [cur=" + currVer + ", latest=" + newVer + ']');
-//
-//            assertNotNull(newVer);
-//            assertNotSame(currVer.toString(), newVer);
-//        }
-//        finally {
-//            stopGrid();
-//
-//            if (propVal != null)
-//                System.setProperty(IGNITE_UPDATE_NOTIFIER, propVal);
-//            else
-//                System.clearProperty(IGNITE_UPDATE_NOTIFIER);
-//        }
+    public void testVersions() throws Exception {
+        String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
+
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
+
+        try {
+            IgniteEx ignite = (IgniteEx)startGrid();
+
+            IgniteProductVersion currVer = ignite.version();
+
+            String newVer = null;
+
+            for (int i = 0; i < 30; i++) {
+                newVer = ignite.latestVersion();
+
+                if (newVer != null)
+                    break;
+
+                U.sleep(100);
+            }
+
+            info("Versions [cur=" + currVer + ", latest=" + newVer + ']');
+
+            assertNotNull(newVer);
+            assertNotSame(currVer.toString(), newVer);
+        }
+        finally {
+            stopGrid();
+
+            if (propVal != null)
+                System.setProperty(IGNITE_UPDATE_NOTIFIER, propVal);
+            else
+                System.clearProperty(IGNITE_UPDATE_NOTIFIER);
+        }
     }
 }
