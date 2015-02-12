@@ -3905,7 +3905,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p, final long ttl, final Object[] args) {
+    @Override public IgniteInternalFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p,
+        final long ttl,
+        final Object[] args)
+    {
         return ctx.closures().callLocalSafe(
             ctx.projectSafe(new Callable<Object>() {
                 @Nullable @Override public Object call() throws IgniteCheckedException {
@@ -3927,6 +3930,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     ) {
         A.notNull(keys, "keys");
 
+        for (Object key : keys)
+            A.notNull(key, "key");
+
         if (!ctx.store().configured())
             return new GridFinishedFuture<>(ctx.kernalContext());
 
@@ -3936,7 +3942,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {
-                Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
 
                 if (nodes.isEmpty())
                     return new GridFinishedFuture<>(ctx.kernalContext());
@@ -3957,7 +3963,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
         }
         else {
-            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
 
             if (nodes.isEmpty())
                 return new GridFinishedFuture<>(ctx.kernalContext());
