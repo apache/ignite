@@ -408,6 +408,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
             synchronized (igniteMap) {
                 ignites = igniteMap.values().toArray(new Ignite[igniteMap.values().size()]);
+
+                igniteMap.clear();
             }
 
             for (Ignite ignite : ignites) {
