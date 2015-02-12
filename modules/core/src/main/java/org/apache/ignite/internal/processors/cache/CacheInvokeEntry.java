@@ -43,6 +43,7 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     private boolean modified;
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param val Value.
      */
@@ -90,7 +91,9 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
+        if (cls.equals(Ignite.class))
+            return (T)cctx.kernalContext().grid();
+        else if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
