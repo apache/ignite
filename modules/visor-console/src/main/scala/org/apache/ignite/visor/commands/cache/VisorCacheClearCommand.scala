@@ -22,8 +22,6 @@ import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import org.apache.ignite.cluster.ClusterNode
 
-import java.util.Collections
-
 import org.apache.ignite.visor.commands.VisorTextTable
 import org.apache.ignite.visor.visor
 import visor._
@@ -103,7 +101,7 @@ class VisorCacheClearCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCacheNodes(cacheName)
+        val prj = if (node.isDefined) ignite.forNode(node.get) else ignite.forCacheNodes(cacheName)
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -117,18 +115,15 @@ class VisorCacheClearCommand {
 
         val t = VisorTextTable()
 
-        t #= ("Node ID8(@)", "Entries Cleared", "Cache Size Before", "Cache Size After")
+        t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = Collections.singleton(cacheName)
-
-        prj.nodes().foreach(node => {
-            val res = grid.compute(grid.forNode(node))
+        prj.nodes().headOption.foreach(node => {
+            val res = ignite.compute(ignite.forNode(node))
                 .withName("visor-cclear-task")
                 .withNoFailover()
-                .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheSet))
-                .get(cacheName)
+                .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheName))
 
-            t += (nodeId8(node.id()), res.get1() - res.get2(), res.get1(), res.get2())
+            t += (nodeId8(node.id()), res.get1(), res.get2())
         })
 
         println("Cleared cache with name: " + escapeName(cacheName))

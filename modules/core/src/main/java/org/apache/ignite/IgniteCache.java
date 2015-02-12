@@ -20,6 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -58,10 +59,10 @@ import java.util.concurrent.locks.*;
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
-    public @Override IgniteCache<K, V> withAsync();
+    @Override public IgniteCache<K, V> withAsync();
 
     /** {@inheritDoc} */
-    public @Override <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
+    @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method
@@ -70,10 +71,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * by default. However, if the table is pretty dense, with density factor of {@code N/64},
      * which is true for near fully populated caches, this method will generally perform significantly
      * faster with complexity of O(S) where {@code S = 5}.
-     * <p>
-     * Note that this method is not available on {@link org.apache.ignite.cache.CacheProjection} API since it is
-     * impossible (or very hard) to deterministically return a number value when pre-filtering
-     * and post-filtering is involved (e.g. projection level predicate filters).
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
@@ -125,7 +122,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.
-     * In case of {@link org.apache.ignite.cache.CacheMode#PARTITIONED} or {@link org.apache.ignite.cache.CacheMode#REPLICATED} caches,
+     * In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -142,7 +139,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
+     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -150,7 +147,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
+     * @throws CacheFlagException If projection flags validation failed.
      */
     @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
@@ -213,12 +210,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
+     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
@@ -232,8 +229,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
      * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
-     * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
+     * semantics.
      *
      * @param key Entry key.
      * @return Peeked value, or {@code null} if not found.
@@ -248,11 +244,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method is not transactional.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
+     * {@link CacheFlag#SKIP_SWAP}, {@link CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
+     * @throws CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
@@ -285,45 +281,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     @IgniteAsyncSupported
     <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
-
-    /**
-     * Creates projection that will operate with portable objects.
-     * <p>
-     * Projection returned by this method will force cache not to deserialize portable objects,
-     * so keys and values will be returned from cache API methods without changes. Therefore,
-     * signature of the projection can contain only following types:
-     * <ul>
-     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
-     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     *     <li>Arrays of primitives (byte[], int[], ...)</li>
-     *     <li>{@link String} and array of {@link String}s</li>
-     *     <li>{@link UUID} and array of {@link UUID}s</li>
-     *     <li>{@link Date} and array of {@link Date}s</li>
-     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
-     *     <li>Enums and array of enums</li>
-     *     <li>
-     *         Maps, collections and array of objects (but objects inside
-     *         them will still be converted if they are portable)
-     *     </li>
-     * </ul>
-     * <p>
-     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
-     * (which will be stored in portable format), you should acquire following projection
-     * to avoid deserialization:
-     * <pre>
-     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
-     *
-     * // Value is not deserialized and returned in portable format.
-     * GridPortableObject po = prj.get(1);
-     * </pre>
-     * <p>
-     * Note that this method makes sense only if cache is working in portable mode
-     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
-     * this method is no-op and will return current projection.
-     *
-     * @return Projection for portable objects.
-     */
-    public <K1, V1> IgniteCache<K1, V1> keepPortable();
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported

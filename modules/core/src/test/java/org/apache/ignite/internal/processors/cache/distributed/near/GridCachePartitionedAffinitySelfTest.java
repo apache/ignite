@@ -34,7 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -100,7 +99,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @return Affinity.
      */
     static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
+        return ignite.affinity(null);
     }
 
     /**
@@ -197,7 +196,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         for (Map.Entry<Object, Integer> entry : data.entrySet()) {
             int part = aff.partition(entry.getKey());
             Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 1);
-            UUID act = F.<ClusterNode>first(affNodes).id();
+            UUID act = F.first(affNodes).id();
             UUID exp = nodes.get(entry.getValue()).id();
 
             if (!exp.equals(act)) {
@@ -394,7 +393,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        GridCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.jcache(null);
 
         int keyCnt = 10;
 
@@ -411,7 +410,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
             info("Before putting key [key=" + i + ", grid=" + mg.name() + ']');
 
-            mc.putx(i, Integer.toString(i));
+            mc.put(i, Integer.toString(i));
 
             if (failFlag.get())
                 fail("testAffinityWithPut failed.");
@@ -486,7 +485,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                                     ignite.name() + ']');
                             }
 
-                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.<Object>key());
+                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.key());
 
                             if (!affNodes.contains(ignite.cluster().localNode())) {
                                 failFlag.set(true);

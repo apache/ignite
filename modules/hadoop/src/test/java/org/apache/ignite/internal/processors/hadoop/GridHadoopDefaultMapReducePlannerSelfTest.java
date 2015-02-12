@@ -979,11 +979,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public long licenseGracePeriodLeft() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isJmxRemoteEnabled() {
             return false;
         }
@@ -1224,6 +1219,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String latestVersion() {
             return null;
         }
     }

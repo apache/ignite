@@ -22,7 +22,6 @@ import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.processors.closure.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -33,8 +32,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * GGFS IPC handler.
@@ -62,19 +59,14 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     /** Stopping flag. */
     private volatile boolean stopping;
 
-    /** Management connection. */
-    private final boolean mgmt;
-
     /**
      * Constructs GGFS IPC handler.
      *
      * @param ggfsCtx Context.
-     * @param mgmt Management connection flag.
      */
-    GridGgfsIpcHandler(GridGgfsContext ggfsCtx, boolean mgmt) {
+    GridGgfsIpcHandler(GridGgfsContext ggfsCtx) {
         assert ggfsCtx != null;
 
-        this.mgmt = mgmt;
         ctx = ggfsCtx.kernalContext();
         ggfs = ggfsCtx.ggfs();
 
@@ -109,9 +101,6 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final GridGgfsClientSession ses,
         final GridGgfsMessage msg, DataInput in) {
-        if (!mgmt)
-            GridLicenseUseRegistry.onUsage(HADOOP, getClass());
-
         try {
             // Even if will be closed right after this call, response write error will be ignored.
             if (stopping)

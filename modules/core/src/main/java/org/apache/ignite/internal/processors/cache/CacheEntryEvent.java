@@ -62,7 +62,10 @@ public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, 
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> cls) {
-        throw new IllegalArgumentException();
+        if(cls.isAssignableFrom(getClass()))
+            return cls.cast(this);
+
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /** {@inheritDoc} */

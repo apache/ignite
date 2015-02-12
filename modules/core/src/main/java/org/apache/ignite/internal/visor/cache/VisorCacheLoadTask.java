@@ -64,7 +64,7 @@ public class VisorCacheLoadTask extends
 
                 Map<String, Integer> res = new HashMap<>();
 
-                for (GridCache c: g.cachesx()) {
+                for (GridCache c: ignite.cachesx()) {
                     String cacheName = c.name();
 
                     if (cacheNames.contains(cacheName)) {

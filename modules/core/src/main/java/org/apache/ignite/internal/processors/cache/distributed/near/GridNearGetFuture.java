@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -85,7 +85,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -136,7 +136,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx<K, V> tx,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,

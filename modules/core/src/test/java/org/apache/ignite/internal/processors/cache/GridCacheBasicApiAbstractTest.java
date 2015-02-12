@@ -430,7 +430,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOps() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -594,19 +594,19 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws IgniteCheckedException If test failed.
      */
     public void testGetPutRemove() throws IgniteCheckedException {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         int key = (int)System.currentTimeMillis();
 
         assert cache.get(key) == null;
-        assert cache.put(key, "1") == null;
+        assert cache.getAndPut(key, "1") == null;
 
         String val = cache.get(key);
 
         assert val != null;
         assert "1".equals(val);
 
-        val = cache.remove(key);
+        val = cache.getAndRemove(key);
 
         assert val != null;
         assert "1".equals(val);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -27,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -67,7 +67,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<Object, Object>> prjFilter;
+    private IgnitePredicate<Cache.Entry<Object, Object>> prjFilter;
 
     /** */
     private byte[] prjFilterBytes;
@@ -198,7 +198,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         String clause,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
-        IgnitePredicate<CacheEntry<Object, Object>> prjFilter,
+        IgnitePredicate<Cache.Entry<Object, Object>> prjFilter,
         IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
@@ -373,7 +373,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
+    public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
         return prjFilter;
     }
 

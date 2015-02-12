@@ -46,7 +46,7 @@ public class GridCapacityLoadTest {
         IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("grid.cfg");
 
         try (Ignite g = G.start(cfg)) {
-            GridCache<Integer, Integer> c = g.cache(null);
+            IgniteCache<Integer, Integer> c = g.jcache(null);
 
             long init = mem.getHeapMemoryUsage().getUsed();
 

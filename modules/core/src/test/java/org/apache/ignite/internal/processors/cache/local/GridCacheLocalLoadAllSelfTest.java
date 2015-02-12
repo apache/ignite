@@ -51,7 +51,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         assert ignite != null;
 
-        ignite.cache("test-cache").getAll(Collections.singleton(1));
+        ignite.jcache("test-cache").getAll(Collections.singleton(1));
     }
 
     /** {@inheritDoc} */

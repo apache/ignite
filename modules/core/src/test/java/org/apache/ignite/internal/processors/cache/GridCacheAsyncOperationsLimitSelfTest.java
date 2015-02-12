@@ -63,10 +63,10 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cacheAsync.put("key" + i, i);
 
-            IgniteFuture<Boolean> fut = cacheAsync.future();
+            IgniteFuture<?> fut = cacheAsync.future();
 
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> t) {
+            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> t) {
                     cnt.decrementAndGet();
 
                     max.setIfGreater(cnt.get());

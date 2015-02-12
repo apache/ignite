@@ -316,7 +316,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         final Integer affKey = 1;
 
         // Store a cache key.
-        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+        g.jcache(CACHE_NAME).put(affKey, affKey.toString());
 
         String name = "serviceAffinity";
 
@@ -549,7 +549,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         @Override public void init(ServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
 
-            ClusterNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
+            ClusterNode n = g.affinity(CACHE_NAME).mapKeyToNode(affKey);
 
             assertNotNull(n);
             assertTrue(n.isLocal());
@@ -570,7 +570,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         private Ignite ignite;
 
         /** */
-        private GridCache<String, Value> cache;
+        private IgniteCache<String, Value> cache;
 
         /** Cache key. */
         private String key;
@@ -592,7 +592,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                     Value val = cache.get(key);
 
                     if (val == null) {
-                        Value old = cache.putIfAbsent(key, val = new Value(0));
+                        Value old = cache.getAndPutIfAbsent(key, val = new Value(0));
 
                         if (old != null)
                             val = old;
@@ -633,7 +633,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             key = ctx.name();
 
-            cache = ignite.cache(CACHE_NAME);
+            cache = ignite.jcache(CACHE_NAME);
         }
 
         /** {@inheritDoc} */

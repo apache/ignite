@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -198,8 +198,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
         throws ClassNotFoundException {
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
-            F.<CacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = req.projectionFilter() == null ?
+            F.<Cache.Entry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();

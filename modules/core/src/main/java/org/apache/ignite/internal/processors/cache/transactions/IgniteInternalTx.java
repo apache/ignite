@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -30,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -508,7 +508,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
          GridCacheContext<K, V> ctx,
          boolean failFast,
          K key,
-         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

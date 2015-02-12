@@ -264,7 +264,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         entry.addNearLocal(node1, 1, ver1, 0, true);
 
-        entry.readyNearLocal(ver1, ver1, empty(), empty(), Collections.<GridCacheVersion>singletonList(ver0));
+        entry.readyNearLocal(ver1, ver1, empty(), empty(), Collections.singletonList(ver0));
 
         entry.addRemote(node1, 1, ver0, 0, false, true);
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -82,7 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheVersion ver;
 
     /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -133,7 +133,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,

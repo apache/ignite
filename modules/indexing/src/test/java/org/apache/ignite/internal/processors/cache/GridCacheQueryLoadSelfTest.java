@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
@@ -333,8 +334,8 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert cache.isEmpty();
         assertEquals(0, cache.size());
 
-        cache.projection(new P1<CacheEntry<Integer, ValueObject>>() {
-            @Override public boolean apply(CacheEntry<Integer, ValueObject> e) {
+        cache.projection(new P1<Cache.Entry<Integer, ValueObject>>() {
+            @Override public boolean apply(Cache.Entry<Integer, ValueObject> e) {
                 return e.getKey() >= 5;
             }
         }).reloadAll(Arrays.asList(keys));
@@ -370,8 +371,8 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert cache.isEmpty();
         assertEquals(0, cache.size());
 
-        cache.projection(new P1<CacheEntry<Integer, ValueObject>>() {
-            @Override public boolean apply(CacheEntry<Integer, ValueObject> e) {
+        cache.projection(new P1<Cache.Entry<Integer, ValueObject>>() {
+            @Override public boolean apply(Cache.Entry<Integer, ValueObject> e) {
                 return e.getKey() >= 5;
             }
         }).reloadAllAsync(Arrays.asList(keys)).get();

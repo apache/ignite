@@ -17,9 +17,9 @@
 
 package org.apache.ignite.visor.commands.deploy
 
-import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.io.GridFilenameUtils
 import org.apache.ignite.internal.util.typedef.X
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 
 import com.jcraft.jsch._
 
@@ -27,10 +27,9 @@ import java.io._
 import java.net.UnknownHostException
 import java.util.concurrent._
 
-import org.apache.ignite.internal.util.typedef.internal.U
-import org.apache.ignite.visor.{VisorTag, visor}
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.VisorConsoleCommand
-import visor._
+import org.apache.ignite.visor.visor._
 
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
@@ -184,7 +183,7 @@ private case class VisorCopier(
                 ch.connect()
 
                 // Added to skip login message.
-                IgniteUtils.sleep(1000)
+                U.sleep(1000)
 
                 val writer = new PrintStream(ch.getOutputStream, true)
 
@@ -608,5 +607,5 @@ object VisorDeployCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromDeploy2Visor(vs: VisorTag) = cmd
+    implicit def fromDeploy2Visor(vs: VisorTag): VisorDeployCommand = cmd
 }

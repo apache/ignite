@@ -203,7 +203,7 @@ public class GridCacheSwapLoadTest {
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> cache = g.cache(null);
+                IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                 assert cache != null;
 
@@ -216,7 +216,7 @@ public class GridCacheSwapLoadTest {
                     if (i > keyCnt)
                         break;
 
-                    cache.putx(i, i);
+                    cache.put(i, i);
                 }
 
                 X.println(">>> Thread '" + Thread.currentThread().getName() + "' stopped.");
@@ -235,7 +235,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                     assert cache != null;
 
@@ -269,14 +269,14 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                     assert cache != null;
 
                     while (true) {
                         Integer i = swappedKeys.take();
 
-                        Integer val = cache.remove(i);
+                        Integer val = cache.getAndRemove(i);
 
                         assert val != null && val.equals(i);
 

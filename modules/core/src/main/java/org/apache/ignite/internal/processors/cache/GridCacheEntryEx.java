@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -134,11 +135,17 @@ public interface GridCacheEntryEx<K, V> {
 
     /**
      * Wraps this map entry into cache entry.
-
-     * @param prjAware {@code true} if entry should inherit projection properties.
+     *
      * @return Wrapped entry.
      */
-    public CacheEntry<K, V> wrap(boolean prjAware);
+    public Cache.Entry<K, V> wrap();
+
+    /**
+     * Wraps entry to an entry with lazy value get.
+     *
+     * @return Entry.
+     */
+    public Cache.Entry<K, V> wrapLazyValue();
 
     /**
      * Wraps this map entry into cache entry for filter evaluation inside entry lock.
@@ -146,12 +153,18 @@ public interface GridCacheEntryEx<K, V> {
      * @return Wrapped entry.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException;
+    public Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException;
 
     /**
      * @return Entry which is safe to pass into eviction policy.
      */
-    public CacheEntry<K, V> evictWrap();
+    public EvictableEntry<K, V> wrapEviction();
+
+    /**
+     * @return Entry which holds key and version (no value, since entry
+     *      is intended to be used in sync evictions checks).
+     */
+    public CacheVersionedEntryImpl<K, V> wrapVersioned();
 
     /**
      * @return Not-null version if entry is obsolete.
@@ -199,7 +212,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws IgniteCheckedException If swap could not be released.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean invalidate(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
+    public boolean invalidate(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -210,7 +223,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws IgniteCheckedException If operation failed.
      * @return {@code true} if entry was not being used and could be removed.
      */
-    public boolean compact(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
+    public boolean compact(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -221,7 +234,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws IgniteCheckedException In case of error.
      */
     public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException;
 
     /**
      * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
@@ -302,7 +315,7 @@ public interface GridCacheEntryEx<K, V> {
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
@@ -314,7 +327,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V innerReload(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException,
+    @Nullable public V innerReload(IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException,
         GridCacheEntryRemovedException;
 
     /**
@@ -352,7 +365,7 @@ public interface GridCacheEntryEx<K, V> {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -388,7 +401,7 @@ public interface GridCacheEntryEx<K, V> {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
@@ -443,7 +456,7 @@ public interface GridCacheEntryEx<K, V> {
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
         long drExpireTime,
@@ -484,7 +497,7 @@ public interface GridCacheEntryEx<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
@@ -502,7 +515,7 @@ public interface GridCacheEntryEx<K, V> {
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
     public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -584,7 +597,7 @@ public interface GridCacheEntryEx<K, V> {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(GridCachePeekMode mode, IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable public V peek(GridCachePeekMode mode, IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -593,7 +606,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
      * @param swap Read from swap flag.
-     * @param topVer Topology version..
+     * @param topVer Topology version.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
@@ -609,7 +622,7 @@ public interface GridCacheEntryEx<K, V> {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -622,7 +635,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheFilterFailedException If {@code failFast} is {@code true} and
      *      filter didn't pass.
      */
-    @Nullable public V peekFailFast(GridCachePeekMode mode, IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable public V peekFailFast(GridCachePeekMode mode, IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -637,7 +650,7 @@ public interface GridCacheEntryEx<K, V> {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
 
     /**
