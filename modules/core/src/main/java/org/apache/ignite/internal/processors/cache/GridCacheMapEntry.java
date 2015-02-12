@@ -4458,13 +4458,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (cls.isAssignableFrom(IgniteCache.class))
                 return (T)cctx.grid().jcache(cctx.name());
 
+            if (cls.isAssignableFrom(getClass()))
+                return (T)this;
+
             if (cls.isAssignableFrom(EvictableEntry.class))
                 return (T)wrapEviction();
 
-            if (!cls.equals(getClass()))
-                throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+            if (cls.isAssignableFrom(CacheVersionedEntryImpl.class))
+                return (T)wrapVersioned();
 
-            return (T)this;
+            if (cls.isAssignableFrom(GridCacheMapEntry.this.getClass()))
+                return (T)GridCacheMapEntry.this;
+
+            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
         }
 
         /** {@inheritDoc} */
