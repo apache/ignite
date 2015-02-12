@@ -75,7 +75,6 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
      */
     private static class UsersClassLoader extends GridTestExternalClassLoader {
         /**
-         *
          * @throws MalformedURLException If failed
          */
         public UsersClassLoader() throws MalformedURLException {
