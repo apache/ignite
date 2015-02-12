@@ -488,11 +488,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> compatibleVersions() {
-        return grid.compatibleVersions();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isStopping() {
         GridKernalState state = gw.getState();
 

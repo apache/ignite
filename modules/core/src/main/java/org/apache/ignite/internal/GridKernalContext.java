@@ -90,13 +90,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public String gridName();
 
     /**
-     * Gets list of compatible versions.
-     *
-     * @return Compatible versions.
-     */
-    public Collection<String> compatibleVersions();
-
-    /**
      * Gets logger.
      *
      * @return Logger.
