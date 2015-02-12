@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.authentication.*;
+import org.apache.ignite.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

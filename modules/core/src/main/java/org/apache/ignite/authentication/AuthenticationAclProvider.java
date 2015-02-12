@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.authentication;
+package org.apache.ignite.authentication;
 
 import org.apache.ignite.*;
 import org.apache.ignite.plugin.security.*;
