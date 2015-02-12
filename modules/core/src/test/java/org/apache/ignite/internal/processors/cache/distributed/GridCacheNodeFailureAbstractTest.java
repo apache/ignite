@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
@@ -114,9 +115,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 IGNITEs.set(i, startGrid(i));
             }
 
-            CacheEntry e = cache(i).entry(KEY);
-
-            assert !e.isLocked() : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
+            assert !jcache(i).isLocalLocked(KEY, false) : "Entry is locked for grid [idx=" + i + ']';
         }
     }
 
@@ -126,6 +125,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
         return IGNITEs.get(i).cache(null);
+    }
+
+    /**
+     * @param i Grid index.
+     * @return Cache.
+     */
+    @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
+        return IGNITEs.get(i).jcache(null);
     }
 
     /**
@@ -232,7 +239,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Nodes for key [id=" + grid(idx).cache(null).affinity().mapKeyToPrimaryAndBackups(KEY) +
+        info("Nodes for key [id=" + grid(idx).affinity(null).mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);

@@ -30,6 +30,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -116,7 +117,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Filter bytes. */
     private byte[][] filterBytes;
@@ -172,7 +173,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean forceTransformBackups,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -282,7 +283,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Filter.
      */
-    @Nullable public IgnitePredicate<CacheEntry<K, V>>[] filter() {
+    @Nullable public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
         return filter;
     }
 

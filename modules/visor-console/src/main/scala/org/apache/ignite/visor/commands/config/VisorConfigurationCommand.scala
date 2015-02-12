@@ -19,15 +19,16 @@ package org.apache.ignite.visor.commands.config
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.lang.IgniteBiTuple
+
+import java.lang.System._
+
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
-
-import java.lang.System._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -102,7 +103,7 @@ class VisorConfigurationCommand {
      * @return String.
      */
     private def arr2Str[T: ClassTag](arr: Array[T]): String = {
-        if (arr != null && arr.length > 0) IgniteUtils.compact(arr.mkString(", ")) else DFLT
+        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else DFLT
     }
 
     /**
@@ -345,7 +346,7 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(IgniteUtils.gridEventName)))
+            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(U.gridEventName)))
 
             evtsT += ("Included event types", inclEvtTypes)
 

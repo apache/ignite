@@ -17,21 +17,18 @@
 
 package org.apache.ignite.visor.commands.events
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite._
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.VisorGridEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-
-import org.apache.ignite._
-import org.apache.ignite.events.EventType
-import org.apache.ignite.events.EventType._
 
 import java.util.UUID
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands._
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -395,7 +392,7 @@ class VisorEventsCommand {
             all #= ("Timestamp", "Description")
 
             sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp()), IgniteUtils.compact(evt.shortDisplay))
+                all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
             )
 
             all.render()
@@ -526,5 +523,5 @@ object VisorEventsCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromEvts2Visor(vs: VisorTag) = cmd
+    implicit def fromEvts2Visor(vs: VisorTag): VisorEventsCommand = cmd
 }

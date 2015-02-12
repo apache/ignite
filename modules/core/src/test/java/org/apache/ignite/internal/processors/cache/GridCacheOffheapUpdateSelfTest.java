@@ -57,33 +57,33 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(2);
 
-            GridCache<Object, Object> rmtCache = ignite.cache(null);
+            IgniteCache<Object, Object> rmtCache = ignite.jcache(null);
 
             int key = 0;
 
-            while (!rmtCache.affinity().isPrimary(grid(1).localNode(), key))
+            while (!ignite.affinity(null).isPrimary(grid(1).localNode(), key))
                 key++;
 
-            GridCache<Object, Object> locCache = grid(1).cache(null);
+            IgniteCache<Object, Object> locCache = grid(1).jcache(null);
 
-            try (IgniteTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                locCache.putxIfAbsent(key, 0);
+            try (IgniteTx tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                locCache.putIfAbsent(key, 0);
 
                 tx.commit();
             }
 
-            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(0, rmtCache.get(key));
 
-                rmtCache.putx(key, 1);
+                rmtCache.put(key, 1);
 
                 tx.commit();
             }
 
-            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, rmtCache.get(key));
 
-                rmtCache.putx(key, 2);
+                rmtCache.put(key, 2);
 
                 tx.commit();
             }
@@ -100,7 +100,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite grid = startGrid(0);
 
-            GridCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.jcache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, 0);
@@ -110,7 +110,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             for (int i = 0; i < 30; i++)
-                grid(1).cache(null).put(i, 10);
+                grid(1).jcache(null).put(i, 10);
 
             // Find a key that does not belong to started node anymore.
             int key = 0;
@@ -118,17 +118,17 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
             ClusterNode locNode = grid.cluster().localNode();
 
             for (;key < 30; key++) {
-                if (!cache.affinity().isPrimary(locNode, key) && !cache.affinity().isBackup(locNode, key))
+                if (!grid.affinity(null).isPrimary(locNode, key) && !grid.affinity(null).isBackup(locNode, key))
                     break;
             }
 
             assertEquals(10, cache.get(key));
 
-            try (IgniteTx ignored = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 assertEquals(10, cache.get(key));
             }
 
-            try (IgniteTx ignored = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 assertEquals(10, cache.get(key));
             }
         }

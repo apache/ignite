@@ -17,8 +17,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
-
 import java.io.*;
 import java.util.concurrent.*;
 

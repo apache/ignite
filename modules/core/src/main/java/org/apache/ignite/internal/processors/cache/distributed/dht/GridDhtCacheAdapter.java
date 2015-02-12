@@ -291,7 +291,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public CacheEntry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
+    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
         return super.entry(key);
     }
 
@@ -513,7 +513,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         return getAllAsync(keys,
             true,
@@ -528,7 +528,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public V reload(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
         throws IgniteCheckedException {
         try {
             return super.reload(key, filter);
@@ -553,7 +553,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
@@ -591,7 +591,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiry) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -808,24 +808,24 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         assert false;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<CacheEntry<K, V>> entrySet(int part) {
+    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
         return new PartitionEntrySet(part);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtCacheAdapter.class, this);
+        return S.toString(GridDhtCacheAdapter.class, this, super.toString());
     }
 
     /**
      *
      */
-    private class PartitionEntrySet extends AbstractSet<CacheEntry<K, V>> {
+    private class PartitionEntrySet extends AbstractSet<Cache.Entry<K, V>> {
         /** */
         private int partId;
 
@@ -837,7 +837,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<CacheEntry<K, V>> iterator() {
+        @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
             final GridDhtLocalPartition<K, V> part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersion(), false);
 
@@ -848,20 +848,20 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         /** {@inheritDoc} */
         @Override public boolean remove(Object o) {
-            if (!(o instanceof CacheEntry))
+            if (!(o instanceof Cache.Entry))
                 return false;
 
-            CacheEntry<K, V> entry = (CacheEntry<K, V>)o;
+            Cache.Entry<K, V> entry = (Cache.Entry<K, V>)o;
 
             K key = entry.getKey();
-            V val = entry.peek();
+            V val = entry.getValue();
 
             if (val == null)
                 return false;
 
             try {
                 // Cannot use remove(key, val) since we may be in DHT cache and should go through near.
-                return entry(key).remove(val);
+                return GridDhtCacheAdapter.this.remove(key, val);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -880,12 +880,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
-            if (!(o instanceof CacheEntry))
+            if (!(o instanceof Cache.Entry))
                 return false;
 
-            CacheEntry<K, V> entry = (CacheEntry<K, V>)o;
+            Cache.Entry<K, V> entry = (Cache.Entry<K, V>)o;
 
-            return partId == entry.partition() && F.eq(entry.peek(), peek(entry.getKey()));
+            return partId == ctx.affinity().partition(entry.getKey()) &&
+                F.eq(entry.getValue(), peek(entry.getKey()));
         }
 
         /** {@inheritDoc} */
@@ -1008,15 +1009,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Complex partition iterator for both partition and swap iteration.
      */
-    private static class PartitionEntryIterator<K, V> extends GridIteratorAdapter<CacheEntry<K, V>> {
+    private class PartitionEntryIterator<K, V> extends GridIteratorAdapter<Cache.Entry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Next entry. */
-        private CacheEntry<K, V> entry;
+        private Cache.Entry<K, V> entry;
 
         /** Last seen entry to support remove. */
-        private CacheEntry<K, V> last;
+        private Cache.Entry<K, V> last;
 
         /** Partition iterator. */
         private final Iterator<GridDhtCacheEntry<K, V>> partIt;
@@ -1036,7 +1037,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         /** {@inheritDoc} */
-        @Override public CacheEntry<K, V> nextX() throws IgniteCheckedException {
+        @Override public Cache.Entry<K, V> nextX() throws IgniteCheckedException {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -1052,7 +1053,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            last.remove();
+            ctx.grid().jcache(ctx.name()).remove(last.getKey(), last.getValue());
         }
 
         /**
@@ -1066,7 +1067,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next.isInternal() || !next.visitable(CU.<K, V>empty()))
                         continue;
 
-                    entry = next.wrap(true);
+                    entry = next.wrapLazyValue();
 
                     return;
                 }

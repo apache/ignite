@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -43,10 +44,10 @@ public class IgniteTxReentryColocatedSelfTest extends IgniteTxReentryAbstractSel
     @Override protected int testKey() {
         int key = 0;
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
         while (true) {
-            Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(key);
 
             if (nodes.contains(grid(0).localNode()))
                 key++;

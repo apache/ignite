@@ -152,7 +152,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(0).cache(null);
+                IgniteCache<Integer, String> cache = grid(0).jcache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

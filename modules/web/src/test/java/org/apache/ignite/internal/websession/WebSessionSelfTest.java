@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.websession;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -86,7 +86,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                GridCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+                IgniteCache<String, HttpSession> cache = G.ignite().jcache(getCacheName());
 
                 assertNotNull(cache);
 

@@ -83,7 +83,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                GridCache<Object, Object> cache = g.cache(null);
+                IgniteCache<Object, Object> cache = g.jcache(null);
 
                 assert cache != null;
 
@@ -152,7 +152,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        GridCache<Object, Object> cache = G.ignite().cache(null);
+        IgniteCache<Object, Object> cache = G.ignite().jcache(null);
 
         assert cache != null;
 
@@ -162,7 +162,8 @@ public class GridSwapEvictAllBenchmark {
             keys.add(i);
 
             if (keys.size() == batchSize) {
-                cache.evictAll(keys);
+                for (Long key : keys)
+                    cache.localEvict(Collections.<Object>singleton(key));
 
                 evictedKeysCnt.addAndGet(batchSize);
 
@@ -216,7 +217,8 @@ public class GridSwapEvictAllBenchmark {
             keys.add(i);
 
             if (keys.size() == batchSize) {
-                cache.promoteAll(keys);
+                for (Long key : keys)
+                    cache.localPromote(Collections.singleton(key));
 
                 unswappedKeys.addAndGet(batchSize);
 

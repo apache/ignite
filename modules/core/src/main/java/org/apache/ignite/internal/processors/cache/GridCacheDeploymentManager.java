@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -34,6 +33,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -244,8 +244,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
         Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<CacheEntry<K, V>>() {
-                @Override public boolean apply(CacheEntry<K, V> e) {
+            new P1<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
                         undeploy(e, cacheCtx.cache());
                 }
@@ -255,7 +255,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                  * @param cache Cache.
                  * @return {@code True} if entry should be undeployed.
                  */
-                private boolean undeploy(CacheEntry<K, V> e, GridCacheAdapter<K, V> cache) {
+                private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
                     K k = e.getKey();
 
                     GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());

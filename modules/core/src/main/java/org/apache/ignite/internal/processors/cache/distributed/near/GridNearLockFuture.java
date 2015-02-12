@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -39,6 +38,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -98,7 +98,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -150,7 +150,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -796,7 +796,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                         try {
                             entry = cctx.near().entryExx(key, topVer);
 
-                            if (!cctx.isAll(entry.wrap(false), filter)) {
+                            if (!cctx.isAll(entry.wrapLazyValue(), filter)) {
                                 if (log.isDebugEnabled())
                                     log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 

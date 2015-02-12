@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -98,17 +99,17 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.cache(null).putx(i, i);
+            g0.jcache(null).put(i, i);
 
-        assertEquals(keyCnt, g0.cache(null).size());
-        assertEquals(keyCnt, g1.cache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
 
         for (int n = 0; n < retries; n++) {
             info("Starting additional grid node...");
 
             Ignite g2 = startGrid(2);
 
-            assertEquals(keyCnt, g2.cache(null).size());
+            assertEquals(keyCnt, ((IgniteKernal)g2).internalCache(null).size());
 
             info("Stopping additional grid node...");
 
@@ -122,17 +123,17 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TooBroadScope"})
     public void testNodeRestartMultithreaded() throws Exception {
         final int keyCnt = 1000;
-        final int retries = 300;
+        final int retries = 50;
         int threadCnt = 5;
 
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.cache(null).putx(i, i);
+            g0.jcache(null).put(i, i);
 
-        assertEquals(keyCnt, g0.cache(null).size());
-        assertEquals(keyCnt, g1.cache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
 
         final AtomicInteger cnt = new AtomicInteger();
 

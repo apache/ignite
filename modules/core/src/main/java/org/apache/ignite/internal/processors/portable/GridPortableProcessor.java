@@ -29,6 +29,9 @@ import java.nio.*;
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
+    /** {@inheritDoc} */
+    public void onCacheProcessorStarted();
+
     /**
      * @param typeName Type name.
      * @return Type ID.

@@ -692,8 +692,8 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets eviction filter to specify which entries should not be evicted
-     * (except explicit evict by calling {@link CacheEntry#evict()}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(CacheEntry)} method returns
+     * (except explicit evict by calling {@link Entry#evict()}).
+     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(Entry)} method returns
      * {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -723,7 +723,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link CacheEntry#timeToLive()} value and should not be confused with entry
+     * {@link Entry#timeToLive()} value and should not be confused with entry
      * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.

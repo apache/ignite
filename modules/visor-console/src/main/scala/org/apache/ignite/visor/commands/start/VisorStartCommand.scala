@@ -18,15 +18,14 @@
 package org.apache.ignite.visor.commands.start
 
 import org.apache.ignite._
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 
 import java.io._
 import java.util.concurrent._
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -311,7 +310,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(IgniteUtils.nl()).toSeq) })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
 
                 errT.render()
             }
@@ -425,5 +424,5 @@ object VisorStartCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromStart2Visor(vs: VisorTag) = cmd
+    implicit def fromStart2Visor(vs: VisorTag): VisorStartCommand = cmd
 }

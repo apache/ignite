@@ -242,7 +242,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean primary(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isPrimary(grid(gridIdx).cluster().localNode(), key);
     }
@@ -253,7 +253,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean backup(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isBackup(grid(gridIdx).cluster().localNode(), key);
     }
@@ -541,7 +541,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         else if (cacheMode == REPLICATED) {
             for (int key : keys) {
                 if (primaryOnly)
-                    res.add(grid(0).cache(CACHE_NAME).affinity().mapKeyToNode(key).id());
+                    res.add(grid(0).affinity(CACHE_NAME).mapKeyToNode(key).id());
                 else
                     res.addAll(Arrays.asList(ids));
             }
