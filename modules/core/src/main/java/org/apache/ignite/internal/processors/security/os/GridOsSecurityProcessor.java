@@ -31,7 +31,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * No-op implementation for {@link org.apache.ignite.internal.processors.security.GridSecurityProcessor}.
+ * No-op implementation for {@link GridSecurityProcessor}.
  */
 public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements GridSecurityProcessor {
     /**
