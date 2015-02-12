@@ -104,22 +104,18 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        if (!(cacheCfg instanceof CompleteConfiguration))
-            throw new UnsupportedOperationException("Configuration is not supported: " + cacheCfg);
+        CacheConfiguration igniteCacheCfg;
 
-        if (cacheCfg instanceof CacheConfiguration) {
-            String cfgCacheName = ((CacheConfiguration)cacheCfg).getName();
+        if (cacheCfg instanceof CompleteConfiguration)
+            igniteCacheCfg = new CacheConfiguration((CompleteConfiguration)cacheCfg);
+        else {
+            igniteCacheCfg = new CacheConfiguration();
 
-            if (cfgCacheName != null) {
-                if (!cacheName.equals(cfgCacheName))
-                    throw new IllegalArgumentException();
-            }
-            else {
-                cacheCfg = (C)new CacheConfiguration((CompleteConfiguration)cacheCfg);
-
-                ((CacheConfiguration)cacheCfg).setName(cacheName);
-            }
+            igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
+            igniteCacheCfg.setStoreValueBytes(cacheCfg.isStoreByValue());
         }
+
+        igniteCacheCfg.setName(cacheName);
 
         IgniteCache<K, V> res;
 
@@ -133,9 +129,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 IgniteConfiguration cfg = new IgniteConfiguration();
                 cfg.setGridName(mgrIdx.incrementAndGet() + "-grid-for-" + cacheName);
 
-                cfg.setCacheConfiguration(new CacheConfiguration((CompleteConfiguration)cacheCfg));
-
-                cfg.getCacheConfiguration()[0].setName(cacheName);
+                cfg.setCacheConfiguration(igniteCacheCfg);
 
                 try {
                     ignite = Ignition.start(cfg);
@@ -152,10 +146,10 @@ public class CacheManager implements javax.cache.CacheManager {
             igniteMap.put(cacheName, ignite);
         }
 
-        if (((CompleteConfiguration)cacheCfg).isManagementEnabled())
+        if (igniteCacheCfg.isManagementEnabled())
             enableManagement(cacheName, true);
 
-        if (((CompleteConfiguration)cacheCfg).isStatisticsEnabled())
+        if (igniteCacheCfg.isStatisticsEnabled())
             enableStatistics(cacheName, true);
 
         return res;
