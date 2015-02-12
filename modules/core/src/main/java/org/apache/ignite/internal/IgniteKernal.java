@@ -822,7 +822,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             assert verChecker0 != null;
 
             verChecker0.reportOnlyNew(true);
-            verChecker0.licenseProcessor(ctx.license());
 
             updateNtfTimer = new Timer("ignite-update-notifier-timer");
 
