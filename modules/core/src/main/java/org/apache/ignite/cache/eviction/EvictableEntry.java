@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
