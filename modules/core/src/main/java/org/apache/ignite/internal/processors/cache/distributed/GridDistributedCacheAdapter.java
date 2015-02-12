@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -83,7 +82,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         assert tx != null;
 
@@ -92,7 +91,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>... filter) {
+        IgnitePredicate<Cache.Entry<K, V>>... filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
@@ -119,7 +118,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param key Key to remove.

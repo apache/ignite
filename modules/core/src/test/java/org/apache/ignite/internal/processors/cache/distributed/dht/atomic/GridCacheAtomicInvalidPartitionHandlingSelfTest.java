@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -157,7 +158,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         startGrids(gridCnt);
 
         try {
-            final GridCache<Object, Object> cache = grid(0).cache(null);
+            final IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             final int range = 100_000;
 
@@ -199,7 +200,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 cache.putAll(upd);
                             }
                         }
-                        catch (CachePartialUpdateCheckedException ignored) {
+                        catch (CachePartialUpdateException ignored) {
                             // No-op.
                         }
                     }
@@ -228,7 +229,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             fut.get();
 
             for (int k = 0; k < range; k++) {
-                Collection<ClusterNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(k);
+                Collection<ClusterNode> affNodes = affinity(cache).mapKeyToPrimaryAndBackups(k);
 
                 // Test is valid with at least one backup.
                 assert affNodes.size() >= 2;

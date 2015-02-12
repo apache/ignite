@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -316,7 +316,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
             reload,
@@ -609,16 +609,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
         dhtVer = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = null;
-
-        if (prjAware)
-            prjPerCall = cctx.projectionPerCall();
-
-        return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
     }
 
     /** {@inheritDoc} */

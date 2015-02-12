@@ -75,7 +75,7 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
 
         GridFinishedFuture<Object> fut = m.unmarshal(m.marshal(orig), clsLdr);
 
-        assertEquals(t, GridTestUtils.<Object>getFieldValue(fut, "t"));
+        assertEquals(t, GridTestUtils.getFieldValue(fut, "t"));
 
         if (ex == null)
             assertNull(GridTestUtils.<Throwable>getFieldValue(fut, "err"));

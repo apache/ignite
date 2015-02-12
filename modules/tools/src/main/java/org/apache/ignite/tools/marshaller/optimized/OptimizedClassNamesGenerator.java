@@ -292,7 +292,7 @@ public class OptimizedClassNamesGenerator {
             if (home == null)
                 throw new Exception("Failed to find Ignite home.");
 
-            dir = new File(home, "/os/modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
+            dir = new File(home, "modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
         }
 
         if (!dir.exists())

@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -167,7 +169,71 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public Set<Entry<K, V>> entrySet() {
-        return (Set<Entry<K, V>>)(Set<? extends Entry<K, V>>)prj.entrySet();
+    @Override public Set<Map.Entry<K, V>> entrySet() {
+        return new CacheMapEntrySet();
+    }
+
+    /**
+     *
+     */
+    private class CacheMapEntrySet extends AbstractSet<Map.Entry<K, V>> {
+        /** */
+        private final Set<Cache.Entry<K, V>> entrySet = prj.entrySet();
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Map.Entry<K, V>> iterator() {
+            return new Iterator<Map.Entry<K, V>>() {
+                Iterator<Cache.Entry<K, V>> it = entrySet.iterator();
+
+                @Override public boolean hasNext() {
+                    return it.hasNext();
+                }
+
+                @Override public Map.Entry<K, V> next() {
+                    final Cache.Entry<K, V> e = it.next();
+
+                    return new Map.Entry<K, V>() {
+                        V val0;
+
+                        @Override public K getKey() {
+                            return e.getKey();
+                        }
+
+                        @Override public V getValue() {
+                            return val0 == null ? e.getValue() : val0;
+                        }
+
+                        @Override public V setValue(V val) {
+                            A.notNull(val, "val");
+
+                            try {
+                                prj.put(e.getKey(), val);
+
+                                val0 = val;
+
+                                return e.getValue();
+                            }
+                            catch (IgniteCheckedException e1) {
+                                throw new IgniteException("Failed to set entry value.", e1);
+                            }
+                        }
+                    };
+                }
+
+                @Override public void remove() {
+                    it.remove();
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return entrySet.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CacheMapEntrySet.class, this);
+        }
     }
 }

@@ -89,12 +89,12 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 ignite1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
                 ignite2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));

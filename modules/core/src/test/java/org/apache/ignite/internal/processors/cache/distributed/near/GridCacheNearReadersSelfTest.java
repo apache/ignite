@@ -297,8 +297,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            GridCache<Object, Object> prj0 = grid(0).cache(null);
-            GridCache<Object, Object> prj1 = grid(1).cache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 
@@ -333,9 +333,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            GridCache<Object, Object> prj0 = grid(0).cache(null);
-            GridCache<Object, Object> prj1 = grid(1).cache(null);
-            GridCache<Object, Object> prj2 = grid(2).cache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
+            IgniteCache<Object, Object> prj2 = grid(2).jcache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 
@@ -404,12 +404,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assert e2 != null;
 
         // Check entry on primary node.
-        assertTrue(e1.wrap(false).primary());
+        assertTrue(grid(primary.id()).affinity(null).isPrimary(primary, e1.key()));
         assertNotNull(e1.readers());
         assertTrue(e1.readers().isEmpty());
 
         // Check entry on backup node.
-        assertFalse(e2.wrap(false).primary());
+        assertFalse(grid(backup.id()).affinity(null).isPrimary(backup, e2.key()));
         assertNotNull(e2.readers());
         assertTrue(e2.readers().isEmpty());
     }

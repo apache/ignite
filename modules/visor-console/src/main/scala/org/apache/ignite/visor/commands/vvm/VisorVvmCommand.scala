@@ -17,22 +17,20 @@
 
 package org.apache.ignite.visor.commands.vvm
 
-import org.apache.ignite.internal.IgniteNodeAttributes
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
-import IgniteNodeAttributes._
-import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
-
 import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.visor.{VisorTag, visor}
+import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
+
 import org.jetbrains.annotations.Nullable
 
 import java.io.File
 import java.net._
 
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.VisorConsoleCommand
-import visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -120,7 +118,7 @@ class VisorVvmCommand {
 
             var vvmCmd: String = null
 
-            val ext = if (IgniteUtils.isWindows) ".exe" else ""
+            val ext = if (U.isWindows) ".exe" else ""
 
             val fs = File.separator
 
@@ -195,7 +193,7 @@ class VisorVvmCommand {
 
             val neighbors = ignite.forHost(ignite.localNode).nodes()
 
-            if (IgniteUtils.isWindows)
+            if (U.isWindows)
                 vvmCmd = "cmd /c \"%s\"".format(vvmCmd)
 
             for (node <- nodes if !neighbors.contains(node)) {
@@ -236,7 +234,7 @@ class VisorVvmCommand {
      * @param vvmCmd VisualVM command.
      */
     private def vvmCommandArray(vvmCmd: String): Array[String] = {
-        if (IgniteUtils.isWindows) Array("cmd", "/c", vvmCmd) else Array(vvmCmd)
+        if (U.isWindows) Array("cmd", "/c", vvmCmd) else Array(vvmCmd)
     }
 
     /**
@@ -304,5 +302,5 @@ object VisorVvmCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromVvm2Visor(vs: VisorTag) = cmd
+    implicit def fromVvm2Visor(vs: VisorTag): VisorVvmCommand = cmd
 }

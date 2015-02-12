@@ -91,14 +91,6 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     protected abstract CacheAffinityFunction affinityFunction();
 
     /**
-     * @param ignite Grid.
-     * @return Affinity.
-     */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
-    }
-
-    /**
      * @param aff Affinity.
      * @param key Key.
      * @return Nodes.
@@ -123,7 +115,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                CacheAffinity<Object> aff = affinity(g);
+                CacheAffinity<Object> aff = g.affinity(null);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 
@@ -170,7 +162,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
         try {
             Object key = 12345;
 
-            Collection<? extends ClusterNode> affNodes = nodes(affinity(g), key);
+            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(null), key);
 
             info("Affinity picture for grid: " + U.toShortString(affNodes));
 

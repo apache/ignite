@@ -66,7 +66,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
         swapLsnrs = new ConcurrentHashMap8<>();
 
-
     /** Swap listeners. */
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
         offheapLsnrs = new ConcurrentHashMap8<>();
@@ -774,7 +773,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                         keyBytes,
                         part,
-                        ByteBuffer.wrap(entry.valueBytes()),
+                        entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
                         entry.valueIsByteArray(),
                         entry.version(), entry.ttl(),
                         entry.expireTime(),
@@ -821,7 +820,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                                 swapKey.keyBytes(),
                                 swapKey.partition(),
-                                ByteBuffer.wrap(entry.valueBytes()),
+                                entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
                                 entry.valueIsByteArray(),
                                 entry.version(),
                                 entry.ttl(),

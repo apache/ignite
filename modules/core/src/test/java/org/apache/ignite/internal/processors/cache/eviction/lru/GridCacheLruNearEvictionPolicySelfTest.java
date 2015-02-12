@@ -120,7 +120,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).jcache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

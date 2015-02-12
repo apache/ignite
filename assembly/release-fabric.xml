@@ -31,10 +31,67 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
-        <componentDescriptor>release-base-fabric.xml</componentDescriptor>
     </componentDescriptors>
 
+    <files>
+        <file>
+            <source>examples/pom-standalone.xml</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
+
+        <file>
+            <source>docs/ignite_readme.pdf</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+    </files>
+
     <fileSets>
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>igniterouter.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>igniterouter.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>config/router</directory>
+            <outputDirectory>/config/router</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <includes>
+                <include>rest/**</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>target/javadoc/core</directory>
+            <outputDirectory>/docs/javadoc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/scalar/target/site/scaladocs</directory>
+            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
+
         <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>

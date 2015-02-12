@@ -96,8 +96,8 @@ public class GridCacheVersionConflictContext<K, V> {
      * Force cache to apply new entry overwriting old (existing) entry.
      * <p>
      * Note that updates from remote data centers always have explicit TTL , while local data center
-     * updates will only have explicit TTL in case {@link org.apache.ignite.cache.CacheEntry#timeToLive(long)} was
-     * called before update. In the latter case new entry will pick TTL of the old (existing) entry, even
+     * updates will only have explicit TTL in case {@link CacheEntry#timeToLive(long)} was called
+     * before update. In the latter case new entry will pick TTL of the old (existing) entry, even
      * if it was set through update from remote data center. it means that depending on concurrent
      * update timings new update might pick unexpected TTL. For example, consider that three updates
      * of the same key are performed: local update with explicit TTL (1) followed by another local

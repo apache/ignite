@@ -100,7 +100,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNodes(Ignite g) throws Exception {
-        GridCache<String, String> cache = g.cache("test");
+        IgniteCache<String, String> cache = g.jcache("test");
 
         for (char c = 'a'; c <= 'z'; c++) {
             String key = Character.toString(c);
@@ -116,7 +116,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
             assertNotNull(v1);
             assertNotNull(v2);
 
-            if (cache.affinity().mapKeyToNode(key).isLocal())
+            if (affinity(cache).mapKeyToNode(key).isLocal())
                 assertSame(v1, v2);
             else
                 assertEquals(v1, v2);

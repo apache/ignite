@@ -39,6 +39,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public void onCacheProcessorStarted() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         return 0;
     }

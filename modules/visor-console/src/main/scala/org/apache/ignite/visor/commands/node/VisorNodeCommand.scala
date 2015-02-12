@@ -17,21 +17,19 @@
 
 package org.apache.ignite.visor.commands.node
 
-import org.apache.ignite.internal.IgniteNodeAttributes
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
-import IgniteNodeAttributes._
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef.X
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.visor.{VisorTag, visor}
 import org.jetbrains.annotations._
 
 import java.util.UUID
 
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -175,7 +173,7 @@ class VisorNodeCommand {
 
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
-                        val ver = IgniteUtils.productVersion(node)
+                        val ver = U.productVersion(node)
                         val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
                             (if (F.isEmpty(ver.stage())) "" else "-" + ver.stage())
 
@@ -338,5 +336,5 @@ object VisorNodeCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromNode2Visor(vs: VisorTag) = cmd
+    implicit def fromNode2Visor(vs: VisorTag): VisorNodeCommand = cmd
 }

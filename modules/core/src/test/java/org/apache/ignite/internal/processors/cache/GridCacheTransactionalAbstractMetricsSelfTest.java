@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
 
@@ -206,10 +207,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testCommits(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            IgniteTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)
@@ -220,7 +221,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).jcache(null).metrics();
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
@@ -248,10 +249,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testRollbacks(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         boolean put) throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            IgniteTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)
@@ -262,7 +263,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).jcache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
             assertEquals(0, cacheMetrics.getCacheTxCommits());

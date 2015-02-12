@@ -37,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -124,7 +123,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @return A not near-only cache.
      */
-    protected IgniteCache<String, Integer> fullCache() {
+    @Override protected IgniteCache<String, Integer> fullCache() {
         return nearIdx == 0 ? jcache(1) : jcache(0);
     }
 
@@ -209,20 +208,29 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     private void checkReaderTtl(boolean inTx) throws Exception {
         int ttl = 1000;
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
         final GridCache<String, Integer> c = cache();
 
-        final String key = primaryKeysForCache(jcache(), 1).get(0);
+        final String key = primaryKeysForCache(fullCache(), 1).get(0);
 
         c.put(key, 1);
 
-        CacheEntry<String, Integer> entry = c.entry(key);
+        info("Finished first put.");
 
-        assert entry != null;
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
+
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
 
         long startTime = System.currentTimeMillis();
 
@@ -245,14 +253,32 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            info("Checking grid: " + grid(i).localNode().id());
 
-            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-                assertEquals(ttl, curEntry.timeToLive());
+            GridCacheEntryEx<String, Integer> entry = null;
 
-                assert curEntry.expirationTime() > startTime;
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
-                expireTimes[i] = curEntry.expirationTime();
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
+
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assert entry.expireTime() > startTime;
+                expireTimes[i] = entry.expireTime();
             }
         }
 
@@ -273,14 +299,30 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            GridCacheEntryEx<String, Integer> entry = null;
 
-            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-                assertEquals(ttl, curEntry.timeToLive());
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
-                assert curEntry.expirationTime() > expireTimes[i];
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
 
-                expireTimes[i] = curEntry.expirationTime();
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assert entry.expireTime() > expireTimes[i];
+                expireTimes[i] = entry.expireTime();
             }
         }
 
@@ -298,11 +340,29 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            GridCacheEntryEx<String, Integer> entry = null;
 
-            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-                assertEquals(ttl, curEntry.timeToLive());
-                assertEquals(expireTimes[i], curEntry.expirationTime());
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
+
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
+
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assertEquals(expireTimes[i], entry.expireTime());
             }
         }
 
@@ -339,33 +399,49 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }, Math.min(ttl * 10, getTestTimeout())));
 
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = c.entry(key);
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
 
-        assert entry.get() == null;
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
 
         // Ensure that next update will not pick old expire time.
-
         tx = inTx ? c.txStart() : null;
 
         try {
-            entry.set(10);
+            c.put(key, 10);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         U.sleep(2000);
 
-        entry = c.entry(key);
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
 
-        assertEquals((Integer)10, entry.get());
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -1279,31 +1278,6 @@ public abstract class IgniteUtils {
 
             for (int i = 0; i < len; i++)
                 arr[i] = (Class<?>)in.readObject();
-        }
-
-        return arr;
-    }
-
-    /**
-     * Reads array from input stream.
-     *
-     * @param in Input stream.
-     * @return Deserialized array.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If class not found.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        int len = in.readInt();
-
-        IgnitePredicate<CacheEntry<K, V>>[] arr = null;
-
-        if (len > 0) {
-            arr = new IgnitePredicate[len];
-
-            for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
         }
 
         return arr;

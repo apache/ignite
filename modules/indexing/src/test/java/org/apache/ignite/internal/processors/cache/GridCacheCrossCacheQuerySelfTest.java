@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -172,8 +173,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         fillCaches();
 
         CacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
-            new IgnitePredicate<CacheEntry<Integer, FactPurchase>>() {
-                @Override public boolean apply(CacheEntry<Integer, FactPurchase> e) {
+            new IgnitePredicate<Cache.Entry<Integer, FactPurchase>>() {
+                @Override public boolean apply(Cache.Entry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
                 }
             });
