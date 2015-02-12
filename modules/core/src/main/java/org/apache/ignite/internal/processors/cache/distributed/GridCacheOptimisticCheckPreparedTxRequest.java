@@ -46,6 +46,9 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     /** Expected number of transactions on node. */
     private int txNum;
 
+    /** System transaction flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -59,10 +62,13 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx<K, V> tx, int txNum, IgniteUuid futId,
+        IgniteUuid miniId) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();
+        sys = tx.system();
+
         this.futId = futId;
         this.miniId = miniId;
         this.txNum = txNum;
@@ -96,6 +102,13 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         return txNum;
     }
 
+    /**
+     * @return System transaction flag.
+     */
+    public boolean system() {
+        return sys;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
@@ -116,6 +129,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         _clone.miniId = miniId;
         _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.txNum = txNum;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -153,6 +167,12 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 state++;
 
             case 11:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                state++;
+
+            case 12:
                 if (!writer.writeInt("txNum", txNum))
                     return false;
 
@@ -197,6 +217,14 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 state++;
 
             case 11:
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 12:
                 txNum = reader.readInt("txNum");
 
                 if (!reader.isLastRead())

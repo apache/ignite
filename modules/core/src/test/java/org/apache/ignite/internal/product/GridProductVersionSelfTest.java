@@ -20,7 +20,7 @@ package org.apache.ignite.internal.product;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.junit.Assert.*;
 
 /**
@@ -104,6 +104,6 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
             ver.revisionHash());
 
-        IgniteProductVersion.fromString(VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
     }
 }

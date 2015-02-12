@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -628,18 +627,6 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             cand.mappedNodeIds(mappings);
 
         return cand;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheContext<K, V> nearCtx = cctx.dht().near().context();
-
-        GridCacheProjectionImpl<K, V> prjPerCall = nearCtx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, nearCtx, key, this);
-
-        return new GridPartitionedCacheEntryImpl<>(null, nearCtx, key, this);
     }
 
     /**

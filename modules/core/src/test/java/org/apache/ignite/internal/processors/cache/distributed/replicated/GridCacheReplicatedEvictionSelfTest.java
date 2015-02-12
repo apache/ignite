@@ -86,7 +86,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
 
         for (int g = 0; g < gridCount(); g++) {
             for (int i = 0; i < KEYS; i++) {
-                if (cache(g).entry(String.valueOf(i)).primary())
+                if (grid(g).affinity(null).isPrimary(grid(g).localNode(), String.valueOf(i)))
                     assertTrue(cache(g).evict(String.valueOf(i)));
             }
         }

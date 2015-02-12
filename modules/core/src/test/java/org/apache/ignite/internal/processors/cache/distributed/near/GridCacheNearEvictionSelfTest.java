@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -91,12 +92,12 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCnt);
 
         try {
-            GridCache<Integer, String> c = grid(0).cache(null);
+            IgniteCache<Integer, String> c = grid(0).jcache(null);
 
             int cnt = 100;
 
             for (int i = 0; i < cnt; i++)
-                assertTrue(c.putx(i, Integer.toString(i)));
+                c.put(i, Integer.toString(i));
 
             assertEquals(cnt, c.size());
             assertEquals(cnt, c.size());
@@ -121,18 +122,17 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = ignite.cache(null);
+                    IgniteCache<Integer, String> c = ignite.jcache(null);
 
                     for (int i = 0; i < cnt; i++)
-                        c.putx(i, Integer.toString(i));
+                        c.put(i, Integer.toString(i));
 
                     return true;
                 }
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                assertEquals(cnt, grid(i).cache(null).size());
-                assertEquals(cnt, grid(i).cache(null).size());
+                assertEquals(cnt, internalCache(i).size());
                 assertEquals(0, near(i).nearSize());
             }
         }
@@ -155,23 +155,23 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = ignite.cache(null);
+                    IgniteCache<Integer, String> c = ignite.jcache(null);
 
                     for (int i = 0; i < cnt; i++)
-                        c.putx(i, Integer.toString(i));
+                        c.put(i, Integer.toString(i));
 
                     return true;
                 }
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                final Ignite g = grid(i);
+                final GridCache cache = internalCache(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {
                         // Every node contains either near, backup, or primary.
-                        return cnt == g.cache(null).size();
+                        return cnt == cache.size();
                     }
                 }, getTestTimeout()));
 

@@ -165,10 +165,10 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         Ignite g = startGrid(0);
 
-        final GridCache<Integer, Integer> cache = g.cache(null);
+        final IgniteCache<Integer, Integer> cache = g.jcache(null);
 
         for (int i = 1; i < 20; i++) {
-            cache.putx(i * gridCnt, i * gridCnt);
+            cache.put(i * gridCnt, i * gridCnt);
 
             info("Put to cache: " + i * gridCnt);
         }
@@ -181,10 +181,10 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             Ignite ignite = grid(0);
 
-            final GridCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
             // Put 1 entry to primary node.
-            cache.putx(0, 0);
+            cache.put(0, 0);
 
             Integer nearVal = this.<Integer, Integer>jcache(2).get(0);
 
@@ -192,7 +192,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             // Put several vals to primary node.
             for (int i = 1; i < 20; i++) {
-                cache.putx(i * gridCnt, i * gridCnt);
+                cache.put(i * gridCnt, i * gridCnt);
 
                 info("Put to cache: " + i * gridCnt);
             }
@@ -228,10 +228,8 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
                 info("Near node near key set: " + new TreeSet<>(this.<Integer, Integer>near(2).keySet()));
 
                 try {
-                    assert cache.size() == 10 : "Invalid cache size [size=" + cache.size() +
-                        ", keys=" + new TreeSet<>(cache.keySet()) + ']';
-                    assert cache.size() == 10 : "Invalid key size [size=" + cache.size() +
-                        ", keys=" + new TreeSet<>(cache.keySet()) + ']';
+                    assert cache.localSize() == 10 : "Invalid cache size [size=" + cache.localSize() + ']';
+                    assert cache.localSize() == 10 : "Invalid key size [size=" + cache.localSize() + ']';
 
                     assert jcache(2).localSize() == 0;
 

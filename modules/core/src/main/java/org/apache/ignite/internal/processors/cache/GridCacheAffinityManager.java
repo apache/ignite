@@ -280,7 +280,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
 
         assert !F.isEmpty(nodes);
 
-        if (nodes.size() <= 1)
+        if (nodes.size() == 1)
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(nodes.get(0)));

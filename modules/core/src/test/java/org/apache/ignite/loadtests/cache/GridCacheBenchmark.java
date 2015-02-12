@@ -72,7 +72,7 @@ public class GridCacheBenchmark {
                 X.println("threadCnt=" + THREADS);
                 X.println("testWrite=" + testWrite);
 
-                final GridCache<Long, Long> cache = g.cache(CACHE);
+                final IgniteCache<Long, Long> cache = g.jcache(CACHE);
 
                 assert cache != null;
 
@@ -86,7 +86,7 @@ public class GridCacheBenchmark {
                     @Nullable @Override public Object call() throws Exception {
                         long keyVal = cntr.incrementAndGet();
 
-                        cache.putx(keyVal % 100000, keyVal);
+                        cache.put(keyVal % 100000, keyVal);
 
                         long ops = opCnt.incrementAndGet();
 
@@ -136,7 +136,7 @@ public class GridCacheBenchmark {
                             if (keyVal >= PUT_CNT)
                                 break;
 
-                            cache.putx(keyVal % 100000, keyVal);
+                            cache.put(keyVal % 100000, keyVal);
 
                             long ops = opCnt.incrementAndGet();
 

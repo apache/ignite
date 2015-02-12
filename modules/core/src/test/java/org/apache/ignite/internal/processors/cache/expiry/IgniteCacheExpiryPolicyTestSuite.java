@@ -42,6 +42,9 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedExpiryPolicyTest.class);
 
+        suite.addTestSuite(IgniteCacheAtomicExpiryPolicyWithStoreTest.class);
+        suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);
+
         return suite;
     }
 }

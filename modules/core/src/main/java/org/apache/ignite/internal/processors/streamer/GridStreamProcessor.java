@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.*;
@@ -34,7 +33,6 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  *
@@ -244,9 +242,6 @@ public class GridStreamProcessor extends GridProcessorAdapter {
         }
 
         for (StreamerConfiguration c : cfg) {
-            // Register streaming usage with license manager.
-            GridLicenseUseRegistry.onUsage(STREAMING, getClass());
-
             IgniteStreamerImpl s = new IgniteStreamerImpl(ctx, c);
 
             s.start();

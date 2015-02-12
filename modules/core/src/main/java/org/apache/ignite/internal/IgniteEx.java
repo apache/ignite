@@ -96,11 +96,6 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     public Collection<String> compatibleVersions();
 
     /**
-     * @return Grace period left in minutes if bursting or {@code -1} otherwise.
-     */
-    public long licenseGracePeriodLeft();
-
-    /**
      * Whether or not remote JMX management is enabled for this node.
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
@@ -140,4 +135,11 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return Hadoop.
      */
     public GridHadoop hadoop();
+
+    /**
+     * Get latest version in string form.
+     *
+     * @return Latest version.
+     */
+    @Nullable public String latestVersion();
 }

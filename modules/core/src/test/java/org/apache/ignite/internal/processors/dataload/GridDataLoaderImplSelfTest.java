@@ -148,7 +148,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            GridCache<Integer, String> c = g0.cache(null);
+            IgniteCache<Integer, String> c = g0.jcache(null);
 
             for (int i = 0; i < KEYS_COUNT; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
