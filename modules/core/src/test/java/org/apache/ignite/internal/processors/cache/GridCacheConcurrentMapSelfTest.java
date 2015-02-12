@@ -323,7 +323,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     public void testEmptyWeakIterator() throws Exception {
         final IgniteCache<Integer, String> c = grid().jcache(null);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             multithreaded(new Callable<Object>() {
                 @SuppressWarnings("UnusedAssignment")
                 @Override public Object call() throws Exception {
@@ -343,7 +343,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, 10);
+            }, Runtime.getRuntime().availableProcessors());
 
             for (int r = 0; r < 10; r++) {
                 System.gc();
