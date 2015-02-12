@@ -57,10 +57,6 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
-    public static final String ATTR_AUTHENTICATION_CLASS = ATTR_PREFIX + ".authentication.class";
-
-    public static final String ATTR_SECURE_SESSION_CLASS = ATTR_PREFIX + ".securesession.class";
-
     /** Internal attribute name constant. */
     public static final String ATTR_CACHE = ATTR_PREFIX + ".cache";
 

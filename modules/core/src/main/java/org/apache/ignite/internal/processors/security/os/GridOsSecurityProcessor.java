@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.security.os;
+package org.apache.ignite.internal.processors.security.os;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
@@ -31,9 +31,9 @@ import java.net.*;
 import java.util.*;
 
 /**
- * No-op implementation for {@link GridSecurityProcessor}.
+ * No-op implementation for {@link org.apache.ignite.internal.processors.security.GridSecurityProcessor}.
  */
-public class GridOsSecurityProcessor extends GridNoopManagerAdapter implements GridSecurityProcessor {
+public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements GridSecurityProcessor {
     /**
      * @param ctx Kernal context.
      */

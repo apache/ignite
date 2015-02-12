@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.securesession;
+package org.apache.ignite.internal.processors.securesession;
 
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.security.*;
 
 /**
  * Secure session object.

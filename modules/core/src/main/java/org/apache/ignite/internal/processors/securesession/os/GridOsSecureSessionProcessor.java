@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.securesession.os;
+package org.apache.ignite.internal.processors.securesession.os;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.securesession.*;
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.securesession.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * No-op implementation for {@link GridSecureSessionProcessor}.
  */
-public class GridOsSecureSessionProcessor extends GridNoopManagerAdapter implements GridSecureSessionProcessor {
+public class GridOsSecureSessionProcessor extends GridNoopProcessorAdapter implements GridSecureSessionProcessor {
     /** Empty bytes. */
     private static final byte[] EMPTY_BYTES = new byte[0];
 
