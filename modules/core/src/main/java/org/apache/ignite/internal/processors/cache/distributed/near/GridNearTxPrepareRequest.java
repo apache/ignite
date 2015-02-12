@@ -287,49 +287,61 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         switch (state) {
-            case 22:
+            case 23:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 state++;
 
-            case 23:
-                if (!writer.writeBoolean("last", last))
-                    return false;
-
-                state++;
-
             case 24:
-                if (!writer.writeCollection("lastBackups", lastBackups, UUID.class))
+                if (!writer.writeBoolean("implicitSingle", implicitSingle))
                     return false;
 
                 state++;
 
             case 25:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeBoolean("last", last))
                     return false;
 
                 state++;
 
             case 26:
-                if (!writer.writeBoolean("near", near))
+                if (!writer.writeCollection("lastBackups", lastBackups, UUID.class))
                     return false;
 
                 state++;
 
             case 27:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 state++;
 
             case 28:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeBoolean("near", near))
                     return false;
 
                 state++;
 
             case 29:
+                if (!writer.writeBoolean("retVal", retVal))
+                    return false;
+
+                state++;
+
+            case 30:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                state++;
+
+            case 31:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                state++;
+
+            case 32:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -349,7 +361,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (state) {
-            case 22:
+            case 23:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -357,16 +369,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 state++;
 
-            case 23:
-                last = reader.readBoolean("last");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
             case 24:
-                lastBackups = reader.readCollection("lastBackups", UUID.class);
+                implicitSingle = reader.readBoolean("implicitSingle");
 
                 if (!reader.isLastRead())
                     return false;
@@ -374,7 +378,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state++;
 
             case 25:
-                miniId = reader.readIgniteUuid("miniId");
+                last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
                     return false;
@@ -382,7 +386,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state++;
 
             case 26:
-                near = reader.readBoolean("near");
+                lastBackups = reader.readCollection("lastBackups", UUID.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -390,7 +394,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state++;
 
             case 27:
-                subjId = reader.readUuid("subjId");
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -398,7 +402,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state++;
 
             case 28:
-                taskNameHash = reader.readInt("taskNameHash");
+                near = reader.readBoolean("near");
 
                 if (!reader.isLastRead())
                     return false;
@@ -406,6 +410,30 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state++;
 
             case 29:
+                retVal = reader.readBoolean("retVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 30:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 31:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 32:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())

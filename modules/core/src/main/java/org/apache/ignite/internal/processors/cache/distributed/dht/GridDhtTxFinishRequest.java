@@ -246,7 +246,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.topVer = topVer;
         _clone.pendingVers = pendingVers;
         _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
-        _clone.writeVer = writeVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
     }
@@ -267,55 +266,55 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         }
 
         switch (state) {
-            case 21:
+            case 19:
                 if (!writer.writeEnum("isolation", isolation))
                     return false;
 
                 state++;
 
-            case 22:
+            case 20:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 state++;
 
-            case 23:
+            case 21:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 state++;
 
-            case 27:
+            case 22:
                 if (!writer.writeCollection("pendingVers", pendingVers, GridCacheVersion.class))
                     return false;
 
                 state++;
 
-            case 28:
+            case 23:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 state++;
 
-            case 29:
+            case 24:
                 if (!writer.writeBoolean("sysInvalidate", sysInvalidate))
                     return false;
 
                 state++;
 
-            case 30:
+            case 25:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 state++;
 
-            case 31:
+            case 26:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 state++;
 
-            case 33:
+            case 27:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -335,7 +334,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (state) {
-            case 21:
+            case 19:
                 isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
 
                 if (!reader.isLastRead())
@@ -343,7 +342,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 22:
+            case 20:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -351,7 +350,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 23:
+            case 21:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -359,7 +358,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 27:
+            case 22:
                 pendingVers = reader.readCollection("pendingVers", GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -367,7 +366,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 28:
+            case 23:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -375,7 +374,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 29:
+            case 24:
                 sysInvalidate = reader.readBoolean("sysInvalidate");
 
                 if (!reader.isLastRead())
@@ -383,7 +382,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 30:
+            case 25:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -391,7 +390,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 31:
+            case 26:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
@@ -399,7 +398,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 state++;
 
-            case 33:
+            case 27:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())

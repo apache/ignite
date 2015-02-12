@@ -434,7 +434,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         _clone.threadId = threadId;
         _clone.concurrency = concurrency;
         _clone.isolation = isolation;
-        _clone.writeVer = writeVer;
+        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
         _clone.timeout = timeout;
         _clone.invalidate = invalidate;
         _clone.reads = reads;
@@ -469,32 +469,38 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         }
 
         switch (state) {
-            case 9:
+            case 8:
                 if (!writer.writeEnum("concurrency", concurrency))
                     return false;
 
                 state++;
 
-            case 10:
+            case 9:
                 if (!writer.writeByteArray("dhtVersBytes", dhtVersBytes))
                     return false;
 
                 state++;
 
-            case 11:
+            case 10:
                 if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 state++;
 
-            case 12:
+            case 11:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 state++;
 
-            case 13:
+            case 12:
                 if (!writer.writeEnum("isolation", isolation))
+                    return false;
+
+                state++;
+
+            case 13:
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 state++;
@@ -542,6 +548,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state++;
 
             case 21:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                state++;
+
+            case 22:
                 if (!writer.writeCollection("writesBytes", writesBytes, byte[].class))
                     return false;
 
@@ -561,7 +573,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             return false;
 
         switch (state) {
-            case 9:
+            case 8:
                 concurrency = reader.readEnum("concurrency", IgniteTxConcurrency.class);
 
                 if (!reader.isLastRead())
@@ -569,7 +581,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 state++;
 
-            case 10:
+            case 9:
                 dhtVersBytes = reader.readByteArray("dhtVersBytes");
 
                 if (!reader.isLastRead())
@@ -577,7 +589,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 state++;
 
-            case 11:
+            case 10:
                 grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
@@ -585,7 +597,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 state++;
 
-            case 12:
+            case 11:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -593,8 +605,16 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 state++;
 
-            case 13:
+            case 12:
                 isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 13:
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -658,6 +678,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state++;
 
             case 21:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 22:
                 writesBytes = reader.readCollection("writesBytes", byte[].class);
 
                 if (!reader.isLastRead())

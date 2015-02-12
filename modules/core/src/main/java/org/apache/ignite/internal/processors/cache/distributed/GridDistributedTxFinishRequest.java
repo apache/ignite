@@ -328,35 +328,36 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 15:
+            case 14:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 state++;
 
-            case 16:
+            case 15:
                 if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 state++;
 
-            case 17:
+            case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 state++;
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 state++;
 
-            case 19:
+            case 18:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 state++;
+
         }
 
         return true;
@@ -419,7 +420,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 15:
+            case 14:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
@@ -427,17 +428,15 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 16:
+            case 15:
                 syncRollback = reader.readBoolean("syncRollback");
-                if (buf.remaining() < 1)
-                    return false;
 
                 if (!reader.isLastRead())
                     return false;
 
                 state++;
 
-            case 17:
+            case 16:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -445,7 +444,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 18:
+            case 17:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -453,13 +452,14 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 state++;
 
-            case 19:
+            case 18:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
 
                 state++;
+
         }
 
         return true;
