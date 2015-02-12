@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
@@ -660,8 +659,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             rsrcProc.setSpringContext(rsrcCtx);
 
-            ctx.product(new GridProductImpl(ctx));
-
             scheduler = new IgniteSchedulerImpl(ctx);
 
             startProcessor(ctx, rsrcProc, attrs);
@@ -718,7 +715,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
             startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
@@ -3045,12 +3041,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             ctx.gateway().readUnlock();
         }
     }
-
-    /** {@inheritDoc} */
-    @Override public GridProduct product() {
-        return ctx.product();
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return VER;

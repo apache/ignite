@@ -154,11 +154,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public GridProduct product() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return null;
     }

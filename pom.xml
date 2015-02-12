@@ -709,7 +709,7 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -919,7 +919,7 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>

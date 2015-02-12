@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
@@ -63,7 +62,6 @@ import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -232,10 +230,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridLicenseProcessor licProc;
-
-    /** */
-    @GridToStringInclude
     private GridStreamProcessor streamProc;
 
     /** */
@@ -296,9 +290,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     private ExecutorService utilityCachePool;
-
-    /** */
-    private GridProduct product;
 
     /** */
     private IgniteConfiguration cfg;
@@ -464,8 +455,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             ggfsProc = (IgniteFsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridLicenseProcessor)
-            licProc = (GridLicenseProcessor)comp;
         else if (comp instanceof GridStreamProcessor)
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
@@ -671,11 +660,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridLicenseProcessor license() {
-        return licProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridAffinityProcessor affinity() {
         return affProc;
     }
@@ -762,18 +746,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /**
-     * @param product Product.
-     */
-    public void product(GridProduct product) {
-        this.product = product;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProduct product() {
-        return product;
-    }
-
-    /**
      * Sets time source. For test purposes only.
      *
      * @param clockSrc Time source.
@@ -817,6 +789,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
         T res = pluginProc.createComponent(cls);
 
