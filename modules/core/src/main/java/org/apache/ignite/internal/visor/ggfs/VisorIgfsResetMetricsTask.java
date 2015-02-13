@@ -33,14 +33,14 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsResetMetricsJob job(Set<String> arg) {
-        return new VisorGgfsResetMetricsJob(arg, debug);
+    @Override protected VisorIgfsResetMetricsJob job(Set<String> arg) {
+        return new VisorIgfsResetMetricsJob(arg, debug);
     }
 
     /**
      * Job that reset GGFS metrics.
      */
-    private static class VisorGgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
+    private static class VisorIgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
          * @param arg GGFS names.
          * @param debug Debug flag.
          */
-        private VisorGgfsResetMetricsJob(Set<String> arg, boolean debug) {
+        private VisorIgfsResetMetricsJob(Set<String> arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -67,7 +67,7 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsResetMetricsJob.class, this);
+            return S.toString(VisorIgfsResetMetricsJob.class, this);
         }
     }
 }

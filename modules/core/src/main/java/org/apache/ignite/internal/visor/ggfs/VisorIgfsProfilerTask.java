@@ -43,7 +43,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     /**
      * Holder class for parsed data.
      */
-    private static class VisorGgfsProfilerParsedLine {
+    private static class VisorIgfsProfilerParsedLine {
         /** Timestamp. */
         private final long ts;
 
@@ -80,7 +80,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /**
          * Create holder for log line.
          */
-        private VisorGgfsProfilerParsedLine(
+        private VisorIgfsProfilerParsedLine(
             long ts,
             int entryType,
             String path,
@@ -110,9 +110,9 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     /**
      * Comparator to sort parsed log lines by timestamp.
      */
-    private static final Comparator<VisorGgfsProfilerParsedLine> PARSED_LINE_BY_TS_COMPARATOR =
-        new Comparator<VisorGgfsProfilerParsedLine>() {
-            @Override public int compare(VisorGgfsProfilerParsedLine a, VisorGgfsProfilerParsedLine b) {
+    private static final Comparator<VisorIgfsProfilerParsedLine> PARSED_LINE_BY_TS_COMPARATOR =
+        new Comparator<VisorIgfsProfilerParsedLine>() {
+            @Override public int compare(VisorIgfsProfilerParsedLine a, VisorIgfsProfilerParsedLine b) {
                 return a.ts < b.ts ? -1
                     : a.ts > b.ts ? 1
                     : 0;
@@ -122,7 +122,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     /**
      * Job that do actual profiler work.
      */
-    private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorIgfsProfilerEntry>> {
+    private static class VisorIgfsProfilerJob extends VisorJob<String, Collection<VisorIgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -155,7 +155,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param arg GGFS name.
          * @param debug Debug flag.
          */
-        private VisorGgfsProfilerJob(String arg, boolean debug) {
+        private VisorIgfsProfilerJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -266,7 +266,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param s Line with text to parse.
          * @return Parsed data.
          */
-        private VisorGgfsProfilerParsedLine parseLine(String s) {
+        private VisorIgfsProfilerParsedLine parseLine(String s) {
             String[] ss = s.split(DELIM_FIELD);
 
             long streamId = parseLong(ss, LOG_COL_STREAM_ID, -1);
@@ -276,7 +276,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
                 // Parse only needed types.
                 if (LOG_TYPES.contains(entryType))
-                    return new VisorGgfsProfilerParsedLine(
+                    return new VisorIgfsProfilerParsedLine(
                         parseLong(ss, LOG_COL_TIMESTAMP, 0),
                         entryType,
                         parseString(ss, LOG_COL_PATH),
@@ -297,7 +297,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /**
          * Aggregate information from parsed lines grouped by {@code streamId}.
          */
-        private VisorIgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
+        private VisorIgfsProfilerEntry aggregateParsedLines(List<VisorIgfsProfilerParsedLine> lines) {
             VisorIgfsProfilerUniformityCounters counters = new VisorIgfsProfilerUniformityCounters();
 
             Collections.sort(lines, PARSED_LINE_BY_TS_COMPARATOR);
@@ -313,7 +313,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             long userWriteTime = 0;
             IgfsMode mode = null;
 
-            for (VisorGgfsProfilerParsedLine line : lines) {
+            for (VisorIgfsProfilerParsedLine line : lines) {
                 if (!line.path.isEmpty())
                     path = line.path;
 
@@ -389,7 +389,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @throws IOException if failed to read log file.
          */
         private Collection<VisorIgfsProfilerEntry> parseFile(Path p) throws IOException {
-            Collection<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+            Collection<VisorIgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
                 String line = br.readLine(); // Skip first line with columns header.
@@ -401,7 +401,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
                         while (line != null) {
                             try {
-                                VisorGgfsProfilerParsedLine ln = parseLine(line);
+                                VisorIgfsProfilerParsedLine ln = parseLine(line);
 
                                 if (ln != null)
                                     parsedLines.add(ln);
@@ -416,10 +416,10 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Group parsed lines by streamId.
-            Map<Long, List<VisorGgfsProfilerParsedLine>> byStreamId = new HashMap<>();
+            Map<Long, List<VisorIgfsProfilerParsedLine>> byStreamId = new HashMap<>();
 
-            for (VisorGgfsProfilerParsedLine line: parsedLines) {
-                List<VisorGgfsProfilerParsedLine> grp = byStreamId.get(line.streamId);
+            for (VisorIgfsProfilerParsedLine line: parsedLines) {
+                List<VisorIgfsProfilerParsedLine> grp = byStreamId.get(line.streamId);
 
                 if (grp == null) {
                     grp = new ArrayList<>();
@@ -433,7 +433,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             // Aggregate each group.
             Collection<VisorIgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
 
-            for (List<VisorGgfsProfilerParsedLine> lines : byStreamId.values()) {
+            for (List<VisorIgfsProfilerParsedLine> lines : byStreamId.values()) {
                 VisorIgfsProfilerEntry entry = aggregateParsedLines(lines);
 
                 if (entry != null)
@@ -496,12 +496,12 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsProfilerJob.class, this);
+            return S.toString(VisorIgfsProfilerJob.class, this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsProfilerJob job(String arg) {
-        return new VisorGgfsProfilerJob(arg, debug);
+    @Override protected VisorIgfsProfilerJob job(String arg) {
+        return new VisorIgfsProfilerJob(arg, debug);
     }
 }

@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for GGFS configuration properties.
  */
-public class VisorGgfsConfiguration implements Serializable {
+public class VisorIgfsConfiguration implements Serializable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
@@ -125,8 +125,8 @@ public class VisorGgfsConfiguration implements Serializable {
      * @param ggfs GGFS configuration.
      * @return Data transfer object for GGFS configuration properties.
      */
-    public static VisorGgfsConfiguration from(IgfsConfiguration ggfs) {
-        VisorGgfsConfiguration cfg = new VisorGgfsConfiguration();
+    public static VisorIgfsConfiguration from(IgfsConfiguration ggfs) {
+        VisorIgfsConfiguration cfg = new VisorIgfsConfiguration();
 
         cfg.name(ggfs.getName());
         cfg.metaCacheName(ggfs.getMetaCacheName());
@@ -176,11 +176,11 @@ public class VisorGgfsConfiguration implements Serializable {
      * @param ggfss ggfs configurations.
      * @return ggfs configurations properties.
      */
-    public static Iterable<VisorGgfsConfiguration> list(IgfsConfiguration[] ggfss) {
+    public static Iterable<VisorIgfsConfiguration> list(IgfsConfiguration[] ggfss) {
         if (ggfss == null)
             return Collections.emptyList();
 
-        final Collection<VisorGgfsConfiguration> cfgs = new ArrayList<>(ggfss.length);
+        final Collection<VisorIgfsConfiguration> cfgs = new ArrayList<>(ggfss.length);
 
         for (IgfsConfiguration ggfs : ggfss)
             cfgs.add(from(ggfs));
@@ -568,7 +568,7 @@ public class VisorGgfsConfiguration implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfsConfiguration.class, this);
+        return S.toString(VisorIgfsConfiguration.class, this);
     }
 
 }

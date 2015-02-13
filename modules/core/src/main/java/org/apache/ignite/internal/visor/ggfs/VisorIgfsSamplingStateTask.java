@@ -35,7 +35,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
     /**
      * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorGgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
+    private static class VisorIgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -45,7 +45,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        public VisorGgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+        public VisorIgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -66,12 +66,12 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsSamplingStateJob.class, this);
+            return S.toString(VisorIgfsSamplingStateJob.class, this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
-        return new VisorGgfsSamplingStateJob(arg, debug);
+    @Override protected VisorIgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
+        return new VisorIgfsSamplingStateJob(arg, debug);
     }
 }

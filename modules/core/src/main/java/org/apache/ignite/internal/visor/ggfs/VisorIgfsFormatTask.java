@@ -31,14 +31,14 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsFormatJob job(String arg) {
-        return new VisorGgfsFormatJob(arg, debug);
+    @Override protected VisorIgfsFormatJob job(String arg) {
+        return new VisorIgfsFormatJob(arg, debug);
     }
 
     /**
      * Job that format GGFS.
      */
-    private static class VisorGgfsFormatJob extends VisorJob<String, Void> {
+    private static class VisorIgfsFormatJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
          * @param arg GGFS name to format.
          * @param debug Debug flag.
          */
-        private VisorGgfsFormatJob(String arg, boolean debug) {
+        private VisorIgfsFormatJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -64,7 +64,7 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsFormatJob.class, this);
+            return S.toString(VisorIgfsFormatJob.class, this);
         }
     }
 }

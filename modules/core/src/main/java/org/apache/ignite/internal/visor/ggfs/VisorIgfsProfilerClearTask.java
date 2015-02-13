@@ -39,7 +39,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
     /**
      * Job to clear profiler logs.
      */
-    private static class VisorGgfsProfilerClearJob extends VisorJob<String, IgniteBiTuple<Integer, Integer>> {
+    private static class VisorIgfsProfilerClearJob extends VisorJob<String, IgniteBiTuple<Integer, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorGgfsProfilerClearJob(String arg, boolean debug) {
+        private VisorIgfsProfilerClearJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -103,12 +103,12 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsProfilerClearJob.class, this);
+            return S.toString(VisorIgfsProfilerClearJob.class, this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsProfilerClearJob job(String arg) {
-        return new VisorGgfsProfilerClearJob(arg, debug);
+    @Override protected VisorIgfsProfilerClearJob job(String arg) {
+        return new VisorIgfsProfilerClearJob(arg, debug);
     }
 }
