@@ -255,6 +255,55 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         int size = nodes.size();
 
         curJobWaitTime = Long.MAX_VALUE;
+        lastUpdateTime = 0;
+        maxActiveJobs = 0;
+        curActiveJobs = 0;
+        avgActiveJobs = 0;
+        maxWaitingJobs = 0;
+        curWaitingJobs = 0;
+        avgWaitingJobs = 0;
+        maxRejectedJobs = 0;
+        curRejectedJobs = 0;
+        avgRejectedJobs = 0;
+        maxCancelledJobs = 0;
+        curCancelledJobs = 0;
+        avgCancelledJobs = 0;
+        totalRejectedJobs = 0;
+        totalCancelledJobs = 0;
+        totalExecutedJobs = 0;
+        maxJobWaitTime = 0;
+        avgJobWaitTime = 0;
+        maxJobExecTime = 0;
+        curJobExecTime = 0;
+        avgJobExecTime = 0;
+        totalExecTasks = 0;
+        totalIdleTime = 0;
+        curIdleTime = 0;
+        availProcs = 0;
+        load = 0;
+        avgLoad = 0;
+        gcLoad = 0;
+        heapInit = 0;
+        heapUsed = 0;
+        heapCommitted = 0;
+        heapMax = 0;
+        nonHeapInit = 0;
+        nonHeapUsed = 0;
+        nonHeapCommitted = 0;
+        nonHeapMax = 0;
+        upTime = 0;
+        startTime = 0;
+        nodeStartTime = 0;
+        threadCnt = 0;
+        peakThreadCnt = 0;
+        startedThreadCnt = 0;
+        daemonThreadCnt = 0;
+        lastDataVer = 0;
+        sentMsgsCnt = 0;
+        sentBytesCnt = 0;
+        rcvdMsgsCnt = 0;
+        rcvdBytesCnt = 0;
+        outMesQueueSize = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -326,7 +375,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             outMesQueueSize += m.getOutboundMessagesQueueSize();
 
             avgLoad += m.getCurrentCpuLoad();
-            availProcs += m.getTotalCpus();
         }
 
         curJobExecTime /= size;
@@ -350,6 +398,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
         gcLoad = gcCpus(neighborhood);
         load = cpus(neighborhood);
+        availProcs = cpuCnt(neighborhood);
     }
 
     /** {@inheritDoc} */
@@ -1059,7 +1108,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         this.outMesQueueSize = outMesQueueSize;
     }
 
-    private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return CPU count.
+     */
+    private static int cpuCnt(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 
         for (Collection<ClusterNode> nodes : neighborhood.values()) {
@@ -1073,6 +1126,28 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return cpus;
     }
 
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return CPU load.
+     */
+    private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
+
+        for (Collection<ClusterNode> nodes : neighborhood.values()) {
+            ClusterNode first = F.first(nodes);
+
+            // Projection can be empty if all nodes in it failed.
+            if (first != null)
+                cpus += first.metrics().getCurrentCpuLoad();
+        }
+
+        return cpus;
+    }
+
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return GC CPU load.
+     */
     private static int gcCpus(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 

@@ -619,8 +619,6 @@ public interface EventType {
      */
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
-
-
     /**
      * Built-in event type: authentication succeed.
      * <p>

@@ -808,9 +808,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
      */
     private static class ScheduleFutureSnapshot<R> implements SchedulerFuture<R> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private ScheduleFutureImpl<R> ref;
 
         /** */

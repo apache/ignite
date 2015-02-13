@@ -712,7 +712,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Nullable @Override public V localPeek(K key,
+        CachePeekMode[] peekModes,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws IgniteCheckedException
+    {
         A.notNull(key, "key");
 
         if (keyCheck)
@@ -783,7 +787,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
 
                     if (e != null) {
-                        val = e.peek(modes.heap, modes.offheap, modes.swap, topVer);
+                        val = e.peek(modes.heap, modes.offheap, modes.swap, topVer, plc);
 
                         modes.offheap = false;
                         modes.swap = false;
@@ -799,7 +803,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             }
             else
-                val = localCachePeek0(key, modes.heap, modes.offheap, modes.swap);
+                val = localCachePeek0(key, modes.heap, modes.offheap, modes.swap, plc);
 
             if (ctx.portableEnabled())
                 val = (V)ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -819,11 +823,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param heap Read heap flag.
      * @param offheap Read offheap flag.
      * @param swap Read swap flag.
+     * @param plc Optional expiry policy.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private V localCachePeek0(K key, boolean heap, boolean offheap, boolean swap)
+    @Nullable private V localCachePeek0(K key,
+        boolean heap,
+        boolean offheap,
+        boolean swap,
+        IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert ctx.isLocal();
         assert heap || offheap || swap;
@@ -832,7 +841,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             GridCacheEntryEx<K, V> e = peekEx(key);
 
             if (e != null)
-                return e.peek(heap, offheap, swap, -1);
+                return e.peek(heap, offheap, swap, -1, plc);
         }
 
         if (offheap || swap) {
@@ -2034,7 +2043,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             taskName,
             deserializePortable,
             forcePrimary,
-            accessExpiryPolicy(prj != null ? prj.expiry() : null),
+            expiryPolicy(prj != null ? prj.expiry() : null),
             filter);
     }
 
@@ -2117,9 +2126,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                 filter,
                                 expiry);
 
-                            GridCacheVersion ver = entry.version();
-
                             if (val == null) {
+                                GridCacheVersion ver = entry.version();
+
                                 if (misses == null)
                                     misses = new GridLeanMap<>();
 
@@ -5600,11 +5609,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param plc Explicitly specified expiry policy for cache operation.
      * @return Expiry policy wrapper.
      */
-    @Nullable public GetExpiryPolicy accessExpiryPolicy(@Nullable ExpiryPolicy plc) {
+    @Nullable public IgniteCacheExpiryPolicy expiryPolicy(@Nullable ExpiryPolicy plc) {
         if (plc == null)
             plc = ctx.expiry();
 
-        return GetExpiryPolicy.forPolicy(plc);
+        return CacheExpiryPolicy.forPolicy(plc);
     }
 
     /**
@@ -5979,7 +5988,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      *
      */
-    protected abstract static class GetExpiryPolicy implements IgniteCacheExpiryPolicy {
+    protected abstract static class CacheExpiryPolicy implements IgniteCacheExpiryPolicy {
         /** */
         private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
 
@@ -5990,13 +5999,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param expiryPlc Expiry policy.
          * @return Access expire policy.
          */
-        @Nullable public static GetExpiryPolicy forPolicy(@Nullable final ExpiryPolicy expiryPlc) {
+        @Nullable private static CacheExpiryPolicy forPolicy(@Nullable final ExpiryPolicy expiryPlc) {
             if (expiryPlc == null)
                 return null;
 
-            return new GetExpiryPolicy() {
+            return new CacheExpiryPolicy() {
                 @Override public long forAccess() {
                     return CU.toTtl(expiryPlc.getExpiryForAccess());
+                }
+
+                @Override public long forCreate() {
+                    return CU.toTtl(expiryPlc.getExpiryForCreation());
+                }
+
+                @Override public long forUpdate() {
+                    return CU.toTtl(expiryPlc.getExpiryForUpdate());
                 }
             };
         }
@@ -6005,11 +6022,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param ttl Access TTL.
          * @return Access expire policy.
          */
-        @Nullable public static GetExpiryPolicy forTtl(final long ttl) {
+        @Nullable public static CacheExpiryPolicy forAccess(final long ttl) {
             if (ttl == CU.TTL_NOT_CHANGED)
                 return null;
 
-            return new GetExpiryPolicy() {
+            return new CacheExpiryPolicy() {
                 @Override public long forAccess() {
                     return ttl;
                 }
@@ -6018,16 +6035,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public long forCreate() {
-            return -1L;
+            return CU.TTL_NOT_CHANGED;
         }
 
         /** {@inheritDoc} */
         @Override public long forUpdate() {
-            return -1L;
+            return CU.TTL_NOT_CHANGED;
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized void reset() {
+        @Override public void reset() {
             if (entries != null)
                 entries.clear();
 
@@ -6041,7 +6058,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param ver Entry version.
          */
         @SuppressWarnings("unchecked")
-        @Override public synchronized void ttlUpdated(Object key,
+        @Override public void ttlUpdated(Object key,
             byte[] keyBytes,
             GridCacheVersion ver,
             @Nullable Collection<UUID> rdrs) {
@@ -6070,18 +6087,23 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * @return TTL update request.
          */
-        @Nullable @Override public synchronized Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+        @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
             return entries;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public synchronized Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
+        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
             return rdrsMap;
         }
 
         /** {@inheritDoc} */
+        @Override public boolean readyToFlush(int cnt) {
+            return (entries != null && entries.size() > cnt) || (rdrsMap != null && rdrsMap.size() > cnt);
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(GetExpiryPolicy.class, this);
+            return S.toString(CacheExpiryPolicy.class, this);
         }
     }
 

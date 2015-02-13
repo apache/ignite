@@ -24,16 +24,16 @@ import org.apache.log4j.*;
 import java.io.*;
 
 /**
- * Log4J {@link FileAppender} with added support for grid node IDs.
+ * Log4J {@link RollingFileAppender} with added support for grid node IDs.
  */
-public class IgniteLog4jFileAppender extends FileAppender implements IgniteLog4jFileAware {
+public class Log4jRollingFileAppender extends RollingFileAppender implements Log4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public IgniteLog4jFileAppender() {
+    public Log4jRollingFileAppender() {
         init();
     }
 
@@ -44,7 +44,7 @@ public class IgniteLog4jFileAppender extends FileAppender implements IgniteLog4j
      * @param filename File name.
      * @throws IOException If failed.
      */
-    public IgniteLog4jFileAppender(Layout layout, String filename) throws IOException {
+    public Log4jRollingFileAppender(Layout layout, String filename) throws IOException {
         super(layout, filename);
 
         init();
@@ -58,41 +58,17 @@ public class IgniteLog4jFileAppender extends FileAppender implements IgniteLog4j
      * @param append Append flag.
      * @throws IOException If failed.
      */
-    public IgniteLog4jFileAppender(Layout layout, String filename, boolean append) throws IOException {
+    public Log4jRollingFileAppender(Layout layout, String filename, boolean append) throws IOException {
         super(layout, filename, append);
 
         init();
     }
 
     /**
-     * Instantiate a FileAppender with given parameters.
-     *
-     * @param layout Layout.
-     * @param filename File name.
-     * @param append Append flag.
-     * @param bufIO Buffered IO flag.
-     * @param bufSize Buffer size.
-     * @throws IOException If failed.
-     */
-    public IgniteLog4jFileAppender(Layout layout, String filename, boolean append, boolean bufIO, int bufSize)
-        throws IOException {
-        super(layout, filename, append, bufIO, bufSize);
-
-        init();
-    }
-
-    /**
-     *
+     * Initializes appender.
      */
     private void init() {
         Log4JLogger.addAppender(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
-        throws IOException {
-        if (baseFileName != null)
-            super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 
     /** {@inheritDoc} */
@@ -103,5 +79,12 @@ public class IgniteLog4jFileAppender extends FileAppender implements IgniteLog4j
             baseFileName = fileName;
 
         fileName = filePathClos.apply(baseFileName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
+        throws IOException {
+        if (baseFileName != null)
+            super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }

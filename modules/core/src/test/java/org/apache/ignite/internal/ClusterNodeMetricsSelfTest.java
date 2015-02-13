@@ -228,6 +228,21 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClusterNodeMetrics() throws Exception {
+        Ignite ignite0 = grid();
+        Ignite ignite1 = startGrid(1);
+
+        ClusterMetrics metrics0 = ignite0.cluster().localNode().metrics();
+
+        ClusterMetrics nodesMetrics =
+            ignite0.cluster().forNode(ignite0.cluster().localNode(), ignite1.cluster().localNode()).metrics();
+
+        assertEquals(metrics0.getTotalCpus(), nodesMetrics.getTotalCpus());
+    }
+
+    /**
      * Test message.
      */
     @SuppressWarnings("UnusedDeclaration")
