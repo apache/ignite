@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.context.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
@@ -66,6 +67,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
         suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
 
+        // User's class loader tests.
+        suite.addTestSuite(IgniteCacheAtomicExecutionContextTest.class);
+        suite.addTestSuite(IgniteCachePartitionedExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheTxExecutionContextTest.class);
+
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
@@ -76,6 +83,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
         // Common tests.
+        suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
         suite.addTestSuite(GridCacheAffinityRoutingSelfTest.class);
         suite.addTestSuite(GridCacheMvccSelfTest.class);

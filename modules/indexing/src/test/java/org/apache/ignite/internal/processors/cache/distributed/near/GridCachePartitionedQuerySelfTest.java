@@ -168,24 +168,21 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         checkResult(entries, p1, p3, p4);
 
-        assert false : "ignite-96";
+        // Now do the same filtering but using projection.
+        qry = cache0.queries().createSqlQuery(Person.class, "salary < 2000");
 
-//        // Now do the same filtering but using projection.
-//        qry = cache0.projection(F.<UUID, Person>cachePrimary()).queries().createSqlQuery(Person.class,
-//            "salary < 2000");
-//
-//        qry.keepAll(true);
-//
-//        entries = qry.execute().get();
-//
-//        assert entries != null;
-//
-//        info("Queried persons: " + F.viewReadOnly(entries, F.<Person>mapEntry2Value()));
-//
-//        // Expect result including backup persons.
-//        assertEquals(3, entries.size());
-//
-//        checkResult(entries, p1, p3, p4);
+        qry.keepAll(true);
+
+        entries = qry.execute().get();
+
+        assert entries != null;
+
+        info("Queried persons: " + F.viewReadOnly(entries, F.<Person>mapEntry2Value()));
+
+        // Expect result including backup persons.
+        assertEquals(3, entries.size());
+
+        checkResult(entries, p1, p3, p4);
     }
 
     /**
