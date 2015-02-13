@@ -45,7 +45,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     /** Shared IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** GGFS. */
+    /** IGFS. */
     protected static IgniteFs igfs;
 
     /** {@inheritDoc} */

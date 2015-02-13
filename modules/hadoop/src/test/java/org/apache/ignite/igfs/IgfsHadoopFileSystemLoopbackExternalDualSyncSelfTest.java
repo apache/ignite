@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * GGFS Hadoop file system IPC loopback self test in DUAL_SYNC mode.
+ * IGFS Hadoop file system IPC loopback self test in DUAL_SYNC mode.
  */
 public class IgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest
     extends IgfsHadoopFileSystemLoopbackAbstractSelfTest {

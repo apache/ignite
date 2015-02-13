@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * GGFS client session. Effectively used to manage lifecycle of opened resources and close them on
+ * IGFS client session. Effectively used to manage lifecycle of opened resources and close them on
  * connection close.
  */
 public class IgfsClientSession {

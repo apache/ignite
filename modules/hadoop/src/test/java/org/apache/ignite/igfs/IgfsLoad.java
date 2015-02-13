@@ -48,7 +48,7 @@ import java.util.concurrent.*;
  * <li>-nodeCfg {cfg} configuration for started node</li>
  * <li>-primaryOnly {true|false} if 'true' then creates files only in directory named 'primary' </li>
  * </ul>
- * Note: GGFS logging is disabled by default, to enable logging it is necessary to set flag
+ * Note: IGFS logging is disabled by default, to enable logging it is necessary to set flag
  * 'fs.igfs.<name>.log.enabled' in Hadoop configuration file. By default log files are created in the
  * directory 'work/igfs/log', this path can be changed in Hadoop configuration file using property
  * 'fs.igfs.<name>.log.dir'.

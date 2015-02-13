@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 /**
- * {@code GGFS} metrics snapshot for the file system. Note, that some metrics are global and
+ * {@code IGFS} metrics snapshot for the file system. Note, that some metrics are global and
  * some are local (i.e. per each node).
  */
 public interface IgfsMetrics {
@@ -36,7 +36,7 @@ public interface IgfsMetrics {
      * equal to {@link org.apache.ignite.configuration.IgfsConfiguration#getMaxSpaceSize()}, or, if it is {@code 0}, equal to
      * {@code 80%} of maximum heap size allocated for JVM.
      *
-     * @return Maximum GGFS local space size.
+     * @return Maximum IGFS local space size.
      */
     public long maxSpaceSize();
 

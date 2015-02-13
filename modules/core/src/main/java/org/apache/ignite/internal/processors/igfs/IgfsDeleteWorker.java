@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 
 /**
- * GGFS worker for removal from the trash directory.
+ * IGFS worker for removal from the trash directory.
  */
 public class IgfsDeleteWorker extends IgfsThread {
     /** Awake frequency, */
@@ -46,7 +46,7 @@ public class IgfsDeleteWorker extends IgfsThread {
     /** How many files/folders to delete at once (i.e in a single transaction). */
     private static final int MAX_DELETE_BATCH = 100;
 
-    /** GGFS context. */
+    /** IGFS context. */
     private final IgfsContext igfsCtx;
 
     /** Metadata manager. */
@@ -79,7 +79,7 @@ public class IgfsDeleteWorker extends IgfsThread {
     /**
      * Constructor.
      *
-     * @param igfsCtx GGFS context.
+     * @param igfsCtx IGFS context.
      */
     IgfsDeleteWorker(IgfsContext igfsCtx) {
         super("igfs-delete-worker%" + igfsCtx.igfs().name() + "%" + igfsCtx.kernalContext().localNodeId() + "%");
@@ -164,7 +164,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                 IgniteUuid fileId = entry.getValue().fileId();
 
                 if (log.isDebugEnabled())
-                    log.debug("Deleting GGFS trash entry [name=" + entry.getKey() + ", fileId=" + fileId + ']');
+                    log.debug("Deleting IGFS trash entry [name=" + entry.getKey() + ", fileId=" + fileId + ']');
 
                 try {
                     if (!cancelled) {
@@ -305,7 +305,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     fut.get();
                 }
                 catch (IgniteFutureCancelledCheckedException ignore) {
-                    // This future can be cancelled only due to GGFS shutdown.
+                    // This future can be cancelled only due to IGFS shutdown.
                     cancelled = true;
 
                     return;
@@ -337,7 +337,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                 igfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +
+                U.warn(log, "Failed to send IGFS delete message to node [nodeId=" + node.id() +
                     ", msg=" + msg + ", err=" + e.getMessage() + ']');
             }
         }

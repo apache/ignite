@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * GGFS metrics adapter.
+ * IGFS metrics adapter.
  */
 public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** */

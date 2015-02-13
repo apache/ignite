@@ -1491,7 +1491,7 @@ object visor extends VisorTag {
 
                 val cfgs =
                     try
-                        // Cache, GGFS, streamer and DR configurations should be excluded from daemon node config.
+                        // Cache, IGFS, streamer and DR configurations should be excluded from daemon node config.
                         spring.loadConfigurations(url, "cacheConfiguration", "ggfsConfiguration", "streamerConfiguration",
                             "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {

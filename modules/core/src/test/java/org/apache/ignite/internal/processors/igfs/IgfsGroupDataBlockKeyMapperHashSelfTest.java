@@ -48,8 +48,8 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     }
 
     /**
-     * @param mapper GGFS blocks mapper.
-     * @param fileId GGFS file ID.
+     * @param mapper IGFS blocks mapper.
+     * @param fileId IGFS file ID.
      * @param blockId File block ID.
      * @param partCnt Total partitions count.
      * @return Partition index.

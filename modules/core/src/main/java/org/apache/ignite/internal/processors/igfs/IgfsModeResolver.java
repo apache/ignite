@@ -44,7 +44,7 @@ public class IgfsModeResolver {
     private Map<IgfsPath, Set<IgfsMode>> childrenModesCache;
 
     /**
-     * @param dfltMode Default GGFS mode.
+     * @param dfltMode Default IGFS mode.
      * @param modes List of configured modes.
      */
     public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) {
@@ -71,10 +71,10 @@ public class IgfsModeResolver {
     }
 
     /**
-     * Resolves GGFS mode for the given path.
+     * Resolves IGFS mode for the given path.
      *
-     * @param path GGFS path.
-     * @return GGFS mode.
+     * @param path IGFS path.
+     * @return IGFS mode.
      */
     public IgfsMode resolveMode(IgfsPath path) {
         assert path != null;

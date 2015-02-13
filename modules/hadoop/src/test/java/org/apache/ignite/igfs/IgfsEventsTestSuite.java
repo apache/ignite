@@ -31,7 +31,7 @@ import java.util.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Test suite for GGFS event tests.
+ * Test suite for IGFS event tests.
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgfsEventsTestSuite extends TestSuite {
@@ -62,7 +62,7 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static TestSuite suiteNoarchOnly() throws Exception {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Ignite GGFS Events Test Suite Noarch Only");
+        TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
 
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
@@ -106,7 +106,7 @@ public class IgfsEventsTestSuite extends TestSuite {
     }
 
     /**
-     * Base class for all GGFS tests with primary and secondary file system.
+     * Base class for all IGFS tests with primary and secondary file system.
      */
     public abstract static class PrimarySecondaryTest extends IgfsEventsAbstractSelfTest {
         /** Secondary file system. */
@@ -124,7 +124,7 @@ public class IgfsEventsTestSuite extends TestSuite {
         }
 
         /**
-         * @return GGFS configuration for secondary file system.
+         * @return IGFS configuration for secondary file system.
          */
         protected IgfsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
             IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();

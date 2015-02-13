@@ -23,13 +23,13 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS endpoint descriptor.
+ * IGFS endpoint descriptor.
  */
 public class VisorIgfsEndpoint implements Serializable{
     /** */
     private static final long  serialVersionUID = 0L;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private final String igfsName;
 
     /** Grid name. */
@@ -42,8 +42,8 @@ public class VisorIgfsEndpoint implements Serializable{
     private final int port;
 
     /**
-     * Create GGFS endpoint descriptor with given parameters.
-     * @param igfsName GGFS name.
+     * Create IGFS endpoint descriptor with given parameters.
+     * @param igfsName IGFS name.
      * @param gridName Grid name.
      * @param hostName Host address / name.
      * @param port Port number.
@@ -56,7 +56,7 @@ public class VisorIgfsEndpoint implements Serializable{
     }
 
     /**
-     * @return GGFS name.
+     * @return IGFS name.
      */
     @Nullable public String igfsName() {
         return igfsName;

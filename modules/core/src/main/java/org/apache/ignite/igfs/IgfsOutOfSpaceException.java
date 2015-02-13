@@ -20,8 +20,8 @@ package org.apache.ignite.igfs;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception that is thrown when it detected out-of-space condition.
- * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
+ * {@code IGFS} exception that is thrown when it detected out-of-space condition.
+ * It is thrown when number of writes written to a {@code IGFS} data nodes exceeds
  * its maximum value (that is configured per-node).
  */
 public class IgfsOutOfSpaceException extends IgfsException {
@@ -47,7 +47,7 @@ public class IgfsOutOfSpaceException extends IgfsException {
     }
 
     /**
-     * Creates an instance of GGFS exception with given error message and given exception cause.
+     * Creates an instance of IGFS exception with given error message and given exception cause.
      *
      * @param msg Error message.
      * @param cause Exception cause.

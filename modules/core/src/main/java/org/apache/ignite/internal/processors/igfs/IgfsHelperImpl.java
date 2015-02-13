@@ -23,7 +23,7 @@ import org.apache.ignite.cache.eviction.igfs.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * GGFS utils processor.
+ * IGFS utils processor.
  */
 public class IgfsHelperImpl implements IgfsHelper {
     /** {@inheritDoc} */

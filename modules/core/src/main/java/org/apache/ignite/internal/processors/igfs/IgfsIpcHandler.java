@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * GGFS IPC handler.
+ * IGFS IPC handler.
  */
 class IgfsIpcHandler implements IgfsServerHandler {
     /** For test purposes only. */
@@ -60,7 +60,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
     private volatile boolean stopping;
 
     /**
-     * Constructs GGFS IPC handler.
+     * Constructs IGFS IPC handler.
      *
      * @param igfsCtx Context.
      */
@@ -143,7 +143,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
     }
 
     /**
-     * Execute GGFS command.
+     * Execute IGFS command.
      *
      * @param ses Client connection session.
      * @param cmd Command to execute.
@@ -201,7 +201,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
 
         if (!F.eq(igfs.name(), req.igfsName()))
-            throw new IgniteCheckedException("Failed to perform handshake because actual GGFS name differs from expected " +
+            throw new IgniteCheckedException("Failed to perform handshake because actual IGFS name differs from expected " +
                 "[expected=" + req.igfsName() + ", actual=" + igfs.name() + ']');
 
         IgfsControlResponse res = new IgfsControlResponse();
@@ -320,7 +320,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     long streamId = registerResource(ses, ggfsIn);
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
+                        log.debug("Opened IGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     IgfsFileInfo info = new IgfsFileInfo(ggfsIn.fileInfo(), null,
@@ -343,7 +343,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file create [igfsName=" + igfs.name() + ", path=" +
+                        log.debug("Opened IGFS output stream for file create [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -360,7 +360,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file append [igfsName=" + igfs.name() + ", path=" +
+                        log.debug("Opened IGFS output stream for file append [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -434,7 +434,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ", res=" + res + ']';
 
                 if (log.isDebugEnabled())
-                    log.debug("Closed GGFS stream [igfsName=" + igfs.name() + ", streamId=" + rsrcId +
+                    log.debug("Closed IGFS stream [igfsName=" + igfs.name() + ", streamId=" + rsrcId +
                         ", ses=" + ses + ']');
 
                 resp.response(true);

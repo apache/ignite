@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import java.io.*;
 
 /**
- * GGFS input stream descriptor - includes stream id and length.
+ * IGFS input stream descriptor - includes stream id and length.
  */
 public class IgfsInputStreamDescriptor implements Externalizable {
     /** */

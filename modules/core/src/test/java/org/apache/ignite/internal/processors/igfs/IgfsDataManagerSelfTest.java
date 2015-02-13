@@ -58,7 +58,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Groups count for data blocks. */
     private static final int DATA_BLOCK_GROUP_CNT = 2;
 
-    /** GGFS block size. */
+    /** IGFS block size. */
     private static final int BLOCK_SIZE = 32 * 1024;
 
     /** Test nodes count. */
@@ -67,7 +67,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Busy wait sleep interval in milliseconds. */
     private static final int BUSY_WAIT_SLEEP_INTERVAL = 200;
 
-    /** GGFS block size. */
+    /** IGFS block size. */
     private static final int IGFS_BLOCK_SIZE = 64 * 1024;
 
     /** Random numbers generator. */
@@ -448,7 +448,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
         for (IgfsBlockLocation loc : affinity) {
-            info("Going to check GGFS block location: " + loc);
+            info("Going to check IGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);
 
@@ -521,7 +521,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         for (IgfsBlockLocation loc : affinity) {
-            info("Going to check GGFS block location: " + loc);
+            info("Going to check IGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);
 

@@ -29,13 +29,13 @@ import java.net.*;
 import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
- * GGFS endpoint abstraction.
+ * IGFS endpoint abstraction.
  */
 public class IgfsHadoopEndpoint {
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
-    /** GGFS name. */
+    /** IGFS name. */
     private final String ggfsName;
 
     /** Grid name. */
@@ -48,7 +48,7 @@ public class IgfsHadoopEndpoint {
     private final int port;
 
     /**
-     * Normalize GGFS URI.
+     * Normalize IGFS URI.
      *
      * @param uri URI.
      * @return Normalized URI.
@@ -57,7 +57,7 @@ public class IgfsHadoopEndpoint {
     public static URI normalize(URI uri) throws IOException {
         try {
             if (!F.eq(IgniteFs.IGFS_SCHEME, uri.getScheme()))
-                throw new IOException("Failed to normalize UIR because it has non GGFS scheme: " + uri);
+                throw new IOException("Failed to normalize UIR because it has non IGFS scheme: " + uri);
 
             IgfsHadoopEndpoint endpoint = new IgfsHadoopEndpoint(uri.getAuthority());
 
@@ -169,7 +169,7 @@ public class IgfsHadoopEndpoint {
     }
 
     /**
-     * @return GGFS name.
+     * @return IGFS name.
      */
     @Nullable public String ggfs() {
         return ggfsName;

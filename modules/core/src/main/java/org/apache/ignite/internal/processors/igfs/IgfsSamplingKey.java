@@ -24,19 +24,19 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Internal key used to track if sampling enabled or disabled for particular GGFS instance.
+ * Internal key used to track if sampling enabled or disabled for particular IGFS instance.
  */
 class IgfsSamplingKey implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private String name;
 
     /**
      * Default constructor.
      *
-     * @param name - GGFS name.
+     * @param name - IGFS name.
      */
     IgfsSamplingKey(String name) {
         this.name = name;
@@ -50,7 +50,7 @@ class IgfsSamplingKey implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @return GGFS name.
+     * @return IGFS name.
      */
     public String name() {
         return name;

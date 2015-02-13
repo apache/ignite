@@ -20,7 +20,7 @@ package org.apache.ignite.internal.igfs.hadoop;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * GGFS Hadoop stream descriptor.
+ * IGFS Hadoop stream descriptor.
  */
 public class IgfsHadoopStreamDelegate {
     /** RPC handler. */

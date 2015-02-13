@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
- * Test interaction between a GGFS client and a GGFS server.
+ * Test interaction between a IGFS client and a IGFS server.
  */
 public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
     /** Logger. */
@@ -156,7 +156,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Set GGFS REST handler error flag to the given state.
+     * Set IGFS REST handler error flag to the given state.
      *
      * @param flag Flag state.
      * @throws Exception If failed.

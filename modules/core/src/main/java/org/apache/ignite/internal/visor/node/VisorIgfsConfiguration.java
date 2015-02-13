@@ -28,7 +28,7 @@ import java.util.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
- * Data transfer object for GGFS configuration properties.
+ * Data transfer object for IGFS configuration properties.
  */
 public class VisorIgfsConfiguration implements Serializable {
     /** Property name for path to Hadoop configuration. */
@@ -40,13 +40,13 @@ public class VisorIgfsConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS instance name. */
+    /** IGFS instance name. */
     private String name;
 
-    /** Cache name to store GGFS meta information. */
+    /** Cache name to store IGFS meta information. */
     private String metaCacheName;
 
-    /** Cache name to store GGFS data. */
+    /** Cache name to store IGFS data. */
     private String dataCacheName;
 
     /** File's data block size. */
@@ -55,7 +55,7 @@ public class VisorIgfsConfiguration implements Serializable {
     /** Number of pre-fetched blocks if specific file's chunk is requested. */
     private int prefetchBlocks;
 
-    /** Read/write buffer size for GGFS stream operations in bytes. */
+    /** Read/write buffer size for IGFS stream operations in bytes. */
     private int streamBufferSize;
 
     /** Number of file blocks buffered on local node before sending batch to remote node. */
@@ -70,10 +70,10 @@ public class VisorIgfsConfiguration implements Serializable {
     /** Path for the secondary hadoop file system config. */
     private String secondaryHadoopFileSystemConfigPath;
 
-    /** GGFS instance mode. */
+    /** IGFS instance mode. */
     private IgfsMode defaultMode;
 
-    /** Map of paths to GGFS modes. */
+    /** Map of paths to IGFS modes. */
     private Map<String, IgfsMode> pathModes;
 
     /** Dual mode PUT operations executor service. */
@@ -103,7 +103,7 @@ public class VisorIgfsConfiguration implements Serializable {
     /** Fragmentizer throttling delay. */
     private long fragmentizerThrottlingDelay;
 
-    /** IPC endpoint config (in JSON format) to publish GGFS over. */
+    /** IPC endpoint config (in JSON format) to publish IGFS over. */
     private String ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
@@ -122,8 +122,8 @@ public class VisorIgfsConfiguration implements Serializable {
     private long trashPurgeTimeout;
 
     /**
-     * @param ggfs GGFS configuration.
-     * @return Data transfer object for GGFS configuration properties.
+     * @param ggfs IGFS configuration.
+     * @return Data transfer object for IGFS configuration properties.
      */
     public static VisorIgfsConfiguration from(IgfsConfiguration ggfs) {
         VisorIgfsConfiguration cfg = new VisorIgfsConfiguration();
@@ -189,7 +189,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return GGFS instance name.
+     * @return IGFS instance name.
      */
     @Nullable public String name() {
         return name;
@@ -203,28 +203,28 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return Cache name to store GGFS meta information.
+     * @return Cache name to store IGFS meta information.
      */
     @Nullable public String metaCacheName() {
         return metaCacheName;
     }
 
     /**
-     * @param metaCacheName New cache name to store GGFS meta information.
+     * @param metaCacheName New cache name to store IGFS meta information.
      */
     public void metaCacheName(@Nullable String metaCacheName) {
         this.metaCacheName = metaCacheName;
     }
 
     /**
-     * @return Cache name to store GGFS data.
+     * @return Cache name to store IGFS data.
      */
     @Nullable public String dataCacheName() {
         return dataCacheName;
     }
 
     /**
-     * @param dataCacheName New cache name to store GGFS data.
+     * @param dataCacheName New cache name to store IGFS data.
      */
     public void dataCacheName(@Nullable String dataCacheName) {
         this.dataCacheName = dataCacheName;
@@ -259,14 +259,14 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return Read/write buffer size for GGFS stream operations in bytes.
+     * @return Read/write buffer size for IGFS stream operations in bytes.
      */
     public int streamBufferSize() {
         return streamBufferSize;
     }
 
     /**
-     * @param streamBufSize New read/write buffer size for GGFS stream operations in bytes.
+     * @param streamBufSize New read/write buffer size for IGFS stream operations in bytes.
      */
     public void streamBufferSize(int streamBufSize) {
         streamBufferSize = streamBufSize;
@@ -329,7 +329,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return GGFS instance mode.
+     * @return IGFS instance mode.
      */
     public IgfsMode defaultMode() {
         return defaultMode;
@@ -343,14 +343,14 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return Map of paths to GGFS modes.
+     * @return Map of paths to IGFS modes.
      */
     @Nullable public Map<String, IgfsMode> pathModes() {
         return pathModes;
     }
 
     /**
-     * @param pathModes New map of paths to GGFS modes.
+     * @param pathModes New map of paths to IGFS modes.
      */
     public void pathModes(@Nullable Map<String, IgfsMode> pathModes) {
         this.pathModes = pathModes;
@@ -483,14 +483,14 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return IPC endpoint config (in JSON format) to publish GGFS over.
+     * @return IPC endpoint config (in JSON format) to publish IGFS over.
      */
     @Nullable public String ipcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 
     /**
-     * @param ipcEndpointCfg New IPC endpoint config (in JSON format) to publish GGFS over.
+     * @param ipcEndpointCfg New IPC endpoint config (in JSON format) to publish IGFS over.
      */
     public void ipcEndpointConfiguration(@Nullable String ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;

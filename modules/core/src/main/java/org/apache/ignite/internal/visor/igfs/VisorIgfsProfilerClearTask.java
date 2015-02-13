@@ -29,7 +29,7 @@ import java.nio.file.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
- * Remove all GGFS profiler logs.
+ * Remove all IGFS profiler logs.
  */
 @GridInternal
 public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
@@ -92,7 +92,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
                 }
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new IgniteException("Failed to clear profiler logs for GGFS: " + arg, e);
+                throw new IgniteException("Failed to clear profiler logs for IGFS: " + arg, e);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

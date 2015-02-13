@@ -24,15 +24,15 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GGFS attributes.
+ * IGFS attributes.
  * <p>
- * This class contains information on a single GGFS configured on some node.
+ * This class contains information on a single IGFS configured on some node.
  */
 public class IgfsAttributes implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private String igfsName;
 
     /** File's data block size (bytes). */
@@ -57,7 +57,7 @@ public class IgfsAttributes implements Externalizable {
     private Map<String, IgfsMode> pathModes;
 
     /**
-     * @param igfsName GGFS name.
+     * @param igfsName IGFS name.
      * @param blockSize File's data block size (bytes).
      * @param grpSize Size of the group figured in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
@@ -85,7 +85,7 @@ public class IgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return GGFS name.
+     * @return IGFS name.
      */
     public String igfsName() {
         return igfsName;

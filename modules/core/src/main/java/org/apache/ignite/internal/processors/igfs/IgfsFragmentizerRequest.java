@@ -28,7 +28,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Fragmentizer request. Sent from coordinator to other GGFS nodes when colocated part of file
+ * Fragmentizer request. Sent from coordinator to other IGFS nodes when colocated part of file
  * should be fragmented.
  */
 public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {

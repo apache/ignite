@@ -72,8 +72,8 @@ public class VisorIgfsMetrics implements Serializable {
     private long bytesWrtTm;
 
     /**
-     * @param m GGFS metrics.
-     * @return Data transfer object for given GGFS metrics.
+     * @param m IGFS metrics.
+     * @return Data transfer object for given IGFS metrics.
      */
     public static VisorIgfsMetrics from(IgfsMetrics m) {
         assert m != null;

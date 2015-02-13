@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests ensuring that GGFS data and meta caches are not "visible" through public API.
+ * Tests ensuring that IGFS data and meta caches are not "visible" through public API.
  */
 public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
     /** Meta-information cache name. */

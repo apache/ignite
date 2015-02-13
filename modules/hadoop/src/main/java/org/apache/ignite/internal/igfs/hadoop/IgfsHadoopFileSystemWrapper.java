@@ -79,9 +79,9 @@ public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
     }
 
     /**
-     * Convert GGFS path into Hadoop path.
+     * Convert IGFS path into Hadoop path.
      *
-     * @param path GGFS path.
+     * @param path IGFS path.
      * @return Hadoop path.
      */
     private Path convert(IgfsPath path) {
@@ -111,10 +111,10 @@ public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
     }
 
     /**
-     * Cast IO exception to GGFS exception.
+     * Cast IO exception to IGFS exception.
      *
      * @param e IO exception.
-     * @return GGFS exception.
+     * @return IGFS exception.
      */
     public static IgfsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
@@ -133,7 +133,7 @@ public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
      * Convert Hadoop FileStatus properties to map.
      *
      * @param status File status.
-     * @return GGFS attributes.
+     * @return IGFS attributes.
      */
     private static Map<String, String> properties(FileStatus status) {
         FsPermission perm = status.getPermission();

@@ -53,7 +53,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** File path. */
         private final String path;
 
-        /** File GGFS mode. */
+        /** File IGFS mode. */
         private final IgfsMode mode;
 
         /** Stream ID. */
@@ -152,7 +152,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /**
          * Create job with given argument.
          *
-         * @param arg GGFS name.
+         * @param arg IGFS name.
          * @param debug Debug flag.
          */
         private VisorIgfsProfilerJob(String arg, boolean debug) {
@@ -170,7 +170,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new IgniteException("Failed to parse profiler logs for GGFS: " + arg, e);
+                throw new IgniteException("Failed to parse profiler logs for IGFS: " + arg, e);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -244,11 +244,11 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /**
-         * Parse GGFS mode from string.
+         * Parse IGFS mode from string.
          *
          * @param ss Array of source strings.
          * @param ix Index of array item to parse.
-         * @return Parsed GGFS mode or {@code null} if string is empty.
+         * @return Parsed IGFS mode or {@code null} if string is empty.
          */
         private IgfsMode parseIgfsMode(String[] ss, int ix) {
             if (ss.length <= ix)
@@ -319,7 +319,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
                 ts = line.ts; // Remember last timestamp.
 
-                // Remember last GGFS mode.
+                // Remember last IGFS mode.
                 if (line.mode != null)
                     mode = line.mode;
 
@@ -363,7 +363,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                         break;
 
                     default:
-                        throw new IllegalStateException("Unexpected GGFS profiler log entry type: " + line.entryType);
+                        throw new IllegalStateException("Unexpected IGFS profiler log entry type: " + line.entryType);
                 }
             }
 
@@ -465,7 +465,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /**
-         * Parse all GGFS log files in specified log directory.
+         * Parse all IGFS log files in specified log directory.
          *
          * @param logDir Folder were log files located.
          * @return List of line with aggregated information by files.
@@ -485,7 +485,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                             // Files was deleted, skip it.
                         }
                         catch (Exception e) {
-                            ignite.log().warning("Failed to parse GGFS profiler log file: " + p, e);
+                            ignite.log().warning("Failed to parse IGFS profiler log file: " + p, e);
                         }
                     }
                 }

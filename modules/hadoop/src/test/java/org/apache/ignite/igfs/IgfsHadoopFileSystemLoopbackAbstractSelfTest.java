@@ -22,14 +22,14 @@ import java.util.*;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
- * GGFS Hadoop file system IPC loopback self test.
+ * IGFS Hadoop file system IPC loopback self test.
  */
 public abstract class IgfsHadoopFileSystemLoopbackAbstractSelfTest extends
     IgfsHadoopFileSystemAbstractSelfTest {
     /**
      * Constructor.
      *
-     * @param mode GGFS mode.
+     * @param mode IGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
     protected IgfsHadoopFileSystemLoopbackAbstractSelfTest(IgfsMode mode, boolean skipEmbed) {

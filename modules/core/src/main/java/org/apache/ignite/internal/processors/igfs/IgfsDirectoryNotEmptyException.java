@@ -34,7 +34,7 @@ public class IgfsDirectoryNotEmptyException extends IgfsException {
     }
 
     /**
-     * Creates an instance of GGFS exception caused by nested exception.
+     * Creates an instance of IGFS exception caused by nested exception.
      *
      * @param cause Exception cause.
      */

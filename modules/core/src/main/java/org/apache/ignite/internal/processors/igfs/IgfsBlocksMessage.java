@@ -26,7 +26,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * GGFS write blocks message.
+ * IGFS write blocks message.
  */
 public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /** */

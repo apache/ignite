@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Utility constants and methods for GGFS Hadoop file system.
+ * Utility constants and methods for IGFS Hadoop file system.
  */
 public class IgfsHadoopUtils {
     /** Parameter name for endpoint no embed mode flag. */

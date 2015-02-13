@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import java.io.*;
 
 /**
- * {@code GGFS} output stream to write data into the file system.
+ * {@code IGFS} output stream to write data into the file system.
  */
 public abstract class IgfsOutputStream extends OutputStream {
     /**

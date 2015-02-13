@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * Communication with grid in the same process.
  */
 public class IgfsHadoopInProc implements IgfsHadoopEx {
-    /** Target GGFS. */
+    /** Target IGFS. */
     private final IgfsEx ggfs;
 
     /** Buffer size. */
@@ -48,7 +48,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /**
      * Constructor.
      *
-     * @param ggfs Target GGFS.
+     * @param ggfs Target IGFS.
      * @param log Log.
      */
     public IgfsHadoopInProc(IgfsEx ggfs, Log log) {
@@ -350,7 +350,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
                 lsnr.onError(e.getMessage());
 
             if (e instanceof IllegalStateException)
-                throw new IOException("Failed to write data to GGFS stream because Grid is stopping.", e);
+                throw new IOException("Failed to write data to IGFS stream because Grid is stopping.", e);
             else
                 throw e;
         }
@@ -370,7 +370,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
                 lsnr.onError(e.getMessage());
 
             if (e instanceof IllegalStateException)
-                throw new IOException("Failed to flush data to GGFS stream because Grid is stopping.", e);
+                throw new IOException("Failed to flush data to IGFS stream because Grid is stopping.", e);
             else
                 throw e;
         }
@@ -384,7 +384,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
             closeable.close();
         }
         catch (IllegalStateException e) {
-            throw new IOException("Failed to close GGFS stream because Grid is stopping.", e);
+            throw new IOException("Failed to close IGFS stream because Grid is stopping.", e);
         }
     }
 

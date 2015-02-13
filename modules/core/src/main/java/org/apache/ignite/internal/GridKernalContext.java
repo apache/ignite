@@ -264,9 +264,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public IgfsProcessorAdapter igfs();
 
     /**
-     * Gets GGFS utils processor.
+     * Gets IGFS utils processor.
      *
-     * @return GGFS utils processor.
+     * @return IGFS utils processor.
      */
     public IgfsHelper igfsHelper();
 
@@ -502,9 +502,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getPeerClassLoadingExecutorService();
 
     /**
-     * Executor service that is in charge of processing outgoing GGFS messages.
+     * Executor service that is in charge of processing outgoing IGFS messages.
      *
-     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     * @return Thread pool implementation to be used for IGFS outgoing message sending.
      */
     public ExecutorService getIgfsExecutorService();
 

@@ -680,9 +680,9 @@ public interface EventType {
     public static final int EVT_VISOR_EVENTS_LOST = 115;
 
     /**
-     * Built-in event type: GGFS file created.
+     * Built-in event type: IGFS file created.
      * <p>
-     * Fired when GGFS component creates new file.
+     * Fired when IGFS component creates new file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -692,9 +692,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_CREATED = 116;
 
     /**
-     * Built-in event type: GGFS file renamed.
+     * Built-in event type: IGFS file renamed.
      * <p>
-     * Fired when GGFS component renames an existing file.
+     * Fired when IGFS component renames an existing file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -704,9 +704,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_RENAMED = 117;
 
     /**
-     * Built-in event type: GGFS file deleted.
+     * Built-in event type: IGFS file deleted.
      * <p>
-     * Fired when GGFS component deletes a file.
+     * Fired when IGFS component deletes a file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -716,9 +716,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_DELETED = 118;
 
     /**
-     * Built-in event type: GGFS file opened for reading.
+     * Built-in event type: IGFS file opened for reading.
      * <p>
-     * Fired when GGFS file is opened for reading.
+     * Fired when IGFS file is opened for reading.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -728,9 +728,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_OPENED_READ = 119;
 
     /**
-     * Built-in event type: GGFS file opened for writing.
+     * Built-in event type: IGFS file opened for writing.
      * <p>
-     * Fired when GGFS file is opened for writing.
+     * Fired when IGFS file is opened for writing.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -740,9 +740,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_OPENED_WRITE = 120;
 
     /**
-     * Built-in event type: GGFS file or directory metadata updated.
+     * Built-in event type: IGFS file or directory metadata updated.
      * <p>
-     * Fired when GGFS file or directory metadata is updated.
+     * Fired when IGFS file or directory metadata is updated.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -752,9 +752,9 @@ public interface EventType {
     public static final int EVT_IGFS_META_UPDATED = 121;
 
     /**
-     * Built-in event type: GGFS file closed.
+     * Built-in event type: IGFS file closed.
      * <p>
-     * Fired when GGFS file is closed.
+     * Fired when IGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -764,9 +764,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_CLOSED_WRITE = 122;
 
     /**
-     * Built-in event type: GGFS file closed.
+     * Built-in event type: IGFS file closed.
      * <p>
-     * Fired when GGFS file is closed.
+     * Fired when IGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -776,9 +776,9 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_CLOSED_READ = 123;
 
     /**
-     * Built-in event type: GGFS directory created.
+     * Built-in event type: IGFS directory created.
      * <p>
-     * Fired when GGFS component creates new directory.
+     * Fired when IGFS component creates new directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -788,9 +788,9 @@ public interface EventType {
     public static final int EVT_IGFS_DIR_CREATED = 124;
 
     /**
-     * Built-in event type: GGFS directory renamed.
+     * Built-in event type: IGFS directory renamed.
      * <p>
-     * Fired when GGFS component renames an existing directory.
+     * Fired when IGFS component renames an existing directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -800,9 +800,9 @@ public interface EventType {
     public static final int EVT_IGFS_DIR_RENAMED = 125;
 
     /**
-     * Built-in event type: GGFS directory deleted.
+     * Built-in event type: IGFS directory deleted.
      * <p>
-     * Fired when GGFS component deletes a directory.
+     * Fired when IGFS component deletes a directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -812,9 +812,9 @@ public interface EventType {
     public static final int EVT_IGFS_DIR_DELETED = 126;
 
     /**
-     * Built-in event type: GGFS file purged.
+     * Built-in event type: IGFS file purged.
      * <p>
-     * Fired when GGFS file data was actually removed from cache.
+     * Fired when IGFS file data was actually removed from cache.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -1058,7 +1058,7 @@ public interface EventType {
     /**
      * All secure session events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all GGFS events.
+     * subscribe to all IGFS events.
      *
      * @see IgfsEvent
      */
@@ -1068,7 +1068,7 @@ public interface EventType {
     };
 
     /**
-     * All GGFS events. This array can be directly passed into
+     * All IGFS events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *

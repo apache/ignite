@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import java.io.*;
 
 /**
- * GGFS response for status request.
+ * IGFS response for status request.
  */
 public class IgfsStatus implements Externalizable {
     /** */
@@ -29,7 +29,7 @@ public class IgfsStatus implements Externalizable {
     /** Total space size. */
     private long spaceTotal;
 
-    /** Used space in GGFS. */
+    /** Used space in IGFS. */
     private long spaceUsed;
 
     /**
@@ -40,8 +40,8 @@ public class IgfsStatus implements Externalizable {
     }
 
     /**
-     * @param spaceUsed Used space in GGFS.
-     * @param spaceTotal Total space available in GGFS.
+     * @param spaceUsed Used space in IGFS.
+     * @param spaceTotal Total space available in IGFS.
      */
     public IgfsStatus(long spaceUsed, long spaceTotal) {
         this.spaceUsed = spaceUsed;
@@ -49,14 +49,14 @@ public class IgfsStatus implements Externalizable {
     }
 
     /**
-     * @return Total space available in GGFS.
+     * @return Total space available in IGFS.
      */
     public long spaceTotal() {
         return spaceTotal;
     }
 
     /**
-     * @return Used space in GGFS.
+     * @return Used space in IGFS.
      */
     public long spaceUsed() {
         return spaceUsed;

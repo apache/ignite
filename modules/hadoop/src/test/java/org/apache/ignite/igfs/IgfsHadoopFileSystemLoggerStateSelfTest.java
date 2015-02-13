@@ -44,7 +44,7 @@ import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
  * Ensures that sampling is really turned on/off.
  */
 public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractTest {
-    /** GGFS. */
+    /** IGFS. */
     private IgfsEx ggfs;
 
     /** File system. */
@@ -274,7 +274,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
     }
 
     /**
-     * Ensure that log directory is set to GGFS when client FS connects.
+     * Ensure that log directory is set to IGFS when client FS connects.
      *
      * @throws Exception If failed.
      */

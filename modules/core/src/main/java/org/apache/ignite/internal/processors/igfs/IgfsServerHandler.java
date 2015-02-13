@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS server message handler. Server component that is plugged in to the server implementation
+ * IGFS server message handler. Server component that is plugged in to the server implementation
  * to handle incoming messages asynchronously.
  */
 public interface IgfsServerHandler {

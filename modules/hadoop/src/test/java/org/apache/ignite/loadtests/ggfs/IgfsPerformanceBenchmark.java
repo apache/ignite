@@ -135,7 +135,7 @@ public class IgfsPerformanceBenchmark {
      * Warms up server side.
      *
      * @param fs File system.
-     * @param ggfsHome GGFS home.
+     * @param ggfsHome IGFS home.
      * @throws Exception If failed.
      */
     private static void warmUp(FileSystem fs, Path ggfsHome, int op, long fileLen) throws Exception {

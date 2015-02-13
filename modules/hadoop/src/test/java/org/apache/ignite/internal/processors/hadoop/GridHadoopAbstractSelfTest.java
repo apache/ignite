@@ -38,19 +38,19 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /** REST port. */
     protected static final int REST_PORT = 11212;
 
-    /** GGFS name. */
+    /** IGFS name. */
     protected static final String ggfsName = null;
 
-    /** GGFS name. */
+    /** IGFS name. */
     protected static final String ggfsMetaCacheName = "meta";
 
-    /** GGFS name. */
+    /** IGFS name. */
     protected static final String ggfsDataCacheName = "data";
 
-    /** GGFS block size. */
+    /** IGFS block size. */
     protected static final int ggfsBlockSize = 1024;
 
-    /** GGFS block group size. */
+    /** IGFS block group size. */
     protected static final int ggfsBlockGroupSize = 8;
 
     /** Initial REST port. */
@@ -127,7 +127,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return GGFS configuration.
+     * @return IGFS configuration.
      */
     public IgfsConfiguration ggfsConfiguration() {
         IgfsConfiguration cfg = new IgfsConfiguration();
@@ -142,7 +142,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return GGFS meta cache configuration.
+     * @return IGFS meta cache configuration.
      */
     public CacheConfiguration metaCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
@@ -156,7 +156,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return GGFS data cache configuration.
+     * @return IGFS data cache configuration.
      */
     private CacheConfiguration dataCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
@@ -171,7 +171,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return {@code True} if GGFS is enabled on Hadoop nodes.
+     * @return {@code True} if IGFS is enabled on Hadoop nodes.
      */
     protected boolean ggfsEnabled() {
         return false;
@@ -204,7 +204,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return GGFS scheme for test.
+     * @return IGFS scheme for test.
      */
     protected String ggfsScheme() {
         return "igfs://:" + getTestGridName(0) + "@/";

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS Hadoop output stream implementation.
+ * IGFS Hadoop output stream implementation.
  */
 public class IgfsHadoopOutputStream extends OutputStream implements IgfsHadoopStreamEventListener {
     /** Log instance. */

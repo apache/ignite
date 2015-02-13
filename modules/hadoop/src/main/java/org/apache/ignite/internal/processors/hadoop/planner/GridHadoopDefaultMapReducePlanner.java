@@ -173,10 +173,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                     assert blocks != null;
 
                     if (blocks.size() == 1)
-                        // Fast-path, split consists of one GGFS block (as in most cases).
+                        // Fast-path, split consists of one IGFS block (as in most cases).
                         return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
                     else {
-                        // Slow-path, file consists of multiple GGFS blocks. First, find the most co-located nodes.
+                        // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
                         Map<UUID, Long> nodeMap = new HashMap<>();
 
                         List<UUID> bestNodeIds = null;
@@ -215,7 +215,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             }
         }
 
-        // Cannot use local GGFS for some reason, try selecting the node by host.
+        // Cannot use local IGFS for some reason, try selecting the node by host.
         Collection<UUID> blockNodes = null;
 
         for (String host : split.hosts()) {

@@ -30,12 +30,12 @@ import java.net.*;
  */
 public interface IgfsEx extends IgniteFs {
     /**
-     * Stops GGFS cleaning all used resources.
+     * Stops IGFS cleaning all used resources.
      */
     public void stop();
 
     /**
-     * @return GGFS context.
+     * @return IGFS context.
      */
     public IgfsContext context();
 

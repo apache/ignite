@@ -333,23 +333,23 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
 
     /**
-     * Checks whether this cache is GGFS data cache.
+     * Checks whether this cache is IGFS data cache.
      *
-     * @return {@code True} in case this cache is GGFS data cache.
+     * @return {@code True} in case this cache is IGFS data cache.
      */
     public boolean isIgfsDataCache();
 
     /**
-     * Get current amount of used GGFS space in bytes.
+     * Get current amount of used IGFS space in bytes.
      *
-     * @return Amount of used GGFS space in bytes.
+     * @return Amount of used IGFS space in bytes.
      */
     public long igfsDataSpaceUsed();
 
     /**
-     * Get maximum space available for GGFS.
+     * Get maximum space available for IGFS.
      *
-     * @return Amount of space available for GGFS in bytes.
+     * @return Amount of space available for IGFS in bytes.
      */
     public long igfsDataSpaceMax();
 

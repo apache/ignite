@@ -35,7 +35,7 @@ public class IgfsPaths implements Externalizable {
     /** Additional secondary file system properties. */
     private Map<String, String> props;
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     private IgfsMode dfltMode;
 
     /** Path modes. */
@@ -52,7 +52,7 @@ public class IgfsPaths implements Externalizable {
      * Constructor.
      *
      * @param props Additional secondary file system properties.
-     * @param dfltMode Default GGFS mode.
+     * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
     public IgfsPaths(Map<String, String> props, IgfsMode dfltMode, @Nullable List<T2<IgfsPath,
@@ -70,7 +70,7 @@ public class IgfsPaths implements Externalizable {
     }
 
     /**
-     * @return Default GGFS mode.
+     * @return Default IGFS mode.
      */
     public IgfsMode defaultMode() {
         return dfltMode;

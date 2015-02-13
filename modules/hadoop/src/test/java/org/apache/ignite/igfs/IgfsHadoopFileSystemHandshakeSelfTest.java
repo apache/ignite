@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
- * Tests for GGFS file system handshake.
+ * Tests for IGFS file system handshake.
  */
 public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
@@ -54,10 +54,10 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     /** Grid name. */
     private static final String GRID_NAME = "grid";
 
-    /** GGFS name. */
+    /** IGFS name. */
     private static final String IGFS_NAME = "igfs";
 
-    /** GGFS path. */
+    /** IGFS path. */
     private static final IgfsPath PATH = new IgfsPath("/path");
 
     /** {@inheritDoc} */
@@ -66,7 +66,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     }
 
     /**
-     * Tests for Grid and GGFS having normal names.
+     * Tests for Grid and IGFS having normal names.
      *
      * @throws Exception If failed.
      */
@@ -91,7 +91,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     }
 
     /**
-     * Tests for Grid having {@code null} name and GGFS having normal name.
+     * Tests for Grid having {@code null} name and IGFS having normal name.
      *
      * @throws Exception If failed.
      */
@@ -116,7 +116,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     }
 
     /**
-     * Tests for Grid having normal name and GGFS having {@code null} name.
+     * Tests for Grid having normal name and IGFS having {@code null} name.
      *
      * @throws Exception If failed.
      */
@@ -141,7 +141,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     }
 
     /**
-     * Tests for Grid having {@code null} name and GGFS having {@code null} name.
+     * Tests for Grid having {@code null} name and IGFS having {@code null} name.
      *
      * @throws Exception If failed.
      */
@@ -169,7 +169,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      * Perform startup.
      *
      * @param dfltGridName Default Grid name.
-     * @param dfltGgfsName Default GGFS name.
+     * @param dfltGgfsName Default IGFS name.
      * @throws Exception If failed.
      */
     private void startUp(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
@@ -184,7 +184,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      * Create Grid configuration.
      *
      * @param dfltGridName Default Grid name.
-     * @param dfltGgfsName Default GGFS name.
+     * @param dfltGgfsName Default IGFS name.
      * @return Grid configuration.
      * @throws Exception If failed.
      */

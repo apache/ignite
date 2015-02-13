@@ -34,13 +34,13 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Test for GGFS metrics.
+ * Test for IGFS metrics.
  */
 public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
-    /** Primary GGFS name. */
+    /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";
 
-    /** Primary GGFS name. */
+    /** Primary IGFS name. */
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
@@ -55,10 +55,10 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** IP finder for the grid with the primary file system. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Primary GGFS instances. */
+    /** Primary IGFS instances. */
     private static IgniteFs[] ggfsPrimary;
 
-    /** Secondary GGFS instance. */
+    /** Secondary IGFS instance. */
     private static IgniteFs ggfsSecondary;
 
     /** Primary file system block size. */

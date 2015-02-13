@@ -26,7 +26,7 @@ public enum IgfsIpcCommand {
     /** Handshake command which will send information necessary for client to handle requests correctly. */
     HANDSHAKE,
 
-    /** GGFS status (free/used space). */
+    /** IGFS status (free/used space). */
     STATUS,
 
     /** Check specified path exists in the file system. */

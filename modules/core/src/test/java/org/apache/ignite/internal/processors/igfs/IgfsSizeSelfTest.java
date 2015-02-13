@@ -71,13 +71,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Cache name. */
     private static final String META_CACHE_NAME = "metaCache";
 
-    /** GGFS name. */
+    /** IGFS name. */
     private static final String IGFS_NAME = "igfs";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** GGFS management port */
+    /** IGFS management port */
     private static int mgmtPort;
 
     /** Data cache mode. */
@@ -86,7 +86,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Whether near cache is enabled (applicable for PARTITIONED cache only). */
     private boolean nearEnabled;
 
-    /** GGFS maximum space. */
+    /** IGFS maximum space. */
     private long ggfsMaxData;
 
     /** Trash purge timeout. */
@@ -274,7 +274,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that GGFS size is correctly updated in case of preloading for PARTITIONED cache.
+     * Ensure that IGFS size is correctly updated in case of preloading for PARTITIONED cache.
      *
      * @throws Exception If failed.
      */
@@ -286,7 +286,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that GGFS size is correctly updated in case of preloading for co-located cache.
+     * Ensure that IGFS size is correctly updated in case of preloading for co-located cache.
      *
      * @throws Exception If failed.
      */
@@ -298,14 +298,14 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that GGFS cache size is calculated correctly.
+     * Ensure that IGFS cache size is calculated correctly.
      *
      * @throws Exception If failed.
      */
     private void check() throws Exception {
         startUp();
 
-        // Ensure that cache was marked as GGFS data cache.
+        // Ensure that cache was marked as IGFS data cache.
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
@@ -418,7 +418,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that an exception is thrown in case of GGFS oversize.
+     * Ensure that an exception is thrown in case of IGFS oversize.
      *
      * @throws Exception If failed.
      */
@@ -462,7 +462,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                     U.closeQuiet(osErr);
                 }
             }
-        }, IgfsOutOfSpaceException.class, "Failed to write data block (GGFS maximum data size exceeded) [used=" +
+        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
             ggfsMaxData + ", allowed=" + ggfsMaxData + ']');
     }
 
@@ -557,7 +557,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that GGFS size is correctly updated in case of preloading.
+     * Ensure that IGFS size is correctly updated in case of preloading.
      *
      * @throws Exception If failed.
      */
@@ -721,7 +721,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * Get GGfs of a node with the given index.
      *
      * @param idx Node index.
-     * @return GGFS.
+     * @return IGFS.
      * @throws Exception If failed.
      */
     private IgfsImpl ggfs(int idx) throws Exception {
@@ -732,7 +732,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * Get GGfs of the given node.
      *
      * @param ignite Node;
-     * @return GGFS.
+     * @return IGFS.
      * @throws Exception If failed.
      */
     private IgfsImpl ggfs(Ignite ignite) throws Exception {

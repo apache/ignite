@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
- * GGFS server manager.
+ * IGFS server manager.
  */
 public class IgfsServerManager extends IgfsManager {
     /** IPC server rebind interval. */
@@ -100,7 +100,7 @@ public class IgfsServerManager extends IgfsManager {
 
             String portMsg = port != -1 ? " Failed to bind to port (is port already in use?): " + port : "";
 
-            U.warn(log, "Failed to start GGFS " + (mgmt ? "management " : "") + "endpoint " +
+            U.warn(log, "Failed to start IGFS " + (mgmt ? "management " : "") + "endpoint " +
                 "(will retry every " + (REBIND_INTERVAL / 1000) + "s)." +
                 portMsg);
 
@@ -199,7 +199,7 @@ public class IgfsServerManager extends IgfsManager {
                     }
                     catch (IgniteCheckedException e) {
                         if (GridWorker.log.isDebugEnabled())
-                            GridWorker.log.debug("Failed to bind GGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
+                            GridWorker.log.debug("Failed to bind IGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
                     }
                 }
 

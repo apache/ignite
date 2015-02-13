@@ -24,7 +24,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Visor GGFS profiler information about one file.
+ * Visor IGFS profiler information about one file.
  */
 public class VisorIgfsProfilerEntry implements Serializable {
     /** */
@@ -44,7 +44,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     /** Timestamp of last file operation. */
     private final long timestamp;
 
-    /** GGFS mode. */
+    /** IGFS mode. */
     private final IgfsMode mode;
 
     /** File size. */
@@ -145,7 +145,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     }
 
     /**
-     * @return GGFS mode.
+     * @return IGFS mode.
      */
     public IgfsMode mode() {
         return mode;

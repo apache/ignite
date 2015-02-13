@@ -205,7 +205,7 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS pool size. */
+    /** IGFS pool size. */
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
@@ -392,7 +392,7 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** GGFS configuration. */
+    /** IGFS configuration. */
     private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
@@ -994,11 +994,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing GGFS messages.
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
      * <p>
      * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool size to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for IGFS outgoing message sending.
      */
     public int getIgfsThreadPoolSize() {
         return igfsPoolSize;
@@ -1045,9 +1045,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Set thread pool size that will be used to process outgoing GGFS messages.
+     * Set thread pool size that will be used to process outgoing IGFS messages.
      *
-     * @param poolSize Executor service to use for outgoing GGFS messages.
+     * @param poolSize Executor service to use for outgoing IGFS messages.
      * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
     public void setIgfsThreadPoolSize(int poolSize) {
@@ -2138,18 +2138,18 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets GGFS configurations.
+     * Gets IGFS configurations.
      *
-     * @return GGFS configurations.
+     * @return IGFS configurations.
      */
     public IgfsConfiguration[] getIgfsConfiguration() {
         return igfsCfg;
     }
 
     /**
-     * Sets GGFS configurations.
+     * Sets IGFS configurations.
      *
-     * @param igfsCfg GGFS configurations.
+     * @param igfsCfg IGFS configurations.
      */
     public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
         this.igfsCfg = igfsCfg;

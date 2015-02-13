@@ -325,7 +325,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      *  @param sysExecSvc System executor service.
      *  @param p2pExecSvc P2P executor service.
      *  @param mgmtExecSvc Management executor service.
-     *  @param igfsExecSvc GGFS executor service.
+     *  @param igfsExecSvc IGFS executor service.
      *  @param restExecSvc REST executor service.
      */
     @SuppressWarnings("TypeMayBeWeakened")

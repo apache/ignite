@@ -27,7 +27,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * {@code GGFS} path to file in the file system. For example, to get information about
+ * {@code IGFS} path to file in the file system. For example, to get information about
  * a file you would use the following code:
  * <pre name="code" class="java">
  *     GridGgfsPath dirPath = new GridGgfsPath("/my/working/dir");

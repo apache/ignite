@@ -45,8 +45,8 @@ import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
 
 /**
- * {@code GGFS} Hadoop 2.x file system driver over file system API. To use
- * {@code GGFS} as Hadoop file system, you should configure this class
+ * {@code IGFS} Hadoop 2.x file system driver over file system API. To use
+ * {@code IGFS} as Hadoop file system, you should configure this class
  * in Hadoop's {@code core-site.xml} as follows:
  * <pre name="code" class="xml">
  *  &lt;property&gt;
@@ -885,9 +885,9 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert GGFS path into Hadoop path.
+     * Convert IGFS path into Hadoop path.
      *
-     * @param path GGFS path.
+     * @param path IGFS path.
      * @return Hadoop path.
      */
     private Path convert(IgfsPath path) {
@@ -895,10 +895,10 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert Hadoop path into GGFS path.
+     * Convert Hadoop path into IGFS path.
      *
      * @param path Hadoop path.
-     * @return GGFS path.
+     * @return IGFS path.
      */
     @Nullable private IgfsPath convert(Path path) {
         if (path == null)
@@ -909,9 +909,9 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert GGFS affinity block location into Hadoop affinity block location.
+     * Convert IGFS affinity block location into Hadoop affinity block location.
      *
-     * @param block GGFS affinity block location.
+     * @param block IGFS affinity block location.
      * @return Hadoop affinity block location.
      */
     private BlockLocation convert(IgfsBlockLocation block) {
@@ -936,9 +936,9 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert GGFS file information into Hadoop file status.
+     * Convert IGFS file information into Hadoop file status.
      *
-     * @param file GGFS file information.
+     * @param file IGFS file information.
      * @return Hadoop file status.
      */
     private FileStatus convert(IgfsFile file) {
@@ -960,10 +960,10 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert Hadoop permission into GGFS file attribute.
+     * Convert Hadoop permission into IGFS file attribute.
      *
      * @param perm Hadoop permission.
-     * @return GGFS attributes.
+     * @return IGFS attributes.
      */
     private Map<String, String> permission(FsPermission perm) {
         if (perm == null)
@@ -981,7 +981,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     }
 
     /**
-     * Convert GGFS file attributes into Hadoop permission.
+     * Convert IGFS file attributes into Hadoop permission.
      *
      * @param file File info.
      * @return Hadoop permission.

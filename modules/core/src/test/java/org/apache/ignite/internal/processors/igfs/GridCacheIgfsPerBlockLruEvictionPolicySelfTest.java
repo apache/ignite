@@ -39,14 +39,14 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Tests for GGFS per-block LR eviction policy.
+ * Tests for IGFS per-block LR eviction policy.
  */
 @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
 public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstractTest {
-    /** Primary GGFS name. */
+    /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";
 
-    /** Primary GGFS name. */
+    /** Primary IGFS name. */
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
@@ -61,10 +61,10 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     /** File working in DUAL mode. */
     public static final IgfsPath FILE_RMT = new IgfsPath("/fileRemote");
 
-    /** Primary GGFS instances. */
+    /** Primary IGFS instances. */
     private static IgfsImpl igfsPrimary;
 
-    /** Secondary GGFS instance. */
+    /** Secondary IGFS instance. */
     private static IgniteFs secondaryFs;
 
     /** Primary file system data cache. */

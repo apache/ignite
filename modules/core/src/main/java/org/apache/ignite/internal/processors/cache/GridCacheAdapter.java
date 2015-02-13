@@ -168,7 +168,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** Affinity impl. */
     private CacheAffinity<K> aff;
 
-    /** Whether this cache is GGFS data cache. */
+    /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
 
     /** Whether this cache is Mongo data cache. */
@@ -179,10 +179,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @SuppressWarnings("UnusedDeclaration")
     private boolean mongoMetaCache;
 
-    /** Current GGFS data cache size. */
+    /** Current IGFS data cache size. */
     private LongAdder igfsDataCacheSize;
 
-    /** Max space for GGFS. */
+    /** Max space for IGFS. */
     private long igfsDataSpaceMax;
 
     /** Asynchronous operations limit semaphore. */
@@ -4781,7 +4781,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Callback invoked when data is added to GGFS cache.
+     * Callback invoked when data is added to IGFS cache.
      *
      * @param delta Size delta.
      */

@@ -28,7 +28,7 @@ import java.util.*;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
 
 /**
- * Implementation of GGFS client message marshaller.
+ * Implementation of IGFS client message marshaller.
  */
 public class IgfsMarshaller {
     /** Packet header size. */
@@ -183,7 +183,7 @@ public class IgfsMarshaller {
             }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to send message to GGFS data node (is data node up and running?)", e);
+            throw new IgniteCheckedException("Failed to send message to IGFS data node (is data node up and running?)", e);
         }
     }
 
@@ -310,7 +310,7 @@ public class IgfsMarshaller {
     }
 
     /**
-     * Writes GGFS path to given data output. Can write {@code null} values.
+     * Writes IGFS path to given data output. Can write {@code null} values.
      *
      * @param out Data output.
      * @param path Path to write.
@@ -324,7 +324,7 @@ public class IgfsMarshaller {
     }
 
     /**
-     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.igfs.IgfsPath)}
+     * Reads IGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.igfs.IgfsPath)}
      * method.
      *
      * @param in Data input.

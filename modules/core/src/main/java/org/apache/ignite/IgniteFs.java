@@ -38,18 +38,18 @@ import java.util.*;
  * nodes to escape unnecessary networking.
  * <p/>
  * This API is fully thread-safe and you can use it from several threads.
- * <h1 class="header">GGFS Configuration</h1>
+ * <h1 class="header">IGFS Configuration</h1>
  * The simplest way to run a Ignite node with configured file system is to pass
  * special configuration file included in Ignite distribution to {@code ignite.sh} or
  * {@code ignite.bat} scripts, like this: {@code ignite.sh config/hadoop/default-config.xml}
  * <p>
- * {@code GGFS} can be started as a data node or as a client node. Data node is responsible for
+ * {@code IGFS} can be started as a data node or as a client node. Data node is responsible for
  * caching data, while client node is responsible for basic file system operations and accessing
  * data nodes remotely. When used as Hadoop file system, clients nodes usually started together
  * with {@code job-submitter} or {@code job-scheduler} processes, while data nodes are usually
  * started together with Hadoop {@code task-tracker} processes.
  * <h1 class="header">Integration With Hadoop</h1>
- * In addition to direct file system API, {@code GGFS} can be integrated with {@code Hadoop} by
+ * In addition to direct file system API, {@code IGFS} can be integrated with {@code Hadoop} by
  * plugging in as {@code Hadoop FileSystem}. Refer to
  * {@code org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem} or
  * {@code org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
@@ -57,7 +57,7 @@ import java.util.*;
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
 public interface IgniteFs extends Igfs, IgniteAsyncSupport {
-    /** GGFS scheme name. */
+    /** IGFS scheme name. */
     public static final String IGFS_SCHEME = "igfs";
 
     /** File property: prefer writes to local node. */
@@ -71,9 +71,9 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
     public String name();
 
     /**
-     * Gets GGFS configuration.
+     * Gets IGFS configuration.
      *
-     * @return GGFS configuration.
+     * @return IGFS configuration.
      */
     public IgfsConfiguration configuration();
 
@@ -267,7 +267,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
     public void format() throws IgniteException;
 
     /**
-     * Executes GGFS task.
+     * Executes IGFS task.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -283,7 +283,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
         Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
 
     /**
-     * Executes GGFS task with overridden maximum range length (see
+     * Executes IGFS task with overridden maximum range length (see
      * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -294,7 +294,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
      *     be ignored. Otherwise an exception will be thrown.
      * @param maxRangeLen Optional maximum range length. If {@code 0}, then by default all consecutive
-     *      GGFS blocks will be included.
+     *      IGFS blocks will be included.
      * @param arg Optional task argument.
      * @return Task result.
      * @throws IgniteException If execution failed.
@@ -305,7 +305,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Executes GGFS task.
+     * Executes IGFS task.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -321,7 +321,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
 
     /**
-     * Executes GGFS task with overridden maximum range length (see
+     * Executes IGFS task with overridden maximum range length (see
      * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).

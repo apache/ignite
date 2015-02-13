@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import javax.swing.*;
 
 /**
- * Node startup for GGFS performance benchmark.
+ * Node startup for IGFS performance benchmark.
  */
 public class IgfsNodeStartup {
     /**

@@ -39,10 +39,10 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Test nodes count. */
     protected static final int NODE_CNT = 4;
 
-    /** GGFS block size. */
+    /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 1024;
 
-    /** GGFS group size. */
+    /** IGFS group size. */
     protected static final int IGFS_GROUP_SIZE = 32;
 
     /** Metadata cache name. */

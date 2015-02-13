@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
- * GGFS file worker for DUAL modes.
+ * IGFS file worker for DUAL modes.
  */
 public class IgfsFileWorker extends IgfsThread {
     /** Time during which thread remains alive since it's last batch is finished. */
@@ -43,7 +43,7 @@ public class IgfsFileWorker extends IgfsThread {
     private volatile boolean cancelled;
 
     /**
-     * Creates {@code GGFS} file worker.
+     * Creates {@code IGFS} file worker.
      *
      * @param name Worker name.
      */

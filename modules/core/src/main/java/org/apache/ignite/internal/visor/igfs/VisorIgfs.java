@@ -30,25 +30,25 @@ public class VisorIgfs implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS instance name. */
+    /** IGFS instance name. */
     private final String name;
 
-    /** GGFS instance working mode. */
+    /** IGFS instance working mode. */
     private final IgfsMode mode;
 
-    /** GGFS metrics. */
+    /** IGFS metrics. */
     private final VisorIgfsMetrics metrics;
 
-    /** Whether GGFS has configured secondary file system. */
+    /** Whether IGFS has configured secondary file system. */
     private final boolean secondaryFsConfigured;
 
     /**
      * Create data transfer object.
      *
-     * @param name GGFS name.
-     * @param mode GGFS mode.
-     * @param metrics GGFS metrics.
-     * @param secondaryFsConfigured Whether GGFS has configured secondary file system.
+     * @param name IGFS name.
+     * @param mode IGFS mode.
+     * @param metrics IGFS metrics.
+     * @param secondaryFsConfigured Whether IGFS has configured secondary file system.
      */
     public VisorIgfs(
         String name,
@@ -63,8 +63,8 @@ public class VisorIgfs implements Serializable {
     }
 
     /**
-     * @param igfs Source GGFS.
-     * @return Data transfer object for given GGFS.
+     * @param igfs Source IGFS.
+     * @return Data transfer object for given IGFS.
      * @throws IgniteCheckedException
      */
     public static VisorIgfs from(IgniteFs igfs) throws IgniteCheckedException {
@@ -79,28 +79,28 @@ public class VisorIgfs implements Serializable {
     }
 
     /**
-     * @return GGFS instance name.
+     * @return IGFS instance name.
      */
     public String name() {
         return name;
     }
 
     /**
-     * @return GGFS instance working mode.
+     * @return IGFS instance working mode.
      */
     public IgfsMode mode() {
         return mode;
     }
 
     /**
-     * @return GGFS metrics.
+     * @return IGFS metrics.
      */
     public VisorIgfsMetrics metrics() {
         return metrics;
     }
 
     /**
-     * @return Whether GGFS has configured secondary file system.
+     * @return Whether IGFS has configured secondary file system.
      */
     public boolean secondaryFileSystemConfigured() {
         return secondaryFsConfigured;

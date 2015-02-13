@@ -28,7 +28,7 @@ public class IgfsHandshakeResponse implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private String igfsName;
 
     /** SECONDARY paths. */
@@ -63,7 +63,7 @@ public class IgfsHandshakeResponse implements Externalizable {
     }
 
     /**
-     * @return GGFS name.
+     * @return IGFS name.
      */
     public String igfsName() {
         return igfsName;

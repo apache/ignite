@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * GGFS utility processor adapter.
+ * IGFS utility processor adapter.
  */
 public interface IgfsHelper {
     /**
@@ -32,7 +32,7 @@ public interface IgfsHelper {
     public abstract void preProcessCacheConfiguration(CacheConfiguration cfg);
 
     /**
-     * Validate cache configuration for GGFS.
+     * Validate cache configuration for IGFS.
      *
      * @param cfg Cache configuration.
      * @throws IgniteCheckedException If validation failed.
@@ -43,7 +43,7 @@ public interface IgfsHelper {
      * Check whether object is of type {@code GridGgfsBlockKey}
      *
      * @param key Key.
-     * @return {@code True} if GGFS block key.
+     * @return {@code True} if IGFS block key.
      */
     public abstract boolean isIgfsBlockKey(Object key);
 }

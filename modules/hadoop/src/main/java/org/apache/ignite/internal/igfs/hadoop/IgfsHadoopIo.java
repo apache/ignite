@@ -23,12 +23,12 @@ import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
- * IO abstraction layer for GGFS client. Two kind of messages are expected to be sent: requests with response
+ * IO abstraction layer for IGFS client. Two kind of messages are expected to be sent: requests with response
  * and request without response.
  */
 public interface IgfsHadoopIo {
     /**
-     * Sends given GGFS client message and asynchronously awaits for response.
+     * Sends given IGFS client message and asynchronously awaits for response.
      *
      * @param msg Message to send.
      * @return Future that will be completed.
@@ -37,7 +37,7 @@ public interface IgfsHadoopIo {
     public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException;
 
     /**
-     * Sends given GGFS client message and asynchronously awaits for response. When IO detects response
+     * Sends given IGFS client message and asynchronously awaits for response. When IO detects response
      * beginning for given message it stops reading data and passes input stream to closure which can read
      * response in a specific way.
      *

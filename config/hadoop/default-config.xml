@@ -37,7 +37,7 @@
         Optional description.
     -->
     <description>
-        Spring file for Ignite node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        Spring file for Ignite node configuration with IGFS and Apache Hadoop map-reduce support enabled.
         Ignite node will start with this configuration by default.
     </description>
 
@@ -50,7 +50,7 @@
     </bean>
 
     <!--
-        Abstract GGFS file system configuration to be used as a template.
+        Abstract IGFS file system configuration to be used as a template.
     -->
     <bean id="ggfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
@@ -62,7 +62,7 @@
     </bean>
 
     <!--
-        Abstract cache configuration for GGFS file data to be used as a template.
+        Abstract cache configuration for IGFS file data to be used as a template.
     -->
     <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
@@ -78,7 +78,7 @@
     </bean>
 
     <!--
-        Abstract cache configuration for GGFS metadata to be used as a template.
+        Abstract cache configuration for IGFS metadata to be used as a template.
     -->
     <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
@@ -110,7 +110,7 @@
         </property>
 
         <!--
-            Configure one GGFS file system instance named "ggfs" on this node.
+            Configure one IGFS file system instance named "ggfs" on this node.
         -->
         <property name="ggfsConfiguration">
             <list>
@@ -134,7 +134,7 @@
         </property>
 
         <!--
-            Caches needed by GGFS.
+            Caches needed by IGFS.
         -->
         <property name="cacheConfiguration">
             <list>

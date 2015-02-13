@@ -36,16 +36,16 @@ import java.util.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
 /**
- * GGFS server. Handles requests passed from GGFS clients.
+ * IGFS server. Handles requests passed from IGFS clients.
  */
 public class IgfsServer {
-    /** GGFS context. */
+    /** IGFS context. */
     private final IgfsContext igfsCtx;
 
     /** Logger. */
     private final IgniteLogger log;
 
-    /** GGFS marshaller. */
+    /** IGFS marshaller. */
     private final IgfsMarshaller marsh;
 
     /** Endpoint configuration. */
@@ -68,7 +68,7 @@ public class IgfsServer {
 
     /**
      * Constructs igfs server manager.
-     * @param igfsCtx GGFS context.
+     * @param igfsCtx IGFS context.
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
@@ -163,7 +163,7 @@ public class IgfsServer {
             hnd.stop();
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to stop GGFS server handler (will close client connections anyway).", e);
+            U.error(log, "Failed to stop IGFS server handler (will close client connections anyway).", e);
         }
 
         // Stop existing client connections.
@@ -394,7 +394,7 @@ public class IgfsServer {
                     IpcEndpoint client = srvEndpoint.accept();
 
                     if (log.isDebugEnabled())
-                        log.debug("GGFS client connected [igfsName=" + igfsCtx.kernalContext().gridName() +
+                        log.debug("IGFS client connected [igfsName=" + igfsCtx.kernalContext().gridName() +
                             ", client=" + client + ']');
 
                     ClientWorker worker = new ClientWorker(client, acceptCnt++);

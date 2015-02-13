@@ -69,7 +69,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     /** File system. */
     private static AbstractFileSystem fs;
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     protected IgfsMode mode;
 
     /** Primary file system URI. */
@@ -81,7 +81,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Constructor.
      *
-     * @param mode Default GGFS mode.
+     * @param mode Default IGFS mode.
      */
     protected IgfsHadoop20FileSystemAbstractSelfTest(IgfsMode mode) {
         this.mode = mode;
@@ -142,7 +142,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      */
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
-            // Start secondary GGFS.
+            // Start secondary IGFS.
             IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
             ggfsCfg.setDataCacheName("partitioned");
@@ -246,10 +246,10 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /**
-     * Gets GGFS configuration.
+     * Gets IGFS configuration.
      *
      * @param gridName Grid name.
-     * @return GGFS configuration.
+     * @return IGFS configuration.
      */
     protected IgfsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
         IgfsConfiguration cfg = new IgfsConfiguration();
@@ -1726,7 +1726,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         final Path filePath = new Path(ggfsHome, "someFile");
 
         final FSDataOutputStream s = fs.create(filePath, EnumSet.noneOf(CreateFlag.class),
-            Options.CreateOpts.perms(FsPermission.getDefault())); // Open stream before stopping GGFS.
+            Options.CreateOpts.perms(FsPermission.getDefault())); // Open stream before stopping IGFS.
 
         try {
             G.stopAll(true); // Stop the server.

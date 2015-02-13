@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} mode defining interactions with underlying secondary Hadoop file system.
+ * {@code IGFS} mode defining interactions with underlying secondary Hadoop file system.
  * Secondary Hadoop file system is provided for pass-through, write-through, and
  * read-through purposes.
  * <p>
@@ -29,13 +29,13 @@ import org.jetbrains.annotations.*;
  */
 public enum IgfsMode {
     /**
-     * In this mode GGFS will not delegate to secondary Hadoop file system and will
+     * In this mode IGFS will not delegate to secondary Hadoop file system and will
      * cache all the files in memory only.
      */
     PRIMARY,
 
     /**
-     * In this mode GGFS will not cache any files in memory and will only pass them
+     * In this mode IGFS will not cache any files in memory and will only pass them
      * through to secondary Hadoop file system. If this mode is enabled, then
      * secondary Hadoop file system must be configured.
      *
@@ -44,7 +44,7 @@ public enum IgfsMode {
     PROXY,
 
     /**
-     * In this mode {@code GGFS} will cache files locally and also <i>synchronously</i>
+     * In this mode {@code IGFS} will cache files locally and also <i>synchronously</i>
      * write them through to secondary Hadoop file system.
      * <p>
      * If secondary Hadoop file system is not configured, then this mode behaves like
@@ -55,7 +55,7 @@ public enum IgfsMode {
     DUAL_SYNC,
 
     /**
-     * In this mode {@code GGFS} will cache files locally and also <i>asynchronously</i>
+     * In this mode {@code IGFS} will cache files locally and also <i>asynchronously</i>
      * write them through to secondary Hadoop file system.
      * <p>
      * If secondary Hadoop file system is not configured, then this mode behaves like

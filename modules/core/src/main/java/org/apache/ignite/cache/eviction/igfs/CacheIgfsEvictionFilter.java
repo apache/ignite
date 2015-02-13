@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.igfs.*;
 import javax.cache.*;
 
 /**
- * GGFS eviction filter which will not evict blocks of particular files.
+ * IGFS eviction filter which will not evict blocks of particular files.
  */
 public class CacheIgfsEvictionFilter implements CacheEvictionFilter {
     /** {@inheritDoc} */

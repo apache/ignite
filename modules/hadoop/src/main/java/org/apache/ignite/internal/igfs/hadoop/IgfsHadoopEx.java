@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Extended GGFS server interface.
+ * Extended IGFS server interface.
  */
 public interface IgfsHadoopEx extends IgfsHadoop {
     /**

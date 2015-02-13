@@ -28,7 +28,7 @@ import java.util.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * GGFS event.
+ * IGFS event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design Ignite keeps all events generated on the local node locally and it provides
@@ -88,7 +88,7 @@ public class IgfsEvent extends EventAdapter {
      * @param type Event type.
      */
     public IgfsEvent(IgfsPath path, ClusterNode node, int type) {
-        super(node, "GGFS event.", type);
+        super(node, "IGFS event.", type);
 
         this.path = path;
     }

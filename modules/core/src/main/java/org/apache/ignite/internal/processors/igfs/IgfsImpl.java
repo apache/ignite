@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 
 /**
- * Cache-based GGFS implementation.
+ * Cache-based IGFS implementation.
  */
 public final class IgfsImpl implements IgfsEx {
     /** Default permissions for file system entry. */
@@ -119,7 +119,7 @@ public final class IgfsImpl implements IgfsEx {
     private CacheIgfsPerBlockLruEvictionPolicy evictPlc;
 
     /**
-     * Creates GGFS instance with given context.
+     * Creates IGFS instance with given context.
      *
      * @param igfsCtx Context.
      * @throws IgniteCheckedException In case of error.
@@ -136,7 +136,7 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
-        /* Default GGFS mode. */
+        /* Default IGFS mode. */
         IgfsMode dfltMode;
 
         if (secondaryFs == null) {
@@ -193,7 +193,7 @@ public final class IgfsImpl implements IgfsEx {
         secondaryPaths = new IgfsPaths(secondaryFs == null ? null : secondaryFs.properties(), dfltMode,
             modeRslvr.modesOrdered());
 
-        // Check whether GGFS LRU eviction policy is set on data cache.
+        // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
 
         for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
@@ -307,7 +307,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
         else
-            throw new IgniteCheckedException("Cannot create new output stream to the secondary file system because GGFS is " +
+            throw new IgniteCheckedException("Cannot create new output stream to the secondary file system because IGFS is " +
                 "stopping: " + path);
     }
 
@@ -479,7 +479,7 @@ public final class IgfsImpl implements IgfsEx {
             IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY)
-                throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
             boolean res = false;
 
@@ -521,7 +521,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
                 IgfsFileInfo info = resolveFileInfo(path, mode);
 
@@ -586,7 +586,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -645,7 +645,7 @@ public final class IgfsImpl implements IgfsEx {
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + src);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + src);
 
                 if (src.equals(dest))
                     return; // Rename to itself is a no-op.
@@ -756,7 +756,7 @@ public final class IgfsImpl implements IgfsEx {
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
                 boolean res = false;
 
@@ -862,7 +862,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -949,7 +949,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -1003,7 +1003,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -1098,7 +1098,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1196,7 +1196,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1308,7 +1308,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1441,7 +1441,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
 
                 // Check memory first.
                 IgniteUuid fileId = meta.fileId(path);
@@ -1710,10 +1710,10 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Check whether GGFS with the same name exists among provided attributes.
+     * Check whether IGFS with the same name exists among provided attributes.
      *
      * @param attrs Attributes.
-     * @return {@code True} in case GGFS with the same name exists among provided attributes
+     * @return {@code True} in case IGFS with the same name exists among provided attributes
      */
     private boolean sameIgfs(IgfsAttributes[] attrs) {
         if (attrs != null) {
@@ -1773,7 +1773,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Executes GGFS task asynchronously.
+     * Executes IGFS task asynchronously.
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1787,7 +1787,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Executes GGFS task with overridden maximum range length (see
+     * Executes IGFS task with overridden maximum range length (see
      * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param task Task to execute.
@@ -1796,7 +1796,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
      *     be ignored. Otherwise an exception will be thrown.
      * @param maxRangeLen Optional maximum range length. If {@code 0}, then by default all consecutive
-     *      GGFS blocks will be included.
+     *      IGFS blocks will be included.
      * @param arg Optional task argument.
      * @return Execution future.
      */
@@ -1807,7 +1807,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Executes GGFS task asynchronously.
+     * Executes IGFS task asynchronously.
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1821,7 +1821,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Executes GGFS task asynchronously with overridden maximum range length (see
+     * Executes IGFS task asynchronously with overridden maximum range length (see
      * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param taskCls Task class to execute.
@@ -1977,7 +1977,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * GGFS output stream extension that fires events.
+     * IGFS output stream extension that fires events.
      */
     private class IgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
         /** Close guard. */
@@ -1990,7 +1990,7 @@ public final class IgfsImpl implements IgfsEx {
          * @param fileInfo File info.
          * @param parentId Parent ID.
          * @param bufSize The size of the buffer to be used.
-         * @param mode GGFS mode.
+         * @param mode IGFS mode.
          * @param batch Optional secondary file system batch.
          * @throws IgniteCheckedException In case of error.
          */
@@ -2017,7 +2017,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * GGFS input stream extension that fires events.
+     * IGFS input stream extension that fires events.
      */
     private class IgfsEventAwareInputStream extends IgfsInputStreamImpl {
         /** Close guard. */
@@ -2026,7 +2026,7 @@ public final class IgfsImpl implements IgfsEx {
         /**
          * Constructor.
          *
-         * @param ggfsCtx GGFS context.
+         * @param ggfsCtx IGFS context.
          * @param path Path to stored file.
          * @param fileInfo File info.
          * @param prefetchBlocks Prefetch blocks.
@@ -2064,11 +2064,11 @@ public final class IgfsImpl implements IgfsEx {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** GGFS name. */
+        /** IGFS name. */
         private String igfsName;
 
         /**
-         * @param igfsName GGFS name.
+         * @param igfsName IGFS name.
          */
         private IgfsGlobalSpaceTask(@Nullable String igfsName) {
             this.igfsName = igfsName;

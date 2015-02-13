@@ -36,7 +36,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     /** Output path. */
     protected static final String PATH_OUTPUT = "/output";
 
-    /** GGFS instance. */
+    /** IGFS instance. */
     protected IgfsEx ggfs;
 
     /** {@inheritDoc} */

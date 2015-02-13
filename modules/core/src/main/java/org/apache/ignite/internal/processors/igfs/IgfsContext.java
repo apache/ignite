@@ -30,7 +30,7 @@ import java.util.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
- * GGFS context holding all required components for GGFS instance.
+ * IGFS context holding all required components for IGFS instance.
  */
 public class IgfsContext {
     /** Kernal context. */
@@ -54,12 +54,12 @@ public class IgfsContext {
     /** Fragmentizer manager. */
     private final IgfsFragmentizerManager fragmentizerMgr;
 
-    /** GGFS instance. */
+    /** IGFS instance. */
     private final IgfsEx igfs;
 
     /**
      * @param ctx Kernal context.
-     * @param cfg GGFS configuration.
+     * @param cfg IGFS configuration.
      * @param metaMgr Meta manager.
      * @param dataMgr Data manager.
      * @param srvMgr Server manager.
@@ -86,7 +86,7 @@ public class IgfsContext {
     }
 
     /**
-     * @return GGFS instance.
+     * @return IGFS instance.
      */
     public IgfsEx igfs() {
         return igfs;
@@ -100,7 +100,7 @@ public class IgfsContext {
     }
 
     /**
-     * @return GGFS configuration.
+     * @return IGFS configuration.
      */
     public IgfsConfiguration configuration() {
         return cfg;
@@ -172,10 +172,10 @@ public class IgfsContext {
     }
 
     /**
-     * Checks if given node is a GGFS node.
+     * Checks if given node is a IGFS node.
      *
      * @param node Node to check.
-     * @return {@code True} if node has GGFS with this name, {@code false} otherwise.
+     * @return {@code True} if node has IGFS with this name, {@code false} otherwise.
      */
     public boolean igfsNode(ClusterNode node) {
         assert node != null;

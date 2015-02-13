@@ -60,10 +60,10 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /** Meta cache 2 name. */
     private static final String metaCache2Name = "metaCache2";
 
-    /** First GGFS config in grid #1. */
+    /** First IGFS config in grid #1. */
     private IgfsConfiguration g1GgfsCfg1 = new IgfsConfiguration();
 
-    /** Second GGFS config in grid#1. */
+    /** Second IGFS config in grid#1. */
     private IgfsConfiguration g1GgfsCfg2 = new IgfsConfiguration();
 
     /** {@inheritDoc} */
@@ -123,7 +123,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalIfNoCacheIsConfigured() throws Exception {
-        checkGridStartFails(g1Cfg, "Data cache is not configured locally for GGFS", true);
+        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
     }
 
     /**
@@ -137,7 +137,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g1Cfg.setCacheConfiguration(cc);
 
-        checkGridStartFails(g1Cfg, "Data cache is not configured locally for GGFS", true);
+        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
     }
 
     /**
@@ -151,7 +151,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g1Cfg.setCacheConfiguration(cc);
 
-        checkGridStartFails(g1Cfg, "Metadata cache is not configured locally for GGFS", true);
+        checkGridStartFails(g1Cfg, "Metadata cache is not configured locally for IGFS", true);
     }
 
     /**
@@ -163,7 +163,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
             cc.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        checkGridStartFails(g1Cfg, "Invalid GGFS data cache configuration (key affinity mapper class should be", true);
+        checkGridStartFails(g1Cfg, "Invalid IGFS data cache configuration (key affinity mapper class should be", true);
     }
 
     /**
@@ -177,7 +177,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1GgfsCfg1.setName(ggfsCfgName);
         g1GgfsCfg2.setName(ggfsCfgName);
 
-        checkGridStartFails(g1Cfg, "Duplicate GGFS name found (check configuration and assign unique name", true);
+        checkGridStartFails(g1Cfg, "Duplicate IGFS name found (check configuration and assign unique name", true);
     }
 
     /**
@@ -190,7 +190,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
 
-        checkGridStartFails(g1Cfg, "GGFS data cache cannot start with enabled query indexing", true);
+        checkGridStartFails(g1Cfg, "IGFS data cache cannot start with enabled query indexing", true);
     }
 
     /**
@@ -203,7 +203,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
 
-        checkGridStartFails(g1Cfg, "GGFS metadata cache cannot start with enabled query indexing", true);
+        checkGridStartFails(g1Cfg, "IGFS metadata cache cannot start with enabled query indexing", true);
     }
 
     /**
@@ -226,7 +226,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
 
-        checkGridStartFails(g1Cfg, "Maximum GGFS space size cannot be greater that size of available heap", true);
+        checkGridStartFails(g1Cfg, "Maximum IGFS space size cannot be greater that size of available heap", true);
     }
 
     /**
@@ -241,7 +241,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
 
         checkGridStartFails(g1Cfg,
-            "Maximum GGFS space size cannot be greater than size of available heap memory and offheap storage", true);
+            "Maximum IGFS space size cannot be greater than size of available heap memory and offheap storage", true);
     }
 
     /**
@@ -255,7 +255,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
             cc.setBackups(1);
         }
 
-        checkGridStartFails(g1Cfg, "GGFS data cache cannot be used with backups", true);
+        checkGridStartFails(g1Cfg, "IGFS data cache cannot be used with backups", true);
     }
 
     /**
@@ -286,7 +286,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data block size should be the same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Data block size should be the same on all nodes in grid for IGFS", false);
     }
 
     /**
@@ -300,7 +300,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Affinity mapper group size should be the same on all nodes in grid for GGFS",
+        checkGridStartFails(g2Cfg, "Affinity mapper group size should be the same on all nodes in grid for IGFS",
             false);
     }
 
@@ -324,7 +324,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Meta cache name should be the same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Meta cache name should be the same on all nodes in grid for IGFS", false);
     }
 
     /**
@@ -350,7 +350,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Meta cache names should be different for different GGFS instances", false);
+        checkGridStartFails(g2Cfg, "Meta cache names should be different for different IGFS instances", false);
     }
 
     /**
@@ -373,7 +373,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data cache name should be the same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Data cache name should be the same on all nodes in grid for IGFS", false);
     }
 
     /**
@@ -399,7 +399,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data cache names should be different for different GGFS instances", false);
+        checkGridStartFails(g2Cfg, "Data cache names should be different for different IGFS instances", false);
     }
 
     /**
@@ -424,7 +424,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Default mode should be the same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Default mode should be the same on all nodes in grid for IGFS", false);
     }
 
     /**
@@ -446,7 +446,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Path modes should be the same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Path modes should be the same on all nodes in grid for IGFS", false);
     }
 
     /**

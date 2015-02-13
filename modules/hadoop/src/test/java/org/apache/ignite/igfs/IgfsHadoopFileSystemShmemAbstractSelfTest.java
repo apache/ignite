@@ -28,13 +28,13 @@ import java.util.concurrent.*;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
- * GGFS Hadoop file system IPC self test.
+ * IGFS Hadoop file system IPC self test.
  */
 public abstract class IgfsHadoopFileSystemShmemAbstractSelfTest extends IgfsHadoopFileSystemAbstractSelfTest {
     /**
      * Constructor.
      *
-     * @param mode GGFS mode.
+     * @param mode IGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
     protected IgfsHadoopFileSystemShmemAbstractSelfTest(IgfsMode mode, boolean skipEmbed) {

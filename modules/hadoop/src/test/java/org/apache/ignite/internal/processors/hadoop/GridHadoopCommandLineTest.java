@@ -36,7 +36,7 @@ import java.util.*;
  * Test of integration with Hadoop client via command line interface.
  */
 public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
-    /** GGFS instance. */
+    /** IGFS instance. */
     private IgfsEx ggfs;
 
     /** */

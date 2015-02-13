@@ -27,19 +27,19 @@ import org.apache.ignite.resources.*;
 import java.io.*;
 
 /**
- * GGFS job implementation.
+ * IGFS job implementation.
  */
 public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS job. */
+    /** IGFS job. */
     private IgfsJob job;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private String igfsName;
 
-    /** GGFS path. */
+    /** IGFS path. */
     private IgfsPath path;
 
     /** Start. */
@@ -60,12 +60,12 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     private IgniteLogger log;
 
     /**
-     * @param job GGFS job.
-     * @param igfsName GGFS name.
+     * @param job IGFS job.
+     * @param igfsName IGFS name.
      * @param path Split path.
      * @param start Split start offset.
      * @param len Split length.
-     * @param rslvr GGFS split resolver.
+     * @param rslvr IGFS split resolver.
      */
     public IgfsJobImpl(IgfsJob job, String igfsName, IgfsPath path, long start, long len,
         IgfsRecordResolver rslvr) {
@@ -100,7 +100,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
             return job.execute(fs, new IgfsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
-            throw new IgniteException("Failed to execute GGFS job for file split [igfsName=" + igfsName +
+            throw new IgniteException("Failed to execute IGFS job for file split [igfsName=" + igfsName +
                 ", path=" + path + ", start=" + start + ", len=" + len + ']', e);
         }
     }

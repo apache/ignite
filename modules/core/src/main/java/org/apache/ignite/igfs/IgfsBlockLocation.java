@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import java.util.*;
 
 /**
- * {@code GGFS} file's data block location in the grid. It is used to determine
+ * {@code IGFS} file's data block location in the grid. It is used to determine
  * node affinity of a certain file block within the Grid by calling
  * {@link org.apache.ignite.IgniteFs#affinity(IgfsPath, long, long)} method.
  */

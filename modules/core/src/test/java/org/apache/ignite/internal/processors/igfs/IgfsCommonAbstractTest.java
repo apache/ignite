@@ -22,7 +22,7 @@ import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Common subclass for all GGFS tests. Aimed to disabled peer class loading which is restricted for Hadoop edition.
+ * Common subclass for all IGFS tests. Aimed to disabled peer class loading which is restricted for Hadoop edition.
  */
 public class IgfsCommonAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

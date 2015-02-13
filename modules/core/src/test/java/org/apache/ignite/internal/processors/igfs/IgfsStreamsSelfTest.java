@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
- * Tests for GGFS streams content.
+ * Tests for IGFS streams content.
  */
 public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
@@ -147,7 +147,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Test GGFS construction.
+     * Test IGFS construction.
      *
      * @throws IgniteCheckedException In case of exception.
      */

@@ -97,7 +97,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     /** File system. */
     private static FileSystem fs;
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     protected final IgfsMode mode;
 
     /** Skip embedded mode flag. */
@@ -129,7 +129,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     /**
      * Constructor.
      *
-     * @param mode Default GGFS mode.
+     * @param mode Default IGFS mode.
      * @param skipEmbed Whether to skip embedded mode.
      * @param skipLocShmem Whether to skip local shmem mode.
      * @param skipLocTcp Whether to skip local TCP mode.
@@ -171,7 +171,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      */
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
-            // Start secondary GGFS.
+            // Start secondary IGFS.
             IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
             ggfsCfg.setDataCacheName("partitioned");
@@ -313,10 +313,10 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     }
 
     /**
-     * Gets GGFS configuration.
+     * Gets IGFS configuration.
      *
      * @param gridName Grid name.
-     * @return GGFS configuration.
+     * @return IGFS configuration.
      */
     protected IgfsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
         IgfsConfiguration cfg = new IgfsConfiguration();
@@ -1976,7 +1976,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     public void testClientReconnect() throws Exception {
         Path filePath = new Path(PRIMARY_URI, "file1");
 
-        final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping GGFS.
+        final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping IGFS.
 
         try {
             G.stopAll(true); // Stop the server.

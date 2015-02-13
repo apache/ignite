@@ -28,7 +28,7 @@ import static org.apache.ignite.igfs.IgfsMode.*;
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.*;
 
 /**
- * Grid GGFS client logger test.
+ * Grid IGFS client logger test.
  */
 public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     /** Path string. */
@@ -40,7 +40,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     /** Path. */
     private static final IgfsPath PATH = new IgfsPath(PATH_STR);
 
-    /** GGFS name. */
+    /** IGFS name. */
     private static final String IGFS_NAME = "igfs";
 
     /** Log file path. */
@@ -222,10 +222,10 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create GGFS file with the given path.
+     * Create IGFS file with the given path.
      *
      * @param path File path.
-     * @return GGFS file instance.
+     * @return IGFS file instance.
      */
     private IgfsFile file(String path) {
         return new IgfsFileImpl(new IgfsPath(path), new IgfsFileInfo(), 64 * 1024 * 1024);

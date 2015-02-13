@@ -47,7 +47,7 @@ import static org.apache.ignite.igfs.IgfsMode.*;
  * Test fo regular GGFs operations.
  */
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
-    /** GGFS block size. */
+    /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Default block size (32Mb). */
@@ -110,13 +110,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
 
-    /** Primary GGFS. */
+    /** Primary IGFS. */
     protected static IgfsImpl igfs;
 
-    /** Secondary GGFS. */
+    /** Secondary IGFS. */
     protected static IgfsImpl igfsSecondary;
 
-    /** GGFS mode. */
+    /** IGFS mode. */
     protected final IgfsMode mode;
 
     /** Dual mode flag. */
@@ -128,7 +128,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Constructor.
      *
-     * @param mode GGFS mode.
+     * @param mode IGFS mode.
      */
     protected IgfsAbstractSelfTest(IgfsMode mode) {
         this(mode, ONHEAP_TIERED);
@@ -170,11 +170,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Start grid with GGFS.
+     * Start grid with IGFS.
      *
      * @param gridName Grid name.
-     * @param ggfsName GGFS name
-     * @param mode GGFS mode.
+     * @param ggfsName IGFS name
+     * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @param restCfg Rest configuration string (optional).
      * @return Started grid instance.
@@ -634,7 +634,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         if (dual)
             assertEquals(props, igfsSecondary.info(SUBSUBDIR).properties());
 
-        // We check only permission because GGFS client adds username and group name explicitly.
+        // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
     }
 
@@ -653,7 +653,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         if (dual)
             assertEquals(props, igfsSecondary.info(DIR).properties());
 
-        // We check only permission because GGFS client adds username and group name explicitly.
+        // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(DIR).properties().get(PROP_PERMISSION));
     }
 
@@ -1496,7 +1496,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that GGFS is able to stop in case not closed output stream exist.
+     * Ensure that IGFS is able to stop in case not closed output stream exist.
      *
      * @throws Exception If failed.
      */
@@ -1614,7 +1614,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             else {
                 assert res2.get(); // Rename failed because delete succeeded.
 
-                checkExist(igfs, DIR); // DIR_NEW should not be synchronized with he primary GGFS.
+                checkExist(igfs, DIR); // DIR_NEW should not be synchronized with he primary IGFS.
 
                 if (dual)
                     checkExist(igfsSecondary, DIR, DIR_NEW);
@@ -2130,9 +2130,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create the given directories and files in the given GGFS.
+     * Create the given directories and files in the given IGFS.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param dirs Directories.
      * @param files Files.
      * @throws Exception If failed.
@@ -2154,9 +2154,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create the file in the given GGFS and write provided data chunks to it.
+     * Create the file in the given IGFS and write provided data chunks to it.
      *
-     * @param igfs GGFS.
+     * @param igfs IGFS.
      * @param file File.
      * @param overwrite Overwrite flag.
      * @param chunks Data chunks.
@@ -2180,9 +2180,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create the file in the given GGFS and write provided data chunks to it.
+     * Create the file in the given IGFS and write provided data chunks to it.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param file File.
      * @param overwrite Overwrite flag.
      * @param blockSize Block size.
@@ -2206,9 +2206,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Append to the file in the given GGFS provided data chunks.
+     * Append to the file in the given IGFS provided data chunks.
      *
-     * @param igfs GGFS.
+     * @param igfs IGFS.
      * @param file File.
      * @param chunks Data chunks.
      * @throws Exception If failed.
@@ -2246,7 +2246,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Await for previously opened output stream to close. This is achieved by requesting dummy update on the file.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param file File.
      */
     public static void awaitFileClose(Igfs ggfs, IgfsPath file) {
@@ -2259,10 +2259,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that the given paths exist in the given GGFSs.
+     * Ensure that the given paths exist in the given IGFSs.
      *
-     * @param ggfs First GGFS.
-     * @param ggfsSecondary Second GGFS.
+     * @param ggfs First IGFS.
+     * @param ggfsSecondary Second IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
@@ -2274,9 +2274,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that the given paths exist in the given GGFS.
+     * Ensure that the given paths exist in the given IGFS.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
@@ -2289,10 +2289,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that the given paths don't exist in the given GGFSs.
+     * Ensure that the given paths don't exist in the given IGFSs.
      *
-     * @param ggfs First GGFS.
-     * @param ggfsSecondary Second GGFS.
+     * @param ggfs First IGFS.
+     * @param ggfsSecondary Second IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
@@ -2305,9 +2305,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that the given paths don't exist in the given GGFS.
+     * Ensure that the given paths don't exist in the given IGFS.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
@@ -2320,11 +2320,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that the given file exists in the given GGFSs and that it has exactly the same content as provided in the
+     * Ensure that the given file exists in the given IGFSs and that it has exactly the same content as provided in the
      * "data" parameter.
      *
-     * @param ggfs First GGFS.
-     * @param ggfsSecondary Second GGFS.
+     * @param ggfs First IGFS.
+     * @param ggfsSecondary Second IGFS.
      * @param file File.
      * @param chunks Expected data.
      * @throws Exception If failed.
@@ -2343,7 +2343,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Ensure that the given file has exactly the same content as provided in the "data" parameter.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param file File.
      * @param chunks Expected data.
      * @throws IOException In case of IO exception.
@@ -2413,10 +2413,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Safely clear GGFSs.
+     * Safely clear IGFSs.
      *
-     * @param ggfs First GGFS.
-     * @param ggfsSecondary Second GGFS.
+     * @param ggfs First IGFS.
+     * @param ggfsSecondary Second IGFS.
      * @throws Exception If failed.
      */
     protected void clear(IgniteFs ggfs, IgniteFs ggfsSecondary) throws Exception {
@@ -2427,9 +2427,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Clear particular GGFS.
+     * Clear particular IGFS.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @throws Exception If failed.
      */
     public static void clear(IgniteFs ggfs) throws Exception {

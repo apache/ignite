@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopEndpoint.*;
 import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
 
 /**
- * Wrapper for GGFS server.
+ * Wrapper for IGFS server.
  */
 public class IgfsHadoopWrapper implements IgfsHadoop {
     /** Delegate. */
@@ -314,7 +314,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
             }
         }
 
-        throw new IOException("Failed to communicate with GGFS.", err);
+        throw new IOException("Failed to communicate with IGFS.", err);
     }
 
     /**
@@ -371,7 +371,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
-                        log.debug("Failed to connect to in-proc GGFS, fallback to IPC mode.", e);
+                        log.debug("Failed to connect to in-proc IGFS, fallback to IPC mode.", e);
 
                     err = e;
                 }
@@ -393,7 +393,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
-                        log.debug("Failed to connect to out-proc local GGFS using shmem.", e);
+                        log.debug("Failed to connect to out-proc local IGFS using shmem.", e);
 
                     err = e;
                 }
@@ -418,7 +418,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
-                        log.debug("Failed to connect to out-proc local GGFS using TCP.", e);
+                        log.debug("Failed to connect to out-proc local IGFS using TCP.", e);
 
                     err = e;
                 }
@@ -439,7 +439,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                     hadoop.close(true);
 
                 if (log.isDebugEnabled())
-                    log.debug("Failed to connect to out-proc remote GGFS using TCP.", e);
+                    log.debug("Failed to connect to out-proc remote IGFS using TCP.", e);
 
                 err = e;
             }
@@ -452,7 +452,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
             return curDelegate;
         }
         else
-            throw new IgfsHadoopCommunicationException("Failed to connect to GGFS: " + endpoint, err);
+            throw new IgfsHadoopCommunicationException("Failed to connect to IGFS: " + endpoint, err);
     }
 
     /**

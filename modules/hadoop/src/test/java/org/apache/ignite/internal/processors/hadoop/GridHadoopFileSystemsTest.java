@@ -149,7 +149,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
     }
 
     /**
-     * Test GGFS multi-thread working directory.
+     * Test IGFS multi-thread working directory.
      *
      * @throws Exception If fails.
      */

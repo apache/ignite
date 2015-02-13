@@ -32,13 +32,13 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
+ * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
 public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     /**
      * Constructor.
      *
-     * @param mode GGFS mode.
+     * @param mode IGFS mode.
      */
     protected IgfsDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
@@ -964,7 +964,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         assertEquals(props, igfsSecondary.info(SUBSUBDIR).properties());
 
-        // We check only permission because GGFS client adds username and group name explicitly.
+        // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
     }
 
@@ -988,7 +988,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         assertEquals(props, igfsSecondary.info(SUBSUBDIR).properties());
 
-        // We check only permission because GGFS client adds username and group name explicitly.
+        // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
     }
 
@@ -1426,7 +1426,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             else {
                 assert res2.get(); // Rename failed because delete succeeded.
 
-                checkExist(igfs, DIR); // DIR_NEW should not be synchronized with he primary GGFS.
+                checkExist(igfs, DIR); // DIR_NEW should not be synchronized with he primary IGFS.
                 checkExist(igfsSecondary, DIR, DIR_NEW);
                 checkNotExist(igfs, igfsSecondary, SUBDIR, SUBDIR_NEW);
             }

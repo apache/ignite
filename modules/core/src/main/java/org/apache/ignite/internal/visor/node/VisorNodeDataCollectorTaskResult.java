@@ -56,13 +56,13 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** Exceptions caught during collecting caches from nodes. */
     private final Map<UUID, Throwable> cachesEx = new HashMap<>();
 
-    /** All GGFS collected from nodes. */
+    /** All IGFS collected from nodes. */
     private final Map<UUID, Collection<VisorIgfs>> ggfss = new HashMap<>();
 
-    /** All GGFS endpoints collected from nodes. */
+    /** All IGFS endpoints collected from nodes. */
     private final Map<UUID, Collection<VisorIgfsEndpoint>> ggfsEndpoints = new HashMap<>();
 
-    /** Exceptions caught during collecting GGFS from nodes. */
+    /** Exceptions caught during collecting IGFS from nodes. */
     private final Map<UUID, Throwable> ggfssEx = new HashMap<>();
 
     /** All streamers collected from nodes. */
@@ -148,21 +148,21 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     }
 
     /**
-     * @return All GGFS collected from nodes.
+     * @return All IGFS collected from nodes.
      */
     public Map<UUID, Collection<VisorIgfs>> igfss() {
         return ggfss;
     }
 
     /**
-     * @return All GGFS endpoints collected from nodes.
+     * @return All IGFS endpoints collected from nodes.
      */
     public Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints() {
         return ggfsEndpoints;
     }
 
     /**
-     * @return Exceptions caught during collecting GGFS from nodes.
+     * @return Exceptions caught during collecting IGFS from nodes.
      */
     public Map<UUID, Throwable> igfssEx() {
         return ggfssEx;

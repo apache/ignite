@@ -140,7 +140,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
      * which stands at least [maxDelimLen] from the start search position or until we faced stream start.
      * Otherwise we cannot be sure that delimiter position is determined correctly.
      *
-     * @param stream GGFS input stream.
+     * @param stream IGFS input stream.
      * @param startPos Start search position.
      * @return The first found delimiter.
      * @throws IOException In case of IO exception.
@@ -171,7 +171,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
     /**
      * Resolve next delimiter.
      *
-     * @param is GGFS input stream.
+     * @param is IGFS input stream.
      * @param state Current state.
      * @return Next delimiter and updated map.
      * @throws IOException In case of exception.

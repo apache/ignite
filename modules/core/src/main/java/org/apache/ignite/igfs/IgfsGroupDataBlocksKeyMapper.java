@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * {@code GGFS} class providing ability to group file's data blocks together on one node.
+ * {@code IGFS} class providing ability to group file's data blocks together on one node.
  * All blocks within the same group are guaranteed to be cached together on the same node.
  * Group size parameter controls how many sequential blocks will be cached together on the same node.
  * <p>
@@ -33,12 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * Note that {@link #groupSize()} parameter must correlate to Hadoop split size parameter defined
  * in Hadoop via {@code mapred.max.split.size} property. Ideally you want all blocks accessed
  * within one split to be mapped to {@code 1} group, so they can be located on the same grid node.
- * For example, default Hadoop split size is {@code 64mb} and default {@code GGFS} block size
+ * For example, default Hadoop split size is {@code 64mb} and default {@code IGFS} block size
  * is {@code 64kb}. This means that to make sure that each split goes only through blocks on
  * the same node (without hopping between nodes over network), we have to make the {@link #groupSize()}
  * value be equal to {@code 64mb / 64kb = 1024}.
  * <p>
- * It is required for {@code GGFS} data cache to be configured with this mapper. Here is an
+ * It is required for {@code IGFS} data cache to be configured with this mapper. Here is an
  * example of how it can be specified in XML configuration:
  * <pre name="code" class="xml">
  * &lt;bean id="cacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true"&gt;

@@ -194,7 +194,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     protected void value(@Nullable V val, @Nullable byte[] valBytes) {
         assert Thread.holdsLock(this);
 
-        // In case we deal with GGFS cache, count updated data
+        // In case we deal with IGFS cache, count updated data
         if (cctx.cache().isIgfsDataCache() && cctx.kernalContext().igfsHelper().isIgfsBlockKey(key())) {
             int newSize = valueLength((byte[])val, valBytes != null ? GridCacheValueBytes.marshaled(valBytes) :
                 GridCacheValueBytes.nil());
@@ -257,7 +257,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * Isolated method to get length of GGFS block.
+     * Isolated method to get length of IGFS block.
      *
      * @param val Value.
      * @param valBytes Value bytes.

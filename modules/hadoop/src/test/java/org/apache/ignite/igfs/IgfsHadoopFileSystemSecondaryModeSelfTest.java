@@ -50,7 +50,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     /** Pattern doesn't matching the path. */
     private static final String PATTERN_NOT_MATCHES = "/files";
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     private IgfsMode mode;
 
     /** Path modes. */
@@ -292,7 +292,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     }
 
     /**
-     * Set GGFS modes for particular paths.
+     * Set IGFS modes for particular paths.
      *
      * @param modes Modes.
      */

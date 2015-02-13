@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * {@code GGFS} file or directory descriptor. For example, to get information about
+ * {@code IGFS} file or directory descriptor. For example, to get information about
  * a file you would use the following code:
  * <pre name="code" class="java">
  *     GridGgfsPath filePath = new GridGgfsPath("my/working/dir", "file.txt");

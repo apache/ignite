@@ -75,7 +75,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     /** Grid name. */
     private final String grid;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private final String ggfs;
 
     /** Client log. */
@@ -93,7 +93,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      * @param host Host.
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs GGFS name.
+     * @param ggfs IGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
@@ -106,7 +106,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      *
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs GGFS name.
+     * @param ggfs IGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
@@ -120,7 +120,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      * @param host Host.
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs GGFS name.
+     * @param ggfs IGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
      * @throws IOException If failed.

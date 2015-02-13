@@ -35,19 +35,19 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * GGFS modes self test.
+ * IGFS modes self test.
  */
 public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
-    /** Grid instance hosting primary GGFS. */
+    /** Grid instance hosting primary IGFS. */
     private IgniteEx grid;
 
-    /** Primary GGFS. */
+    /** Primary IGFS. */
     private IgfsImpl ggfs;
 
-    /** Secondary GGFS. */
+    /** Secondary IGFS. */
     private IgfsImpl ggfsSecondary;
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     private IgfsMode mode;
 
     /** Modes map. */
@@ -194,7 +194,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Set GGFS modes for particular paths.
+     * Set IGFS modes for particular paths.
      *
      * @param modes Modes.
      */
@@ -448,7 +448,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that data is not propagated to the secondary GGFS in PRIMARY mode.
+     * Ensure that data is not propagated to the secondary IGFS in PRIMARY mode.
      *
      * @throws Exception If failed.
      */
@@ -459,7 +459,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that data is propagated to the secondary GGFS in DUAL_SYNC mode.
+     * Ensure that data is propagated to the secondary IGFS in DUAL_SYNC mode.
      *
      * @throws Exception If failed.
      */
@@ -470,7 +470,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that data is propagated to the secondary GGFS in DUAL_SYNC mode.
+     * Ensure that data is propagated to the secondary IGFS in DUAL_SYNC mode.
      *
      * @throws Exception If failed.
      */
@@ -481,7 +481,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Resolve GGFS mode for the given path and compare it with expected one.
+     * Resolve IGFS mode for the given path and compare it with expected one.
      *
      * @param pathStr Path ot resolve.
      * @param expMode Expected mode.

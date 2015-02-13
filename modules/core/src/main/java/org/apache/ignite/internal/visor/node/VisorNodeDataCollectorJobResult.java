@@ -53,13 +53,13 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node caches. */
     private Throwable cachesEx;
 
-    /** Node GGFSs. */
+    /** Node IGFSs. */
     private final Collection<VisorIgfs> ggfss = new ArrayList<>();
 
-    /** All GGFS endpoints collected from nodes. */
+    /** All IGFS endpoints collected from nodes. */
     private final Collection<VisorIgfsEndpoint> ggfsEndpoints = new ArrayList<>();
 
-    /** Exception while collecting node GGFSs. */
+    /** Exception while collecting node IGFSs. */
     private Throwable ggfssEx;
 
     /** Node streamers. */

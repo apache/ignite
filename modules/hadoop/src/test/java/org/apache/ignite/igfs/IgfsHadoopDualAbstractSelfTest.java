@@ -44,10 +44,10 @@ import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.*;
 
 /**
- * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
+ * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
 public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractTest {
-    /** GGFS block size. */
+    /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Amount of blocks to prefetch. */
@@ -92,19 +92,19 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
 
-    /** Primary GGFS. */
+    /** Primary IGFS. */
     protected static IgfsImpl ggfs;
 
-    /** Secondary GGFS. */
+    /** Secondary IGFS. */
     protected static IgfsImpl ggfsSecondary;
 
-    /** GGFS mode. */
+    /** IGFS mode. */
     protected final IgfsMode mode;
 
     /**
      * Constructor.
      *
-     * @param mode GGFS mode.
+     * @param mode IGFS mode.
      */
     protected IgfsHadoopDualAbstractSelfTest(IgfsMode mode) {
         this.mode = mode;
@@ -112,11 +112,11 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     }
 
     /**
-     * Start grid with GGFS.
+     * Start grid with IGFS.
      *
      * @param gridName Grid name.
-     * @param ggfsName GGFS name
-     * @param mode GGFS mode.
+     * @param ggfsName IGFS name
+     * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @param restCfg Rest configuration string (optional).
      * @return Started grid instance.

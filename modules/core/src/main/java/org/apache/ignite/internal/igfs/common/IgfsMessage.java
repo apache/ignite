@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.igfs.common;
 
 /**
- * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
- * GGFS server (Ignite data node).
+ * Abstract class for all messages sent between IGFS client (Hadoop File System implementation) and
+ * IGFS server (Ignite data node).
  */
 public abstract class IgfsMessage {
-    /** GGFS command. */
+    /** IGFS command. */
     private IgfsIpcCommand cmd;
 
     /**

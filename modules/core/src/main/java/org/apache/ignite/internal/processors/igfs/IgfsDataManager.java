@@ -63,7 +63,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * Cache based file's data container.
  */
 public class IgfsDataManager extends IgfsManager {
-    /** GGFS. */
+    /** IGFS. */
     private IgfsEx igfs;
 
     /** Data cache projection. */
@@ -75,7 +75,7 @@ public class IgfsDataManager extends IgfsManager {
     /** */
     private IgniteInternalFuture<?> dataCacheStartFut;
 
-    /** Local GGFS metrics. */
+    /** Local IGFS metrics. */
     private IgfsLocalMetrics metrics;
 
     /** Group block size. */
@@ -102,7 +102,7 @@ public class IgfsDataManager extends IgfsManager {
     /** Request ID counter for write messages. */
     private AtomicLong reqIdCtr = new AtomicLong();
 
-    /** GGFS communication topic. */
+    /** IGFS communication topic. */
     private Object topic;
 
     /** Async file delete worker. */
@@ -212,7 +212,7 @@ public class IgfsDataManager extends IgfsManager {
         else {
             int coresCnt = Runtime.getRuntime().availableProcessors();
 
-            // Note that we do not pre-start threads here as GGFS pool may not be needed.
+            // Note that we do not pre-start threads here as IGFS pool may not be needed.
             putExecSvc = new IgniteThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
 
             putExecSvcShutdown = true;
@@ -256,7 +256,7 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * @return Maximum number of bytes for GGFS data cache.
+     * @return Maximum number of bytes for IGFS data cache.
      */
     public long maxSpaceSize() {
         return dataCachePrj.igfsDataSpaceMax();
@@ -1099,7 +1099,7 @@ public class IgfsDataManager extends IgfsManager {
                 }
 
                 IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                    "(GGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
+                    "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                     ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
 
                 completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
@@ -1157,7 +1157,7 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Executes callable in GGFS executor service. If execution rejected, callable will be executed
+     * Executes callable in IGFS executor service. If execution rejected, callable will be executed
      * in caller thread.
      *
      * @param c Callable to execute.
@@ -1173,7 +1173,7 @@ public class IgfsDataManager extends IgfsManager {
                 c.call();
             }
             catch (Exception e) {
-                log.warning("Failed to execute GGFS callable: " + c, e);
+                log.warning("Failed to execute IGFS callable: " + c, e);
             }
         }
     }
@@ -1199,7 +1199,7 @@ public class IgfsDataManager extends IgfsManager {
                 curPendingPuts += data.length;
             }
             catch (InterruptedException ignore) {
-                throw new IgniteCheckedException("Failed to put GGFS data block into cache due to interruption: " + key);
+                throw new IgniteCheckedException("Failed to put IGFS data block into cache due to interruption: " + key);
             }
             finally {
                 pendingPutsLock.unlock();
@@ -1212,7 +1212,7 @@ public class IgfsDataManager extends IgfsManager {
                     dataCachePrj.putx(key, data);
                 }
                 catch (IgniteCheckedException e) {
-                    U.warn(log, "Failed to put GGFS data block into cache [key=" + key + ", err=" + e + ']');
+                    U.warn(log, "Failed to put IGFS data block into cache [key=" + key + ", err=" + e + ']');
                 }
                 finally {
                     if (maxPendingPuts > 0) {
@@ -1259,7 +1259,7 @@ public class IgfsDataManager extends IgfsManager {
                 // Additional size check.
                 if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
                     return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
-                        new IgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
+                        new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
 

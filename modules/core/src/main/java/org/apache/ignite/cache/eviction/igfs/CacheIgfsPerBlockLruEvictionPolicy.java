@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 /**
- * GGFS eviction policy which evicts particular blocks.
+ * IGFS eviction policy which evicts particular blocks.
  */
 public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
     CacheIgfsPerBlockLruEvictionPolicyMXBean {

@@ -50,7 +50,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  */
 @SuppressWarnings("all")
 public class IgfsMetaManager extends IgfsManager {
-    /** GGFS configuration. */
+    /** IGFS configuration. */
     private IgfsConfiguration cfg;
 
     /** Metadata cache. */

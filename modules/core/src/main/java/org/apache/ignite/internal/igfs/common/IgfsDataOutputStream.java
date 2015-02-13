@@ -38,6 +38,6 @@ public class IgfsDataOutputStream extends DataOutputStream implements ObjectOutp
 
     /** {@inheritDoc} */
     @Override public void writeObject(Object obj) throws IOException {
-        throw new IOException("This method must not be invoked on GGFS data output stream.");
+        throw new IOException("This method must not be invoked on IGFS data output stream.");
     }
 }

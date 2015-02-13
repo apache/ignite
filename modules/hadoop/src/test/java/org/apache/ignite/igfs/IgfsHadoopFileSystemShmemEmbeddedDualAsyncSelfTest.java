@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * GGFS Hadoop file system IPC shmem self test in DUAL_ASYNC mode.
+ * IGFS Hadoop file system IPC shmem self test in DUAL_ASYNC mode.
  */
 public class IgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest
     extends IgfsHadoopFileSystemShmemAbstractSelfTest {

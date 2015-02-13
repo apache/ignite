@@ -30,12 +30,12 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
+ * IGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially IGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
  * {@link IgfsTask#createJob(org.apache.ignite.igfs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
- * Each file participating in GGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
+ * Each file participating in IGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
@@ -143,13 +143,13 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
 
     /**
      * Callback invoked during task map procedure to create job that will process specified split
-     * for GGFS file.
+     * for IGFS file.
      *
      * @param path Path.
      * @param range File range based on consecutive blocks. This range will be further
      *      realigned to record boundaries on destination node.
      * @param args Task argument.
-     * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
+     * @return IGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws IgniteException If job creation failed.
      */
     @Nullable public abstract IgfsJob createJob(IgfsPath path, IgfsFileRange range,

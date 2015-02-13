@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.*;
 
 /**
- * GGFS fragmentizer manager.
+ * IGFS fragmentizer manager.
  */
 public class IgfsFragmentizerManager extends IgfsManager {
     /** Message offer wait interval. */
@@ -208,7 +208,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
                 if (locNode.order() == minNodeOrder) {
                     if (log.isDebugEnabled())
-                        log.debug("Detected local node to be the eldest GGFS node in topology, starting fragmentizer " +
+                        log.debug("Detected local node to be the eldest IGFS node in topology, starting fragmentizer " +
                             "coordinator thread [discoEvt=" + discoEvt + ", locNode=" + locNode + ']');
 
                     synchronized (this) {
@@ -797,11 +797,11 @@ public class IgfsFragmentizerManager extends IgfsManager {
             catch (IgniteCheckedException e) {
                 if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     if (log.isDebugEnabled())
-                        log.debug("Failed to send sync response to GGFS fragmentizer coordinator " +
+                        log.debug("Failed to send sync response to IGFS fragmentizer coordinator " +
                             "(originating node left the grid): " + nodeId);
                 }
                 else
-                    U.error(log, "Failed to send sync response to GGFS fragmentizer coordinator: " + nodeId, e);
+                    U.error(log, "Failed to send sync response to IGFS fragmentizer coordinator: " + nodeId, e);
             }
         }
     }

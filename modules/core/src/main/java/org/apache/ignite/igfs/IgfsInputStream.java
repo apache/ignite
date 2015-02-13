@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 import java.io.*;
 
 /**
- * {@code GGFS} input stream to read data from the file system.
+ * {@code IGFS} input stream to read data from the file system.
  * It provides several additional methods for asynchronous access.
  */
 public abstract class IgfsInputStream extends InputStream implements IgfsReader {

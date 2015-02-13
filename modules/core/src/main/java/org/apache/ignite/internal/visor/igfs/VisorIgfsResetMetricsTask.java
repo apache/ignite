@@ -25,7 +25,7 @@ import org.apache.ignite.internal.visor.*;
 import java.util.*;
 
 /**
- * Resets GGFS metrics.
+ * Resets IGFS metrics.
  */
 @GridInternal
 public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
@@ -38,14 +38,14 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
     }
 
     /**
-     * Job that reset GGFS metrics.
+     * Job that reset IGFS metrics.
      */
     private static class VisorIgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg GGFS names.
+         * @param arg IGFS names.
          * @param debug Debug flag.
          */
         private VisorIgfsResetMetricsJob(Set<String> arg, boolean debug) {

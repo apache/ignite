@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
- * GGFS client future that holds response parse closure.
+ * IGFS client future that holds response parse closure.
  */
 public class IgfsHadoopFuture<T> extends GridPlainFutureAdapter<T> {
     /** Output buffer. */

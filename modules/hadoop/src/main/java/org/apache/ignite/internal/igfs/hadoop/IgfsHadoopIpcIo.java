@@ -348,7 +348,7 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
             assert oldFut == null;
 
             if (log.isDebugEnabled())
-                log.debug("Sending GGFS message [reqId=" + reqId + ", msg=" + msg + ']');
+                log.debug("Sending IGFS message [reqId=" + reqId + ", msg=" + msg + ']');
 
             byte[] hdr = IgfsMarshaller.createHeader(reqId, msg.command());
 
@@ -516,7 +516,7 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
                                 IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(U.bytesToInt(hdr, 8));
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Received GGFS response [reqId=" + reqId + ", cmd=" + cmd + ']');
+                                    log.debug("Received IGFS response [reqId=" + reqId + ", cmd=" + cmd + ']');
 
                                 Object res = null;
 

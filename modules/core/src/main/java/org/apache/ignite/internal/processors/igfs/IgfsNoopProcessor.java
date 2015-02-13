@@ -44,7 +44,7 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> GGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
         X.println(">>>   ggfsCacheSize: " + 0);
     }
 

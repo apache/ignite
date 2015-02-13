@@ -25,7 +25,7 @@ import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Task to set GGFS instance sampling state.
+ * Task to set IGFS instance sampling state.
  */
 @GridInternal
 public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<String, Boolean>, Void> {
@@ -33,7 +33,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
     private static final long serialVersionUID = 0L;
 
     /**
-     * Job that perform parsing of GGFS profiler logs.
+     * Job that perform parsing of IGFS profiler logs.
      */
     private static class VisorIgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
         /** */
@@ -57,7 +57,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+                throw new IgniteException("Failed to set sampling state for IGFS: " + arg.get1(), iae);
             }
             catch(IgniteCheckedException e) {
                 throw U.convertException(e);

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
- * GGFS client logger writing data to the file.
+ * IGFS client logger writing data to the file.
  */
 public final class IgfsLogger {
     /** Field delimiter. */

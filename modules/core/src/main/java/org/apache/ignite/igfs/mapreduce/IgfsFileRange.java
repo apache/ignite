@@ -21,7 +21,7 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Entity representing part of GGFS file identified by file path, start position, and length.
+ * Entity representing part of IGFS file identified by file path, start position, and length.
  */
 public class IgfsFileRange {
     /** File path. */

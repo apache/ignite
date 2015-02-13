@@ -20,18 +20,18 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.internal.util.typedef.*;
 
 /**
- * GGFS ad-hoc thread.
+ * IGFS ad-hoc thread.
  */
 public abstract class IgfsThread extends Thread {
     /**
-     * Creates {@code GGFS} add-hoc thread.
+     * Creates {@code IGFS} add-hoc thread.
      */
     protected IgfsThread() {
         super("igfs-worker");
     }
 
     /**
-     * Creates {@code GGFS} add-hoc thread.
+     * Creates {@code IGFS} add-hoc thread.
      *
      * @param name Thread name.
      */
@@ -49,7 +49,7 @@ public abstract class IgfsThread extends Thread {
         }
         // Catch all.
         catch (Throwable e) {
-            X.error("Failed to execute GGFS ad-hoc thread: " + e.getMessage());
+            X.error("Failed to execute IGFS ad-hoc thread: " + e.getMessage());
 
             e.printStackTrace();
         }
@@ -59,7 +59,7 @@ public abstract class IgfsThread extends Thread {
             }
             // Catch all.
             catch (Throwable e) {
-                X.error("Failed to clean up GGFS ad-hoc thread: " + e.getMessage());
+                X.error("Failed to clean up IGFS ad-hoc thread: " + e.getMessage());
 
                 e.printStackTrace();
             }

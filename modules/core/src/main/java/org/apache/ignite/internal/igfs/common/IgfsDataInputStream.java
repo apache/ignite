@@ -35,6 +35,6 @@ public class IgfsDataInputStream extends DataInputStream implements ObjectInput 
 
     /** {@inheritDoc} */
     @Override public Object readObject() throws ClassNotFoundException, IOException {
-        throw new IOException("This method must not be invoked on GGFS data input stream.");
+        throw new IOException("This method must not be invoked on IGFS data input stream.");
     }
 }

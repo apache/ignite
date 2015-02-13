@@ -25,13 +25,13 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GGFS task arguments implementation.
+ * IGFS task arguments implementation.
  */
 public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** GGFS name. */
+    /** IGFS name. */
     private String ggfsName;
 
     /** Paths. */
@@ -59,7 +59,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     /**
      * Constructor.
      *
-     * @param ggfsName GGFS name.
+     * @param ggfsName IGFS name.
      * @param paths Paths.
      * @param recRslvr Record resolver.
      * @param skipNonExistentFiles Skip non existent files flag.

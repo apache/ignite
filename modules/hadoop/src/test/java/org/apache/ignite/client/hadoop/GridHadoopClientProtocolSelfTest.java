@@ -393,9 +393,9 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /**
-     * Dump GGFS content.
+     * Dump IGFS content.
      *
-     * @param ggfs GGFS.
+     * @param ggfs IGFS.
      * @param path Path.
      * @throws Exception If failed.
      */

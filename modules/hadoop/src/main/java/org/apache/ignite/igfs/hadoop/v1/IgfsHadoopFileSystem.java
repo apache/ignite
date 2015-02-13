@@ -45,8 +45,8 @@ import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
 
 /**
- * {@code GGFS} Hadoop 1.x file system driver over file system API. To use
- * {@code GGFS} as Hadoop file system, you should configure this class
+ * {@code IGFS} Hadoop 1.x file system driver over file system API. To use
+ * {@code IGFS} as Hadoop file system, you should configure this class
  * in Hadoop's {@code core-site.xml} as follows:
  * <pre name="code" class="xml">
  *  &lt;property&gt;
@@ -128,7 +128,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     /** Secondary URI string. */
     private URI secondaryUri;
 
-    /** GGFS mode resolver. */
+    /** IGFS mode resolver. */
     private IgfsModeResolver modeRslvr;
 
     /** Secondary file system instance. */
@@ -140,7 +140,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
 
-    /** GGFS group block size. */
+    /** IGFS group block size. */
     private long ggfsGrpBlockSize;
 
     /** Flag that controls whether file writes should be colocated. */
@@ -722,7 +722,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             }
         }
         catch (IOException e) {
-            // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
+            // Intentionally ignore IGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
                 !X.hasCause(e.getCause(), IgfsException.class)))
                 throw e;
@@ -773,7 +773,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             }
         }
         catch (IOException e) {
-            // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
+            // Intentionally ignore IGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
                 !X.hasCause(e.getCause(), IgfsException.class)))
                 throw e;
@@ -931,7 +931,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             }
         }
         catch (IOException e) {
-            // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
+            // Intentionally ignore IGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
                 !X.hasCause(e.getCause(), IgfsException.class)))
                 throw e;
@@ -1066,7 +1066,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     /**
      * Resolve path mode.
      *
-     * @param path GGFS path.
+     * @param path IGFS path.
      * @return Path mode.
      */
     public IgfsMode mode(IgfsPath path) {
@@ -1136,9 +1136,9 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert GGFS path into Hadoop path.
+     * Convert IGFS path into Hadoop path.
      *
-     * @param path GGFS path.
+     * @param path IGFS path.
      * @return Hadoop path.
      */
     private Path convert(IgfsPath path) {
@@ -1146,10 +1146,10 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert Hadoop path into GGFS path.
+     * Convert Hadoop path into IGFS path.
      *
      * @param path Hadoop path.
-     * @return GGFS path.
+     * @return IGFS path.
      */
     @Nullable private IgfsPath convert(@Nullable Path path) {
         if (path == null)
@@ -1160,9 +1160,9 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert GGFS affinity block location into Hadoop affinity block location.
+     * Convert IGFS affinity block location into Hadoop affinity block location.
      *
-     * @param block GGFS affinity block location.
+     * @param block IGFS affinity block location.
      * @return Hadoop affinity block location.
      */
     private BlockLocation convert(IgfsBlockLocation block) {
@@ -1187,9 +1187,9 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert GGFS file information into Hadoop file status.
+     * Convert IGFS file information into Hadoop file status.
      *
-     * @param file GGFS file information.
+     * @param file IGFS file information.
      * @return Hadoop file status.
      */
     @SuppressWarnings("deprecation")
@@ -1206,10 +1206,10 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert Hadoop permission into GGFS file attribute.
+     * Convert Hadoop permission into IGFS file attribute.
      *
      * @param perm Hadoop permission.
-     * @return GGFS attributes.
+     * @return IGFS attributes.
      */
     private Map<String, String> permission(FsPermission perm) {
         if (perm == null)
@@ -1227,7 +1227,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     }
 
     /**
-     * Convert GGFS file attributes into Hadoop permission.
+     * Convert IGFS file attributes into Hadoop permission.
      *
      * @param file File info.
      * @return Hadoop permission.

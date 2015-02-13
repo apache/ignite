@@ -20,7 +20,7 @@ package org.apache.ignite.internal.igfs.common;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
 
 /**
- * GGFS status (total/used/free space) request.
+ * IGFS status (total/used/free space) request.
  */
 public class IgfsStatusRequest extends IgfsMessage {
     /** {@inheritDoc} */

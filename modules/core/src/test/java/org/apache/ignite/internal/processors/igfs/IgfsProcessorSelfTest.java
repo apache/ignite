@@ -596,7 +596,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * @param path Path.
-     * @return GGFS path.
+     * @return IGFS path.
      */
     private IgfsPath path(String path) {
         assert path != null;
@@ -606,7 +606,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * @param i Path index.
-     * @return GGFS path.
+     * @return IGFS path.
      */
     private IgfsPath path(long i) {
         //return path(String.format("/%d", i));

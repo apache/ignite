@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS input stream wrapper for hadoop interfaces.
+ * IGFS input stream wrapper for hadoop interfaces.
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public final class IgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,

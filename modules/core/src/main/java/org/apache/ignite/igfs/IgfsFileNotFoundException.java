@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 /**
- * {@code GGFS} exception indicating that target resource is not found.
+ * {@code IGFS} exception indicating that target resource is not found.
  */
 public class IgfsFileNotFoundException extends IgfsInvalidPathException {
     /** */

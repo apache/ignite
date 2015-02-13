@@ -20,7 +20,7 @@ package org.apache.ignite.internal.igfs.hadoop;
 import org.apache.ignite.*;
 
 /**
- * Communication exception indicating a problem between file system and GGFS instance.
+ * Communication exception indicating a problem between file system and IGFS instance.
  */
 public class IgfsHadoopCommunicationException extends IgniteCheckedException {
     /** */

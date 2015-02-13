@@ -39,7 +39,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Maximum number of blocks in buffer. */
     private static final int MAX_BLOCKS_CNT = 16;
 
-    /** GGFS context. */
+    /** IGFS context. */
     private IgfsContext ggfsCtx;
 
     /** Meta info manager. */
@@ -71,7 +71,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Write completion future. */
     private final IgniteInternalFuture<Boolean> writeCompletionFut;
 
-    /** GGFS mode. */
+    /** IGFS mode. */
     private final IgfsMode mode;
 
     /** File worker batch. */
@@ -80,7 +80,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Ensures that onClose)_ routine is called no more than once. */
     private final AtomicBoolean onCloseGuard = new AtomicBoolean();
 
-    /** Local GGFS metrics. */
+    /** Local IGFS metrics. */
     private final IgfsLocalMetrics metrics;
 
     /** Affinity written by this output stream. */
@@ -89,11 +89,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /**
      * Constructs file output stream.
      *
-     * @param ggfsCtx GGFS context.
+     * @param ggfsCtx IGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
      * @param bufSize The size of the buffer to be used.
-     * @param mode Grid GGFS mode.
+     * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
      * @param metrics Local GGFs metrics.
      * @throws IgniteCheckedException If stream creation failed.

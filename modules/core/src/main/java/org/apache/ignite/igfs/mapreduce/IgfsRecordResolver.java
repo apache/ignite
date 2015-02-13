@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS record resolver. When {@link IgfsTask} is split into {@link IgfsJob}s each produced job will obtain
+ * IGFS record resolver. When {@link IgfsTask} is split into {@link IgfsJob}s each produced job will obtain
  * {@link IgfsFileRange} based on file data location. Record resolver is invoked in each job before actual
  * execution in order to adjust record boundaries in a way consistent with user data.
  * <p>

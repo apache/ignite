@@ -20,7 +20,7 @@ package org.apache.ignite.internal.igfs.hadoop;
 import org.apache.ignite.*;
 
 /**
- * GGFS input stream event listener.
+ * IGFS input stream event listener.
  */
 public interface IgfsHadoopStreamEventListener {
     /**

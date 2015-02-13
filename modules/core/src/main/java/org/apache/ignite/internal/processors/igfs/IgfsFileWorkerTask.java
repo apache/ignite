@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 
 /**
- * Generic GGFS worker task which could potentially throw an exception.
+ * Generic IGFS worker task which could potentially throw an exception.
  */
 public interface IgfsFileWorkerTask {
     /**

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 
 /**
- * Format GGFS instance.
+ * Format IGFS instance.
  */
 @GridInternal
 public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
@@ -36,14 +36,14 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
     }
 
     /**
-     * Job that format GGFS.
+     * Job that format IGFS.
      */
     private static class VisorIgfsFormatJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg GGFS name to format.
+         * @param arg IGFS name to format.
          * @param debug Debug flag.
          */
         private VisorIgfsFormatJob(String arg, boolean debug) {

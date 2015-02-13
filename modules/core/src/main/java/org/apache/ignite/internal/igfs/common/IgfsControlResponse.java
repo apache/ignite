@@ -30,13 +30,13 @@ import java.util.*;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
 
 /**
- * GGFS path command response.
+ * IGFS path command response.
  */
 public class IgfsControlResponse extends IgfsMessage {
-    /** Generic error (not GGFS) while performing operations. */
+    /** Generic error (not IGFS) while performing operations. */
     private static final int ERR_GENERIC = 0;
 
-    /** Generic GGFS error while performing operations. */
+    /** Generic IGFS error while performing operations. */
     private static final int ERR_IGFS_GENERIC = 1;
 
     /** Target file not found. */

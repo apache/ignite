@@ -71,7 +71,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /** Mocked Grid. */
     private static final MockIgnite GRID = new MockIgnite();
 
-    /** Mocked GGFS. */
+    /** Mocked IGFS. */
     private static final IgniteFs IGFS = new MockIgfs();
 
     /** Planner. */
@@ -473,7 +473,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * Create split.
      *
-     * @param ggfs GGFS flag.
+     * @param ggfs IGFS flag.
      * @param file File.
      * @param start Start.
      * @param len Length.
@@ -506,7 +506,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * Map GGFS block to nodes.
+     * Map IGFS block to nodes.
      *
      * @param file File.
      * @param start Start.
@@ -656,7 +656,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * Mocked GGFS.
+     * Mocked IGFS.
      */
     private static class MockIgfs implements IgfsEx {
         /** {@inheritDoc} */

@@ -42,33 +42,33 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
-     * Gets all GGFS instances.
+     * Gets all IGFS instances.
      *
-     * @return Collection of GGFS instances.
+     * @return Collection of IGFS instances.
      */
     public abstract Collection<IgniteFs> igfss();
 
     /**
-     * Gets GGFS instance.
+     * Gets IGFS instance.
      *
-     * @param name (Nullable) GGFS name.
-     * @return GGFS instance.
+     * @param name (Nullable) IGFS name.
+     * @return IGFS instance.
      */
     @Nullable public abstract IgniteFs igfs(@Nullable String name);
 
     /**
-     * Gets server endpoints for particular GGFS.
+     * Gets server endpoints for particular IGFS.
      *
-     * @param name GGFS name.
-     * @return Collection of endpoints or {@code null} in case GGFS is not defined.
+     * @param name IGFS name.
+     * @return Collection of endpoints or {@code null} in case IGFS is not defined.
      */
     public abstract Collection<IpcServerEndpoint> endpoints(@Nullable String name);
 
     /**
-     * Create compute job for the given GGFS job.
+     * Create compute job for the given IGFS job.
      *
-     * @param job GGFS job.
-     * @param ggfsName GGFS name.
+     * @param job IGFS job.
+     * @param ggfsName IGFS name.
      * @param path Path.
      * @param start Start position.
      * @param length Length.

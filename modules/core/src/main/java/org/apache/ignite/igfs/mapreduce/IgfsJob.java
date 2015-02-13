@@ -44,7 +44,7 @@ public interface IgfsJob {
     /**
      * Executes this job.
      *
-     * @param igfs GGFS instance.
+     * @param igfs IGFS instance.
      * @param range File range aligned to record boundaries.
      * @param in Input stream for split file. This input stream is not aligned to range and points to file start
      *     by default.

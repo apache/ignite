@@ -67,7 +67,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Repeat count. */
     private static final int REPEAT_CNT = 10;
 
-    /** GGFS. */
+    /** IGFS. */
     private static IgniteFs ggfs;
 
     /** {@inheritDoc} */

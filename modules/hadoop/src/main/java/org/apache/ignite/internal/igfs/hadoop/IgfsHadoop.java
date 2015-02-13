@@ -46,7 +46,7 @@ public interface IgfsHadoop {
     public void close(boolean force);
 
     /**
-     * Command to retrieve file info for some GGFS path.
+     * Command to retrieve file info for some IGFS path.
      *
      * @param path Path to get file info for.
      * @return Future for info operation.
@@ -57,7 +57,7 @@ public interface IgfsHadoop {
     /**
      * Command to update file properties.
      *
-     * @param path GGFS path to update properties.
+     * @param path IGFS path to update properties.
      * @param props Properties to update.
      * @return Future for update operation.
      * @throws IgniteCheckedException If failed.

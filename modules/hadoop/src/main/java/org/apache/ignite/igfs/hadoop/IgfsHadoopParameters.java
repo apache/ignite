@@ -20,15 +20,15 @@ package org.apache.ignite.igfs.hadoop;
 /**
  * This class lists parameters that can be specified in Hadoop configuration.
  * Hadoop configuration can be specified in {@code core-site.xml} file
- * or passed to map-reduce task directly when using Hadoop driver for GGFS file system:
+ * or passed to map-reduce task directly when using Hadoop driver for IGFS file system:
  * <ul>
  *     <li>
  *         {@code fs.igfs.[name].open.sequential_reads_before_prefetch} - this parameter overrides
  *         the one specified in {@link org.apache.ignite.configuration.IgfsConfiguration#getSequentialReadsBeforePrefetch()}
- *         GGFS data node configuration property.
+ *         IGFS data node configuration property.
  *     </li>
  *     <li>
- *         {@code fs.igfs.[name].log.enabled} - specifies whether GGFS sampling logger is enabled. If
+ *         {@code fs.igfs.[name].log.enabled} - specifies whether IGFS sampling logger is enabled. If
  *         {@code true}, then all file system operations will be logged to a file.
  *     </li>
  *     <li>{@code fs.igfs.[name].log.dir} - specifies log directory where sampling log files should be placed.</li>
@@ -70,7 +70,7 @@ package org.apache.ignite.igfs.hadoop;
  * hadoop jar myjarfile.jar MyMapReduceJob -Dfs.igfs.open.sequential_reads_before_prefetch=4
  * </pre>
  * If you want to use these parameters in code, then you have to substitute you file system name in it. The easiest
- * way to do that is {@code String.format(PARAM_GGFS_COLOCATED_WRITES, [name])}.
+ * way to do that is {@code String.format(PARAM_IGFS_COLOCATED_WRITES, [name])}.
  */
 public class IgfsHadoopParameters {
     /** Parameter name for control over file colocation write mode. */

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.nio.*;
 
 /**
- * Base class for all GGFS communication messages sent between nodes.
+ * Base class for all IGFS communication messages sent between nodes.
  */
 public abstract class IgfsCommunicationMessage extends MessageAdapter {
     /** */

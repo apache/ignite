@@ -47,7 +47,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
     }
 
     /**
-     * @return {@code True} if GGFS is enabled on Hadoop nodes.
+     * @return {@code True} if IGFS is enabled on Hadoop nodes.
      */
     @Override protected boolean ggfsEnabled() {
         return true;

@@ -25,12 +25,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@code GGFS} configuration. More than one file system can be configured within grid.
- * {@code GGFS} configuration is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getIgfsConfiguration()}
+ * {@code IGFS} configuration. More than one file system can be configured within grid.
+ * {@code IGFS} configuration is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getIgfsConfiguration()}
  * method.
  * <p>
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}
- * configuration files under Ignite installation to see sample {@code GGFS} configuration.
+ * configuration files under Ignite installation to see sample {@code IGFS} configuration.
  */
 public class IgfsConfiguration {
     /** Default file system user name. */
@@ -57,7 +57,7 @@ public class IgfsConfiguration {
     /** Default batch size for logging. */
     public static final int DFLT_IGFS_LOG_BATCH_SIZE = 100;
 
-    /** Default {@code GGFS} log directory. */
+    /** Default {@code IGFS} log directory. */
     public static final String DFLT_IGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
@@ -66,7 +66,7 @@ public class IgfsConfiguration {
     /** Default number of per node parallel operations. */
     public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
 
-    /** Default GGFS mode. */
+    /** Default IGFS mode. */
     public static final IgfsMode DFLT_MODE = IgfsMode.DUAL_ASYNC;
 
     /** Default file's data block size (bytes). */
@@ -84,10 +84,10 @@ public class IgfsConfiguration {
     /** Default IPC endpoint enabled flag. */
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
-    /** GGFS instance name. */
+    /** IGFS instance name. */
     private String name;
 
-    /** Cache name to store GGFS meta information. */
+    /** Cache name to store IGFS meta information. */
     private String metaCacheName;
 
     /** Cache name to store file's data blocks. */
@@ -111,7 +111,7 @@ public class IgfsConfiguration {
     /** Per node parallel operations. */
     private int perNodeParallelBatchCnt = DFLT_PER_NODE_PARALLEL_BATCH_CNT;
 
-    /** IPC endpoint properties to publish GGFS over. */
+    /** IPC endpoint properties to publish IGFS over. */
     private Map<String, String> ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
@@ -123,7 +123,7 @@ public class IgfsConfiguration {
     /** Secondary file system */
     private Igfs secondaryFs;
 
-    /** GGFS mode. */
+    /** IGFS mode. */
     private IgfsMode dfltMode = DFLT_MODE;
 
     /** Fragmentizer throttling block length. */
@@ -209,56 +209,56 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets GGFS instance name. If {@code null}, then instance with default
+     * Gets IGFS instance name. If {@code null}, then instance with default
      * name will be used.
      *
-     * @return GGFS instance name.
+     * @return IGFS instance name.
      */
     @Nullable public String getName() {
         return name;
     }
 
     /**
-     * Sets GGFS instance name.
+     * Sets IGFS instance name.
      *
-     * @param name GGFS instance name.
+     * @param name IGFS instance name.
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     * Cache name to store GGFS meta information. If {@code null}, then instance
+     * Cache name to store IGFS meta information. If {@code null}, then instance
      * with default meta-cache name will be used.
      *
-     * @return Cache name to store GGFS meta information.
+     * @return Cache name to store IGFS meta information.
      */
     @Nullable public String getMetaCacheName() {
         return metaCacheName;
     }
 
     /**
-     * Sets cache name to store GGFS meta information.
+     * Sets cache name to store IGFS meta information.
      *
-     * @param metaCacheName Cache name to store GGFS meta information.
+     * @param metaCacheName Cache name to store IGFS meta information.
      */
     public void setMetaCacheName(String metaCacheName) {
         this.metaCacheName = metaCacheName;
     }
 
     /**
-     * Cache name to store GGFS data.
+     * Cache name to store IGFS data.
      *
-     * @return Cache name to store GGFS data.
+     * @return Cache name to store IGFS data.
      */
     @Nullable public String getDataCacheName() {
         return dataCacheName;
     }
 
     /**
-     * Sets cache name to store GGFS data.
+     * Sets cache name to store IGFS data.
      *
-     * @param dataCacheName Cache name to store GGFS data.
+     * @param dataCacheName Cache name to store IGFS data.
      */
     public void setDataCacheName(String dataCacheName) {
         this.dataCacheName = dataCacheName;
@@ -306,14 +306,14 @@ public class IgfsConfiguration {
 
     /**
      * Get amount of sequential block reads before prefetch is triggered. The
-     * higher this value, the longer GGFS will wait before starting to prefetch
+     * higher this value, the longer IGFS will wait before starting to prefetch
      * values ahead of time. Depending on the use case, this can either help
      * or hurt performance.
      * <p>
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
@@ -326,14 +326,14 @@ public class IgfsConfiguration {
 
     /**
      * Sets amount of sequential block reads before prefetch is triggered. The
-     * higher this value, the longer GGFS will wait before starting to prefetch
+     * higher this value, the longer IGFS will wait before starting to prefetch
      * values ahead of time. Depending on the use case, this can either help
      * or hurt performance.
      * <p>
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
@@ -347,7 +347,7 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Get read/write buffer size for {@code GGFS} stream operations in bytes.
+     * Get read/write buffer size for {@code IGFS} stream operations in bytes.
      *
      * @return Read/write buffers size (bytes).
      */
@@ -356,7 +356,7 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Sets read/write buffers size for {@code GGFS} stream operations (bytes).
+     * Sets read/write buffers size for {@code IGFS} stream operations (bytes).
      *
      * @param bufSize Read/write buffers size for stream operations (bytes) or {@code 0} to reset default value.
      */
@@ -428,7 +428,7 @@ public class IgfsConfiguration {
      * </ul>
      * <p>
      * Note that {@code shared-memory} approach is not supported on Windows environments.
-     * In case GGFS is failed to bind to particular port, further attempts will be performed every 3 seconds.
+     * In case IGFS is failed to bind to particular port, further attempts will be performed every 3 seconds.
      *
      * @return Map of IPC endpoint configuration properties. In case the value is not set, defaults will be used. Default
      * type for Windows is "tcp", for all other platforms - "shmem". Default port is {@link #DFLT_IPC_PORT}.
@@ -438,7 +438,7 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Sets IPC endpoint configuration to publish GGFS over.
+     * Sets IPC endpoint configuration to publish IGFS over.
      *
      * @param ipcEndpointCfg Map of IPC endpoint config properties.
      */
@@ -466,8 +466,8 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets port number for management endpoint. All GGFS nodes should have this port open
-     * for Visor Management Console to work with GGFS.
+     * Gets port number for management endpoint. All IGFS nodes should have this port open
+     * for Visor Management Console to work with IGFS.
      * <p>
      * Default value is {@link #DFLT_MGMT_PORT}
      *
@@ -487,25 +487,25 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets mode to specify how {@code GGFS} interacts with Hadoop file system, like {@code HDFS}.
+     * Gets mode to specify how {@code IGFS} interacts with Hadoop file system, like {@code HDFS}.
      * Secondary Hadoop file system is provided for pass-through, write-through, and read-through
      * purposes.
      * <p>
      * Default mode is {@link org.apache.ignite.igfs.IgfsMode#DUAL_ASYNC}. If secondary Hadoop file system is
      * not configured, this mode will work just like {@link org.apache.ignite.igfs.IgfsMode#PRIMARY} mode.
      *
-     * @return Mode to specify how GGFS interacts with secondary HDFS file system.
+     * @return Mode to specify how IGFS interacts with secondary HDFS file system.
      */
     public IgfsMode getDefaultMode() {
         return dfltMode;
     }
 
     /**
-     * Sets {@code GGFS} mode to specify how it should interact with secondary
+     * Sets {@code IGFS} mode to specify how it should interact with secondary
      * Hadoop file system, like {@code HDFS}. Secondary Hadoop file system is provided
      * for pass-through, write-through, and read-through purposes.
      *
-     * @param dfltMode {@code GGFS} mode.
+     * @param dfltMode {@code IGFS} mode.
      */
     public void setDefaultMode(IgfsMode dfltMode) {
         this.dfltMode = dfltMode;
@@ -532,7 +532,7 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets map of path prefixes to {@code GGFS} modes used for them.
+     * Gets map of path prefixes to {@code IGFS} modes used for them.
      * <p>
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
@@ -545,19 +545,19 @@ public class IgfsConfiguration {
      * <li>{@code /apache/ignite/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
      * <li>{@code /apache/ignite/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
      *
-     * @return Map of paths to {@code GGFS} modes.
+     * @return Map of paths to {@code IGFS} modes.
      */
     @Nullable public Map<String, IgfsMode> getPathModes() {
         return pathModes;
     }
 
     /**
-     * Sets map of path prefixes to {@code GGFS} modes used for them.
+     * Sets map of path prefixes to {@code IGFS} modes used for them.
      * <p>
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
      *
-     * @param pathModes Map of paths to {@code GGFS} modes.
+     * @param pathModes Map of paths to {@code IGFS} modes.
      */
     public void setPathModes(Map<String, IgfsMode> pathModes) {
         this.pathModes = pathModes;
@@ -618,10 +618,10 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets amount of local memory (in % of local GGFS max space size) available for local writes
+     * Gets amount of local memory (in % of local IGFS max space size) available for local writes
      * during file creation.
      * <p>
-     * If current GGFS space size is less than {@code fragmentizerLocalWritesRatio * maxSpaceSize},
+     * If current IGFS space size is less than {@code fragmentizerLocalWritesRatio * maxSpaceSize},
      * then file blocks will be written to the local node first and then asynchronously distributed
      * among cluster nodes (fragmentized).
      * <p>
@@ -644,7 +644,7 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Gets flag indicating whether GGFS fragmentizer is enabled. If fragmentizer is disabled, files will be
+     * Gets flag indicating whether IGFS fragmentizer is enabled. If fragmentizer is disabled, files will be
      * written in distributed fashion.
      *
      * @return Flag indicating whether fragmentizer is enabled.
@@ -700,7 +700,7 @@ public class IgfsConfiguration {
 
     /**
      * Get DUAL mode put operation executor service. This executor service will process cache PUT requests for
-     * data which came from the secondary file system and about to be written to GGFS data cache.
+     * data which came from the secondary file system and about to be written to IGFS data cache.
      * In case no executor service is provided, default one will be created with maximum amount of threads equals
      * to amount of processor cores.
      *
@@ -761,9 +761,9 @@ public class IgfsConfiguration {
     }
 
     /**
-     * Get maximum default range size of a file being split during GGFS task execution. When GGFS task is about to
+     * Get maximum default range size of a file being split during IGFS task execution. When IGFS task is about to
      * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.igfs.mapreduce.IgfsFileRange} which
-     * has length. In case this parameter is set to positive value, then GGFS will split single file range into smaller
+     * has length. In case this parameter is set to positive value, then IGFS will split single file range into smaller
      * ranges with length not greater that this parameter. The only exception to this case is when maximum task range
      * length is smaller than file block size. In this case maximum task range size will be overridden and set to file
      * block size.
@@ -773,7 +773,7 @@ public class IgfsConfiguration {
      * parameter depending on file data layout and selected resolver type.
      * <p>
      * Setting this parameter might be useful when file is highly colocated and have very long consequent data chunks
-     * so that task execution suffers from insufficient parallelism. E.g., in case you have one GGFS node in topology
+     * so that task execution suffers from insufficient parallelism. E.g., in case you have one IGFS node in topology
      * and want to process 1Gb file, then only single range of length 1Gb will be returned. This will result in
      * a single job which will be processed in one thread. But in case you provide this configuration parameter and set
      * maximum range length to 16Mb, then 64 ranges will be returned resulting in 64 jobs which could be executed in
@@ -784,17 +784,17 @@ public class IgfsConfiguration {
      * In case value of this parameter is set to {@code 0} or negative value, it is simply ignored. Default value is
      * {@code 0}.
      *
-     * @return Maximum range size of a file being split during GGFS task execution.
+     * @return Maximum range size of a file being split during IGFS task execution.
      */
     public long getMaximumTaskRangeLength() {
         return maxTaskRangeLen;
     }
 
     /**
-     * Set maximum default range size of a file being split during GGFS task execution.
+     * Set maximum default range size of a file being split during IGFS task execution.
      * See {@link #getMaximumTaskRangeLength()} for more details.
      *
-     * @param maxTaskRangeLen Set maximum default range size of a file being split during GGFS task execution.
+     * @param maxTaskRangeLen Set maximum default range size of a file being split during IGFS task execution.
      */
     public void setMaximumTaskRangeLength(long maxTaskRangeLen) {
         this.maxTaskRangeLen = maxTaskRangeLen;

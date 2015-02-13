@@ -31,7 +31,7 @@ import java.util.*;
  *     <li>write/read data streams into/from files</li>
  * </ul>
  *
- * This is the minimum of functionality that is needed to work as secondary file system in dual modes of GGFS.
+ * This is the minimum of functionality that is needed to work as secondary file system in dual modes of IGFS.
  */
 public interface Igfs {
     /** File property: user name. */

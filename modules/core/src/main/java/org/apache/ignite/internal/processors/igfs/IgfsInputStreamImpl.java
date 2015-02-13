@@ -101,13 +101,13 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
     /**
      * Constructs file output stream.
      *
-     * @param ggfsCtx GGFS context.
+     * @param ggfsCtx IGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
      * @param prefetchBlocks Number of blocks to prefetch.
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
      * @param secReader Optional secondary file system reader.
-     * @param metrics Local GGFS metrics.
+     * @param metrics Local IGFS metrics.
      */
     IgfsInputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
         int seqReadsBeforePrefetch, @Nullable IgfsReader secReader, IgfsLocalMetrics metrics) {

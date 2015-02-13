@@ -22,10 +22,10 @@ import org.apache.ignite.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Abstract class for GGFS managers.
+ * Abstract class for IGFS managers.
  */
 public abstract class IgfsManager {
-    /** GGFS context. */
+    /** IGFS context. */
     protected IgfsContext igfsCtx;
 
     /** Logger. */
@@ -35,9 +35,9 @@ public abstract class IgfsManager {
     private AtomicBoolean starting = new AtomicBoolean();
 
     /**
-     * Called when GGFS processor is started.
+     * Called when IGFS processor is started.
      *
-     * @param ggfsCtx GGFS context.
+     * @param ggfsCtx IGFS context.
      */
     public void start(IgfsContext ggfsCtx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))

@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception thrown by file system components.
+ * {@code IGFS} exception thrown by file system components.
  */
 public class IgfsException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates an instance of GGFS exception with descriptive error message.
+     * Creates an instance of IGFS exception with descriptive error message.
      *
      * @param msg Error message.
      */
@@ -37,7 +37,7 @@ public class IgfsException extends IgniteException {
     }
 
     /**
-     * Creates an instance of GGFS exception caused by nested exception.
+     * Creates an instance of IGFS exception caused by nested exception.
      *
      * @param cause Exception cause.
      */
@@ -46,7 +46,7 @@ public class IgfsException extends IgniteException {
     }
 
     /**
-     * Creates an instance of GGFS exception with error message and underlying cause.
+     * Creates an instance of IGFS exception with error message and underlying cause.
      *
      * @param msg Error message.
      * @param cause Exception cause.

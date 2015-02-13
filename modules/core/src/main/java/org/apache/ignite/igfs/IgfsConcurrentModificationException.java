@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 /**
- * {@code GGFS} exception indicating that file system structure was modified concurrently. This error
+ * {@code IGFS} exception indicating that file system structure was modified concurrently. This error
  * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
  */
 public class IgfsConcurrentModificationException extends IgfsException {

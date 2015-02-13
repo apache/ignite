@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 /**
- * Various global constants for GGFS profiler.
+ * Various global constants for IGFS profiler.
  */
 public class VisorIgfsProfiler {
     /** Default file block size to calculate uniformity. */
@@ -33,7 +33,7 @@ public class VisorIgfsProfiler {
     public static final int UNIFORMITY_BLOCKS = 100;
 
     /**
-     * Aggregate GGFS profiler entries.
+     * Aggregate IGFS profiler entries.
      *
      * @param entries Entries to sum.
      * @return Single aggregated entry.

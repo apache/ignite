@@ -66,7 +66,7 @@ public class IgfsMapReduceExample {
                 // Working directory path.
                 IgfsPath workDir = new IgfsPath("/examples/fs");
 
-                // Write file to GGFS.
+                // Write file to IGFS.
                 IgfsPath fsPath = new IgfsPath(workDir, file.getName());
 
                 writeFile(fs, fsPath, file);
