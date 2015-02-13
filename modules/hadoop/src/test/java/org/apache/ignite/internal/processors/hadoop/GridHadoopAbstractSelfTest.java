@@ -22,6 +22,9 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -34,6 +37,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  * Abstract class for Hadoop tests.
  */
 public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** REST port. */
     protected static final int REST_PORT = 11212;
 
@@ -92,6 +98,10 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
+
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+        discoSpi.setIpFinder(IP_FINDER);
 
         if (ggfsEnabled()) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());

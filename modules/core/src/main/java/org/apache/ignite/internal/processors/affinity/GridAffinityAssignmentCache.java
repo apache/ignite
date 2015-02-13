@@ -74,6 +74,9 @@ public class GridAffinityAssignmentCache {
     /** Log. */
     private IgniteLogger log;
 
+    /** Node stop flag. */
+    private volatile boolean stopping;
+
     /**
      * Constructs affinity cached calculations.
      *
@@ -81,10 +84,15 @@ public class GridAffinityAssignmentCache {
      * @param cacheName Cache name.
      * @param aff Affinity function.
      * @param affMapper Affinity key mapper.
+     * @param backups Number of backups.
      */
     @SuppressWarnings("unchecked")
-    public GridAffinityAssignmentCache(GridCacheContext ctx, String cacheName, CacheAffinityFunction aff,
-        CacheAffinityKeyMapper affMapper, int backups) {
+    public GridAffinityAssignmentCache(GridCacheContext ctx,
+        String cacheName,
+        CacheAffinityFunction aff,
+        CacheAffinityKeyMapper affMapper,
+        int backups)
+    {
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;
@@ -118,10 +126,24 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * Kernal stop callback.
+     */
+    public void onKernalStop() {
+        stopping = true;
+
+        IgniteCheckedException err =
+            new IgniteCheckedException("Failed to wait for topology update, node is stopping.");
+
+        for (AffinityReadyFuture fut : readyFuts.values())
+            fut.onDone(err);
+    }
+
+    /**
      * Calculates affinity cache for given topology version.
      *
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
+     * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
     public List<List<ClusterNode>> calculate(long topVer, DiscoveryEvent discoEvt) {
@@ -229,7 +251,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to await for.
      * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
      */
-    public IgniteInternalFuture<Long> readyFuture(long topVer) {
+    @Nullable public IgniteInternalFuture<Long> readyFuture(long topVer) {
         GridAffinityAssignment aff = head.get();
 
         if (aff.topologyVersion() >= topVer) {
@@ -252,6 +274,8 @@ public class GridAffinityAssignmentCache {
 
             fut.onDone(topVer);
         }
+        else if (stopping)
+            fut.onDone(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
         return fut;
     }
