@@ -42,21 +42,21 @@ public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemExternalPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemExternalSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemExternalDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemExternalDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemEmbeddedPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemEmbeddedSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemEmbeddedDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemEmbeddedPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemEmbeddedSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemEmbeddedDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemIpcCacheSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemIpcCacheSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoop20FileSystemShmemPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoop20FileSystemShmemPrimarySelfTest.class.getName())));
 
-        suite.addTest(IgniteFsEventsTestSuite.suite());
+        suite.addTest(IgfsEventsTestSuite.suite());
 
         return suite;
     }
