@@ -770,34 +770,6 @@ public interface EventType {
     public static final int EVT_GGFS_FILE_PURGED = 127;
 
     /**
-     * Built-in event type: authorization succeed.
-     * <p>
-     * Authorization procedure succeed. This event is triggered every time
-     * an authorization procedure finished without exception.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthorizationEvent
-     */
-    public static final int EVT_AUTHORIZATION_SUCCEEDED = 128;
-
-    /**
-     * Built-in event type: authorization failed.
-     * <p>
-     * Authorization procedure failed. This means that  there was some error event
-     * during authorization procedure and authorization procedure was not successful.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthorizationEvent
-     */
-    public static final int EVT_AUTHORIZATION_FAILED = 129;
-
-
-
-    /**
      * All checkpoint events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -975,18 +947,6 @@ public interface EventType {
         EVT_SWAP_SPACE_DATA_READ,
         EVT_SWAP_SPACE_DATA_STORED,
         EVT_SWAP_SPACE_DATA_EVICTED
-    };
-
-    /**
-     * All authorization events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see AuthorizationEvent
-     */
-    public static final int[] EVTS_AUTHORIZATION = {
-        EVT_AUTHORIZATION_SUCCEEDED,
-        EVT_AUTHORIZATION_FAILED
     };
 
     /**
