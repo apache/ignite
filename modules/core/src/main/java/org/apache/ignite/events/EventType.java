@@ -36,7 +36,6 @@ import java.util.*;
  * <li>{@link #EVTS_DISCOVERY_ALL}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
- * <li>{@link #EVTS_LICENSE}</li>
  * <li>{@link #EVTS_CACHE}</li>
  * <li>{@link #EVTS_CACHE_PRELOAD}</li>
  * <li>{@link #EVTS_CACHE_QUERY}</li>
@@ -621,36 +620,6 @@ public interface EventType {
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
     /**
-     * Built-in event type: license violation detected.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_VIOLATION = 108;
-
-    /**
-     * Built-in event type: license violation cleared.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_CLEARED = 109;
-
-    /**
-     * Built-in event type: license violation grace period is expired.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_GRACE_EXPIRED = 110;
-
-    /**
      * Built-in event type: authentication succeed.
      * <p>
      * Authentication procedure succeed. This event is triggered every time
@@ -880,18 +849,7 @@ public interface EventType {
      */
     public static final int EVT_AUTHORIZATION_FAILED = 129;
 
-    /**
-     * All license events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all license events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int[] EVTS_LICENSE = {
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED
-    };
+
 
     /**
      * All checkpoint events. This array can be directly passed into
@@ -938,9 +896,6 @@ public interface EventType {
         EVT_TASK_DEPLOY_FAILED,
         EVT_TASK_DEPLOYED,
         EVT_TASK_UNDEPLOYED,
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED,
         EVT_CACHE_PRELOAD_STARTED,
         EVT_CACHE_PRELOAD_STOPPED
     };

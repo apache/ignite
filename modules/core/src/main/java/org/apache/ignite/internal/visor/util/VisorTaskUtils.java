@@ -87,10 +87,6 @@ public class VisorTaskUtils {
         EVT_CLASS_DEPLOY_FAILED,
         EVT_TASK_DEPLOY_FAILED,
 
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED,
-
         EVT_AUTHORIZATION_FAILED,
         EVT_AUTHENTICATION_FAILED,
 
@@ -422,11 +418,6 @@ public class VisorTaskUtils {
                 DeploymentEvent de = (DeploymentEvent)e;
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
-            }
-            else if (e instanceof LicenseEvent) {
-                LicenseEvent le = (LicenseEvent)e;
-
-                res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
             }
             else if (e instanceof AuthorizationEvent) {
                 AuthorizationEvent ae = (AuthorizationEvent)e;
