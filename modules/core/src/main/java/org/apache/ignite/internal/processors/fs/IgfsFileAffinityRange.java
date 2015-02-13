@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Affinity range.
  */
-public class GridGgfsFileAffinityRange extends MessageAdapter implements Externalizable {
+public class IgfsFileAffinityRange extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,7 +62,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsFileAffinityRange() {
+    public IgfsFileAffinityRange() {
         // No-op.
     }
 
@@ -71,7 +71,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
      * @param endOff End offset.
      * @param affKey Affinity key.
      */
-    GridGgfsFileAffinityRange(long startOff, long endOff, IgniteUuid affKey) {
+    IgfsFileAffinityRange(long startOff, long endOff, IgniteUuid affKey) {
         this.startOff = startOff;
         this.endOff = endOff;
         this.affKey = affKey;
@@ -83,7 +83,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
      * @param other Initial range.
      * @param status Updated status.
      */
-    GridGgfsFileAffinityRange(GridGgfsFileAffinityRange other, int status) {
+    IgfsFileAffinityRange(IgfsFileAffinityRange other, int status) {
         startOff = other.startOff;
         endOff = other.endOff;
         affKey = other.affKey;
@@ -177,20 +177,20 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
      * @param maxSize Split part maximum size.
      * @return Collection of range parts.
      */
-    public Collection<GridGgfsFileAffinityRange> split(long maxSize) {
+    public Collection<IgfsFileAffinityRange> split(long maxSize) {
         long len = endOff - startOff + 1;
 
         if (len > maxSize) {
             int size = (int)(len / maxSize + 1);
 
-            Collection<GridGgfsFileAffinityRange> res = new ArrayList<>(size);
+            Collection<IgfsFileAffinityRange> res = new ArrayList<>(size);
 
             long pos = startOff;
 
             while (pos < endOff + 1) {
                 long end = Math.min(pos + maxSize - 1, endOff);
 
-                GridGgfsFileAffinityRange part = new GridGgfsFileAffinityRange(pos, end, affKey);
+                IgfsFileAffinityRange part = new IgfsFileAffinityRange(pos, end, affKey);
 
                 part.status = status;
 
@@ -211,11 +211,11 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
      * @param range Range to concatenate with.
      * @return Concatenation result or {@code null} if ranges are not adjacent.
      */
-    @Nullable public GridGgfsFileAffinityRange concat(GridGgfsFileAffinityRange range) {
+    @Nullable public IgfsFileAffinityRange concat(IgfsFileAffinityRange range) {
         if (endOff + 1 != range.startOff || !F.eq(affKey, range.affKey) || status != RANGE_STATUS_INITIAL)
             return null;
 
-        return new GridGgfsFileAffinityRange(startOff, range.endOff, affKey);
+        return new IgfsFileAffinityRange(startOff, range.endOff, affKey);
     }
 
     /**
@@ -238,7 +238,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
      * @param other Other range to check against.
      * @return {@code True} if range regions are equal.
      */
-    public boolean regionEqual(GridGgfsFileAffinityRange other) {
+    public boolean regionEqual(IgfsFileAffinityRange other) {
         return startOff == other.startOff && endOff == other.endOff;
     }
 
@@ -265,7 +265,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsFileAffinityRange _clone = new GridGgfsFileAffinityRange();
+        IgfsFileAffinityRange _clone = new IgfsFileAffinityRange();
 
         clone0(_clone);
 
@@ -274,7 +274,7 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
 
     /** {@inheritDoc} */
     @Override protected void clone0(MessageAdapter _msg) {
-        GridGgfsFileAffinityRange _clone = (GridGgfsFileAffinityRange)_msg;
+        IgfsFileAffinityRange _clone = (IgfsFileAffinityRange)_msg;
 
         _clone.affKey = affKey;
         _clone.status = status;
@@ -389,6 +389,6 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFileAffinityRange.class, this);
+        return S.toString(IgfsFileAffinityRange.class, this);
     }
 }

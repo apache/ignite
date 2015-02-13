@@ -27,23 +27,23 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileAffinityRange.*;
 
 /**
  * Auxiliary class that is responsible for managing file affinity keys allocation by ranges.
  */
-public class GridGgfsFileMap implements Externalizable {
+public class IgfsFileMap implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     @GridToStringInclude
     /** Sorted list of ranges in ascending order. */
-    private List<GridGgfsFileAffinityRange> ranges;
+    private List<IgfsFileAffinityRange> ranges;
 
     /**
      * Empty constructor.
      */
-    public GridGgfsFileMap() {
+    public IgfsFileMap() {
         // No-op.
     }
 
@@ -52,7 +52,7 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @param old Old map.
      */
-    public GridGgfsFileMap(@Nullable GridGgfsFileMap old) {
+    public IgfsFileMap(@Nullable IgfsFileMap old) {
         if (old != null && old.ranges != null) {
             ranges = new ArrayList<>(old.ranges.size());
 
@@ -77,8 +77,8 @@ public class GridGgfsFileMap implements Externalizable {
         // Range binary search.
         int leftIdx = 0, rightIdx = ranges.size() - 1;
 
-        GridGgfsFileAffinityRange leftRange = ranges.get(leftIdx);
-        GridGgfsFileAffinityRange rightRange = ranges.get(rightIdx);
+        IgfsFileAffinityRange leftRange = ranges.get(leftIdx);
+        IgfsFileAffinityRange rightRange = ranges.get(rightIdx);
 
         // If block offset is less than start of first range, we don't have affinity key.
         if (leftRange.less(blockOff))
@@ -98,7 +98,7 @@ public class GridGgfsFileMap implements Externalizable {
         while (rightIdx - leftIdx > 1) {
             int midIdx = (leftIdx + rightIdx) / 2;
 
-            GridGgfsFileAffinityRange midRange = ranges.get(midIdx);
+            IgfsFileAffinityRange midRange = ranges.get(midIdx);
 
             if (midRange.belongs(blockOff))
                 return midRange.status() != RANGE_STATUS_MOVED ? midRange.affinityKey() :
@@ -126,9 +126,9 @@ public class GridGgfsFileMap implements Externalizable {
      * @param status New range status.
      * @throws IgniteCheckedException If range was not found.
      */
-    public void updateRangeStatus(GridGgfsFileAffinityRange range, int status) throws IgniteCheckedException {
+    public void updateRangeStatus(IgfsFileAffinityRange range, int status) throws IgniteCheckedException {
         if (ranges == null)
-            throw new GridGgfsInvalidRangeException("Failed to update range status (file map is empty) " +
+            throw new IgfsInvalidRangeException("Failed to update range status (file map is empty) " +
                 "[range=" + range + ", ranges=" + ranges + ']');
 
         assert !ranges.isEmpty();
@@ -136,7 +136,7 @@ public class GridGgfsFileMap implements Externalizable {
         // Check last.
         int lastIdx = ranges.size() - 1;
 
-        GridGgfsFileAffinityRange last = ranges.get(lastIdx);
+        IgfsFileAffinityRange last = ranges.get(lastIdx);
 
         if (last.startOffset() == range.startOffset()) {
             updateRangeStatus0(lastIdx, last, range, status);
@@ -147,7 +147,7 @@ public class GridGgfsFileMap implements Externalizable {
         // Check first.
         int firstIdx = 0;
 
-        GridGgfsFileAffinityRange first = ranges.get(firstIdx);
+        IgfsFileAffinityRange first = ranges.get(firstIdx);
 
         if (first.startOffset() == range.startOffset()) {
             updateRangeStatus0(firstIdx, first, range, status);
@@ -159,7 +159,7 @@ public class GridGgfsFileMap implements Externalizable {
         while (lastIdx - firstIdx > 1) {
             int midIdx = (firstIdx + lastIdx) / 2;
 
-            GridGgfsFileAffinityRange midRange = ranges.get(midIdx);
+            IgfsFileAffinityRange midRange = ranges.get(midIdx);
 
             if (midRange.startOffset() == range.startOffset()) {
                 updateRangeStatus0(midIdx, midRange, range, status);
@@ -177,7 +177,7 @@ public class GridGgfsFileMap implements Externalizable {
             }
         }
 
-        throw new GridGgfsInvalidRangeException("Failed to update map for range (corresponding map range " +
+        throw new IgfsInvalidRangeException("Failed to update map for range (corresponding map range " +
             "was not found) [range=" + range + ", status=" + status + ", ranges=" + ranges + ']');
     }
 
@@ -186,9 +186,9 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @param range Range to delete.
      */
-    public void deleteRange(GridGgfsFileAffinityRange range) throws IgniteCheckedException {
+    public void deleteRange(IgfsFileAffinityRange range) throws IgniteCheckedException {
         if (ranges == null)
-            throw new GridGgfsInvalidRangeException("Failed to remove range (file map is empty) " +
+            throw new IgfsInvalidRangeException("Failed to remove range (file map is empty) " +
                 "[range=" + range + ", ranges=" + ranges + ']');
 
         assert !ranges.isEmpty();
@@ -197,7 +197,7 @@ public class GridGgfsFileMap implements Externalizable {
             // Check last.
             int lastIdx = ranges.size() - 1;
 
-            GridGgfsFileAffinityRange last = ranges.get(lastIdx);
+            IgfsFileAffinityRange last = ranges.get(lastIdx);
 
             if (last.regionEqual(range)) {
                 assert last.status() == RANGE_STATUS_MOVED;
@@ -210,7 +210,7 @@ public class GridGgfsFileMap implements Externalizable {
             // Check first.
             int firstIdx = 0;
 
-            GridGgfsFileAffinityRange first = ranges.get(firstIdx);
+            IgfsFileAffinityRange first = ranges.get(firstIdx);
 
             if (first.regionEqual(range)) {
                 assert first.status() == RANGE_STATUS_MOVED;
@@ -224,7 +224,7 @@ public class GridGgfsFileMap implements Externalizable {
             while (lastIdx - firstIdx > 1) {
                 int midIdx = (firstIdx + lastIdx) / 2;
 
-                GridGgfsFileAffinityRange midRange = ranges.get(midIdx);
+                IgfsFileAffinityRange midRange = ranges.get(midIdx);
 
                 if (midRange.regionEqual(range)) {
                     assert midRange.status() == RANGE_STATUS_MOVED;
@@ -249,7 +249,7 @@ public class GridGgfsFileMap implements Externalizable {
                 ranges = null;
         }
 
-        throw new GridGgfsInvalidRangeException("Failed to remove range from file map (corresponding map range " +
+        throw new IgfsInvalidRangeException("Failed to remove range from file map (corresponding map range " +
             "was not found) [range=" + range + ", ranges=" + ranges + ']');
     }
 
@@ -261,19 +261,19 @@ public class GridGgfsFileMap implements Externalizable {
      * @param update Range being updated.
      * @param status New status for range.
      */
-    private void updateRangeStatus0(int origIdx, GridGgfsFileAffinityRange orig, GridGgfsFileAffinityRange update,
+    private void updateRangeStatus0(int origIdx, IgfsFileAffinityRange orig, IgfsFileAffinityRange update,
         int status) {
         assert F.eq(orig.affinityKey(), update.affinityKey());
         assert ranges.get(origIdx) == orig;
 
         if (orig.regionEqual(update))
-            ranges.set(origIdx, new GridGgfsFileAffinityRange(update, status));
+            ranges.set(origIdx, new IgfsFileAffinityRange(update, status));
         else {
             // If range was expanded, new one should be larger.
             assert orig.endOffset() > update.endOffset();
 
-            ranges.set(origIdx, new GridGgfsFileAffinityRange(update, status));
-            ranges.add(origIdx + 1, new GridGgfsFileAffinityRange(update.endOffset() + 1, orig.endOffset(),
+            ranges.set(origIdx, new IgfsFileAffinityRange(update, status));
+            ranges.add(origIdx + 1, new IgfsFileAffinityRange(update.endOffset() + 1, orig.endOffset(),
                 orig.affinityKey()));
         }
     }
@@ -283,7 +283,7 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @return Unmodifiable list of ranges.
      */
-    public List<GridGgfsFileAffinityRange> ranges() {
+    public List<IgfsFileAffinityRange> ranges() {
         if (ranges == null)
             return Collections.emptyList();
 
@@ -297,7 +297,7 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @param range Range to add.
      */
-    public void addRange(GridGgfsFileAffinityRange range) {
+    public void addRange(IgfsFileAffinityRange range) {
         if (range == null || range.empty())
             return;
 
@@ -312,14 +312,14 @@ public class GridGgfsFileMap implements Externalizable {
 
         assert !ranges.isEmpty();
 
-        GridGgfsFileAffinityRange last = ranges.get(ranges.size() - 1);
+        IgfsFileAffinityRange last = ranges.get(ranges.size() - 1);
 
         // Ensure that range being added is located to the right of last range in list.
         assert last.greater(range.startOffset()) : "Cannot add range to middle of map [last=" + last +
             ", range=" + range + ']';
 
         // Try to concat last and new range.
-        GridGgfsFileAffinityRange concat = last.concat(range);
+        IgfsFileAffinityRange concat = last.concat(range);
 
         // Simply add range to the end of the list if they are not adjacent.
         if (concat == null)
@@ -337,7 +337,7 @@ public class GridGgfsFileMap implements Externalizable {
 
             out.writeInt(ranges.size());
 
-            for (GridGgfsFileAffinityRange range : ranges)
+            for (IgfsFileAffinityRange range : ranges)
                 out.writeObject(range);
         }
     }
@@ -350,12 +350,12 @@ public class GridGgfsFileMap implements Externalizable {
             ranges = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                ranges.add((GridGgfsFileAffinityRange)in.readObject());
+                ranges.add((IgfsFileAffinityRange)in.readObject());
         }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFileMap.class, this);
+        return S.toString(IgfsFileMap.class, this);
     }
 }

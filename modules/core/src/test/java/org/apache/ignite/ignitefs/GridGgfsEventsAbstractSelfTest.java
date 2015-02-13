@@ -44,7 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
  */
 public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractTest {
     /** GGFS. */
-    private static GridGgfsImpl ggfs;
+    private static IgfsImpl ggfs;
 
     /** Event listener. */
     private IgnitePredicate<Event> lsnr;
@@ -158,7 +158,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite ignite = startGrid(1);
 
-        ggfs = (GridGgfsImpl) ignite.fileSystems().iterator().next();
+        ggfs = (IgfsImpl) ignite.fileSystems().iterator().next();
     }
 
     /** {@inheritDoc} */

@@ -223,7 +223,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
      * @throws Exception If failed.
      */
     public void testDeleteFragmentizing() throws Exception {
-        GridGgfsImpl ggfs = (GridGgfsImpl)grid(0).fileSystem("ggfs");
+        IgfsImpl ggfs = (IgfsImpl)grid(0).fileSystem("ggfs");
 
         for (int i = 0; i < 30; i++) {
             IgniteFsPath path = new IgniteFsPath("/someFile" + i);

@@ -36,7 +36,7 @@ public interface GridGgfsHadoop {
      * @return Future with handshake result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException, IOException;
+    public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException, IOException;
 
     /**
      * Close connection.

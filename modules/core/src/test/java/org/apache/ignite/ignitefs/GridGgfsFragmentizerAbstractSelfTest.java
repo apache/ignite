@@ -126,16 +126,16 @@ public class GridGgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest
      * @throws Exception If failed.
      */
     protected void awaitFileFragmenting(int gridIdx, IgniteFsPath path) throws Exception {
-        GridGgfsEx ggfs = (GridGgfsEx)grid(gridIdx).fileSystem("ggfs");
+        IgfsEx ggfs = (IgfsEx)grid(gridIdx).fileSystem("ggfs");
 
-        GridGgfsMetaManager meta = ggfs.context().meta();
+        IgfsMetaManager meta = ggfs.context().meta();
 
         IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
             throw new IgniteFsFileNotFoundException("File not found: " + path);
 
-        GridGgfsFileInfo fileInfo = meta.info(fileId);
+        IgfsFileInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)

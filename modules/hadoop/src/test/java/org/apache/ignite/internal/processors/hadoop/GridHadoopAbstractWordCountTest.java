@@ -37,7 +37,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     protected static final String PATH_OUTPUT = "/output";
 
     /** GGFS instance. */
-    protected GridGgfsEx ggfs;
+    protected IgfsEx ggfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -53,7 +53,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (GridGgfsEx)startGrids(gridCount()).fileSystem(ggfsName);
+        ggfs = (IgfsEx)startGrids(gridCount()).fileSystem(ggfsName);
     }
 
     /** {@inheritDoc} */

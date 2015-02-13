@@ -122,7 +122,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
         else if (e instanceof ParentNotDirectoryException)
             return new IgniteFsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
-            return new GridGgfsDirectoryNotEmptyException(e);
+            return new IgfsDirectoryNotEmptyException(e);
         else if (e instanceof PathExistsException)
             return new IgniteFsPathAlreadyExistsException(msg, e);
         else
@@ -253,8 +253,8 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
             Collection<IgniteFsFile> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses) {
-                GridGgfsFileInfo fsInfo = status.isDirectory() ? new GridGgfsFileInfo(true, properties(status)) :
-                    new GridGgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
+                IgfsFileInfo fsInfo = status.isDirectory() ? new IgfsFileInfo(true, properties(status)) :
+                    new IgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
                     properties(status));
 
                 res.add(new IgfsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));

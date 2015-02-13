@@ -42,10 +42,10 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private IgniteEx grid;
 
     /** Primary GGFS. */
-    private GridGgfsImpl ggfs;
+    private IgfsImpl ggfs;
 
     /** Secondary GGFS. */
-    private GridGgfsImpl ggfsSecondary;
+    private IgfsImpl ggfsSecondary;
 
     /** Default GGFS mode. */
     private IgniteFsMode mode;
@@ -135,7 +135,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         grid = (IgniteEx)G.start(cfg);
 
-        ggfs = (GridGgfsImpl)grid.fileSystem("ggfs");
+        ggfs = (IgfsImpl)grid.fileSystem("ggfs");
     }
 
     /**
@@ -190,7 +190,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-        ggfsSecondary = (GridGgfsImpl)G.start(cfg).fileSystem("ggfs-secondary");
+        ggfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("ggfs-secondary");
     }
 
     /**

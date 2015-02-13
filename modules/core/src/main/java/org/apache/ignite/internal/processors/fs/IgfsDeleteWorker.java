@@ -34,7 +34,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileInfo.*;
 
 /**
  * GGFS worker for removal from the trash directory.
@@ -47,13 +47,13 @@ public class IgfsDeleteWorker extends IgfsThread {
     private static final int MAX_DELETE_BATCH = 100;
 
     /** GGFS context. */
-    private final GridGgfsContext ggfsCtx;
+    private final IgfsContext ggfsCtx;
 
     /** Metadata manager. */
-    private final GridGgfsMetaManager meta;
+    private final IgfsMetaManager meta;
 
     /** Data manager. */
-    private final GridGgfsDataManager data;
+    private final IgfsDataManager data;
 
     /** Event manager. */
     private final GridEventStorageManager evts;
@@ -81,7 +81,7 @@ public class IgfsDeleteWorker extends IgfsThread {
      *
      * @param ggfsCtx GGFS context.
      */
-    IgfsDeleteWorker(GridGgfsContext ggfsCtx) {
+    IgfsDeleteWorker(IgfsContext ggfsCtx) {
         super("ggfs-delete-worker%" + ggfsCtx.ggfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
 
         this.ggfsCtx = ggfsCtx;
@@ -150,7 +150,7 @@ public class IgfsDeleteWorker extends IgfsThread {
      * Perform cleanup of the trash directory.
      */
     private void delete() {
-        GridGgfsFileInfo info = null;
+        IgfsFileInfo info = null;
 
         try {
             info = meta.info(TRASH_ID);
@@ -160,7 +160,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         }
 
         if (info != null) {
-            for (Map.Entry<String, GridGgfsListingEntry> entry : info.listing().entrySet()) {
+            for (Map.Entry<String, IgfsListingEntry> entry : info.listing().entrySet()) {
                 IgniteUuid fileId = entry.getValue().fileId();
 
                 if (log.isDebugEnabled())
@@ -204,7 +204,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         assert id != null;
 
         while (true) {
-            GridGgfsFileInfo info = meta.info(id);
+            IgfsFileInfo info = meta.info(id);
 
             if (info != null) {
                 if (info.isDirectory()) {
@@ -250,17 +250,17 @@ public class IgfsDeleteWorker extends IgfsThread {
         assert id != null;
 
         while (true) {
-            GridGgfsFileInfo info = meta.info(id);
+            IgfsFileInfo info = meta.info(id);
 
             if (info != null) {
                 assert info.isDirectory();
 
-                Map<String, GridGgfsListingEntry> listing = info.listing();
+                Map<String, IgfsListingEntry> listing = info.listing();
 
                 if (listing.isEmpty())
                     return; // Directory is empty.
 
-                Map<String, GridGgfsListingEntry> delListing;
+                Map<String, IgfsListingEntry> delListing;
 
                 if (listing.size() <= MAX_DELETE_BATCH)
                     delListing = listing;
@@ -269,7 +269,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     int i = 0;
 
-                    for (Map.Entry<String, GridGgfsListingEntry> entry : listing.entrySet()) {
+                    for (Map.Entry<String, IgfsListingEntry> entry : listing.entrySet()) {
                         delListing.put(entry.getKey(), entry.getValue());
 
                         if (++i == MAX_DELETE_BATCH)
@@ -280,12 +280,12 @@ public class IgfsDeleteWorker extends IgfsThread {
                 GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>(ggfsCtx.kernalContext());
 
                 // Delegate to child folders.
-                for (GridGgfsListingEntry entry : delListing.values()) {
+                for (IgfsListingEntry entry : delListing.values()) {
                     if (!cancelled) {
                         if (entry.isDirectory())
                             deleteDirectory(id, entry.fileId());
                         else {
-                            GridGgfsFileInfo fileInfo = meta.info(entry.fileId());
+                            IgfsFileInfo fileInfo = meta.info(entry.fileId());
 
                             if (fileInfo != null) {
                                 assert fileInfo.isFile();

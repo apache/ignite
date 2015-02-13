@@ -32,14 +32,14 @@ import java.util.*;
 /**
  * Ggfs supporting asynchronous operations.
  */
-public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements GridGgfsEx {
+public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements IgfsEx {
     /** */
-    private final GridGgfsImpl ggfs;
+    private final IgfsImpl ggfs;
 
     /**
      * @param ggfs Ggfs.
      */
-    public GridGgfsAsyncImpl(GridGgfsImpl ggfs) {
+    public IgfsAsyncImpl(IgfsImpl ggfs) {
         super(true);
 
         this.ggfs = ggfs;
@@ -106,7 +106,7 @@ public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsContext context() {
+    @Override public IgfsContext context() {
         return ggfs.context();
     }
 
@@ -116,18 +116,18 @@ public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize,
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
         return ggfs.open(path, bufSize, seqReadsBeforePrefetch);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) {
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) {
         return ggfs.open(path);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
         return ggfs.open(path, bufSize);
     }
 
@@ -147,7 +147,7 @@ public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsLocalMetrics localMetrics() {
+    @Override public IgfsLocalMetrics localMetrics() {
         return ggfs.localMetrics();
     }
 

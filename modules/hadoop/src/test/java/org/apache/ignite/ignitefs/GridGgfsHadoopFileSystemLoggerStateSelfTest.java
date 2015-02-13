@@ -45,7 +45,7 @@ import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
  */
 public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractTest {
     /** GGFS. */
-    private GridGgfsEx ggfs;
+    private IgfsEx ggfs;
 
     /** File system. */
     private FileSystem fs;
@@ -123,7 +123,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstr
 
         Ignite g = G.start(cfg);
 
-        ggfs = (GridGgfsEx)g.fileSystem("ggfs");
+        ggfs = (IgfsEx)g.fileSystem("ggfs");
 
         ggfs.globalSampling(sampling);
 

@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
     /** GGFS instance. */
-    private GridGgfsEx ggfs;
+    private IgfsEx ggfs;
 
     /** */
     private static final String ggfsName = "ggfs";
@@ -193,7 +193,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (GridGgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(ggfsName);
+        ggfs = (IgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(ggfsName);
     }
 
     /** {@inheritDoc} */
@@ -364,7 +364,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
             "location '/result' as " + qry
         ));
 
-        GridGgfsInputStreamAdapter in = ggfs.open(new IgniteFsPath("/result/000000_0"));
+        IgfsInputStreamAdapter in = ggfs.open(new IgniteFsPath("/result/000000_0"));
 
         byte[] buf = new byte[(int) in.length()];
 

@@ -34,11 +34,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileInfo.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
- * {@link GridGgfsMetaManager} test case.
+ * {@link IgfsMetaManager} test case.
  */
 public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
@@ -54,11 +54,11 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private static final int NODES_CNT = 4;
 
     /** Meta manager to test. */
-    private GridGgfsMetaManager mgr;
+    private IgfsMetaManager mgr;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridGgfsEx ggfs = (GridGgfsEx)grid(0).fileSystem("ggfs");
+        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("ggfs");
 
         mgr = ggfs.context().meta();
     }
@@ -133,13 +133,13 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
-        GridGgfsFileInfo dir = new GridGgfsFileInfo(true, null);
-        GridGgfsFileInfo file = new GridGgfsFileInfo(new GridGgfsFileInfo(400, null, false, null), 1);
+        IgfsFileInfo dir = new IgfsFileInfo(true, null);
+        IgfsFileInfo file = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 1);
 
         assertNull(mgr.putIfAbsent(ROOT_ID, "dir", dir));
         assertNull(mgr.putIfAbsent(ROOT_ID, "file", file));
 
-        assertEquals(F.asMap("dir", new GridGgfsListingEntry(dir), "file", new GridGgfsListingEntry(file)),
+        assertEquals(F.asMap("dir", new IgfsListingEntry(dir), "file", new IgfsListingEntry(file)),
             mgr.directoryListing(ROOT_ID));
 
         //GridGgfsFileInfo tmp = mgr.info(dir.id());
@@ -157,7 +157,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             String key1 = UUID.randomUUID().toString();
             String key2 = UUID.randomUUID().toString();
 
-            GridGgfsFileInfo info = mgr.info(fileId);
+            IgfsFileInfo info = mgr.info(fileId);
 
             assertNull("Expects empty properties are not stored: " + info, getFieldValue(info, "props"));
             assertEquals("Expects empty properties are not stored: " + info, Collections.<String, String>emptyMap(),
@@ -197,17 +197,17 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStructure() throws Exception {
-        GridGgfsFileInfo rootInfo = new GridGgfsFileInfo();
+        IgfsFileInfo rootInfo = new IgfsFileInfo();
         // Test empty structure.
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEquals(rootInfo, mgr.info(ROOT_ID));
         assertEquals(F.asMap(ROOT_ID, rootInfo), mgr.infos(Arrays.asList(ROOT_ID)));
 
-        GridGgfsFileInfo a = new GridGgfsFileInfo(true, null);
-        GridGgfsFileInfo b = new GridGgfsFileInfo(true, null);
-        GridGgfsFileInfo f1 = new GridGgfsFileInfo(400, null, false, null);
-        GridGgfsFileInfo f2 = new GridGgfsFileInfo(new GridGgfsFileInfo(400, null, false, null), 0);
-        GridGgfsFileInfo f3 = new GridGgfsFileInfo(new GridGgfsFileInfo(400, null, false, null), 200000L);
+        IgfsFileInfo a = new IgfsFileInfo(true, null);
+        IgfsFileInfo b = new IgfsFileInfo(true, null);
+        IgfsFileInfo f1 = new IgfsFileInfo(400, null, false, null);
+        IgfsFileInfo f2 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 0);
+        IgfsFileInfo f3 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 200000L);
 
         // Validate 'add file' operation.
         assertNull(mgr.putIfAbsent(ROOT_ID, "a", a));
@@ -219,21 +219,21 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(b.id(), mgr.putIfAbsent(a.id(), "b", f3));
         expectsPutIfAbsentFail(a.id(), "c", f3, "Failed to add file details into cache");
 
-        assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
+        assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new GridGgfsListingEntry(b), "f2", new GridGgfsListingEntry(f2)),
+        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
-        assertEquals(F.asMap("f3", new GridGgfsListingEntry(f3)), mgr.directoryListing(b.id()));
+        assertEquals(F.asMap("f3", new IgfsListingEntry(f3)), mgr.directoryListing(b.id()));
 
         // Validate empty files listings.
-        for (GridGgfsFileInfo info : Arrays.asList(f1, f2, f3)) {
+        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3)) {
             assertEmpty(mgr.directoryListing(info.id()));
         }
 
         // Validate 'file info' operations.
-        for (GridGgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
+        for (IgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
             assertEquals(info, mgr.info(info.id()));
             assertEquals(F.asMap(info.id(), info), mgr.infos(Arrays.asList(info.id())));
         }
@@ -332,27 +332,27 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(f3, mgr.removeIfEmpty(b.id(), "f3", f3.id(), new IgniteFsPath("/a/b/f3"), true));
 
-        assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
+        assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new GridGgfsListingEntry(b), "f2", new GridGgfsListingEntry(f2)),
+        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
 
         assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new IgniteFsPath("/a/b"), true));
 
-        assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
+        assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("f2", new GridGgfsListingEntry(f2)), mgr.directoryListing(a.id()));
+        assertEquals(F.asMap("f2", new IgfsListingEntry(f2)), mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
 
         // Validate last actual data received from 'remove' operation.
-        GridGgfsFileInfo newF2 = mgr.updateInfo(f2.id(), new C1<GridGgfsFileInfo, GridGgfsFileInfo>() {
-            @Override public GridGgfsFileInfo apply(GridGgfsFileInfo e) {
-                return new GridGgfsFileInfo(e, e.length() + 20);
+        IgfsFileInfo newF2 = mgr.updateInfo(f2.id(), new C1<IgfsFileInfo, IgfsFileInfo>() {
+            @Override public IgfsFileInfo apply(IgfsFileInfo e) {
+                return new IgfsFileInfo(e, e.length() + 20);
             }
         });
 
@@ -362,7 +362,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(newF2, mgr.removeIfEmpty(a.id(), "f2", f2.id(), new IgniteFsPath("/a/f2"), true));
 
-        assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
+        assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
         assertEmpty(mgr.directoryListing(a.id()));
@@ -370,7 +370,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(f1, mgr.removeIfEmpty(ROOT_ID, "f1", f1.id(), new IgniteFsPath("/f1"), true));
 
-        assertEquals(F.asMap("a", new GridGgfsListingEntry(a)), mgr.directoryListing(ROOT_ID));
+        assertEquals(F.asMap("a", new IgfsListingEntry(a)), mgr.directoryListing(ROOT_ID));
 
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
@@ -416,7 +416,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      * @param fileInfo New file initial details.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final GridGgfsFileInfo fileInfo,
+    private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final IgfsFileInfo fileInfo,
         @Nullable String msg) {
         Throwable err = assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
@@ -470,6 +470,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             }
         }, IgniteCheckedException.class, msg);
 
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof GridGgfsDirectoryNotEmptyException);
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsDirectoryNotEmptyException);
     }
 }

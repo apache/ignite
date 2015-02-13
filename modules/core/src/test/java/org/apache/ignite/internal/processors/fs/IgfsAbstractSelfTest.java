@@ -111,10 +111,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static byte[] chunk;
 
     /** Primary GGFS. */
-    protected static GridGgfsImpl ggfs;
+    protected static IgfsImpl ggfs;
 
     /** Secondary GGFS. */
-    protected static GridGgfsImpl ggfsSecondary;
+    protected static IgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
     protected final IgniteFsMode mode;
@@ -152,11 +152,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         Ignite igniteSecondary = startGridWithGgfs("ignite-secondary", "ignitefs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
+        ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
 
         Ignite ignite = startGridWithGgfs("ignite", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
-        ggfs = (GridGgfsImpl) ignite.fileSystem("ggfs");
+        ggfs = (IgfsImpl) ignite.fileSystem("ggfs");
     }
 
     /** {@inheritDoc} */
@@ -707,7 +707,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                     return null;
                 }
-            }, GridGgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
+            }, IgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
                    "recursive flag is not set)");
         }
 
@@ -2114,7 +2114,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < lvlCnt; i++) {
             int lvl = i + 1;
 
-            GridGgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? ggfs : ggfsSecondary : ggfs;
+            IgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? ggfs : ggfsSecondary : ggfs;
 
             IgniteFsPath[] dirs = dirPaths.get(lvl).toArray(new IgniteFsPath[dirPaths.get(lvl).size()]);
             IgniteFsPath[] files = filePaths.get(lvl).toArray(new IgniteFsPath[filePaths.get(lvl).size()]);
@@ -2266,7 +2266,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath... paths) throws Exception {
+    protected void checkExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath... paths) throws Exception {
         checkExist(ggfs, paths);
 
         if (dual)
@@ -2280,7 +2280,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
-    protected void checkExist(GridGgfsImpl ggfs, IgniteFsPath... paths) throws IgniteCheckedException {
+    protected void checkExist(IgfsImpl ggfs, IgniteFsPath... paths) throws IgniteCheckedException {
         for (IgniteFsPath path : paths) {
             assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [ggfs=" + ggfs.name() +
                 ", path=" + path + ']';
@@ -2296,7 +2296,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath... paths)
+    protected void checkNotExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath... paths)
         throws Exception {
         checkNotExist(ggfs, paths);
 
@@ -2311,7 +2311,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(GridGgfsImpl ggfs, IgniteFsPath... paths) throws Exception {
+    protected void checkNotExist(IgfsImpl ggfs, IgniteFsPath... paths) throws Exception {
         for (IgniteFsPath path : paths) {
             assert ggfs.context().meta().fileId(path) == null : "Path exists [ggfs=" + ggfs.name() + ", path=" +
                 path + ']';
@@ -2329,7 +2329,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath file,
+    protected void checkFile(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath file,
         @Nullable byte[]... chunks) throws Exception {
         checkExist(ggfs, file);
         checkFileContent(ggfs, file, chunks);
@@ -2349,7 +2349,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected void checkFileContent(GridGgfsImpl ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
+    protected void checkFileContent(IgfsImpl ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
         throws IOException, IgniteCheckedException {
         if (chunks != null && chunks.length > 0) {
             IgniteFsInputStream is = null;
@@ -2433,7 +2433,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public static void clear(IgniteFs ggfs) throws Exception {
-        Field workerMapFld = GridGgfsImpl.class.getDeclaredField("workerMap");
+        Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);
 

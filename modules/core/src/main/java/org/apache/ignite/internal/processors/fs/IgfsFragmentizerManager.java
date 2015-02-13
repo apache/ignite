@@ -40,12 +40,12 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileAffinityRange.*;
 
 /**
  * GGFS fragmentizer manager.
  */
-public class GridGgfsFragmentizerManager extends GridGgfsManager {
+public class IgfsFragmentizerManager extends IgfsManager {
     /** Message offer wait interval. */
     private static final int MSG_OFFER_TIMEOUT = 1000;
 
@@ -243,10 +243,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
     private void processFragmentizerRequest(IgfsFragmentizerRequest req) throws IgniteCheckedException {
         req.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
 
-        Collection<GridGgfsFileAffinityRange> ranges = req.fragmentRanges();
+        Collection<IgfsFileAffinityRange> ranges = req.fragmentRanges();
         IgniteUuid fileId = req.fileId();
 
-        GridGgfsFileInfo fileInfo = ggfsCtx.meta().info(fileId);
+        IgfsFileInfo fileInfo = ggfsCtx.meta().info(fileId);
 
         if (fileInfo == null) {
             if (log.isDebugEnabled())
@@ -258,9 +258,9 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         if (log.isDebugEnabled())
             log.debug("Moving file ranges for fragmentizer request [req=" + req + ", fileInfo=" + fileInfo + ']');
 
-        for (GridGgfsFileAffinityRange range : ranges) {
+        for (IgfsFileAffinityRange range : ranges) {
             try {
-                GridGgfsFileInfo updated;
+                IgfsFileInfo updated;
 
                 switch (range.status()) {
                     case RANGE_STATUS_INITIAL: {
@@ -304,7 +304,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     }
                 }
             }
-            catch (GridGgfsInvalidRangeException e) {
+            catch (IgfsInvalidRangeException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to update file range " +
                         "[range=" + range + "fileId=" + fileId + ", err=" + e.getMessage() + ']');
@@ -319,11 +319,11 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @param status Status.
      * @return Update closure.
      */
-    private IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> updateRange(final GridGgfsFileAffinityRange range,
+    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> updateRange(final IgfsFileAffinityRange range,
         final int status) {
-        return new CX1<GridGgfsFileInfo, GridGgfsFileInfo>() {
-            @Override public GridGgfsFileInfo applyx(GridGgfsFileInfo info) throws IgniteCheckedException {
-                GridGgfsFileMap map = new GridGgfsFileMap(info.fileMap());
+        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
+            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
+                IgfsFileMap map = new IgfsFileMap(info.fileMap());
 
                 map.updateRangeStatus(range, status);
 
@@ -331,7 +331,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     log.debug("Updated file map for range [fileId=" + info.id() + ", range=" + range +
                         ", status=" + status + ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
 
-                GridGgfsFileInfo updated = new GridGgfsFileInfo(info, info.length());
+                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
 
                 updated.fileMap(map);
 
@@ -346,10 +346,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @param range Range to mark as moving.
      * @return Update closure.
      */
-    private IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> deleteRange(final GridGgfsFileAffinityRange range) {
-        return new CX1<GridGgfsFileInfo, GridGgfsFileInfo>() {
-            @Override public GridGgfsFileInfo applyx(GridGgfsFileInfo info) throws IgniteCheckedException {
-                GridGgfsFileMap map = new GridGgfsFileMap(info.fileMap());
+    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> deleteRange(final IgfsFileAffinityRange range) {
+        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
+            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
+                IgfsFileMap map = new IgfsFileMap(info.fileMap());
 
                 map.deleteRange(range);
 
@@ -357,7 +357,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     log.debug("Deleted range from file map [fileId=" + info.id() + ", range=" + range +
                         ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
 
-                GridGgfsFileInfo updated = new GridGgfsFileInfo(info, info.length());
+                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
 
                 updated.fileMap(map);
 
@@ -401,7 +401,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                 // If we have room for files, add them to fragmentizer.
                 try {
                     while (fragmentingFiles.size() < ggfsCtx.configuration().getFragmentizerConcurrentFiles()) {
-                        GridGgfsFileInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
+                        IgfsFileInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
 
                         // If no colocated files found, exit loop.
                         if (fileInfo == null)
@@ -609,17 +609,17 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
          *
          * @param fileInfo File info to process.
          */
-        private void requestFragmenting(GridGgfsFileInfo fileInfo) {
-            GridGgfsFileMap map = fileInfo.fileMap();
+        private void requestFragmenting(IgfsFileInfo fileInfo) {
+            IgfsFileMap map = fileInfo.fileMap();
 
             assert map != null && !map.ranges().isEmpty();
 
-            Map<UUID, Collection<GridGgfsFileAffinityRange>> grpMap = U.newHashMap(map.ranges().size());
+            Map<UUID, Collection<IgfsFileAffinityRange>> grpMap = U.newHashMap(map.ranges().size());
 
-            for (GridGgfsFileAffinityRange range : map.ranges()) {
+            for (IgfsFileAffinityRange range : map.ranges()) {
                 UUID nodeId = ggfsCtx.data().affinityNode(range.affinityKey()).id();
 
-                Collection<GridGgfsFileAffinityRange> nodeRanges = grpMap.get(nodeId);
+                Collection<IgfsFileAffinityRange> nodeRanges = grpMap.get(nodeId);
 
                 if (nodeRanges == null) {
                     nodeRanges = new LinkedList<>();
@@ -641,7 +641,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
             assert old == null;
 
-            for (Map.Entry<UUID, Collection<GridGgfsFileAffinityRange>> entry : grpMap.entrySet()) {
+            for (Map.Entry<UUID, Collection<IgfsFileAffinityRange>> entry : grpMap.entrySet()) {
                 UUID nodeId = entry.getKey();
 
                 IgfsFragmentizerRequest msg = new IgfsFragmentizerRequest(fileInfo.id(), entry.getValue());
@@ -683,7 +683,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @return File ID to process or {@code null} if there are no such files.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable private GridGgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
+    @Nullable private IgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         return fragmentizerEnabled ? ggfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 

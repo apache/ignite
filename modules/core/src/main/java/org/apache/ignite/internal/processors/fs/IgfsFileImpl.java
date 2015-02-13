@@ -68,7 +68,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
      *
      * @param path Path.
      */
-    public IgfsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
+    public IgfsFileImpl(IgniteFsPath path, IgfsFileInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -98,7 +98,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
      * @param path Path.
      * @param entry Listing entry.
      */
-    public IgfsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
+    public IgfsFileImpl(IgniteFsPath path, IgfsListingEntry entry, long globalGrpSize) {
         A.notNull(path, "path");
         A.notNull(entry, "entry");
 

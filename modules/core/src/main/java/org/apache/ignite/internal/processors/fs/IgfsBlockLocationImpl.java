@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * File block location in the grid.
  */
-public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externalizable {
+public class IgfsBlockLocationImpl implements IgniteFsBlockLocation, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,7 +54,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
     /**
      * Empty constructor for externalizable.
      */
-    public GridGgfsBlockLocationImpl() {
+    public IgfsBlockLocationImpl() {
         // No-op.
     }
 
@@ -62,7 +62,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
      * @param location HDFS block location.
      * @param len New length.
      */
-    public GridGgfsBlockLocationImpl(IgniteFsBlockLocation location, long len) {
+    public IgfsBlockLocationImpl(IgniteFsBlockLocation location, long len) {
         assert location != null;
 
         start = location.start();
@@ -78,7 +78,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
      * @param len Length.
      * @param nodes Affinity nodes.
      */
-    public GridGgfsBlockLocationImpl(long start, long len, Collection<ClusterNode> nodes) {
+    public IgfsBlockLocationImpl(long start, long len, Collection<ClusterNode> nodes) {
         assert start >= 0;
         assert len > 0;
         assert nodes != null && !nodes.isEmpty();
@@ -138,7 +138,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridGgfsBlockLocationImpl that = (GridGgfsBlockLocationImpl)o;
+        IgfsBlockLocationImpl that = (IgfsBlockLocationImpl)o;
 
         return len == that.len && start == that.start && F.eq(nodeIds, that.nodeIds) && F.eq(names, that.names) &&
             F.eq(hosts, that.hosts);
@@ -146,7 +146,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsBlockLocationImpl.class, this);
+        return S.toString(IgfsBlockLocationImpl.class, this);
     }
 
     /**

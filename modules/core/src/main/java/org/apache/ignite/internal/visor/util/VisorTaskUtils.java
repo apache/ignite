@@ -606,8 +606,8 @@ public class VisorTaskUtils {
     public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
         String logsDir;
 
-        if (ggfs instanceof GridGgfsEx)
-            logsDir = ((GridGgfsEx)ggfs).clientLogDirectory();
+        if (ggfs instanceof IgfsEx)
+            logsDir = ((IgfsEx)ggfs).clientLogDirectory();
         else if (ggfs == null)
             throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
         else

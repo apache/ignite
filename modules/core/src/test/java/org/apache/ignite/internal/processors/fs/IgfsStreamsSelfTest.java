@@ -220,9 +220,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
-        GridGgfsEx impl = (GridGgfsEx)grid(0).fileSystem("ggfs");
+        IgfsEx impl = (IgfsEx)grid(0).fileSystem("ggfs");
 
-        GridGgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
+        IgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
 
         GridTestUtils.setFieldValue(fragmentizer, "fragmentizerEnabled", false);
 
@@ -257,11 +257,11 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
             GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
 
-            GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)metaCache.get(fileImpl.fileId());
+            IgfsFileInfo fileInfo = (IgfsFileInfo)metaCache.get(fileImpl.fileId());
 
-            GridGgfsFileMap map = fileInfo.fileMap();
+            IgfsFileMap map = fileInfo.fileMap();
 
-            List<GridGgfsFileAffinityRange> ranges = map.ranges();
+            List<IgfsFileAffinityRange> ranges = map.ranges();
 
             assertEquals(2, ranges.size());
 

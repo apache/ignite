@@ -24,7 +24,7 @@ import java.io.*;
 /**
  * Handshake message.
  */
-public class GridGgfsHandshakeResponse implements Externalizable {
+public class IgfsHandshakeResponse implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public GridGgfsHandshakeResponse() {
+    public IgfsHandshakeResponse() {
         // No-op.
     }
 
@@ -53,7 +53,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
      * @param paths Secondary paths.
      * @param blockSize Server default block size.
      */
-    public GridGgfsHandshakeResponse(String ggfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
+    public IgfsHandshakeResponse(String ggfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
         assert paths != null;
 
         this.ggfsName = ggfsName;

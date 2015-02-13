@@ -31,8 +31,7 @@ import java.nio.*;
  * File's binary data block key.
  */
 @GridInternal
-public final class GridGgfsBlockKey extends MessageAdapter
-    implements Externalizable, Comparable<GridGgfsBlockKey> {
+public final class IgfsBlockKey extends MessageAdapter implements Externalizable, Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +55,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
      * @param evictExclude Evict exclude flag.
      * @param blockId Block ID.
      */
-    public GridGgfsBlockKey(IgniteUuid fileId, @Nullable IgniteUuid affKey, boolean evictExclude, long blockId) {
+    public IgfsBlockKey(IgniteUuid fileId, @Nullable IgniteUuid affKey, boolean evictExclude, long blockId) {
         assert fileId != null;
         assert blockId >= 0;
 
@@ -69,7 +68,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridGgfsBlockKey() {
+    public IgfsBlockKey() {
         // No-op.
     }
 
@@ -102,7 +101,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull GridGgfsBlockKey o) {
+    @Override public int compareTo(@NotNull IgfsBlockKey o) {
         int res = fileId.compareTo(o.fileId);
 
         if (res != 0)
@@ -152,7 +151,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
         if (o == null || o.getClass() != getClass())
             return false;
 
-        GridGgfsBlockKey that = (GridGgfsBlockKey)o;
+        IgfsBlockKey that = (IgfsBlockKey)o;
 
         return blockId == that.blockId && fileId.equals(that.fileId) && F.eq(affKey, that.affKey) &&
             evictExclude == that.evictExclude;
@@ -161,7 +160,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsBlockKey _clone = new GridGgfsBlockKey();
+        IgfsBlockKey _clone = new IgfsBlockKey();
 
         clone0(_clone);
 
@@ -170,7 +169,7 @@ public final class GridGgfsBlockKey extends MessageAdapter
 
     /** {@inheritDoc} */
     @Override protected void clone0(MessageAdapter _msg) {
-        GridGgfsBlockKey _clone = (GridGgfsBlockKey)_msg;
+        IgfsBlockKey _clone = (IgfsBlockKey)_msg;
 
         _clone.fileId = fileId;
         _clone.blockId = blockId;
@@ -270,6 +269,6 @@ public final class GridGgfsBlockKey extends MessageAdapter
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsBlockKey.class, this);
+        return S.toString(IgfsBlockKey.class, this);
     }
 }

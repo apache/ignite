@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.apache.ignite.internal.processors.fs.GridGgfsFileInfo} test case.
+ * {@link IgfsFileInfo} test case.
  */
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
@@ -48,16 +48,16 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
             @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
                 for (int i = 0; i < 10000; i++) {
-                    testSerialization(new GridGgfsFileInfo());
-                    testSerialization(new GridGgfsFileInfo());
-                    testSerialization(new GridGgfsFileInfo(true, null));
-                    testSerialization(new GridGgfsFileInfo(false, null));
+                    testSerialization(new IgfsFileInfo());
+                    testSerialization(new IgfsFileInfo());
+                    testSerialization(new IgfsFileInfo(true, null));
+                    testSerialization(new IgfsFileInfo(false, null));
 
-                    GridGgfsFileInfo rndInfo = new GridGgfsFileInfo(rnd.nextInt(max), null, false, null);
+                    IgfsFileInfo rndInfo = new IgfsFileInfo(rnd.nextInt(max), null, false, null);
 
                     testSerialization(rndInfo);
-                    testSerialization(new GridGgfsFileInfo(rndInfo, rnd.nextInt(max)));
-                    testSerialization(new GridGgfsFileInfo(rndInfo, F.asMap("desc", String.valueOf(rnd.nextLong()))));
+                    testSerialization(new IgfsFileInfo(rndInfo, rnd.nextInt(max)));
+                    testSerialization(new IgfsFileInfo(rndInfo, F.asMap("desc", String.valueOf(rnd.nextLong()))));
                 }
 
                 return null;
@@ -71,7 +71,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      * @param info Node info to test serialization for.
      * @throws IgniteCheckedException If failed.
      */
-    public void testSerialization(GridGgfsFileInfo info) throws IgniteCheckedException {
+    public void testSerialization(IgfsFileInfo info) throws IgniteCheckedException {
         assertEquals(info, mu(info));
     }
 

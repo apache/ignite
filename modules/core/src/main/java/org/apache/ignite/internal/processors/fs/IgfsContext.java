@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 /**
  * GGFS context holding all required components for GGFS instance.
  */
-public class GridGgfsContext {
+public class IgfsContext {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -40,22 +40,22 @@ public class GridGgfsContext {
     private final IgniteFsConfiguration cfg;
 
     /** Managers. */
-    private List<GridGgfsManager> mgrs = new LinkedList<>();
+    private List<IgfsManager> mgrs = new LinkedList<>();
 
     /** Meta manager. */
-    private final GridGgfsMetaManager metaMgr;
+    private final IgfsMetaManager metaMgr;
 
     /** Data manager. */
-    private final GridGgfsDataManager dataMgr;
+    private final IgfsDataManager dataMgr;
 
     /** Server manager. */
-    private final GridGgfsServerManager srvMgr;
+    private final IgfsServerManager srvMgr;
 
     /** Fragmentizer manager. */
-    private final GridGgfsFragmentizerManager fragmentizerMgr;
+    private final IgfsFragmentizerManager fragmentizerMgr;
 
     /** GGFS instance. */
-    private final GridGgfsEx ggfs;
+    private final IgfsEx ggfs;
 
     /**
      * @param ctx Kernal context.
@@ -66,13 +66,13 @@ public class GridGgfsContext {
      * @param fragmentizerMgr Fragmentizer manager.
      * @throws IgniteCheckedException If GGFs context instantiation is failed.
      */
-    public GridGgfsContext(
+    public IgfsContext(
         GridKernalContext ctx,
         IgniteFsConfiguration cfg,
-        GridGgfsMetaManager metaMgr,
-        GridGgfsDataManager dataMgr,
-        GridGgfsServerManager srvMgr,
-        GridGgfsFragmentizerManager fragmentizerMgr
+        IgfsMetaManager metaMgr,
+        IgfsDataManager dataMgr,
+        IgfsServerManager srvMgr,
+        IgfsFragmentizerManager fragmentizerMgr
     ) throws IgniteCheckedException {
         this.ctx = ctx;
         this.cfg = cfg;
@@ -82,13 +82,13 @@ public class GridGgfsContext {
         this.srvMgr = add(srvMgr);
         this.fragmentizerMgr = add(fragmentizerMgr);
 
-        ggfs = new GridGgfsImpl(this);
+        ggfs = new IgfsImpl(this);
     }
 
     /**
      * @return GGFS instance.
      */
-    public GridGgfsEx ggfs() {
+    public IgfsEx ggfs() {
         return ggfs;
     }
 
@@ -109,35 +109,35 @@ public class GridGgfsContext {
     /**
      * @return List of managers, in starting order.
      */
-    public List<GridGgfsManager> managers() {
+    public List<IgfsManager> managers() {
         return mgrs;
     }
 
     /**
      * @return Meta manager.
      */
-    public GridGgfsMetaManager meta() {
+    public IgfsMetaManager meta() {
         return metaMgr;
     }
 
     /**
      * @return Data manager.
      */
-    public GridGgfsDataManager data() {
+    public IgfsDataManager data() {
         return dataMgr;
     }
 
     /**
      * @return Server manager.
      */
-    public GridGgfsServerManager server() {
+    public IgfsServerManager server() {
         return srvMgr;
     }
 
     /**
      * @return Fragmentizer manager.
      */
-    public GridGgfsFragmentizerManager fragmentizer() {
+    public IgfsFragmentizerManager fragmentizer() {
         return fragmentizerMgr;
     }
 
@@ -180,10 +180,10 @@ public class GridGgfsContext {
     public boolean ggfsNode(ClusterNode node) {
         assert node != null;
 
-        GridGgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);
+        IgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);
 
         if (ggfs != null)
-            for (GridGgfsAttributes attrs : ggfs)
+            for (IgfsAttributes attrs : ggfs)
                 if (F.eq(cfg.getName(), attrs.ggfsName()))
                     return true;
 
@@ -196,7 +196,7 @@ public class GridGgfsContext {
      * @param mgr Manager.
      * @return Added manager.
      */
-    private <T extends GridGgfsManager> T add(@Nullable T mgr) {
+    private <T extends IgfsManager> T add(@Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);
 

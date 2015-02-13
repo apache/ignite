@@ -26,7 +26,7 @@ import java.util.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
- * {@link GridGgfsAttributes} test case.
+ * {@link IgfsAttributes} test case.
  */
 public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
     /**
@@ -38,7 +38,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
         pathModes.put("path1", PRIMARY);
         pathModes.put("path2", PROXY);
 
-        GridGgfsAttributes attrs = new GridGgfsAttributes("testGgfsName", 513000, 888, "meta", "data", DUAL_SYNC,
+        IgfsAttributes attrs = new IgfsAttributes("testGgfsName", 513000, 888, "meta", "data", DUAL_SYNC,
             pathModes, true);
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -47,7 +47,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
         os.writeObject(attrs);
         os.close();
 
-        GridGgfsAttributes deserializedAttrs = (GridGgfsAttributes)new ObjectInputStream(
+        IgfsAttributes deserializedAttrs = (IgfsAttributes)new ObjectInputStream(
             new ByteArrayInputStream(bos.toByteArray())).readObject();
 
         assertTrue(eq(attrs, deserializedAttrs));
@@ -59,11 +59,11 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
      * @return Whether equals or not.
      * @throws Exception In case of error.
      */
-    private boolean eq(GridGgfsAttributes attr1, GridGgfsAttributes attr2) throws Exception {
+    private boolean eq(IgfsAttributes attr1, IgfsAttributes attr2) throws Exception {
         assert attr1 != null;
         assert attr2 != null;
 
-        for (Field f : GridGgfsAttributes.class.getDeclaredFields()) {
+        for (Field f : IgfsAttributes.class.getDeclaredFields()) {
             f.setAccessible(true);
 
             if (!Modifier.isStatic(f.getModifiers()) && !f.get(attr1).equals(f.get(attr2)))

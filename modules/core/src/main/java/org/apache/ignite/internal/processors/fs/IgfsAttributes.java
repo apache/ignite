@@ -28,7 +28,7 @@ import java.util.*;
  * <p>
  * This class contains information on a single GGFS configured on some node.
  */
-public class GridGgfsAttributes implements Externalizable {
+public class IgfsAttributes implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,7 +65,7 @@ public class GridGgfsAttributes implements Externalizable {
      * @param dfltMode Default mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsAttributes(String ggfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
+    public IgfsAttributes(String ggfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
         IgniteFsMode dfltMode, Map<String, IgniteFsMode> pathModes, boolean fragmentizerEnabled) {
         this.blockSize = blockSize;
         this.ggfsName = ggfsName;
@@ -80,7 +80,7 @@ public class GridGgfsAttributes implements Externalizable {
     /**
      * Public no-arg constructor for {@link Externalizable}.
      */
-    public GridGgfsAttributes() {
+    public IgfsAttributes() {
         // No-op.
     }
 

@@ -241,7 +241,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             rmtClient = new GridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
-            GridGgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
+            IgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
 
             grpBlockSize = handshake.blockSize();
 

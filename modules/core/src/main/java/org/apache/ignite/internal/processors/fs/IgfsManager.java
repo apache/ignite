@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.*;
 /**
  * Abstract class for GGFS managers.
  */
-public abstract class GridGgfsManager {
+public abstract class IgfsManager {
     /** GGFS context. */
-    protected GridGgfsContext ggfsCtx;
+    protected IgfsContext ggfsCtx;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -39,7 +39,7 @@ public abstract class GridGgfsManager {
      *
      * @param ggfsCtx GGFS context.
      */
-    public void start(GridGgfsContext ggfsCtx) throws IgniteCheckedException {
+    public void start(IgfsContext ggfsCtx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
             assert false : "Method start is called more than once for manager: " + this;
 

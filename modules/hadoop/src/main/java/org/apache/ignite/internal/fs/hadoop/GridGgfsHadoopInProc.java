@@ -33,7 +33,7 @@ import java.util.concurrent.*;
  */
 public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     /** Target GGFS. */
-    private final GridGgfsEx ggfs;
+    private final IgfsEx ggfs;
 
     /** Buffer size. */
     private final int bufSize;
@@ -51,7 +51,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
      * @param ggfs Target GGFS.
      * @param log Log.
      */
-    public GridGgfsHadoopInProc(GridGgfsEx ggfs, Log log) {
+    public GridGgfsHadoopInProc(IgfsEx ggfs, Log log) {
         this.ggfs = ggfs;
         this.log = log;
 
@@ -59,10 +59,10 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHandshakeResponse handshake(String logDir) {
+    @Override public IgfsHandshakeResponse handshake(String logDir) {
         ggfs.clientLogDirectory(logDir);
 
-        return new GridGgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(), ggfs.groupBlockSize(),
+        return new IgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(), ggfs.groupBlockSize(),
             ggfs.globalSampling());
     }
 
@@ -234,7 +234,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException {
         try {
-            GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
+            IgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
 
             return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
@@ -250,7 +250,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch)
         throws IgniteCheckedException {
         try {
-            GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
+            IgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
 
             return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
@@ -298,7 +298,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public GridPlainFuture<byte[]> readData(GridGgfsHadoopStreamDelegate delegate, long pos, int len,
         @Nullable byte[] outBuf, int outOff, int outLen) {
-        GridGgfsInputStreamAdapter stream = delegate.target();
+        IgfsInputStreamAdapter stream = delegate.target();
 
         try {
             byte[] res = null;

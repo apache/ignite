@@ -33,7 +33,7 @@ import java.util.regex.*;
 /**
  * GGFS eviction policy which evicts particular blocks.
  */
-public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<GridGgfsBlockKey, byte[]>,
+public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
     CacheIgniteFsPerBlockLruEvictionPolicyMXBean {
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
@@ -51,7 +51,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
     private final AtomicBoolean excludeRecompile = new AtomicBoolean(true);
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<EvictableEntry<GridGgfsBlockKey, byte[]>> queue =
+    private final ConcurrentLinkedDeque8<EvictableEntry<IgfsBlockKey, byte[]>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
@@ -89,7 +89,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<IgfsBlockKey, byte[]> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -109,7 +109,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
+    private boolean touch(EvictableEntry<IgfsBlockKey, byte[]> entry) {
         byte[] val = peek(entry);
 
         int blockSize = val != null ? val.length : 0;
@@ -119,7 +119,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
         // Entry has not been enqueued yet.
         if (meta == null) {
             while (true) {
-                Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
+                Node<EvictableEntry<IgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
 
                 meta = new MetaEntry(node, blockSize);
 
@@ -151,11 +151,11 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
         else {
             int oldBlockSize = meta.size();
 
-            Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node = meta.node();
+            Node<EvictableEntry<IgfsBlockKey, byte[]>> node = meta.node();
 
             if (queue.unlinkx(node)) {
                 // Move node to tail.
-                Node<EvictableEntry<GridGgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
+                Node<EvictableEntry<IgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
 
                 int delta = blockSize - oldBlockSize;
 
@@ -183,7 +183,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @param entry Entry.
      * @return Peeked value.
      */
-    @Nullable private byte[] peek(EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
+    @Nullable private byte[] peek(EvictableEntry<IgfsBlockKey, byte[]> entry) {
         return (byte[])((EvictableEntryImpl)entry).peek();
     }
 
@@ -198,7 +198,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
 
         for (int i = 0; i < cnt && (maxBlocks > 0 && queue.sizex() > maxBlocks ||
             maxSize > 0 && curSize.longValue() > maxSize); i++) {
-            EvictableEntry<GridGgfsBlockKey, byte[]> entry = queue.poll();
+            EvictableEntry<IgfsBlockKey, byte[]> entry = queue.poll();
 
             if (entry == null)
                 break; // Queue is empty.
@@ -322,7 +322,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      */
     private static class MetaEntry {
         /** Queue node. */
-        private final Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node;
+        private final Node<EvictableEntry<IgfsBlockKey, byte[]>> node;
 
         /** Data size. */
         private final int size;
@@ -333,7 +333,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
          * @param node Queue node.
          * @param size Data size.
          */
-        private MetaEntry(Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node, int size) {
+        private MetaEntry(Node<EvictableEntry<IgfsBlockKey, byte[]>> node, int size) {
             assert node != null;
             assert size >= 0;
 
@@ -344,7 +344,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
         /**
          * @return Queue node.
          */
-        private Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node() {
+        private Node<EvictableEntry<IgfsBlockKey, byte[]>> node() {
             return node;
         }
 

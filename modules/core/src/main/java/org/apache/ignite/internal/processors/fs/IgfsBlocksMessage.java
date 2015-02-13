@@ -39,8 +39,8 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     private long id;
 
     /** Blocks to store. */
-    @GridDirectMap(keyType = GridGgfsBlockKey.class, valueType = byte[].class)
-    private Map<GridGgfsBlockKey, byte[]> blocks;
+    @GridDirectMap(keyType = IgfsBlockKey.class, valueType = byte[].class)
+    private Map<IgfsBlockKey, byte[]> blocks;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -56,7 +56,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
      * @param id Message id.
      * @param blocks Blocks to put in cache.
      */
-    public IgfsBlocksMessage(IgniteUuid fileId, long id, Map<GridGgfsBlockKey, byte[]> blocks) {
+    public IgfsBlocksMessage(IgniteUuid fileId, long id, Map<IgfsBlockKey, byte[]> blocks) {
         this.fileId = fileId;
         this.id = id;
         this.blocks = blocks;
@@ -79,7 +79,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /**
      * @return Map of blocks to put in cache.
      */
-    public Map<GridGgfsBlockKey, byte[]> blocks() {
+    public Map<IgfsBlockKey, byte[]> blocks() {
         return blocks;
     }
 
@@ -121,7 +121,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                if (!writer.writeMap("blocks", blocks, GridGgfsBlockKey.class, byte[].class))
+                if (!writer.writeMap("blocks", blocks, IgfsBlockKey.class, byte[].class))
                     return false;
 
                 state++;
@@ -153,7 +153,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class, false);
+                blocks = reader.readMap("blocks", IgfsBlockKey.class, byte[].class, false);
 
                 if (!reader.isLastRead())
                     return false;

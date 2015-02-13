@@ -245,7 +245,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             rmtClient = new GridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
-            GridGgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
+            IgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
 
             ggfsGrpBlockSize = handshake.blockSize();
 

@@ -409,7 +409,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 65:
-                msg = new GridGgfsBlockKey();
+                msg = new IgfsBlockKey();
 
                 break;
 
@@ -424,7 +424,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 68:
-                msg = new GridGgfsFileAffinityRange();
+                msg = new IgfsFileAffinityRange();
 
                 break;
 

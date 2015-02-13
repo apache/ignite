@@ -1243,13 +1243,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         }
 
         // Wait for a while for prefetch to finish.
-        GridGgfsMetaManager meta = ggfs.context().meta();
+        IgfsMetaManager meta = ggfs.context().meta();
 
-        GridGgfsFileInfo info = meta.info(meta.fileId(FILE));
+        IgfsFileInfo info = meta.info(meta.fileId(FILE));
 
-        GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
+        IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<GridGgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
+        GridCache<IgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {

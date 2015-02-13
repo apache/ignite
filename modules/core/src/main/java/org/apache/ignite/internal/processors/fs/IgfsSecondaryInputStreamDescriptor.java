@@ -24,7 +24,7 @@ import org.apache.ignite.ignitefs.*;
  */
 public class IgfsSecondaryInputStreamDescriptor {
     /** File info in the primary file system. */
-    private final GridGgfsFileInfo info;
+    private final IgfsFileInfo info;
 
     /** Secondary file system input stream wrapper. */
     private final IgniteFsReader secReader;
@@ -35,7 +35,7 @@ public class IgfsSecondaryInputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param secReader Secondary file system reader.
      */
-    IgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, IgniteFsReader secReader) {
+    IgfsSecondaryInputStreamDescriptor(IgfsFileInfo info, IgniteFsReader secReader) {
         assert info != null;
         assert secReader != null;
 
@@ -46,7 +46,7 @@ public class IgfsSecondaryInputStreamDescriptor {
     /**
      * @return File info in the primary file system.
      */
-    GridGgfsFileInfo info() {
+    IgfsFileInfo info() {
         return info;
     }
 

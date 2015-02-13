@@ -40,17 +40,17 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private static final int MAX_BLOCKS_CNT = 16;
 
     /** GGFS context. */
-    private GridGgfsContext ggfsCtx;
+    private IgfsContext ggfsCtx;
 
     /** Meta info manager. */
-    private final GridGgfsMetaManager meta;
+    private final IgfsMetaManager meta;
 
     /** Data manager. */
-    private final GridGgfsDataManager data;
+    private final IgfsDataManager data;
 
     /** File descriptor. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridGgfsFileInfo fileInfo;
+    private IgfsFileInfo fileInfo;
 
     /** Parent ID. */
     private final IgniteUuid parentId;
@@ -75,16 +75,16 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private final IgniteFsMode mode;
 
     /** File worker batch. */
-    private final GridGgfsFileWorkerBatch batch;
+    private final IgfsFileWorkerBatch batch;
 
     /** Ensures that onClose)_ routine is called no more than once. */
     private final AtomicBoolean onCloseGuard = new AtomicBoolean();
 
     /** Local GGFS metrics. */
-    private final GridGgfsLocalMetrics metrics;
+    private final IgfsLocalMetrics metrics;
 
     /** Affinity written by this output stream. */
-    private GridGgfsFileAffinityRange streamRange;
+    private IgfsFileAffinityRange streamRange;
 
     /**
      * Constructs file output stream.
@@ -98,8 +98,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws IgniteCheckedException If stream creation failed.
      */
-    IgfsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
+    IgfsOutputStreamImpl(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
+        int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
         throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
@@ -138,7 +138,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @return Optimized buffer size.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private static int optimizeBufferSize(int bufSize, GridGgfsFileInfo fileInfo) {
+    private static int optimizeBufferSize(int bufSize, IgfsFileInfo fileInfo) {
         assert bufSize > 0;
 
         if (fileInfo == null)
@@ -285,7 +285,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             }
 
             if (space > 0) {
-                GridGgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
+                IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
                     new ReserveSpaceClosure(space, streamRange));
 
                 if (fileInfo0 == null)
@@ -403,7 +403,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param fileInfo File info to build initial range for.
      * @return Affinity range.
      */
-    private GridGgfsFileAffinityRange initialStreamRange(GridGgfsFileInfo fileInfo) {
+    private IgfsFileAffinityRange initialStreamRange(IgfsFileInfo fileInfo) {
         if (!ggfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
@@ -421,13 +421,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (lastBlockOff < 0)
             lastBlockOff = 0;
 
-        GridGgfsFileMap map = fileInfo.fileMap();
+        IgfsFileMap map = fileInfo.fileMap();
 
         IgniteUuid prevAffKey = map == null ? null : map.affinityKey(lastBlockOff, false);
 
         IgniteUuid affKey = data.nextAffinityKey(prevAffKey);
 
-        return affKey == null ? null : new GridGgfsFileAffinityRange(off, off, affKey);
+        return affKey == null ? null : new IgfsFileAffinityRange(off, off, affKey);
     }
 
     /** {@inheritDoc} */
@@ -439,7 +439,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * Helper closure to reserve specified space and update file's length
      */
     @GridInternal
-    private static final class ReserveSpaceClosure implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class ReserveSpaceClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -448,7 +448,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         private long space;
 
         /** Affinity range for this particular update. */
-        private GridGgfsFileAffinityRange range;
+        private IgfsFileAffinityRange range;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -464,21 +464,21 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
          * @param space Space amount (bytes number) to increase file's length.
          * @param range Affinity range specifying which part of file was colocated.
          */
-        private ReserveSpaceClosure(long space, GridGgfsFileAffinityRange range) {
+        private ReserveSpaceClosure(long space, IgfsFileAffinityRange range) {
             this.space = space;
             this.range = range;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsFileInfo apply(GridGgfsFileInfo oldInfo) {
-            GridGgfsFileMap oldMap = oldInfo.fileMap();
+        @Override public IgfsFileInfo apply(IgfsFileInfo oldInfo) {
+            IgfsFileMap oldMap = oldInfo.fileMap();
 
-            GridGgfsFileMap newMap = new GridGgfsFileMap(oldMap);
+            IgfsFileMap newMap = new IgfsFileMap(oldMap);
 
             newMap.addRange(range);
 
             // Update file length.
-            GridGgfsFileInfo updated = new GridGgfsFileInfo(oldInfo, oldInfo.length() + space);
+            IgfsFileInfo updated = new IgfsFileInfo(oldInfo, oldInfo.length() + space);
 
             updated.fileMap(newMap);
 
@@ -494,7 +494,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             space = in.readLong();
-            range = (GridGgfsFileAffinityRange)in.readObject();
+            range = (IgfsFileAffinityRange)in.readObject();
         }
 
         /** {@inheritDoc} */

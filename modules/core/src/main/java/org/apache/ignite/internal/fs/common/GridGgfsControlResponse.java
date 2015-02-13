@@ -159,7 +159,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void response(GridGgfsInputStreamDescriptor res) {
+    public void response(IgfsInputStreamDescriptor res) {
         resType = RES_TYPE_GGFS_STREAM_DESCRIPTOR;
 
         this.res = res;
@@ -222,7 +222,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Handshake message.
      */
-    public void handshake(GridGgfsHandshakeResponse res) {
+    public void handshake(IgfsHandshakeResponse res) {
         resType = RES_TYPE_HANDSHAKE;
 
         this.res = res;
@@ -265,7 +265,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
             throw new IgniteFsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
-            throw new GridGgfsDirectoryNotEmptyException(err);
+            throw new IgfsDirectoryNotEmptyException(err);
         else if (errCode == ERR_PARENT_NOT_DIRECTORY)
             throw new IgniteFsParentNotDirectoryException(err);
         else if (errCode == ERR_INVALID_HDFS_VERSION)
@@ -336,7 +336,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             return ERR_FILE_NOT_FOUND;
         else if (e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return ERR_PATH_ALREADY_EXISTS;
-        else if (e.hasCause(GridGgfsDirectoryNotEmptyException.class))
+        else if (e.hasCause(IgfsDirectoryNotEmptyException.class))
             return ERR_DIRECTORY_NOT_EMPTY;
         else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return ERR_PARENT_NOT_DIRECTORY;
@@ -517,7 +517,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsInputStreamDescriptor desc = new GridGgfsInputStreamDescriptor();
+                    IgfsInputStreamDescriptor desc = new IgfsInputStreamDescriptor();
 
                     desc.readExternal(in);
 
@@ -531,7 +531,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsHandshakeResponse msg = new GridGgfsHandshakeResponse();
+                    IgfsHandshakeResponse msg = new IgfsHandshakeResponse();
 
                     msg.readExternal(in);
 
@@ -608,7 +608,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                     locations = new ArrayList<>(size);
 
                     for (int i = 0; i < size; i++) {
-                        GridGgfsBlockLocationImpl location = new GridGgfsBlockLocationImpl();
+                        IgfsBlockLocationImpl location = new IgfsBlockLocationImpl();
 
                         location.readExternal(in);
 

@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Unmodifiable file information.
  */
-public final class GridGgfsFileInfo implements Externalizable {
+public final class IgfsFileInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -61,7 +61,7 @@ public final class GridGgfsFileInfo implements Externalizable {
     private IgniteUuid affKey;
 
     /** File affinity map. */
-    private GridGgfsFileMap fileMap;
+    private IgfsFileMap fileMap;
 
     /** Last access time. Modified on-demand. */
     private long accessTime;
@@ -71,7 +71,7 @@ public final class GridGgfsFileInfo implements Externalizable {
 
     /** Directory listing. */
     @GridToStringInclude
-    private Map<String, GridGgfsListingEntry> listing;
+    private Map<String, IgfsListingEntry> listing;
 
     /** Whether data blocks of this entry should never be excluded. */
     private boolean evictExclude;
@@ -85,7 +85,7 @@ public final class GridGgfsFileInfo implements Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public GridGgfsFileInfo() {
+    public IgfsFileInfo() {
         this(ROOT_ID);
     }
 
@@ -94,7 +94,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @param id ID.
      */
-    GridGgfsFileInfo(IgniteUuid id) {
+    IgfsFileInfo(IgniteUuid id) {
         this(true, id, 0, 0, null, null, null, null, false, System.currentTimeMillis(), false);
     }
 
@@ -104,7 +104,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
      */
-    public GridGgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
+    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
         this(isDir, null, isDir ? 0 : IgniteFsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
             System.currentTimeMillis(), false);
     }
@@ -114,7 +114,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @param listing Listing.
      */
-    GridGgfsFileInfo(Map<String, GridGgfsListingEntry> listing) {
+    IgfsFileInfo(Map<String, IgfsListingEntry> listing) {
         this(true, null, 0, 0, null, listing, null, null, false, System.currentTimeMillis(), false);
     }
 
@@ -126,7 +126,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param evictExclude Eviction exclude flag.
      * @param props File properties.
      */
-    GridGgfsFileInfo(int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
+    IgfsFileInfo(int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
         @Nullable Map<String, String> props) {
         this(false, null, blockSize, 0, affKey, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
@@ -141,7 +141,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
      */
-    public GridGgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
+    public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
         boolean evictExclude, @Nullable Map<String, String> props) {
         this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
     }
@@ -152,7 +152,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param info File information to copy data from.
      * @param len Size of a file.
      */
-    GridGgfsFileInfo(GridGgfsFileInfo info, long len) {
+    IgfsFileInfo(IgfsFileInfo info, long len) {
         this(info.isDirectory(), info.id, info.blockSize, len, info.affKey, info.listing, info.props, info.fileMap(),
             info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
     }
@@ -164,7 +164,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param accessTime Last access time.
      * @param modificationTime Last modification time.
      */
-    GridGgfsFileInfo(GridGgfsFileInfo info, long accessTime, long modificationTime) {
+    IgfsFileInfo(IgfsFileInfo info, long accessTime, long modificationTime) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, false, accessTime, modificationTime, info.evictExclude());
     }
@@ -175,7 +175,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param info File information to copy data from.
      * @param props File properties to set.
      */
-    GridGgfsFileInfo(GridGgfsFileInfo info, @Nullable Map<String, String> props) {
+    IgfsFileInfo(IgfsFileInfo info, @Nullable Map<String, String> props) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
     }
@@ -188,7 +188,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param props File properties to set.
      * @param evictExclude Evict exclude flag.
      */
-    GridGgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
+    IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
         this(false, null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
 
@@ -199,7 +199,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param lockId Lock ID.
      * @param modificationTime Last modification time.
      */
-    GridGgfsFileInfo(GridGgfsFileInfo info, @Nullable IgniteUuid lockId, long modificationTime) {
+    IgfsFileInfo(IgfsFileInfo info, @Nullable IgniteUuid lockId, long modificationTime) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), lockId, true, info.accessTime, modificationTime, info.evictExclude());
     }
@@ -210,7 +210,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param listing New directory listing.
      * @param old Old file info.
      */
-    GridGgfsFileInfo(Map<String, GridGgfsListingEntry> listing, GridGgfsFileInfo old) {
+    IgfsFileInfo(Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
         this(old.isDirectory(), old.id, old.blockSize, old.len, old.affKey, listing, old.props, old.fileMap(),
             old.lockId, false, old.accessTime, old.modificationTime, old.evictExclude());
     }
@@ -230,8 +230,8 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    private GridGgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
-        @Nullable Map<String, GridGgfsListingEntry> listing, @Nullable Map<String, String> props,
+    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+        @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
         @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
         this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
             modificationTime, evictExclude);
@@ -254,9 +254,9 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    private GridGgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
-        @Nullable Map<String, GridGgfsListingEntry> listing, @Nullable Map<String, String> props,
-        @Nullable GridGgfsFileMap fileMap, @Nullable IgniteUuid lockId, boolean cpProps, long accessTime,
+    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+        @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
+        @Nullable IgfsFileMap fileMap, @Nullable IgniteUuid lockId, boolean cpProps, long accessTime,
         long modificationTime, boolean evictExclude) {
         assert F.isEmpty(listing) || isDir;
 
@@ -276,7 +276,7 @@ public final class GridGgfsFileInfo implements Externalizable {
         this.listing = listing;
 
         if (fileMap == null && !isDir)
-            fileMap = new GridGgfsFileMap();
+            fileMap = new IgfsFileMap();
 
         this.fileMap = fileMap;
         this.accessTime = accessTime;
@@ -299,7 +299,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *
      * @param info An object to copy data info.
      */
-    public GridGgfsFileInfo(GridGgfsFileInfo info) {
+    public IgfsFileInfo(IgfsFileInfo info) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
     }
@@ -311,7 +311,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      *         of this class.
      */
     public static Builder builder() {
-        return new Builder(new GridGgfsFileInfo());
+        return new Builder(new IgfsFileInfo());
     }
 
     /**
@@ -323,8 +323,8 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @return A builder to construct a new unmodifiable instance
      *         of this class.
      */
-    public static Builder builder(GridGgfsFileInfo origin) {
-        return new Builder(new GridGgfsFileInfo(origin));
+    public static Builder builder(IgfsFileInfo origin) {
+        return new Builder(new IgfsFileInfo(origin));
     }
 
     /**
@@ -398,10 +398,10 @@ public final class GridGgfsFileInfo implements Externalizable {
     /**
      * @return Directory listing.
      */
-    public Map<String, GridGgfsListingEntry> listing() {
+    public Map<String, IgfsListingEntry> listing() {
         // Always wrap into unmodifiable map to be able to avoid illegal modifications in order pieces of the code.
         if (isFile())
-            return Collections.unmodifiableMap(Collections.<String, GridGgfsListingEntry>emptyMap());
+            return Collections.unmodifiableMap(Collections.<String, IgfsListingEntry>emptyMap());
 
         assert listing != null;
 
@@ -426,14 +426,14 @@ public final class GridGgfsFileInfo implements Externalizable {
     /**
      * @return File affinity map.
      */
-    public GridGgfsFileMap fileMap() {
+    public IgfsFileMap fileMap() {
         return fileMap;
     }
 
     /**
      * @param fileMap File affinity map.
      */
-    public void fileMap(GridGgfsFileMap fileMap) {
+    public void fileMap(IgfsFileMap fileMap) {
         this.fileMap = fileMap;
     }
 
@@ -496,8 +496,8 @@ public final class GridGgfsFileInfo implements Externalizable {
         props = U.readStringMap(in);
         lockId = U.readGridUuid(in);
         affKey = U.readGridUuid(in);
-        listing = (Map<String, GridGgfsListingEntry>)in.readObject();
-        fileMap = (GridGgfsFileMap)in.readObject();
+        listing = (Map<String, IgfsListingEntry>)in.readObject();
+        fileMap = (IgfsFileMap)in.readObject();
         accessTime = in.readLong();
         modificationTime = in.readLong();
         evictExclude = in.readBoolean();
@@ -518,7 +518,7 @@ public final class GridGgfsFileInfo implements Externalizable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        GridGgfsFileInfo that = (GridGgfsFileInfo)obj;
+        IgfsFileInfo that = (IgfsFileInfo)obj;
 
         return id.equals(that.id) && blockSize == that.blockSize && len == that.len && F.eq(affKey, that.affKey) &&
             F.eq(props, that.props) && F.eq(lockId, that.lockId);
@@ -526,23 +526,23 @@ public final class GridGgfsFileInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFileInfo.class, this);
+        return S.toString(IgfsFileInfo.class, this);
     }
 
     /**
-     * Builder for {@link GridGgfsFileInfo}.
+     * Builder for {@link IgfsFileInfo}.
      */
     @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** Instance to build. */
-        private final GridGgfsFileInfo info;
+        private final IgfsFileInfo info;
 
         /**
          * Private constructor.
          *
          * @param info Instance to build.
          */
-        private Builder(GridGgfsFileInfo info) {
+        private Builder(IgfsFileInfo info) {
             this.info = info;
         }
 
@@ -562,7 +562,7 @@ public final class GridGgfsFileInfo implements Externalizable {
          *
          * @return A constructed instance.
          */
-        public GridGgfsFileInfo build() {
+        public IgfsFileInfo build() {
             return info;
         }
     }

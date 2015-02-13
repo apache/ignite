@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileAffinityRange.*;
 
 /**
  * File map self test.
@@ -34,7 +34,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRanges() throws Exception {
-        GridGgfsFileMap map = new GridGgfsFileMap();
+        IgfsFileMap map = new IgfsFileMap();
 
         IgniteUuid[] affKeys = new IgniteUuid[20];
 
@@ -56,7 +56,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
                 assertEquals("For i: " + i, affKey, map.affinityKey(off3, false));
             }
 
-            map.addRange(new GridGgfsFileAffinityRange(10 + 20 * numOfRanges, 19 + 20 * numOfRanges,
+            map.addRange(new IgfsFileAffinityRange(10 + 20 * numOfRanges, 19 + 20 * numOfRanges,
                 affKeys[numOfRanges]));
 
             numOfRanges++;
@@ -67,44 +67,44 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAddUpdateAdd() throws Exception {
-        GridGgfsFileMap map = new GridGgfsFileMap();
+        IgfsFileMap map = new IgfsFileMap();
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
-        map.addRange(new GridGgfsFileAffinityRange(0, 9, affKey));
+        map.addRange(new IgfsFileAffinityRange(0, 9, affKey));
 
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(0, 9, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(0, 9, affKey), RANGE_STATUS_MOVING);
 
-        map.addRange(new GridGgfsFileAffinityRange(10, 19, affKey));
+        map.addRange(new IgfsFileAffinityRange(10, 19, affKey));
 
-        List<GridGgfsFileAffinityRange> ranges = map.ranges();
+        List<IgfsFileAffinityRange> ranges = map.ranges();
 
         assertEquals(2, ranges.size());
 
         assertEquals(RANGE_STATUS_MOVING, ranges.get(0).status());
-        assertTrue(ranges.get(0).regionEqual(new GridGgfsFileAffinityRange(0, 9, affKey)));
+        assertTrue(ranges.get(0).regionEqual(new IgfsFileAffinityRange(0, 9, affKey)));
 
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(1).status());
-        assertTrue(ranges.get(1).regionEqual(new GridGgfsFileAffinityRange(10, 19, affKey)));
+        assertTrue(ranges.get(1).regionEqual(new IgfsFileAffinityRange(10, 19, affKey)));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRangeUpdate1() throws Exception {
-        GridGgfsFileMap map = new GridGgfsFileMap();
+        IgfsFileMap map = new IgfsFileMap();
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
         for (int i = 0; i < 4; i++)
-            map.addRange(new GridGgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
+            map.addRange(new IgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
 
         // Middle, first, last.
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(30, 39, affKey), RANGE_STATUS_MOVING);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 19, affKey), RANGE_STATUS_MOVING);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(70, 79, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(30, 39, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(10, 19, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(70, 79, affKey), RANGE_STATUS_MOVING);
 
-        List<GridGgfsFileAffinityRange> ranges = map.ranges();
+        List<IgfsFileAffinityRange> ranges = map.ranges();
 
         assertEquals(RANGE_STATUS_MOVING, ranges.get(0).status());
         assertEquals(RANGE_STATUS_MOVING, ranges.get(1).status());
@@ -112,9 +112,9 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
         assertEquals(RANGE_STATUS_MOVING, ranges.get(3).status());
 
         // Middle, first, last.
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(30, 39, affKey), RANGE_STATUS_MOVED);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 19, affKey), RANGE_STATUS_MOVED);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(70, 79, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(30, 39, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(10, 19, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(70, 79, affKey), RANGE_STATUS_MOVED);
 
         ranges = map.ranges();
 
@@ -124,151 +124,151 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
         assertEquals(RANGE_STATUS_MOVED, ranges.get(3).status());
 
         // Middle, first, last.
-        map.deleteRange(new GridGgfsFileAffinityRange(30, 39, affKey));
-        map.deleteRange(new GridGgfsFileAffinityRange(10, 19, affKey));
-        map.deleteRange(new GridGgfsFileAffinityRange(70, 79, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(30, 39, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(10, 19, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(70, 79, affKey));
 
         ranges = map.ranges();
 
         assertEquals(1, ranges.size());
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(0).status());
-        assertTrue(ranges.get(0).regionEqual(new GridGgfsFileAffinityRange(50, 59, affKey)));
+        assertTrue(ranges.get(0).regionEqual(new IgfsFileAffinityRange(50, 59, affKey)));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRangeUpdate2() throws Exception {
-        GridGgfsFileMap map = new GridGgfsFileMap();
+        IgfsFileMap map = new IgfsFileMap();
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
         for (int i = 0; i < 4; i++)
-            map.addRange(new GridGgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
+            map.addRange(new IgfsFileAffinityRange(i * 20 + 10, i * 20 + 19, affKey));
 
         // Middle, first, last.
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(30, 35, affKey), RANGE_STATUS_MOVING);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 15, affKey), RANGE_STATUS_MOVING);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(70, 75, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(30, 35, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(10, 15, affKey), RANGE_STATUS_MOVING);
+        map.updateRangeStatus(new IgfsFileAffinityRange(70, 75, affKey), RANGE_STATUS_MOVING);
 
-        List<GridGgfsFileAffinityRange> ranges = map.ranges();
+        List<IgfsFileAffinityRange> ranges = map.ranges();
 
         assertEquals(7, ranges.size());
 
         int idx = 0;
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(10, 15, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(10, 15, affKey)));
         assertEquals(RANGE_STATUS_MOVING, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(16, 19, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(16, 19, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(30, 35, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(30, 35, affKey)));
         assertEquals(RANGE_STATUS_MOVING, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(36, 39, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(36, 39, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(50, 59, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(50, 59, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(70, 75, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(70, 75, affKey)));
         assertEquals(RANGE_STATUS_MOVING, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(76, 79, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(76, 79, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
 
         // Middle, first, last.
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(30, 35, affKey), RANGE_STATUS_MOVED);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 15, affKey), RANGE_STATUS_MOVED);
-        map.updateRangeStatus(new GridGgfsFileAffinityRange(70, 75, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(30, 35, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(10, 15, affKey), RANGE_STATUS_MOVED);
+        map.updateRangeStatus(new IgfsFileAffinityRange(70, 75, affKey), RANGE_STATUS_MOVED);
 
         idx = 0;
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(10, 15, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(10, 15, affKey)));
         assertEquals(RANGE_STATUS_MOVED, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(16, 19, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(16, 19, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(30, 35, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(30, 35, affKey)));
         assertEquals(RANGE_STATUS_MOVED, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(36, 39, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(36, 39, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(50, 59, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(50, 59, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(70, 75, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(70, 75, affKey)));
         assertEquals(RANGE_STATUS_MOVED, ranges.get(idx).status());
         idx++;
 
-        assertTrue(ranges.get(idx).regionEqual(new GridGgfsFileAffinityRange(76, 79, affKey)));
+        assertTrue(ranges.get(idx).regionEqual(new IgfsFileAffinityRange(76, 79, affKey)));
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(idx).status());
 
         // Middle, first, last.
-        map.deleteRange(new GridGgfsFileAffinityRange(30, 35, affKey));
-        map.deleteRange(new GridGgfsFileAffinityRange(10, 15, affKey));
-        map.deleteRange(new GridGgfsFileAffinityRange(70, 75, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(30, 35, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(10, 15, affKey));
+        map.deleteRange(new IgfsFileAffinityRange(70, 75, affKey));
 
         ranges = map.ranges();
 
         assertEquals(4, ranges.size());
 
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(0).status());
-        assertTrue(ranges.get(0).regionEqual(new GridGgfsFileAffinityRange(16, 19, affKey)));
+        assertTrue(ranges.get(0).regionEqual(new IgfsFileAffinityRange(16, 19, affKey)));
 
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(1).status());
-        assertTrue(ranges.get(1).regionEqual(new GridGgfsFileAffinityRange(36, 39, affKey)));
+        assertTrue(ranges.get(1).regionEqual(new IgfsFileAffinityRange(36, 39, affKey)));
 
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(2).status());
-        assertTrue(ranges.get(2).regionEqual(new GridGgfsFileAffinityRange(50, 59, affKey)));
+        assertTrue(ranges.get(2).regionEqual(new IgfsFileAffinityRange(50, 59, affKey)));
 
         assertEquals(RANGE_STATUS_INITIAL, ranges.get(3).status());
-        assertTrue(ranges.get(3).regionEqual(new GridGgfsFileAffinityRange(76, 79, affKey)));
+        assertTrue(ranges.get(3).regionEqual(new IgfsFileAffinityRange(76, 79, affKey)));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvalidRangeUpdates() throws Exception {
-        final GridGgfsFileMap map = new GridGgfsFileMap();
+        final IgfsFileMap map = new IgfsFileMap();
 
         final IgniteUuid affKey1 = IgniteUuid.randomUuid();
         final IgniteUuid affKey2 = IgniteUuid.randomUuid();
 
-        map.addRange(new GridGgfsFileAffinityRange(10, 19, affKey1));
-        map.addRange(new GridGgfsFileAffinityRange(30, 39, affKey1));
+        map.addRange(new IgfsFileAffinityRange(10, 19, affKey1));
+        map.addRange(new IgfsFileAffinityRange(30, 39, affKey1));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                map.updateRangeStatus(new GridGgfsFileAffinityRange(0, 5, affKey1), RANGE_STATUS_MOVING);
+                map.updateRangeStatus(new IgfsFileAffinityRange(0, 5, affKey1), RANGE_STATUS_MOVING);
 
                 return null;
             }
-        }, GridGgfsInvalidRangeException.class, null);
+        }, IgfsInvalidRangeException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                map.updateRangeStatus(new GridGgfsFileAffinityRange(15, 19, affKey1), RANGE_STATUS_MOVING);
+                map.updateRangeStatus(new IgfsFileAffinityRange(15, 19, affKey1), RANGE_STATUS_MOVING);
 
                 return null;
             }
-        }, GridGgfsInvalidRangeException.class, null);
+        }, IgfsInvalidRangeException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 19, affKey2), RANGE_STATUS_MOVING);
+                map.updateRangeStatus(new IgfsFileAffinityRange(10, 19, affKey2), RANGE_STATUS_MOVING);
 
                 return null;
             }
@@ -276,7 +276,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                map.updateRangeStatus(new GridGgfsFileAffinityRange(10, 22, affKey1), RANGE_STATUS_MOVING);
+                map.updateRangeStatus(new IgfsFileAffinityRange(10, 22, affKey1), RANGE_STATUS_MOVING);
 
                 return null;
             }
@@ -291,9 +291,9 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     public void testRangeSplit() throws Exception {
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
-        GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange(0, 9999, affKey);
+        IgfsFileAffinityRange range = new IgfsFileAffinityRange(0, 9999, affKey);
 
-        Collection<GridGgfsFileAffinityRange> split = range.split(10000);
+        Collection<IgfsFileAffinityRange> split = range.split(10000);
 
         assertEquals(1, split.size());
         assertTrue(range.regionEqual(F.first(split)));
@@ -302,15 +302,15 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(2, split.size());
 
-        Iterator<GridGgfsFileAffinityRange> it = split.iterator();
+        Iterator<IgfsFileAffinityRange> it = split.iterator();
 
-        GridGgfsFileAffinityRange part = it.next();
+        IgfsFileAffinityRange part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(0, 4999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(0, 4999, affKey)));
 
         part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(5000, 9999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(5000, 9999, affKey)));
 
         split = range.split(3000);
 
@@ -320,18 +320,18 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
 
         part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(0, 2999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(0, 2999, affKey)));
 
         part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(3000, 5999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(3000, 5999, affKey)));
 
         part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(6000, 8999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(6000, 8999, affKey)));
 
         part = it.next();
 
-        assertTrue(part.regionEqual(new GridGgfsFileAffinityRange(9000, 9999, affKey)));
+        assertTrue(part.regionEqual(new IgfsFileAffinityRange(9000, 9999, affKey)));
     }
 }

@@ -17,27 +17,33 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.ignitefs.*;
+
+import java.io.*;
 
 /**
- * Internal exception thrown when attempted to update range that is no longer present
- * in file affinity map.
+ * Implementation adapter providing necessary methods.
  */
-public class GridGgfsInvalidRangeException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param msg Error message.
-     */
-    public GridGgfsInvalidRangeException(String msg) {
-        super(msg);
+public abstract class IgfsInputStreamAdapter extends IgniteFsInputStream {
+    /** {@inheritDoc} */
+    @Override public long length() {
+        return fileInfo().length();
     }
 
     /**
-     * @param cause Error cause.
+     * Gets file info for opened file.
+     *
+     * @return File info.
      */
-    public GridGgfsInvalidRangeException(Throwable cause) {
-        super(cause);
-    }
+    public abstract IgfsFileInfo fileInfo();
+
+    /**
+     * Reads bytes from given position.
+     *
+     * @param pos Position to read from.
+     * @param len Number of bytes to read.
+     * @return Array of chunks with respect to chunk file representation.
+     * @throws IOException If read failed.
+     */
+    public abstract byte[][] readChunks(long pos, int len) throws IOException;
 }

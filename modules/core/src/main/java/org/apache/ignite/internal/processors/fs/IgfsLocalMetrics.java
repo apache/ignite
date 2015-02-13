@@ -24,7 +24,7 @@ import org.jdk8.backport.*;
 /**
  * Value object holding all local GGFS metrics which cannot be determined using file system traversal.
  */
-public class GridGgfsLocalMetrics {
+public class IgfsLocalMetrics {
     /** Block reads. First value - total reads, second value - reads delegated to the secondary file system. */
     private volatile IgniteBiTuple<LongAdder, LongAdder> blocksRead;
 
@@ -46,7 +46,7 @@ public class GridGgfsLocalMetrics {
     /**
      * Constructor.
      */
-    GridGgfsLocalMetrics() {
+    IgfsLocalMetrics() {
         reset();
     }
 

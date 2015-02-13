@@ -62,13 +62,13 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public static final IgniteFsPath FILE_RMT = new IgniteFsPath("/fileRemote");
 
     /** Primary GGFS instances. */
-    private static GridGgfsImpl ggfsPrimary;
+    private static IgfsImpl ggfsPrimary;
 
     /** Secondary GGFS instance. */
     private static IgniteFs secondaryFs;
 
     /** Primary file system data cache. */
-    private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;
+    private static GridCacheAdapter<IgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
     private static CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
@@ -137,7 +137,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         Ignite g = G.start(cfg);
 
-        ggfsPrimary = (GridGgfsImpl)g.fileSystem(GGFS_PRIMARY);
+        ggfsPrimary = (IgfsImpl)g.fileSystem(GGFS_PRIMARY);
 
         dataCache = ggfsPrimary.context().kernalContext().cache().internalCache(
             ggfsPrimary.context().configuration().getDataCacheName());

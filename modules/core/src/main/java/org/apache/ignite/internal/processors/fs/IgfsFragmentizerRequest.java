@@ -40,8 +40,8 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
 
     /** Ranges to fragment. */
     @GridToStringInclude
-    @GridDirectCollection(GridGgfsFileAffinityRange.class)
-    private Collection<GridGgfsFileAffinityRange> fragmentRanges;
+    @GridDirectCollection(IgfsFileAffinityRange.class)
+    private Collection<IgfsFileAffinityRange> fragmentRanges;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -54,7 +54,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
      * @param fileId File id to fragment.
      * @param fragmentRanges Ranges to fragment.
      */
-    public IgfsFragmentizerRequest(IgniteUuid fileId, Collection<GridGgfsFileAffinityRange> fragmentRanges) {
+    public IgfsFragmentizerRequest(IgniteUuid fileId, Collection<IgfsFileAffinityRange> fragmentRanges) {
         this.fileId = fileId;
         this.fragmentRanges = fragmentRanges;
     }
@@ -69,7 +69,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     /**
      * @return Fragment ranges.
      */
-    public Collection<GridGgfsFileAffinityRange> fragmentRanges() {
+    public Collection<IgfsFileAffinityRange> fragmentRanges() {
         return fragmentRanges;
     }
 
@@ -121,7 +121,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
                 state++;
 
             case 1:
-                if (!writer.writeCollection("fragmentRanges", fragmentRanges, GridGgfsFileAffinityRange.class))
+                if (!writer.writeCollection("fragmentRanges", fragmentRanges, IgfsFileAffinityRange.class))
                     return false;
 
                 state++;
@@ -149,7 +149,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
                 state++;
 
             case 1:
-                fragmentRanges = reader.readCollection("fragmentRanges", GridGgfsFileAffinityRange.class);
+                fragmentRanges = reader.readCollection("fragmentRanges", IgfsFileAffinityRange.class);
 
                 if (!reader.isLastRead())
                     return false;

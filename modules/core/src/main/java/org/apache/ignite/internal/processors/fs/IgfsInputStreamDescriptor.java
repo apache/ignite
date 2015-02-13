@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * GGFS input stream descriptor - includes stream id and length.
  */
-public class GridGgfsInputStreamDescriptor implements Externalizable {
+public class IgfsInputStreamDescriptor implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class GridGgfsInputStreamDescriptor implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsInputStreamDescriptor() {
+    public IgfsInputStreamDescriptor() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class GridGgfsInputStreamDescriptor implements Externalizable {
      * @param streamId Stream id.
      * @param len Available length.
      */
-    public GridGgfsInputStreamDescriptor(long streamId, long len) {
+    public IgfsInputStreamDescriptor(long streamId, long len) {
         this.streamId = streamId;
         this.len = len;
     }

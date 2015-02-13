@@ -30,6 +30,6 @@ public class CacheIgniteFsEvictionFilter implements CacheEvictionFilter {
     @Override public boolean evictAllowed(Cache.Entry entry) {
         Object key = entry.getKey();
 
-        return !(key instanceof GridGgfsBlockKey && ((GridGgfsBlockKey)key).evictExclude());
+        return !(key instanceof IgfsBlockKey && ((IgfsBlockKey)key).evictExclude());
     }
 }

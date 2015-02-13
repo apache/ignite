@@ -62,12 +62,12 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 /**
  * Cache based file's data container.
  */
-public class GridGgfsDataManager extends GridGgfsManager {
+public class IgfsDataManager extends IgfsManager {
     /** GGFS. */
-    private GridGgfsEx ggfs;
+    private IgfsEx ggfs;
 
     /** Data cache projection. */
-    private GridCacheProjectionEx<GridGgfsBlockKey, byte[]> dataCachePrj;
+    private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
     private GridCache<Object, Object> dataCache;
@@ -76,7 +76,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private IgniteInternalFuture<?> dataCacheStartFut;
 
     /** Local GGFS metrics. */
-    private GridGgfsLocalMetrics metrics;
+    private IgfsLocalMetrics metrics;
 
     /** Group block size. */
     private long grpBlockSize;
@@ -112,7 +112,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private long trashPurgeTimeout;
 
     /** On-going remote reads futures. */
-    private final ConcurrentHashMap8<GridGgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
+    private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
         new ConcurrentHashMap8<>();
 
     /** Executor service for puts in dual mode */
@@ -302,9 +302,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
      *
      * @return New instance of data loader.
      */
-    private IgniteDataLoader<GridGgfsBlockKey, byte[]> dataLoader() {
-        IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr =
-            ggfsCtx.kernalContext().<GridGgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
+    private IgniteDataLoader<IgfsBlockKey, byte[]> dataLoader() {
+        IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
+            ggfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
         IgniteFsConfiguration cfg = ggfsCtx.configuration();
 
@@ -314,7 +314,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         if (cfg.getPerNodeParallelBatchCount() > 0)
             ldr.perNodeParallelLoadOperations(cfg.getPerNodeParallelBatchCount());
 
-        ldr.updater(GridDataLoadCacheUpdaters.<GridGgfsBlockKey, byte[]>batchedSorted());
+        ldr.updater(GridDataLoadCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
     }
@@ -326,7 +326,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return List of local data block indices.
      * @throws IgniteCheckedException If failed.
      */
-    public List<Long> listLocalDataBlocks(GridGgfsFileInfo fileInfo)
+    public List<Long> listLocalDataBlocks(IgfsFileInfo fileInfo)
         throws IgniteCheckedException {
         assert fileInfo != null;
 
@@ -347,7 +347,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             }
             else {
                 // Re-calculate affinity result.
-                GridGgfsBlockKey key = new GridGgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
+                IgfsBlockKey key = new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
                     fileInfo.evictExclude(), i);
 
                 Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
@@ -381,7 +381,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final IgniteFsPath path,
+    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsFileInfo fileInfo, final IgniteFsPath path,
         final long blockIdx, @Nullable final IgniteFsReader secReader)
         throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
@@ -390,7 +390,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         assert blockIdx >= 0;
 
         // Schedule block request BEFORE prefetch requests.
-        final GridGgfsBlockKey key = blockKey(blockIdx, fileInfo);
+        final IgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled() &&
             dataCache.affinity().isPrimaryOrBackup(ggfsCtx.kernalContext().discovery().localNode(), key)) {
@@ -489,7 +489,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File info of file opened to write.
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
-    public IgniteInternalFuture<Boolean> writeStart(GridGgfsFileInfo fileInfo) {
+    public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
         WriteCompletionFuture fut = new WriteCompletionFuture(ggfsCtx.kernalContext(), fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
@@ -508,7 +508,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      *
      * @param fileInfo File info being written.
      */
-    public void writeClose(GridGgfsFileInfo fileInfo) {
+    public void writeClose(IgfsFileInfo fileInfo) {
         WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
 
         if (fut != null)
@@ -537,14 +537,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public byte[] storeDataBlocks(
-        GridGgfsFileInfo fileInfo,
+        IgfsFileInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
         int remainderLen,
         ByteBuffer data,
         boolean flush,
-        GridGgfsFileAffinityRange affinityRange,
-        @Nullable GridGgfsFileWorkerBatch batch
+        IgfsFileAffinityRange affinityRange,
+        @Nullable IgfsFileWorkerBatch batch
     ) throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -570,15 +570,15 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @throws IOException If store failed.
      */
     @Nullable public byte[] storeDataBlocks(
-        GridGgfsFileInfo fileInfo,
+        IgfsFileInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
         int remainderLen,
         DataInput in,
         int len,
         boolean flush,
-        GridGgfsFileAffinityRange affinityRange,
-        @Nullable GridGgfsFileWorkerBatch batch
+        IgfsFileAffinityRange affinityRange,
+        @Nullable IgfsFileWorkerBatch batch
     ) throws IgniteCheckedException, IOException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -592,7 +592,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File details to remove data for.
      * @return Delete future that will be completed when file is actually erased.
      */
-    public IgniteInternalFuture<Object> delete(GridGgfsFileInfo fileInfo) {
+    public IgniteInternalFuture<Object> delete(IgfsFileInfo fileInfo) {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         if (!fileInfo.isFile()) {
@@ -610,17 +610,17 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File info.
      * @return Block key.
      */
-    public GridGgfsBlockKey blockKey(long blockIdx, GridGgfsFileInfo fileInfo) {
+    public IgfsBlockKey blockKey(long blockIdx, IgfsFileInfo fileInfo) {
         if (fileInfo.affinityKey() != null)
-            return new GridGgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), blockIdx);
+            return new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), blockIdx);
 
         if (fileInfo.fileMap() != null) {
             IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockIdx * fileInfo.blockSize(), false);
 
-            return new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), blockIdx);
+            return new IgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), blockIdx);
         }
 
-        return new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), blockIdx);
+        return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), blockIdx);
     }
 
     /**
@@ -631,7 +631,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param range Range to clean up.
      * @param cleanNonColocated {@code True} if all blocks should be cleaned.
      */
-    public void cleanBlocks(GridGgfsFileInfo fileInfo, GridGgfsFileAffinityRange range, boolean cleanNonColocated) {
+    public void cleanBlocks(IgfsFileInfo fileInfo, IgfsFileAffinityRange range, boolean cleanNonColocated) {
         long startIdx = range.startOffset() / fileInfo.blockSize();
 
         long endIdx = range.endOffset() / fileInfo.blockSize();
@@ -641,13 +641,13 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
-                    ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
+                    ldr.removeData(new IgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
 
                     if (cleanNonColocated)
-                        ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), idx));
+                        ldr.removeData(new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), idx));
                 }
             }
         }
@@ -661,20 +661,20 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File info to move data for.
      * @param range Range to move.
      */
-    public void spreadBlocks(GridGgfsFileInfo fileInfo, GridGgfsFileAffinityRange range) {
+    public void spreadBlocks(IgfsFileInfo fileInfo, IgfsFileAffinityRange range) {
         long startIdx = range.startOffset() / fileInfo.blockSize();
 
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
-                    GridGgfsBlockKey colocatedKey = new GridGgfsBlockKey(fileInfo.id(), range.affinityKey(),
+                    IgfsBlockKey colocatedKey = new IgfsBlockKey(fileInfo.id(), range.affinityKey(),
                         fileInfo.evictExclude(), idx);
 
-                    GridGgfsBlockKey key = new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), idx);
+                    IgfsBlockKey key = new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), idx);
 
                     // Most of the time should be local get.
                     byte[] block = dataCachePrj.get(colocatedKey);
@@ -684,7 +684,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
                             try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                                Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
+                                Map<IgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
 
@@ -736,7 +736,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len)
+    public Collection<IgniteFsBlockLocation> affinity(IgfsFileInfo info, long start, long len)
         throws IgniteCheckedException {
         return affinity(info, start, len, 0);
     }
@@ -751,7 +751,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len, long maxLen)
+    public Collection<IgniteFsBlockLocation> affinity(IgfsFileInfo info, long start, long len, long maxLen)
         throws IgniteCheckedException {
         assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
@@ -780,7 +780,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             Collection<IgniteFsBlockLocation> res = new LinkedList<>();
 
             splitBlocks(start, len, maxLen, dataCache.affinity().mapKeyToPrimaryAndBackups(
-                new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 0)), res);
+                new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 0)), res);
 
             return res;
         }
@@ -797,7 +797,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         long pos = start;
         long end = start + len;
 
-        for (GridGgfsFileAffinityRange range : info.fileMap().ranges()) {
+        for (IgfsFileAffinityRange range : info.fileMap().ranges()) {
             if (log.isDebugEnabled())
                 log.debug("Checking range [range=" + range + ", pos=" + pos + ']');
 
@@ -861,7 +861,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param res Result collection to add regions to.
      * @throws IgniteCheckedException If failed.
      */
-    private void affinity0(GridGgfsFileInfo info, long start, long len, long maxLen, Deque<IgniteFsBlockLocation> res)
+    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgniteFsBlockLocation> res)
         throws IgniteCheckedException {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
@@ -895,7 +895,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             }
 
             // Affinity for the first block in the group.
-            GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(),
+            IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(),
                 grpIdx * grpSize);
 
             Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
@@ -942,13 +942,13 @@ public class GridGgfsDataManager extends GridGgfsManager {
             while (start0 < end) {
                 long len0 = Math.min(maxLen, end - start0);
 
-                res.add(new GridGgfsBlockLocationImpl(start0, len0, nodes));
+                res.add(new IgfsBlockLocationImpl(start0, len0, nodes));
 
                 start0 += len0;
             }
         }
         else
-            res.add(new GridGgfsBlockLocationImpl(start, len, nodes));
+            res.add(new IgfsBlockLocationImpl(start, len, nodes));
     }
 
     /**
@@ -1006,7 +1006,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @throws IgniteCheckedException If batch processing failed.
      */
     private void processBatch(IgniteUuid fileId, final ClusterNode node,
-        final Map<GridGgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
+        final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
         final long batchId = reqIdCtr.getAndIncrement();
 
         final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
@@ -1075,7 +1075,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param data Data to write.
      * @throws IgniteCheckedException If update failed.
      */
-    private void processPartialBlockWrite(IgniteUuid fileId, GridGgfsBlockKey colocatedKey, int startOff,
+    private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
@@ -1123,12 +1123,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         // Create non-colocated key.
-        GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
+        IgfsBlockKey key = new IgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
         try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
-            Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
+            Map<IgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
             boolean hasVal = false;
 
@@ -1184,7 +1184,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param data Data.
      * @throws IgniteCheckedException If failed.
      */
-    private void putSafe(final GridGgfsBlockKey key, final byte[] data) throws IgniteCheckedException {
+    private void putSafe(final IgfsBlockKey key, final byte[] data) throws IgniteCheckedException {
         assert key != null;
         assert data != null;
 
@@ -1243,7 +1243,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Future that will be completed after put is done.
      */
     @SuppressWarnings("unchecked")
-    private IgniteInternalFuture<?> storeBlocksAsync(Map<GridGgfsBlockKey, byte[]> blocks) {
+    private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
 
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
@@ -1340,18 +1340,18 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param locRange Local affinity range to update.
      * @return Block key.
      */
-    private GridGgfsBlockKey createBlockKey(
+    private IgfsBlockKey createBlockKey(
         long block,
-        GridGgfsFileInfo fileInfo,
-        GridGgfsFileAffinityRange locRange
+        IgfsFileInfo fileInfo,
+        IgfsFileAffinityRange locRange
     ) {
         // If affinityKey is present, return block key as is.
         if (fileInfo.affinityKey() != null)
-            return new GridGgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), block);
+            return new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), block);
 
         // If range is done, no colocated writes are attempted.
         if (locRange == null || locRange.done())
-            return new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
+            return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
 
         long blockStart = block * fileInfo.blockSize();
 
@@ -1359,7 +1359,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         if (locRange.less(blockStart)) {
             IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockStart, false);
 
-            return new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), block);
+            return new IgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), block);
         }
 
         // Check if we have enough free space to do colocated writes.
@@ -1368,13 +1368,13 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Forbid further co-location.
             locRange.markDone();
 
-            return new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
+            return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
         }
 
         if (!locRange.belongs(blockStart))
             locRange.expand(blockStart, fileInfo.blockSize());
 
-        return new GridGgfsBlockKey(fileInfo.id(), locRange.affinityKey(), fileInfo.evictExclude(), block);
+        return new IgfsBlockKey(fileInfo.id(), locRange.affinityKey(), fileInfo.evictExclude(), block);
     }
 
     /**
@@ -1397,15 +1397,15 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
         @Nullable public byte[] storeDataBlocks(
-            GridGgfsFileInfo fileInfo,
+            IgfsFileInfo fileInfo,
             long reservedLen,
             @Nullable byte[] remainder,
             final int remainderLen,
             T src,
             int srcLen,
             boolean flush,
-            GridGgfsFileAffinityRange affinityRange,
-            @Nullable GridGgfsFileWorkerBatch batch
+            IgfsFileAffinityRange affinityRange,
+            @Nullable IgfsFileWorkerBatch batch
         ) throws IgniteCheckedException {
             IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
@@ -1423,7 +1423,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             int written = 0;
             int remainderOff = 0;
 
-            Map<GridGgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
+            Map<IgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
             ClusterNode node = null;
             int off = 0;
 
@@ -1451,7 +1451,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     readData(src, portion, portionOff);
 
                 // Will update range if necessary.
-                GridGgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
+                IgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
 
                 ClusterNode primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
 
@@ -1574,7 +1574,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateProcessor implements EntryProcessor<GridGgfsBlockKey, byte[], Void>,
+    private static final class UpdateProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1609,7 +1609,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<GridGgfsBlockKey, byte[]> entry, Object... args) {
+        @Override public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args) {
             byte[] e = entry.getValue();
 
             final int size = data.length;
@@ -1656,10 +1656,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      */
     private class AsyncDeleteWorker extends GridWorker {
         /** File info for stop request. */
-        private final GridGgfsFileInfo stopInfo = new GridGgfsFileInfo();
+        private final IgfsFileInfo stopInfo = new IgfsFileInfo();
 
         /** Delete requests queue. */
-        private BlockingQueue<IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo>> delReqs =
+        private BlockingQueue<IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo>> delReqs =
             new LinkedBlockingQueue<>();
 
         /**
@@ -1682,7 +1682,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param info File info to delete.
          * @return Future which completes when entry is actually removed.
          */
-        private IgniteInternalFuture<Object> deleteAsync(GridGgfsFileInfo info) {
+        private IgniteInternalFuture<Object> deleteAsync(IgfsFileInfo info) {
             GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
 
             delReqs.offer(F.t(fut, info));
@@ -1694,10 +1694,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
-                    IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
+                    IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo> req = delReqs.take();
 
                     GridFutureAdapter<Object> fut = req.get1();
-                    GridGgfsFileInfo fileInfo = req.get2();
+                    IgfsFileInfo fileInfo = req.get2();
 
                     // Identity check.
                     if (fileInfo == stopInfo) {
@@ -1706,19 +1706,19 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         break;
                     }
 
-                    IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader();
 
                     try {
-                        GridGgfsFileMap map = fileInfo.fileMap();
+                        IgfsFileMap map = fileInfo.fileMap();
 
                         for (long block = 0, size = fileInfo.blocksCount(); block < size; block++) {
                             IgniteUuid affKey = map == null ? null : map.affinityKey(block * fileInfo.blockSize(), true);
 
-                            ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(),
+                            ldr.removeData(new IgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(),
                                 block));
 
                             if (affKey != null)
-                                ldr.removeData(new GridGgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(),
+                                ldr.removeData(new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(),
                                     block));
                         }
                     }
@@ -1733,7 +1733,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                             IgniteUuid fileId = fileInfo.id();
 
                             for (long block = 0, size = fileInfo.blocksCount(); block < size; block++)
-                                ldr.removeData(new GridGgfsBlockKey(fileId, fileInfo.affinityKey(),
+                                ldr.removeData(new IgfsBlockKey(fileId, fileInfo.affinityKey(),
                                     fileInfo.evictExclude(), block));
                         }
                         catch (IgniteException e) {
@@ -1757,7 +1757,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Stopping asynchronous ggfs file delete thread: " + name());
 
-                IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.poll();
+                IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo> req = delReqs.poll();
 
                 while (req != null) {
                     req.get1().onCancelled();

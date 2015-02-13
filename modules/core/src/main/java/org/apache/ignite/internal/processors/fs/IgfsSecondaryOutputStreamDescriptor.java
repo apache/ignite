@@ -29,7 +29,7 @@ public class IgfsSecondaryOutputStreamDescriptor {
     private final IgniteUuid parentId;
 
     /** File info in the primary file system. */
-    private final GridGgfsFileInfo info;
+    private final IgfsFileInfo info;
 
     /** Output stream to the secondary file system. */
     private final OutputStream out;
@@ -41,7 +41,7 @@ public class IgfsSecondaryOutputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param out Output stream to the secondary file system.
      */
-    IgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, GridGgfsFileInfo info, OutputStream out) {
+    IgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, IgfsFileInfo info, OutputStream out) {
         assert parentId != null;
         assert info != null;
         assert out != null;
@@ -61,7 +61,7 @@ public class IgfsSecondaryOutputStreamDescriptor {
     /**
      * @return File info in the primary file system.
      */
-    GridGgfsFileInfo info() {
+    IgfsFileInfo info() {
         return info;
     }
 

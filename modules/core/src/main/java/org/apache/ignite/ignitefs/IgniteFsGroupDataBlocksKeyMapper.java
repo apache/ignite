@@ -73,8 +73,8 @@ public class IgniteFsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
 
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        if (key != null && GridGgfsBlockKey.class.equals(key.getClass())) {
-            GridGgfsBlockKey blockKey = (GridGgfsBlockKey)key;
+        if (key != null && IgfsBlockKey.class.equals(key.getClass())) {
+            IgfsBlockKey blockKey = (IgfsBlockKey)key;
 
             if (blockKey.affinityKey() != null)
                 return blockKey.affinityKey();

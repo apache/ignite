@@ -29,7 +29,7 @@ import java.io.*;
 /**
  * GGFS job implementation.
  */
-public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob> {
+public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public GridGgfsJobImpl(IgniteFsJob job, String ggfsName, IgniteFsPath path, long start, long len,
+    public IgfsJobImpl(IgniteFsJob job, String ggfsName, IgniteFsPath path, long start, long len,
         IgniteFsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;

@@ -49,6 +49,6 @@ public class IgfsHelperImpl implements IgfsHelper {
 
     /** {@inheritDoc} */
     @Override public boolean isGgfsBlockKey(Object key) {
-        return key instanceof GridGgfsBlockKey;
+        return key instanceof IgfsBlockKey;
     }
 }

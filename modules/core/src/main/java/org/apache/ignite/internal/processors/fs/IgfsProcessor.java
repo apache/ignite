@@ -51,14 +51,14 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Converts context to GGFS. */
-    private static final IgniteClosure<GridGgfsContext,IgniteFs> CTX_TO_GGFS = new C1<GridGgfsContext, IgniteFs>() {
-        @Override public IgniteFs apply(GridGgfsContext ggfsCtx) {
+    private static final IgniteClosure<IgfsContext,IgniteFs> CTX_TO_GGFS = new C1<IgfsContext, IgniteFs>() {
+        @Override public IgniteFs apply(IgfsContext ggfsCtx) {
             return ggfsCtx.ggfs();
         }
     };
 
     /** */
-    private final ConcurrentMap<String, GridGgfsContext> ggfsCache =
+    private final ConcurrentMap<String, IgfsContext> ggfsCache =
         new ConcurrentHashMap8<>();
 
     /**
@@ -81,16 +81,16 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         // Start GGFS instances.
         for (IgniteFsConfiguration cfg : cfgs) {
-            GridGgfsContext ggfsCtx = new GridGgfsContext(
+            IgfsContext ggfsCtx = new IgfsContext(
                 ctx,
                 new IgniteFsConfiguration(cfg),
-                new GridGgfsMetaManager(),
-                new GridGgfsDataManager(),
-                new GridGgfsServerManager(),
-                new GridGgfsFragmentizerManager());
+                new IgfsMetaManager(),
+                new IgfsDataManager(),
+                new IgfsServerManager(),
+                new IgfsFragmentizerManager());
 
             // Start managers first.
-            for (GridGgfsManager mgr : ggfsCtx.managers())
+            for (IgfsManager mgr : ggfsCtx.managers())
                 mgr.start(ggfsCtx);
 
             ggfsCache.put(maskName(cfg.getName()), ggfsCtx);
@@ -110,22 +110,22 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 checkGgfsOnRemoteNode(n);
         }
 
-        for (GridGgfsContext ggfsCtx : ggfsCache.values())
-            for (GridGgfsManager mgr : ggfsCtx.managers())
+        for (IgfsContext ggfsCtx : ggfsCache.values())
+            for (IgfsManager mgr : ggfsCtx.managers())
                 mgr.onKernalStart();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Stop GGFS instances.
-        for (GridGgfsContext ggfsCtx : ggfsCache.values()) {
+        for (IgfsContext ggfsCtx : ggfsCache.values()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping ggfs: " + ggfsCtx.configuration().getName());
 
-            List<GridGgfsManager> mgrs = ggfsCtx.managers();
+            List<IgfsManager> mgrs = ggfsCtx.managers();
 
-            for (ListIterator<GridGgfsManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-                GridGgfsManager mgr = it.previous();
+            for (ListIterator<IgfsManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+                IgfsManager mgr = it.previous();
 
                 mgr.stop(cancel);
             }
@@ -141,14 +141,14 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        for (GridGgfsContext ggfsCtx : ggfsCache.values()) {
+        for (IgfsContext ggfsCtx : ggfsCache.values()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping ggfs: " + ggfsCtx.configuration().getName());
 
-            List<GridGgfsManager> mgrs = ggfsCtx.managers();
+            List<IgfsManager> mgrs = ggfsCtx.managers();
 
-            for (ListIterator<GridGgfsManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-                GridGgfsManager mgr = it.previous();
+            for (ListIterator<IgfsManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+                IgfsManager mgr = it.previous();
 
                 mgr.onKernalStop(cancel);
             }
@@ -173,14 +173,14 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override @Nullable public IgniteFs ggfs(@Nullable String name) {
-        GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
+        IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
         return ggfsCtx == null ? null : ggfsCtx.ggfs();
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
-        GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
+        IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
         return ggfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
     }
@@ -188,7 +188,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
         long start, long len, IgniteFsRecordResolver recRslv) {
-        return new GridGgfsJobImpl(job, ggfsName, path, start, len, recRslv);
+        return new IgfsJobImpl(job, ggfsName, path, start, len, recRslv);
     }
 
     /** {@inheritDoc} */
@@ -214,7 +214,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
         });
 
-        Collection<GridGgfsAttributes> attrVals = new ArrayList<>();
+        Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
         assert gridCfg.getGgfsConfiguration() != null;
 
@@ -231,7 +231,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
 
-            attrVals.add(new GridGgfsAttributes(
+            attrVals.add(new IgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
                 ((IgniteFsGroupDataBlocksKeyMapper)affMapper).groupSize(),
@@ -242,7 +242,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 ggfsCfg.isFragmentizerEnabled()));
         }
 
-        attrs.put(ATTR_GGFS, attrVals.toArray(new GridGgfsAttributes[attrVals.size()]));
+        attrs.put(ATTR_GGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
     }
 
     /**
@@ -347,16 +347,16 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws IgniteCheckedException {
-        GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_GGFS);
-        GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_GGFS);
+        IgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_GGFS);
+        IgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_GGFS);
 
         if (F.isEmpty(locAttrs) || F.isEmpty(rmtAttrs))
             return;
 
         assert rmtAttrs != null && locAttrs != null;
 
-        for (GridGgfsAttributes rmtAttr : rmtAttrs)
-            for (GridGgfsAttributes locAttr : locAttrs) {
+        for (IgfsAttributes rmtAttr : rmtAttrs)
+            for (IgfsAttributes locAttr : locAttrs) {
                 // Checking the use of different caches on the different GGFSes.
                 if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))

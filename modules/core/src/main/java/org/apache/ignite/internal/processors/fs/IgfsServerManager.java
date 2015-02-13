@@ -34,7 +34,7 @@ import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 /**
  * GGFS server manager.
  */
-public class GridGgfsServerManager extends GridGgfsManager {
+public class IgfsServerManager extends IgfsManager {
     /** IPC server rebind interval. */
     private static final long REBIND_INTERVAL = 3000;
 

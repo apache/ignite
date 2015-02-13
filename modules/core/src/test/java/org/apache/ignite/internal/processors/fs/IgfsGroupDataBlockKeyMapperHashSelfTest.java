@@ -55,7 +55,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
      * @return Partition index.
      */
     private int partition(IgniteFsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
-        return U.safeAbs((Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false, blockId)) % partCnt);
+        return U.safeAbs((Integer) mapper.affinityKey(new IgfsBlockKey(fileId, null, false, blockId)) % partCnt);
     }
 
     /**

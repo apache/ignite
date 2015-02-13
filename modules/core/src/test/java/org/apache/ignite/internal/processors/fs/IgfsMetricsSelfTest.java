@@ -373,7 +373,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBlockMetrics() throws Exception {
-        GridGgfsEx ggfs = (GridGgfsEx)ggfsPrimary[0];
+        IgfsEx ggfs = (IgfsEx)ggfsPrimary[0];
 
         IgniteFsPath fileRemote = new IgniteFsPath("/fileRemote");
         IgniteFsPath file1 = new IgniteFsPath("/file1");
@@ -412,7 +412,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         checkBlockMetrics(initMetrics, ggfs.metrics(), 0, 0, 0, 3, 0, blockSize * 3);
 
         // Read data from the first file.
-        GridGgfsInputStreamAdapter is = ggfs.open(file1);
+        IgfsInputStreamAdapter is = ggfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 

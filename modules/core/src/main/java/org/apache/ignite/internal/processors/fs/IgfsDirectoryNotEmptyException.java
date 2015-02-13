@@ -17,16 +17,28 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.ignitefs.*;
 
 /**
- * Generic GGFS worker task which could potentially throw an exception.
+ * Exception indicating that directory can not be deleted because it is not empty.
  */
-public interface GridGgfsFileWorkerTask {
+public class IgfsDirectoryNotEmptyException extends IgniteFsException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Execute task logic.
-     *
-     * @throws IgniteCheckedException If failed.
+     * @param msg Exception message.
      */
-    public void execute() throws IgniteCheckedException;
+    public IgfsDirectoryNotEmptyException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates an instance of GGFS exception caused by nested exception.
+     *
+     * @param cause Exception cause.
+     */
+    public IgfsDirectoryNotEmptyException(Throwable cause) {
+        super(cause);
+    }
 }

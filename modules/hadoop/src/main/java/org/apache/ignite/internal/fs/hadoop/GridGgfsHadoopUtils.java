@@ -114,7 +114,7 @@ public class GridGgfsHadoopUtils {
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
         else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);
-        else if (path != null && e.hasCause(GridGgfsDirectoryNotEmptyException.class))
+        else if (path != null && e.hasCause(IgfsDirectoryNotEmptyException.class))
             return new PathIsNotEmptyDirectoryException(path);
         else if (path != null && e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return new PathExistsException(path);

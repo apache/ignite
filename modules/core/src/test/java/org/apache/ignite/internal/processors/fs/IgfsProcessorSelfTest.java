@@ -209,7 +209,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             IgfsFileImpl info = (IgfsFileImpl)ggfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
-                GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());
+                IgfsFileInfo fileInfo = (IgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -267,7 +267,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsDirectoryNotEmptyException.class, null);
+        }, IgfsDirectoryNotEmptyException.class, null);
 
         assertListDir("/", "ef", "ab", "cd");
         assertListDir("/ef", "1", "3");
@@ -683,16 +683,16 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(ggfs.info(path), "fileId");
 
-        GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
-        GridCache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        GridCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
+        GridCache<IgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
-        GridGgfsFileInfo info = metaCache.get(fileId);
+        IgfsFileInfo info = metaCache.get(fileId);
 
         assertNotNull(info);
         assertTrue(info.isFile());
         assertNotNull(metaCache.get(info.id()));
 
-        GridGgfsDataManager dataMgr = ((GridGgfsEx)ggfs).context().data();
+        IgfsDataManager dataMgr = ((IgfsEx)ggfs).context().data();
 
         for (int i = 0; i < info.blocksCount(); i++)
             assertNotNull(dataCache.get(dataMgr.blockKey(i, info)));
@@ -726,7 +726,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         }
 
         for (int i = 0; i < info.blocksCount(); i++)
-            assertNull(dataCache.get(new GridGgfsBlockKey(info.id(), null, false, i)));
+            assertNull(dataCache.get(new IgfsBlockKey(info.id(), null, false, i)));
     }
 
     /** @throws Exception If failed. */

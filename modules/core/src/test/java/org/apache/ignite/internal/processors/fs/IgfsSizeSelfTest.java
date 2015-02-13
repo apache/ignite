@@ -45,12 +45,12 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileInfo.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
- * {@link org.apache.ignite.internal.processors.fs.GridGgfsAttributes} test case.
+ * {@link IgfsAttributes} test case.
  */
 public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** How many grids to start. */
@@ -336,7 +336,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             UUID id = grid(i).localNode().id();
 
-            GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(id);
+            GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
@@ -374,7 +374,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 UUID id = grid(i).localNode().id();
 
-                GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(id);
+                GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
                 int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
@@ -391,7 +391,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 UUID id = grid(i).localNode().id();
 
-                GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(id);
+                GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
                 assertEquals(totalSize, cache.ggfsDataSpaceUsed());
             }
@@ -411,7 +411,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         }
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(grid(i).localNode().id());
+            GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(grid(i).localNode().id());
 
             assert 0 == cache.ggfsDataSpaceUsed() : "Size counter is not 0: " + cache.ggfsDataSpaceUsed();
         }
@@ -479,7 +479,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         startUp();
 
-        GridGgfsImpl ggfs = ggfs(0);
+        IgfsImpl ggfs = ggfs(0);
 
         final IgniteFsPath path = new IgniteFsPath("/file");
         final IgniteFsPath otherPath = new IgniteFsPath("/fileOther");
@@ -489,12 +489,12 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
-        final GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
+        final GridCache<IgniteUuid, IgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.
         final IgniteUuid id = ggfs.context().meta().fileId(path);
-        final GridGgfsFileInfo info = ggfs.context().meta().info(id);
+        final IgfsFileInfo info = ggfs.context().meta().info(id);
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
 
@@ -522,19 +522,19 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // Now add file ID to trash listing so that delete worker could "see" it.
 
             try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Map<String, GridGgfsListingEntry> listing = Collections.singletonMap(path.name(),
-                    new GridGgfsListingEntry(info));
+                Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
+                    new IgfsListingEntry(info));
 
                 // Clear root listing.
-                metaCache.put(ROOT_ID, new GridGgfsFileInfo(ROOT_ID));
+                metaCache.put(ROOT_ID, new IgfsFileInfo(ROOT_ID));
 
                 // Add file to trash listing.
-                GridGgfsFileInfo trashInfo = metaCache.get(TRASH_ID);
+                IgfsFileInfo trashInfo = metaCache.get(TRASH_ID);
 
                 if (trashInfo == null)
-                    metaCache.put(TRASH_ID, new GridGgfsFileInfo(listing, new GridGgfsFileInfo(TRASH_ID)));
+                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, new IgfsFileInfo(TRASH_ID)));
                 else
-                    metaCache.put(TRASH_ID, new GridGgfsFileInfo(listing, trashInfo));
+                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, trashInfo));
 
                 tx.commit();
             }
@@ -590,7 +590,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             UUID id = grid(i).localNode().id();
 
-            GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(id);
+            GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
@@ -642,7 +642,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT - 1; i++) {
             UUID id = grid(i).localNode().id();
 
-            GridCacheAdapter<GridGgfsBlockKey, byte[]> cache = cache(id);
+            GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
@@ -673,12 +673,12 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Block key.
      * @throws Exception If failed.
      */
-    private GridGgfsBlockKey blockKey(IgniteFsPath path, long blockId) throws Exception {
-        GridGgfsEx ggfs0 = (GridGgfsEx)grid(0).fileSystem(GGFS_NAME);
+    private IgfsBlockKey blockKey(IgniteFsPath path, long blockId) throws Exception {
+        IgfsEx ggfs0 = (IgfsEx)grid(0).fileSystem(GGFS_NAME);
 
         IgniteUuid fileId = ggfs0.context().meta().fileId(path);
 
-        return new GridGgfsBlockKey(fileId, null, true, blockId);
+        return new IgfsBlockKey(fileId, null, true, blockId);
     }
 
     /**
@@ -687,7 +687,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @param key Block key.
      * @return Node ID.
      */
-    private UUID primary(GridGgfsBlockKey key) {
+    private UUID primary(IgfsBlockKey key) {
         IgniteEx grid = grid(0);
 
         for (ClusterNode node : grid.nodes()) {
@@ -704,7 +704,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @param key Block key.
      * @return Collection of node IDs.
      */
-    private Collection<UUID> primaryOrBackups(GridGgfsBlockKey key) {
+    private Collection<UUID> primaryOrBackups(IgfsBlockKey key) {
         IgniteEx grid = grid(0);
 
         Collection<UUID> ids = new HashSet<>();
@@ -724,8 +724,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return GGFS.
      * @throws Exception If failed.
      */
-    private GridGgfsImpl ggfs(int idx) throws Exception {
-        return (GridGgfsImpl)grid(idx).fileSystem(GGFS_NAME);
+    private IgfsImpl ggfs(int idx) throws Exception {
+        return (IgfsImpl)grid(idx).fileSystem(GGFS_NAME);
     }
 
     /**
@@ -735,8 +735,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return GGFS.
      * @throws Exception If failed.
      */
-    private GridGgfsImpl ggfs(Ignite ignite) throws Exception {
-        return (GridGgfsImpl) ignite.fileSystem(GGFS_NAME);
+    private IgfsImpl ggfs(Ignite ignite) throws Exception {
+        return (IgfsImpl) ignite.fileSystem(GGFS_NAME);
     }
 
     /**
@@ -745,9 +745,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @param nodeId Node ID.
      * @return Data cache.
      */
-    private GridCacheAdapter<GridGgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
-            .<GridGgfsBlockKey, byte[]>cache();
+    private GridCacheAdapter<IgfsBlockKey, byte[]> cache(UUID nodeId) {
+        return (GridCacheAdapter<IgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
+            .<IgfsBlockKey, byte[]>cache();
     }
 
     /**
@@ -767,7 +767,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             ggfs(0).create(path, false).close();
 
-            GridGgfsMetaManager meta = ggfs(0).context().meta();
+            IgfsMetaManager meta = ggfs(0).context().meta();
 
             IgniteUuid fileId = meta.fileId(path);
 
@@ -780,10 +780,10 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             Collection<GgfsBlock> blocks = new ArrayList<>(fullBlocks + remainderSize > 0 ? 1 : 0);
 
             for (int j = 0; j < fullBlocks; j++)
-                blocks.add(new GgfsBlock(new GridGgfsBlockKey(fileId, null, true, j), BLOCK_SIZE));
+                blocks.add(new GgfsBlock(new IgfsBlockKey(fileId, null, true, j), BLOCK_SIZE));
 
             if (remainderSize > 0)
-                blocks.add(new GgfsBlock(new GridGgfsBlockKey(fileId, null, true, fullBlocks), remainderSize));
+                blocks.add(new GgfsBlock(new IgfsBlockKey(fileId, null, true, fullBlocks), remainderSize));
 
             GgfsFile file = new GgfsFile(path, fileSize, blocks);
 
@@ -846,7 +846,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Block written to the file system. */
     private static class GgfsBlock {
         /** Block key. */
-        private final GridGgfsBlockKey key;
+        private final IgfsBlockKey key;
 
         /** Block length. */
         private final int len;
@@ -857,13 +857,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
          * @param key Block key.
          * @param len Block length.
          */
-        private GgfsBlock(GridGgfsBlockKey key, int len) {
+        private GgfsBlock(IgfsBlockKey key, int len) {
             this.key = key;
             this.len = len;
         }
 
         /** @return Block key. */
-        private GridGgfsBlockKey key() {
+        private IgfsBlockKey key() {
             return key;
         }
 

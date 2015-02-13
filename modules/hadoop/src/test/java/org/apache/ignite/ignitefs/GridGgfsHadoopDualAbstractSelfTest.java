@@ -93,10 +93,10 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstr
     protected static byte[] chunk;
 
     /** Primary GGFS. */
-    protected static GridGgfsImpl ggfs;
+    protected static IgfsImpl ggfs;
 
     /** Secondary GGFS. */
-    protected static GridGgfsImpl ggfsSecondary;
+    protected static IgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
     protected final IgniteFsMode mode;
@@ -187,8 +187,8 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstr
 
         Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
-        ggfs = (GridGgfsImpl) ignite.fileSystem("ggfs");
+        ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
+        ggfs = (IgfsImpl) ignite.fileSystem("ggfs");
     }
 
     /** {@inheritDoc} */
@@ -261,13 +261,13 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstr
         fsIn.readFully(0, readBuf, 0, readBuf.length);
 
         // Wait for a while for prefetch to finish (if any).
-        GridGgfsMetaManager meta = ggfs.context().meta();
+        IgfsMetaManager meta = ggfs.context().meta();
 
-        GridGgfsFileInfo info = meta.info(meta.fileId(FILE));
+        IgfsFileInfo info = meta.info(meta.fileId(FILE));
 
-        GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
+        IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<GridGgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
+        GridCache<IgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {

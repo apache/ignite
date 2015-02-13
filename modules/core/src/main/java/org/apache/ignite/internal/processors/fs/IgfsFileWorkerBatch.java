@@ -30,7 +30,7 @@ import java.util.concurrent.locks.*;
 /**
  * Work batch is an abstraction of the logically grouped tasks.
  */
-public class GridGgfsFileWorkerBatch {
+public class IgfsFileWorkerBatch {
     /** Completion latch. */
     private final CountDownLatch completeLatch = new CountDownLatch(1);
 
@@ -41,7 +41,7 @@ public class GridGgfsFileWorkerBatch {
     private final ReadWriteLock finishLock = new ReentrantReadWriteLock();
 
     /** Tasks queue. */
-    private final BlockingDeque<GridGgfsFileWorkerTask> queue = new LinkedBlockingDeque<>();
+    private final BlockingDeque<IgfsFileWorkerTask> queue = new LinkedBlockingDeque<>();
 
     /** Path to the file in the primary file system. */
     private final IgniteFsPath path;
@@ -61,7 +61,7 @@ public class GridGgfsFileWorkerBatch {
      * @param path Path to the file in the primary file system.
      * @param out Output stream opened to that file.
      */
-    GridGgfsFileWorkerBatch(IgniteFsPath path, OutputStream out) {
+    IgfsFileWorkerBatch(IgniteFsPath path, OutputStream out) {
         assert path != null;
         assert out != null;
 
@@ -76,7 +76,7 @@ public class GridGgfsFileWorkerBatch {
      * @return {@code True} in case operation was enqueued.
      */
     boolean write(final byte[] data) {
-        return addTask(new GridGgfsFileWorkerTask() {
+        return addTask(new IgfsFileWorkerTask() {
             @Override public void execute() throws IgniteCheckedException {
                 try {
                     out.write(data);
@@ -98,7 +98,7 @@ public class GridGgfsFileWorkerBatch {
 
             while (!cancelled) {
                 try {
-                    GridGgfsFileWorkerTask task = queue.poll(1000, TimeUnit.MILLISECONDS);
+                    IgfsFileWorkerTask task = queue.poll(1000, TimeUnit.MILLISECONDS);
 
                     if (task == null)
                         continue;
@@ -141,7 +141,7 @@ public class GridGgfsFileWorkerBatch {
             finishLock.writeLock().lock();
 
             try {
-                queue.add(new GridGgfsFileWorkerTask() {
+                queue.add(new IgfsFileWorkerTask() {
                     @Override public void execute() {
                         assert queue.isEmpty();
 
@@ -208,7 +208,7 @@ public class GridGgfsFileWorkerBatch {
      * @param task Task to add.
      * @return {@code True} in case the task was added to the queue.
      */
-    private boolean addTask(GridGgfsFileWorkerTask task) {
+    private boolean addTask(IgfsFileWorkerTask task) {
         finishLock.readLock().lock();
 
         try {

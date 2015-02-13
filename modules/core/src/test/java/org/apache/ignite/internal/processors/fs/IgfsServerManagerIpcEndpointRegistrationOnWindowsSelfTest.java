@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.*;
 import java.util.concurrent.*;
 
 /**
- * Tests for {@link GridGgfsServerManager} that checks shmem IPC endpoint registration
+ * Tests for {@link IgfsServerManager} that checks shmem IPC endpoint registration
  * forbidden for Windows.
  */
 public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest

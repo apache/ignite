@@ -502,7 +502,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         for (UUID id : nodeIds)
             nodes.add(new GridTestNode(id));
 
-        return new GridGgfsBlockLocationImpl(start, len, nodes);
+        return new IgfsBlockLocationImpl(start, len, nodes);
     }
 
     /**
@@ -658,7 +658,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * Mocked GGFS.
      */
-    private static class MockGgfs implements GridGgfsEx {
+    private static class MockGgfs implements IgfsEx {
         /** {@inheritDoc} */
         @Override public boolean isProxy(URI path) {
             return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
@@ -681,7 +681,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsContext context() {
+        @Override public IgfsContext context() {
             return null;
         }
 
@@ -691,17 +691,17 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
+        @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) {
+        @Override public IgfsInputStreamAdapter open(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+        @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
             return null;
         }
 
@@ -721,7 +721,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsLocalMetrics localMetrics() {
+        @Override public IgfsLocalMetrics localMetrics() {
             return null;
         }
 

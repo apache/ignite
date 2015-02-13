@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 /**
  * GGFS IPC handler.
  */
-class GridGgfsIpcHandler implements GridGgfsServerHandler {
+class IgfsIpcHandler implements IgfsServerHandler {
     /** For test purposes only. */
     @SuppressWarnings("UnusedDeclaration")
     private static boolean errWrite;
@@ -51,7 +51,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     private final int bufSize; // Buffer size. Must not be less then file block size.
 
     /** Ggfs instance for this handler. */
-    private GridGgfsEx ggfs;
+    private IgfsEx ggfs;
 
     /** Resource ID generator. */
     private AtomicLong rsrcIdGen = new AtomicLong();
@@ -64,7 +64,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      *
      * @param ggfsCtx Context.
      */
-    GridGgfsIpcHandler(GridGgfsContext ggfsCtx) {
+    IgfsIpcHandler(IgfsContext ggfsCtx) {
         assert ggfsCtx != null;
 
         ctx = ggfsCtx.kernalContext();
@@ -73,7 +73,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
         // Keep buffer size multiple of block size so no extra byte array copies is performed.
         bufSize = ggfsCtx.configuration().getBlockSize() * 2;
 
-        log = ctx.log(GridGgfsIpcHandler.class);
+        log = ctx.log(IgfsIpcHandler.class);
     }
 
     /** {@inheritDoc} */
@@ -82,7 +82,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClosed(GridGgfsClientSession ses) {
+    @Override public void onClosed(IgfsClientSession ses) {
         Iterator<Closeable> it = ses.registeredResources();
 
         while (it.hasNext()) {
@@ -99,7 +99,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final GridGgfsClientSession ses,
+    @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final IgfsClientSession ses,
         final GridGgfsMessage msg, DataInput in) {
         try {
             // Even if will be closed right after this call, response write error will be ignored.
@@ -152,7 +152,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @return Command execution result.
      * @throws Exception If failed.
      */
-    private GridGgfsMessage execute(GridGgfsClientSession ses, GridGgfsIpcCommand cmd, GridGgfsMessage msg,
+    private GridGgfsMessage execute(IgfsClientSession ses, GridGgfsIpcCommand cmd, GridGgfsMessage msg,
         @Nullable DataInput in)
         throws Exception {
         switch (cmd) {
@@ -208,7 +208,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
 
         ggfs.clientLogDirectory(req.logDirectory());
 
-        GridGgfsHandshakeResponse handshake = new GridGgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(),
+        IgfsHandshakeResponse handshake = new IgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(),
             ggfs.groupBlockSize(), ggfs.globalSampling());
 
         res.handshake(handshake);
@@ -241,7 +241,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @return Response message.
      * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsMessage processPathControlRequest(GridGgfsClientSession ses, GridGgfsIpcCommand cmd,
+    private GridGgfsMessage processPathControlRequest(IgfsClientSession ses, GridGgfsIpcCommand cmd,
         GridGgfsMessage msg) throws IgniteCheckedException {
         GridGgfsPathControlRequest req = (GridGgfsPathControlRequest)msg;
 
@@ -314,7 +314,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                     break;
 
                 case OPEN_READ: {
-                    GridGgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
+                    IgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
                         ggfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
                     long streamId = registerResource(ses, ggfsIn);
@@ -323,10 +323,10 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                         log.debug("Opened GGFS input stream for file read [ggfsName=" + ggfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                    GridGgfsFileInfo info = new GridGgfsFileInfo(ggfsIn.fileInfo(), null,
+                    IgfsFileInfo info = new IgfsFileInfo(ggfsIn.fileInfo(), null,
                         ggfsIn.fileInfo().modificationTime());
 
-                    res.response(new GridGgfsInputStreamDescriptor(streamId, info.length()));
+                    res.response(new IgfsInputStreamDescriptor(streamId, info.length()));
 
                     break;
                 }
@@ -396,7 +396,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @throws IgniteCheckedException If failed.
      * @throws IOException If failed.
      */
-    private GridGgfsMessage processStreamControlRequest(GridGgfsClientSession ses, GridGgfsIpcCommand cmd,
+    private GridGgfsMessage processStreamControlRequest(IgfsClientSession ses, GridGgfsIpcCommand cmd,
         GridGgfsMessage msg, DataInput in) throws IgniteCheckedException, IOException {
         GridGgfsStreamControlRequest req = (GridGgfsStreamControlRequest)msg;
 
@@ -446,7 +446,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 long pos = req.position();
                 int size = req.length();
 
-                GridGgfsInputStreamAdapter ggfsIn = (GridGgfsInputStreamAdapter)resource(ses, rsrcId);
+                IgfsInputStreamAdapter ggfsIn = (IgfsInputStreamAdapter)resource(ses, rsrcId);
 
                 if (ggfsIn == null)
                     throw new IgniteCheckedException("Input stream not found (already closed?): " + rsrcId);
@@ -539,7 +539,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @param rsrc Resource to register.
      * @return Registration resource ID.
      */
-    private long registerResource(GridGgfsClientSession ses, Closeable rsrc) {
+    private long registerResource(IgfsClientSession ses, Closeable rsrc) {
         long rsrcId = rsrcIdGen.getAndIncrement();
 
         boolean registered = ses.registerResource(rsrcId, rsrc);
@@ -556,7 +556,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @param rsrcId Resource ID.
      * @return Registered resource or {@code null} if not found.
      */
-    @Nullable private Closeable resource(GridGgfsClientSession ses, Long rsrcId) {
+    @Nullable private Closeable resource(IgfsClientSession ses, Long rsrcId) {
         return ses.resource(rsrcId);
     }
 }

@@ -28,7 +28,7 @@ import java.net.*;
 /**
  * Internal API extension for {@link org.apache.ignite.IgniteFs}.
  */
-public interface GridGgfsEx extends IgniteFs {
+public interface IgfsEx extends IgniteFs {
     /**
      * Stops GGFS cleaning all used resources.
      */
@@ -37,7 +37,7 @@ public interface GridGgfsEx extends IgniteFs {
     /**
      * @return GGFS context.
      */
-    public GridGgfsContext context();
+    public IgfsContext context();
 
     /**
      * Get handshake message.
@@ -47,14 +47,14 @@ public interface GridGgfsEx extends IgniteFs {
     public IgfsPaths proxyPaths();
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteException;
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteException;
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteException;
 
     /**
      * Gets global space counters.
@@ -86,7 +86,7 @@ public interface GridGgfsEx extends IgniteFs {
      *
      * @return Local metrics.
      */
-    public GridGgfsLocalMetrics localMetrics();
+    public IgfsLocalMetrics localMetrics();
 
     /**
      * Gets group block size, i.e. block size multiplied by group size in affinity mapper.

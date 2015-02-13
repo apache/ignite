@@ -33,15 +33,15 @@ import java.util.concurrent.locks.*;
 /**
  * Input stream to read data from grid cache with separate blocks.
  */
-public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
+public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
     /** Empty chunks result. */
     private static final byte[][] EMPTY_CHUNKS = new byte[0][];
 
     /** Meta manager. */
-    private final GridGgfsMetaManager meta;
+    private final IgfsMetaManager meta;
 
     /** Data manager. */
-    private final GridGgfsDataManager data;
+    private final IgfsDataManager data;
 
     /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -54,7 +54,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     protected final IgniteFsPath path;
 
     /** File descriptor. */
-    private volatile GridGgfsFileInfo fileInfo;
+    private volatile IgfsFileInfo fileInfo;
 
     /** The number of already read bytes. Important! Access to the property is guarded by this object lock. */
     private long pos;
@@ -96,7 +96,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     private long time;
 
     /** Local GGFs metrics. */
-    private final GridGgfsLocalMetrics metrics;
+    private final IgfsLocalMetrics metrics;
 
     /**
      * Constructs file output stream.
@@ -109,8 +109,8 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param secReader Optional secondary file system reader.
      * @param metrics Local GGFS metrics.
      */
-    GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader, GridGgfsLocalMetrics metrics) {
+    IgfsInputStreamImpl(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
+        int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader, IgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;
@@ -145,7 +145,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileInfo fileInfo() {
+    @Override public IgfsFileInfo fileInfo() {
         return fileInfo;
     }
 
@@ -392,7 +392,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
 
                 // This failure may be caused by file being fragmented.
                 if (fileInfo.fileMap() != null && !fileInfo.fileMap().ranges().isEmpty()) {
-                    GridGgfsFileInfo newInfo = meta.info(fileInfo.id());
+                    IgfsFileInfo newInfo = meta.info(fileInfo.id());
 
                     // File was deleted.
                     if (newInfo == null)
@@ -522,12 +522,12 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected IgniteInternalFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws IgniteCheckedException {
+    @Nullable protected IgniteInternalFuture<byte[]> dataBlock(IgfsFileInfo fileInfo, long blockIdx) throws IgniteCheckedException {
         return data.dataBlock(fileInfo, path, blockIdx, secReader);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsInputStreamImpl.class, this);
+        return S.toString(IgfsInputStreamImpl.class, this);
     }
 }

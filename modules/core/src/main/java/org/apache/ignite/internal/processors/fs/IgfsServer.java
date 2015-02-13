@@ -40,7 +40,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
  */
 public class IgfsServer {
     /** GGFS context. */
-    private final GridGgfsContext ggfsCtx;
+    private final IgfsContext ggfsCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -55,7 +55,7 @@ public class IgfsServer {
     private IpcServerEndpoint srvEndpoint;
 
     /** Server message handler. */
-    private GridGgfsServerHandler hnd;
+    private IgfsServerHandler hnd;
 
     /** Accept worker. */
     private AcceptWorker acceptWorker;
@@ -72,7 +72,7 @@ public class IgfsServer {
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public IgfsServer(GridGgfsContext ggfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
+    public IgfsServer(IgfsContext ggfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
         assert ggfsCtx != null;
         assert endpointCfg != null;
 
@@ -128,7 +128,7 @@ public class IgfsServer {
         if (srvEndpoint.getPort() >= 0)
             ggfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
-        hnd = new GridGgfsIpcHandler(ggfsCtx);
+        hnd = new IgfsIpcHandler(ggfsCtx);
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();
@@ -204,7 +204,7 @@ public class IgfsServer {
         private final GridGgfsDataOutputStream out;
 
         /** Client session object. */
-        private GridGgfsClientSession ses;
+        private IgfsClientSession ses;
 
         /** Queue node for fast unlink. */
         private ConcurrentLinkedDeque8.Node<ClientWorker> node;
@@ -221,7 +221,7 @@ public class IgfsServer {
 
             this.endpoint = endpoint;
 
-            ses = new GridGgfsClientSession();
+            ses = new IgfsClientSession();
 
             out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
         }

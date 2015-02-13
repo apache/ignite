@@ -46,7 +46,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** Expected result is {@code GridGgfsHandshakeResponse} */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
-        GridGgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
+        IgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
 
     /** Expected result is {@code GridGgfsStatus} */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgfsStatus> STATUS_RES =
@@ -54,7 +54,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
-        GridGgfsInputStreamDescriptor> STREAM_DESCRIPTOR_RES = createClosure();
+        IgfsInputStreamDescriptor> STREAM_DESCRIPTOR_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
@@ -142,7 +142,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
+    @Override public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
         final GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
 
         req.gridName(grid);
@@ -286,7 +286,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
         msg.path(path);
         msg.flag(false);
 
-        GridGgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
+        IgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
 
         return new GridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }
@@ -301,7 +301,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
         msg.flag(true);
         msg.sequentialReadsBeforePrefetch(seqReadsBeforePrefetch);
 
-        GridGgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
+        IgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
 
         return new GridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }

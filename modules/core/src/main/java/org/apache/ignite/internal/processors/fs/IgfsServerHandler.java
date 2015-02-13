@@ -28,7 +28,7 @@ import java.io.*;
  * GGFS server message handler. Server component that is plugged in to the server implementation
  * to handle incoming messages asynchronously.
  */
-public interface GridGgfsServerHandler {
+public interface IgfsServerHandler {
     /**
      * Asynchronously handles incoming message.
      *
@@ -38,7 +38,7 @@ public interface GridGgfsServerHandler {
      * @return Future that will be completed when response is ready or {@code null} if no
      *      response is required.
      */
-    @Nullable public IgniteInternalFuture<GridGgfsMessage> handleAsync(GridGgfsClientSession ses,
+    @Nullable public IgniteInternalFuture<GridGgfsMessage> handleAsync(IgfsClientSession ses,
         GridGgfsMessage msg, DataInput in);
 
     /**
@@ -46,7 +46,7 @@ public interface GridGgfsServerHandler {
      *
      * @param ses Session that was closed.
      */
-    public void onClosed(GridGgfsClientSession ses);
+    public void onClosed(IgfsClientSession ses);
 
     /**
      * Stops handling of incoming requests. No server commands will be handled anymore.

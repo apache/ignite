@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Directory listing entry.
  */
-public class GridGgfsListingEntry implements Externalizable {
+public class IgfsListingEntry implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,14 +54,14 @@ public class GridGgfsListingEntry implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsListingEntry() {
+    public IgfsListingEntry() {
         // No-op.
     }
 
     /**
      * @param fileInfo File info to construct listing entry from.
      */
-    public GridGgfsListingEntry(GridGgfsFileInfo fileInfo) {
+    public IgfsListingEntry(IgfsFileInfo fileInfo) {
         fileId = fileInfo.id();
         affKey = fileInfo.affinityKey();
 
@@ -81,7 +81,7 @@ public class GridGgfsListingEntry implements Externalizable {
      * @param entry Entry.
      * @param len New length.
      */
-    public GridGgfsListingEntry(GridGgfsListingEntry entry, long len, long accessTime, long modificationTime) {
+    public IgfsListingEntry(IgfsListingEntry entry, long len, long accessTime, long modificationTime) {
         fileId = entry.fileId;
         affKey = entry.affKey;
         blockSize = entry.blockSize;
@@ -178,9 +178,9 @@ public class GridGgfsListingEntry implements Externalizable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof GridGgfsListingEntry)) return false;
+        if (!(o instanceof IgfsListingEntry)) return false;
 
-        GridGgfsListingEntry that = (GridGgfsListingEntry)o;
+        IgfsListingEntry that = (IgfsListingEntry)o;
 
         return fileId.equals(that.fileId);
     }
@@ -192,6 +192,6 @@ public class GridGgfsListingEntry implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsListingEntry.class, this);
+        return S.toString(IgfsListingEntry.class, this);
     }
 }

@@ -49,12 +49,12 @@ import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
+import static org.apache.ignite.internal.processors.fs.IgfsFileInfo.*;
 
 /**
  * Cache-based GGFS implementation.
  */
-public final class GridGgfsImpl implements GridGgfsEx {
+public final class IgfsImpl implements IgfsEx {
     /** Default permissions for file system entry. */
     private static final String PERMISSION_DFLT_VAL = "0777";
 
@@ -65,16 +65,16 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
-    private GridGgfsMetaManager meta;
+    private IgfsMetaManager meta;
 
     /** Cache based file's data container. */
-    private GridGgfsDataManager data;
+    private IgfsDataManager data;
 
     /** FS configuration. */
     private IgniteFsConfiguration cfg;
 
     /** Ggfs context. */
-    private GridGgfsContext ggfsCtx;
+    private IgfsContext ggfsCtx;
 
     /** Event storage manager. */
     private GridEventStorageManager evts;
@@ -107,7 +107,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final GridLocalEventListener delDiscoLsnr = new FormatDiscoveryListener();
 
     /** Local metrics holder. */
-    private final GridGgfsLocalMetrics metrics = new GridGgfsLocalMetrics();
+    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
 
     /** Client log directory. */
     private volatile String logDir;
@@ -124,13 +124,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param ggfsCtx Context.
      * @throws IgniteCheckedException In case of error.
      */
-    GridGgfsImpl(GridGgfsContext ggfsCtx) throws IgniteCheckedException {
+    IgfsImpl(IgfsContext ggfsCtx) throws IgniteCheckedException {
         assert ggfsCtx != null;
 
         this.ggfsCtx = ggfsCtx;
 
         cfg = ggfsCtx.configuration();
-        log = ggfsCtx.kernalContext().log(GridGgfsImpl.class);
+        log = ggfsCtx.kernalContext().log(IgfsImpl.class);
         evts = ggfsCtx.kernalContext().event();
         meta = ggfsCtx.meta();
         data = ggfsCtx.data();
@@ -264,13 +264,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @return Created batch.
      * @throws IgniteCheckedException In case new batch cannot be created.
      */
-    private GridGgfsFileWorkerBatch newBatch(final IgniteFsPath path, OutputStream out) throws IgniteCheckedException {
+    private IgfsFileWorkerBatch newBatch(final IgniteFsPath path, OutputStream out) throws IgniteCheckedException {
         assert path != null;
         assert out != null;
 
         if (enterBusy()) {
             try {
-                GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
+                IgfsFileWorkerBatch batch = new IgfsFileWorkerBatch(path, out);
 
                 while (true) {
                     IgfsFileWorker worker = workerMap.get(path);
@@ -344,7 +344,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             }
 
             if (await) {
-                GridGgfsFileWorkerBatch batch = workerEntry.getValue().currentBatch();
+                IgfsFileWorkerBatch batch = workerEntry.getValue().currentBatch();
 
                 if (batch != null) {
                     try {
@@ -359,7 +359,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsContext context() {
+    @Override public IgfsContext context() {
         return ggfsCtx;
     }
 
@@ -459,7 +459,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsLocalMetrics localMetrics() {
+    @Override public IgfsLocalMetrics localMetrics() {
         return metrics;
     }
 
@@ -523,7 +523,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
 
-                GridGgfsFileInfo info = resolveFileInfo(path, mode);
+                IgfsFileInfo info = resolveFileInfo(path, mode);
 
                 if (info == null)
                     return null;
@@ -592,7 +592,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     await(path);
 
-                    GridGgfsFileInfo info = meta.updateDual(secondaryFs, path, props);
+                    IgfsFileInfo info = meta.updateDual(secondaryFs, path, props);
 
                     if (info == null)
                         return null;
@@ -609,7 +609,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 IgniteUuid parentId = fileIds.size() > 1 ? fileIds.get(fileIds.size() - 2) : null;
 
-                GridGgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
+                IgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
 
                 if (info != null) {
                     if (evts.isRecordable(EVT_GGFS_META_UPDATED))
@@ -827,7 +827,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 return true;
             }
             else {
-                Map<String, GridGgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
+                Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
 
                 if (F.isEmpty(infoMap)) {
                     deleteFile(curPath, desc, true);
@@ -836,7 +836,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
                 else
                     // Throw exception if not empty and not recursive.
-                    throw new GridGgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
+                    throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
                         "and recursive flag is not set)");
             }
         }
@@ -887,7 +887,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     IgniteUuid fileId = ids.get(step + 1); // Skip the first ROOT element.
 
                     if (fileId == null) {
-                        GridGgfsFileInfo fileInfo = new GridGgfsFileInfo(true, props); // Create new directory.
+                        IgfsFileInfo fileInfo = new IgfsFileInfo(true, props); // Create new directory.
 
                         String fileName = components.get(step); // Get current component name.
 
@@ -908,7 +908,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                                     ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
 
                             // Check directory with such name already exists.
-                            GridGgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
+                            IgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
 
                             if (stored == null)
                                 throw new IgniteFsException(e);
@@ -1015,7 +1015,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     Collection<IgniteFsFile> children = secondaryFs.listFiles(path);
 
                     for (IgniteFsFile child : children) {
-                        GridGgfsFileInfo fsInfo = new GridGgfsFileInfo(cfg.getBlockSize(), child.length(),
+                        IgfsFileInfo fsInfo = new IgfsFileInfo(cfg.getBlockSize(), child.length(),
                             evictExclude(path, false), child.properties());
 
                         files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
@@ -1025,7 +1025,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteUuid fileId = meta.fileId(path);
 
                 if (fileId != null) {
-                    GridGgfsFileInfo info = meta.info(fileId);
+                    IgfsFileInfo info = meta.info(fileId);
 
                     // Handle concurrent deletion.
                     if (info != null) {
@@ -1035,7 +1035,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                                 data.groupBlockSize()));
 
                         // Perform the listing.
-                        for (Map.Entry<String, GridGgfsListingEntry> e : info.listing().entrySet()) {
+                        for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
                             IgniteFsPath p = new IgniteFsPath(path, e.getKey());
 
                             files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
@@ -1072,17 +1072,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) {
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) {
         return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
         return open(path, bufSize, cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
+    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1113,7 +1113,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     return os;
                 }
 
-                GridGgfsFileInfo info = meta.info(meta.fileId(path));
+                IgfsFileInfo info = meta.info(meta.fileId(path));
 
                 if (info == null) {
                     checkConflictWithPrimary(path);
@@ -1193,7 +1193,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
-                GridGgfsFileWorkerBatch batch = null;
+                IgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1234,7 +1234,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 String fileName = path.name();
 
                 // Constructs new file info.
-                GridGgfsFileInfo info = new GridGgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true),
+                IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true),
                     props);
 
                 // Add new file into tree structure.
@@ -1248,7 +1248,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         throw new IgniteFsPathAlreadyExistsException("Failed to create file (file already exists): " +
                             path);
 
-                    GridGgfsFileInfo oldInfo = meta.info(oldId);
+                    IgfsFileInfo oldInfo = meta.info(oldId);
 
                     if (oldInfo.isDirectory())
                         throw new IgniteFsPathAlreadyExistsException("Failed to create file (path points to a " +
@@ -1305,7 +1305,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
-                GridGgfsFileWorkerBatch batch = null;
+                IgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1324,7 +1324,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 List<IgniteUuid> ids = meta.fileIds(path);
 
-                GridGgfsFileInfo info = meta.info(ids.get(ids.size() - 1));
+                IgfsFileInfo info = meta.info(ids.get(ids.size() - 1));
 
                 // Resolve parent ID for the file.
                 IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
@@ -1339,7 +1339,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (parentId == null)
                         throw new IgniteFsInvalidPathException("Failed to resolve parent directory: " + path);
 
-                    info = new GridGgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
+                    info = new IgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
                         mode == PRIMARY), props);
 
                     IgniteUuid oldId = meta.putIfAbsent(parentId, path.name(), info);
@@ -1445,7 +1445,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 // Check memory first.
                 IgniteUuid fileId = meta.fileId(path);
-                GridGgfsFileInfo info = meta.info(fileId);
+                IgfsFileInfo info = meta.info(fileId);
 
                 if (info == null && mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
@@ -1567,14 +1567,14 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private void summary0(IgniteUuid fileId, IgniteFsPathSummary sum) throws IgniteCheckedException {
         assert sum != null;
 
-        GridGgfsFileInfo info = meta.info(fileId);
+        IgfsFileInfo info = meta.info(fileId);
 
         if (info != null) {
             if (info.isDirectory()) {
                 if (!ROOT_ID.equals(info.id()))
                     sum.directoriesCount(sum.directoriesCount() + 1);
 
-                for (GridGgfsListingEntry entry : info.listing().values())
+                for (IgfsListingEntry entry : info.listing().values())
                     summary0(entry.fileId(), sum);
             }
             else {
@@ -1674,7 +1674,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     @Nullable private FileDescriptor getFileDescriptor(IgniteFsPath path) throws IgniteCheckedException {
         List<IgniteUuid> ids = meta.fileIds(path);
-        GridGgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
+        IgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 
         if (fileInfo == null)
             return null; // File does not exist.
@@ -1715,11 +1715,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param attrs Attributes.
      * @return {@code True} in case GGFS with the same name exists among provided attributes
      */
-    private boolean sameGgfs(GridGgfsAttributes[] attrs) {
+    private boolean sameGgfs(IgfsAttributes[] attrs) {
         if (attrs != null) {
             String ggfsName = name();
 
-            for (GridGgfsAttributes attr : attrs) {
+            for (IgfsAttributes attr : attrs) {
                 if (F.eq(ggfsName, attr.ggfsName()))
                     return true;
             }
@@ -1863,11 +1863,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws IgniteCheckedException {
+    private IgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
-        GridGgfsFileInfo info = null;
+        IgfsFileInfo info = null;
 
         switch (mode) {
             case PRIMARY:
@@ -1883,8 +1883,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     IgniteFsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        info = status.isDirectory() ? new GridGgfsFileInfo(true, status.properties()) :
-                            new GridGgfsFileInfo(status.blockSize(), status.length(), null, null, false,
+                        info = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
+                            new IgfsFileInfo(status.blockSize(), status.length(), null, null, false,
                             status.properties());
                 }
 
@@ -1899,7 +1899,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgniteFs withAsync() {
-        return new GridGgfsAsyncImpl(this);
+        return new IgfsAsyncImpl(this);
     }
 
     /** {@inheritDoc} */
@@ -1994,8 +1994,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param batch Optional secondary file system batch.
          * @throws IgniteCheckedException In case of error.
          */
-        GgfsEventAwareOutputStream(IgniteFsPath path, GridGgfsFileInfo fileInfo,
-            IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch)
+        GgfsEventAwareOutputStream(IgniteFsPath path, IgfsFileInfo fileInfo,
+            IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch)
             throws IgniteCheckedException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
@@ -2019,7 +2019,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /**
      * GGFS input stream extension that fires events.
      */
-    private class GgfsEventAwareInputStream extends GridGgfsInputStreamImpl {
+    private class GgfsEventAwareInputStream extends IgfsInputStreamImpl {
         /** Close guard. */
         private final AtomicBoolean closeGuard = new AtomicBoolean(false);
 
@@ -2034,9 +2034,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param secReader Optional secondary file system reader.
          * @param metrics Metrics.
          */
-        GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo,
+        GgfsEventAwareInputStream(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo,
             int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader,
-            GridGgfsLocalMetrics metrics) {
+            IgfsLocalMetrics metrics) {
             super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
 
             metrics.incrementFilesOpenedForRead();
@@ -2136,7 +2136,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 ClusterNode node = ggfsCtx.kernalContext().discovery().node(nodeId);
 
                 if (node != null) {
-                    if (sameGgfs((GridGgfsAttributes[])node.attribute(ATTR_GGFS))) {
+                    if (sameGgfs((IgfsAttributes[])node.attribute(ATTR_GGFS))) {
                         IgfsDeleteMessage msg0 = (IgfsDeleteMessage)msg;
 
                         try {
@@ -2175,7 +2175,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
             if (evt0.eventNode() != null) {
-                if (sameGgfs((GridGgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {
+                if (sameGgfs((IgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {
                     Collection<IgniteUuid> rmv = new HashSet<>();
 
                     for (Map.Entry<IgniteUuid, GridFutureAdapter<Object>> fut : delFuts.entrySet()) {

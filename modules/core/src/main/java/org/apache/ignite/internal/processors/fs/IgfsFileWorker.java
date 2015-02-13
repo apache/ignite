@@ -34,10 +34,10 @@ public class IgfsFileWorker extends IgfsThread {
     private final Condition cond = lock.newCondition();
 
     /** Next queued batch. */
-    private GridGgfsFileWorkerBatch nextBatch;
+    private IgfsFileWorkerBatch nextBatch;
 
     /** Batch which is currently being processed. */
-    private GridGgfsFileWorkerBatch curBatch;
+    private IgfsFileWorkerBatch curBatch;
 
     /** Cancellation flag. */
     private volatile boolean cancelled;
@@ -56,7 +56,7 @@ public class IgfsFileWorker extends IgfsThread {
      *
      * @return {@code True} if the batch was actually added.
      */
-    boolean addBatch(GridGgfsFileWorkerBatch batch) {
+    boolean addBatch(IgfsFileWorkerBatch batch) {
         assert batch != null;
 
         lock.lock();
@@ -162,7 +162,7 @@ public class IgfsFileWorker extends IgfsThread {
      *
      * @return Current batch.
      */
-    GridGgfsFileWorkerBatch currentBatch() {
+    IgfsFileWorkerBatch currentBatch() {
         lock.lock();
 
         try {
