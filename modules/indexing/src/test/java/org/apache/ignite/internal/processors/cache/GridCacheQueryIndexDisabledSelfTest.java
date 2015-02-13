@@ -28,8 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
-import java.io.*;
-import java.util.*;
 
 /**
  * Test {@link CacheConfiguration#setQueryIndexEnabled} checked before executing query
@@ -67,8 +65,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, SqlValue> cache = jcache();
 
         try {
-            Collection<Cache.Entry<Integer, SqlValue>> res =
-                cache.query(new SqlQuery(SqlValue.class, "val >= 0")).getAll();
+            cache.query(new SqlQuery(SqlValue.class, "val >= 0")).getAll();
 
             assert false;
         }
@@ -87,8 +84,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, SqlValue> cache = jcache();
 
         try {
-            Collection<Cache.Entry<Integer, SqlValue>> res =
-                cache.query(new SqlFieldsQuery("select * from Person")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Person")).getAll();
 
             assert false;
         }
@@ -100,8 +96,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         }
 
         try {
-            List<List<?>> res =
-                cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
+            cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
 
             assert false;
         }
@@ -120,8 +115,81 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, String> cache = jcache();
 
         try {
-            Collection<Cache.Entry<Integer, String>> res =
-                cache.query(new TextQuery(String.class, "text")).getAll();
+            cache.query(new TextQuery(String.class, "text")).getAll();
+
+            assert false;
+        }
+        catch (CacheException e) {
+            X.println("Caught expected exception: " + e);
+        }
+        catch (Exception e) {
+            assert false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanLocalQuery() throws Exception {
+        IgniteCache<Integer, String> cache = jcache();
+
+        try {
+            cache.localQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+                @Override public boolean apply(Integer id, String s) {
+                    return s.equals("");
+                }
+            })).getAll();
+        }
+        catch (IgniteException e) {
+            assertTrue("Scan query should work with disable query indexing.", false);
+        }
+    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlLocalQuery() throws Exception {
+        IgniteCache<Integer, SqlValue> cache = jcache();
+
+        try {
+            cache.localQuery(new SqlQuery(SqlValue.class, "val >= 0")).getAll();
+
+            assert false;
+        }
+        catch (CacheException e) {
+            X.println("Caught expected exception: " + e);
+        }
+        catch (Exception e) {
+            assert false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlLocalFieldsQuery() throws Exception {
+        IgniteCache<Integer, SqlValue> cache = jcache();
+
+        try {
+            cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
+
+            assert false;
+        }
+        catch (CacheException e) {
+            X.println("Caught expected exception: " + e);
+        }
+        catch (Exception e) {
+            assert false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFullTextLocalQuery() throws Exception {
+        IgniteCache<Integer, String> cache = jcache();
+
+        try {
+            cache.localQuery(new TextQuery(String.class, "text")).getAll();
 
             assert false;
         }
@@ -140,16 +208,14 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, String> cache = jcache();
 
         try {
-            Collection<Cache.Entry<Integer, String>> res =
-                cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
-                    @Override public boolean apply(Integer id, String s) {
-                        return s.equals("");
-                    }
-                })).getAll();
-
+            cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+                @Override public boolean apply(Integer id, String s) {
+                    return s.equals("");
+                }
+            })).getAll();
         }
         catch (IgniteException e) {
-            assert false;
+            assertTrue("Scan query should work with disabled query indexing.", false);
         }
     }
 
