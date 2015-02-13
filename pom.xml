@@ -568,7 +568,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>deploy-ignite</id>
+                        <id>default-deploy</id>
                         <phase>deploy</phase>
                         <goals>
                             <goal>deploy</goal>
