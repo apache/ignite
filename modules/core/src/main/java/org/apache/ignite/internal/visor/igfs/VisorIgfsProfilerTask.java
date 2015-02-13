@@ -131,7 +131,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private static final int LOG_COL_THREAD_ID = 1;
         private static final int LOG_COL_ENTRY_TYPE = 3;
         private static final int LOG_COL_PATH = 4;
-        private static final int LOG_COL_GGFS_MODE = 5;
+        private static final int LOG_COL_IGFS_MODE = 5;
         private static final int LOG_COL_STREAM_ID = 6;
         private static final int LOG_COL_DATA_LEN = 8;
         private static final int LOG_COL_OVERWRITE = 10;
@@ -250,7 +250,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param ix Index of array item to parse.
          * @return Parsed GGFS mode or {@code null} if string is empty.
          */
-        private IgfsMode parseGgfsMode(String[] ss, int ix) {
+        private IgfsMode parseIgfsMode(String[] ss, int ix) {
             if (ss.length <= ix)
                 return null;
             else {
@@ -280,7 +280,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                         parseLong(ss, LOG_COL_TIMESTAMP, 0),
                         entryType,
                         parseString(ss, LOG_COL_PATH),
-                        parseGgfsMode(ss, LOG_COL_GGFS_MODE),
+                        parseIgfsMode(ss, LOG_COL_IGFS_MODE),
                         streamId,
                         parseLong(ss, LOG_COL_DATA_LEN, 0),
                         parseBoolean(ss, LOG_COL_OVERWRITE),
@@ -459,7 +459,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             Collection<VisorIgfsProfilerEntry> res = new ArrayList<>(byPath.size());
 
             for (List<VisorIgfsProfilerEntry> lst : byPath.values())
-                res.add(VisorIgfsProfiler.aggregateGgfsProfilerEntries(lst));
+                res.add(VisorIgfsProfiler.aggregateIgfsProfilerEntries(lst));
 
             return res;
         }
@@ -470,11 +470,11 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param logDir Folder were log files located.
          * @return List of line with aggregated information by files.
          */
-        private Collection<VisorIgfsProfilerEntry> parse(Path logDir, String ggfsName) throws IOException {
+        private Collection<VisorIgfsProfilerEntry> parse(Path logDir, String igfsName) throws IOException {
             Collection<VisorIgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
-                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:igfs-log-" + ggfsName + "-*.csv");
+                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:igfs-log-" + igfsName + "-*.csv");
 
                 for (Path p : dirStream) {
                     if (matcher.matches(p.getFileName())) {

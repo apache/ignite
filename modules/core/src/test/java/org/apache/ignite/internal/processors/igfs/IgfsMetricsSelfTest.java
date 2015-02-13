@@ -38,10 +38,10 @@ import static org.apache.ignite.igfs.IgfsMode.*;
  */
 public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Primary GGFS name. */
-    private static final String GGFS_PRIMARY = "igfs-primary";
+    private static final String IGFS_PRIMARY = "igfs-primary";
 
     /** Primary GGFS name. */
-    private static final String GGFS_SECONDARY = "igfs-secondary";
+    private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
     private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>(){{
@@ -89,7 +89,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++) {
             Ignite g = G.start(primaryConfiguration(i));
 
-            ggfsPrimary[i] = g.fileSystem(GGFS_PRIMARY);
+            ggfsPrimary[i] = g.fileSystem(IGFS_PRIMARY);
         }
     }
 
@@ -105,7 +105,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(GGFS_PRIMARY);
+        ggfsCfg.setName(IGFS_PRIMARY);
         ggfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setSecondaryFileSystem(ggfsSecondary);
@@ -163,7 +163,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(GGFS_SECONDARY);
+        ggfsCfg.setName(IGFS_SECONDARY);
         ggfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
@@ -204,7 +204,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         Ignite g = G.start(cfg);
 
-        ggfsSecondary = g.fileSystem(GGFS_SECONDARY);
+        ggfsSecondary = g.fileSystem(IGFS_SECONDARY);
     }
 
     /** @throws Exception If failed. */

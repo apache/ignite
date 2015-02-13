@@ -38,7 +38,7 @@ public class VisorIgfsProfiler {
      * @param entries Entries to sum.
      * @return Single aggregated entry.
      */
-    public static VisorIgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorIgfsProfilerEntry> entries) {
+    public static VisorIgfsProfilerEntry aggregateIgfsProfilerEntries(List<VisorIgfsProfilerEntry> entries) {
         assert !F.isEmpty(entries);
 
         if (entries.size() == 1)

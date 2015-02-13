@@ -173,9 +173,9 @@ public class IgfsDataManager extends IgfsManager {
 
         grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
 
-        String ggfsName = igfsCtx.configuration().getName();
+        String igfsName = igfsCtx.configuration().getName();
 
-        topic = F.isEmpty(ggfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(ggfsName);
+        topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
 
         igfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -221,7 +221,7 @@ public class IgfsDataManager extends IgfsManager {
         maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
 
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
-            "igfs-" + ggfsName + "-delete-worker", log);
+            "igfs-" + igfsName + "-delete-worker", log);
     }
 
     /** {@inheritDoc} */

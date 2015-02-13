@@ -1717,10 +1717,10 @@ public final class IgfsImpl implements IgfsEx {
      */
     private boolean sameIgfs(IgfsAttributes[] attrs) {
         if (attrs != null) {
-            String ggfsName = name();
+            String igfsName = name();
 
             for (IgfsAttributes attr : attrs) {
-                if (F.eq(ggfsName, attr.igfsName()))
+                if (F.eq(igfsName, attr.igfsName()))
                     return true;
             }
         }

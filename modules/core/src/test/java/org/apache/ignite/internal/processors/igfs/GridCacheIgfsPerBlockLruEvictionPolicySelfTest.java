@@ -44,10 +44,10 @@ import static org.apache.ignite.igfs.IgfsMode.*;
 @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
 public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstractTest {
     /** Primary GGFS name. */
-    private static final String GGFS_PRIMARY = "igfs-primary";
+    private static final String IGFS_PRIMARY = "igfs-primary";
 
     /** Primary GGFS name. */
-    private static final String GGFS_SECONDARY = "igfs-secondary";
+    private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
     private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
@@ -62,7 +62,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public static final IgfsPath FILE_RMT = new IgfsPath("/fileRemote");
 
     /** Primary GGFS instances. */
-    private static IgfsImpl ggfsPrimary;
+    private static IgfsImpl igfsPrimary;
 
     /** Secondary GGFS instance. */
     private static IgniteFs secondaryFs;
@@ -79,22 +79,22 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void startPrimary() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(GGFS_PRIMARY);
-        ggfsCfg.setBlockSize(512);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setPrefetchBlocks(1);
-        ggfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
-        ggfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName(IGFS_PRIMARY);
+        igfsCfg.setBlockSize(512);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setPrefetchBlocks(1);
+        igfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
+        igfsCfg.setSecondaryFileSystem(secondaryFs);
 
         Map<String, IgfsMode> pathModes = new HashMap<>();
 
         pathModes.put(FILE_RMT.toString(), DUAL_SYNC);
 
-        ggfsCfg.setPathModes(pathModes);
+        igfsCfg.setPathModes(pathModes);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -130,17 +130,17 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
-        ggfsPrimary = (IgfsImpl)g.fileSystem(GGFS_PRIMARY);
+        igfsPrimary = (IgfsImpl)g.fileSystem(IGFS_PRIMARY);
 
-        dataCache = ggfsPrimary.context().kernalContext().cache().internalCache(
-            ggfsPrimary.context().configuration().getDataCacheName());
+        dataCache = igfsPrimary.context().kernalContext().cache().internalCache(
+            igfsPrimary.context().configuration().getDataCacheName());
     }
 
     /**
@@ -149,14 +149,14 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void startSecondary() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(GGFS_SECONDARY);
-        ggfsCfg.setBlockSize(512);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName(IGFS_SECONDARY);
+        igfsCfg.setBlockSize(512);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -188,21 +188,21 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
-        secondaryFs = g.fileSystem(GGFS_SECONDARY);
+        secondaryFs = g.fileSystem(IGFS_SECONDARY);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
             // Cleanup.
-            ggfsPrimary.format();
+            igfsPrimary.format();
 
             while (!dataCache.isEmpty())
                 U.sleep(100);
@@ -237,11 +237,11 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         start();
 
         // Create file in primary mode. It must not be propagated to eviction policy.
-        ggfsPrimary.create(FILE, true).close();
+        igfsPrimary.create(FILE, true).close();
 
         checkEvictionPolicy(0, 0);
 
-        int blockSize = ggfsPrimary.info(FILE).blockSize();
+        int blockSize = igfsPrimary.info(FILE).blockSize();
 
         append(FILE, blockSize);
 
@@ -260,11 +260,11 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public void testFileDual() throws Exception {
         start();
 
-        ggfsPrimary.create(FILE_RMT, true).close();
+        igfsPrimary.create(FILE_RMT, true).close();
 
         checkEvictionPolicy(0, 0);
 
-        int blockSize = ggfsPrimary.info(FILE_RMT).blockSize();
+        int blockSize = igfsPrimary.info(FILE_RMT).blockSize();
 
         // File write.
         append(FILE_RMT, blockSize);
@@ -293,11 +293,11 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         evictPlc.setExcludePaths(Collections.singleton(FILE_RMT.toString()));
 
         // Create file in primary mode. It must not be propagated to eviction policy.
-        ggfsPrimary.create(FILE_RMT, true).close();
+        igfsPrimary.create(FILE_RMT, true).close();
 
         checkEvictionPolicy(0, 0);
 
-        int blockSize = ggfsPrimary.info(FILE_RMT).blockSize();
+        int blockSize = igfsPrimary.info(FILE_RMT).blockSize();
 
         append(FILE_RMT, blockSize);
 
@@ -319,7 +319,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfsPrimary.rename(FILE, FILE_RMT);
+                igfsPrimary.rename(FILE, FILE_RMT);
 
                 return null;
             }
@@ -328,7 +328,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfsPrimary.rename(FILE_RMT, FILE);
+                igfsPrimary.rename(FILE_RMT, FILE);
 
                 return null;
             }
@@ -348,11 +348,11 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
         evictPlc.setMaxBlocks(blockCnt);
 
-        ggfsPrimary.create(FILE_RMT, true).close();
+        igfsPrimary.create(FILE_RMT, true).close();
 
         checkEvictionPolicy(0, 0);
 
-        int blockSize = ggfsPrimary.info(FILE_RMT).blockSize();
+        int blockSize = igfsPrimary.info(FILE_RMT).blockSize();
 
         // Write blocks up to the limit.
         append(FILE_RMT, blockSize * blockCnt);
@@ -379,10 +379,10 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public void testDataSizeEviction() throws Exception {
         start();
 
-        ggfsPrimary.create(FILE_RMT, true).close();
+        igfsPrimary.create(FILE_RMT, true).close();
 
         int blockCnt = 3;
-        int blockSize = ggfsPrimary.info(FILE_RMT).blockSize();
+        int blockSize = igfsPrimary.info(FILE_RMT).blockSize();
 
         evictPlc.setMaxSize(blockSize * blockCnt);
 
@@ -392,7 +392,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         checkEvictionPolicy(blockCnt, blockCnt * blockSize);
 
         // Reset metrics.
-        ggfsPrimary.resetMetrics();
+        igfsPrimary.resetMetrics();
 
         // Read the first block what should cause reordering.
         read(FILE_RMT, 0, blockSize);
@@ -427,7 +427,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void read(IgfsPath path, int off, int len) throws Exception {
-        IgfsInputStream is = ggfsPrimary.open(path);
+        IgfsInputStream is = igfsPrimary.open(path);
 
         is.readFully(off, new byte[len]);
 
@@ -442,7 +442,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void append(IgfsPath path, int len) throws Exception {
-        IgfsOutputStream os = ggfsPrimary.append(path, false);
+        IgfsOutputStream os = igfsPrimary.append(path, false);
 
         os.write(new byte[len]);
 
@@ -459,13 +459,13 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public void checkMetrics(final long blocksRead, final long blocksReadRmt) throws Exception {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                IgfsMetrics metrics = ggfsPrimary.metrics();
+                IgfsMetrics metrics = igfsPrimary.metrics();
 
                 return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
             }
         }, 5000) : "Unexpected metrics [expectedBlocksReadTotal=" + blocksRead + ", actualBlocksReadTotal=" +
-            ggfsPrimary.metrics().blocksReadTotal() + ", expectedBlocksReadRemote=" + blocksReadRmt +
-            ", actualBlocksReadRemote=" + ggfsPrimary.metrics().blocksReadRemote() + ']';
+            igfsPrimary.metrics().blocksReadTotal() + ", expectedBlocksReadRemote=" + blocksReadRmt +
+            ", actualBlocksReadRemote=" + igfsPrimary.metrics().blocksReadRemote() + ']';
     }
 
     /**

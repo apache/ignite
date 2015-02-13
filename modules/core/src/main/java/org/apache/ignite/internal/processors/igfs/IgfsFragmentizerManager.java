@@ -95,9 +95,9 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
         fragmentizerWorker = new FragmentizerWorker();
 
-        String ggfsName = igfsCtx.configuration().getName();
+        String igfsName = igfsCtx.configuration().getName();
 
-        topic = F.isEmpty(ggfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(ggfsName);
+        topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
 
         igfsCtx.kernalContext().io().addMessageListener(topic, fragmentizerWorker);
 

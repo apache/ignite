@@ -58,7 +58,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     };
 
     /** */
-    private final ConcurrentMap<String, IgfsContext> ggfsCache =
+    private final ConcurrentMap<String, IgfsContext> igfsCache =
         new ConcurrentHashMap8<>();
 
     /**
@@ -93,7 +93,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             for (IgfsManager mgr : ggfsCtx.managers())
                 mgr.start(ggfsCtx);
 
-            ggfsCache.put(maskName(cfg.getName()), ggfsCtx);
+            igfsCache.put(maskName(cfg.getName()), ggfsCtx);
         }
 
         if (log.isDebugEnabled())
@@ -110,7 +110,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 checkGgfsOnRemoteNode(n);
         }
 
-        for (IgfsContext ggfsCtx : ggfsCache.values())
+        for (IgfsContext ggfsCtx : igfsCache.values())
             for (IgfsManager mgr : ggfsCtx.managers())
                 mgr.onKernalStart();
     }
@@ -118,7 +118,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Stop GGFS instances.
-        for (IgfsContext ggfsCtx : ggfsCache.values()) {
+        for (IgfsContext ggfsCtx : igfsCache.values()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping igfs: " + ggfsCtx.configuration().getName());
 
@@ -133,7 +133,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             ggfsCtx.igfs().stop();
         }
 
-        ggfsCache.clear();
+        igfsCache.clear();
 
         if (log.isDebugEnabled())
             log.debug("GGFS processor stopped.");
@@ -141,7 +141,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        for (IgfsContext ggfsCtx : ggfsCache.values()) {
+        for (IgfsContext ggfsCtx : igfsCache.values()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping igfs: " + ggfsCtx.configuration().getName());
 
@@ -162,27 +162,27 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Override public void printMemoryStats() {
         X.println(">>>");
         X.println(">>> GGFS processor memory stats [grid=" + ctx.gridName() + ']');
-        X.println(">>>   ggfsCacheSize: " + ggfsCache.size());
+        X.println(">>>   ggfsCacheSize: " + igfsCache.size());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Collection<IgniteFs> igfss() {
-        return F.viewReadOnly(ggfsCache.values(), CTX_TO_GGFS);
+        return F.viewReadOnly(igfsCache.values(), CTX_TO_GGFS);
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public IgniteFs igfs(@Nullable String name) {
-        IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
+        IgfsContext ggfsCtx = igfsCache.get(maskName(name));
 
         return ggfsCtx == null ? null : ggfsCtx.igfs();
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
-        IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
+        IgfsContext igfsCtx = igfsCache.get(maskName(name));
 
-        return ggfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
+        return igfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : igfsCtx.server().endpoints();
     }
 
     /** {@inheritDoc} */
@@ -406,7 +406,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
     }
 
-    private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String ggfsName)
+    private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))
             throw new IgniteCheckedException(name + " should be the same on all nodes in grid for GGFS configuration " +
@@ -415,6 +415,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 "property ) [rmtNodeId=" + rmtNodeId +
                 ", rmt" + propName + "=" + rmtVal +
                 ", loc" + propName + "=" + locVal +
-                ", ggfName=" + ggfsName + ']');
+                ", ggfName=" + igfsName + ']');
     }
 }

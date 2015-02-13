@@ -40,7 +40,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
  */
 public class IgfsServer {
     /** GGFS context. */
-    private final IgfsContext ggfsCtx;
+    private final IgfsContext igfsCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -68,19 +68,19 @@ public class IgfsServer {
 
     /**
      * Constructs igfs server manager.
-     * @param ggfsCtx GGFS context.
+     * @param igfsCtx GGFS context.
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public IgfsServer(IgfsContext ggfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
-        assert ggfsCtx != null;
+    public IgfsServer(IgfsContext igfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
+        assert igfsCtx != null;
         assert endpointCfg != null;
 
         this.endpointCfg = endpointCfg;
-        this.ggfsCtx = ggfsCtx;
+        this.igfsCtx = igfsCtx;
         this.mgmt = mgmt;
 
-        log = ggfsCtx.kernalContext().log(IgfsServer.class);
+        log = igfsCtx.kernalContext().log(IgfsServer.class);
 
         marsh = new IgfsMarshaller();
     }
@@ -105,7 +105,7 @@ public class IgfsServer {
 
             if (srvEndpoint0.getHost() == null) {
                 if (mgmt) {
-                    String locHostName = ggfsCtx.kernalContext().config().getLocalHost();
+                    String locHostName = igfsCtx.kernalContext().config().getLocalHost();
 
                     try {
                         srvEndpoint0.setHost(U.resolveLocalHost(locHostName).getHostAddress());
@@ -120,15 +120,15 @@ public class IgfsServer {
             }
         }
 
-        ggfsCtx.kernalContext().resource().injectGeneric(srvEndpoint);
+        igfsCtx.kernalContext().resource().injectGeneric(srvEndpoint);
 
         srvEndpoint.start();
 
         // IpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
         if (srvEndpoint.getPort() >= 0)
-            ggfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
+            igfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
-        hnd = new IgfsIpcHandler(ggfsCtx);
+        hnd = new IgfsIpcHandler(igfsCtx);
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();
@@ -174,10 +174,10 @@ public class IgfsServer {
 
         // IpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
         if (srvEndpoint.getPort() >= 0)
-            ggfsCtx.kernalContext().ports().deregisterPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
+            igfsCtx.kernalContext().ports().deregisterPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
         try {
-            ggfsCtx.kernalContext().resource().cleanupGeneric(srvEndpoint);
+            igfsCtx.kernalContext().resource().cleanupGeneric(srvEndpoint);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to cleanup server endpoint.", e);
@@ -217,7 +217,7 @@ public class IgfsServer {
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
         protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
-            super(ggfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, log);
 
             this.endpoint = endpoint;
 
@@ -384,7 +384,7 @@ public class IgfsServer {
          * Creates accept worker.
          */
         protected AcceptWorker() {
-            super(ggfsCtx.kernalContext().gridName(), "igfs-accept-worker", log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", log);
         }
 
         /** {@inheritDoc} */
@@ -394,7 +394,7 @@ public class IgfsServer {
                     IpcEndpoint client = srvEndpoint.accept();
 
                     if (log.isDebugEnabled())
-                        log.debug("GGFS client connected [igfsName=" + ggfsCtx.kernalContext().gridName() +
+                        log.debug("GGFS client connected [igfsName=" + igfsCtx.kernalContext().gridName() +
                             ", client=" + client + ']');
 
                     ClientWorker worker = new ClientWorker(client, acceptCnt++);

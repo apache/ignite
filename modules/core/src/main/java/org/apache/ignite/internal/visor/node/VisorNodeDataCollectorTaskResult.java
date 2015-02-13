@@ -150,21 +150,21 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /**
      * @return All GGFS collected from nodes.
      */
-    public Map<UUID, Collection<VisorIgfs>> ggfss() {
+    public Map<UUID, Collection<VisorIgfs>> igfss() {
         return ggfss;
     }
 
     /**
      * @return All GGFS endpoints collected from nodes.
      */
-    public Map<UUID, Collection<VisorIgfsEndpoint>> ggfsEndpoints() {
+    public Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints() {
         return ggfsEndpoints;
     }
 
     /**
      * @return Exceptions caught during collecting GGFS from nodes.
      */
-    public Map<UUID, Throwable> ggfssEx() {
+    public Map<UUID, Throwable> igfssEx() {
         return ggfssEx;
     }
 

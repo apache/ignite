@@ -128,19 +128,19 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
         this.cachesEx = cachesEx;
     }
 
-    public Collection<VisorIgfs> ggfss() {
+    public Collection<VisorIgfs> igfss() {
         return ggfss;
     }
 
-    public Collection<VisorIgfsEndpoint> ggfsEndpoints() {
+    public Collection<VisorIgfsEndpoint> igfsEndpoints() {
         return ggfsEndpoints;
     }
 
-    public Throwable ggfssEx() {
+    public Throwable igfssEx() {
         return ggfssEx;
     }
 
-    public void ggfssEx(Throwable ggfssEx) {
+    public void igfssEx(Throwable ggfssEx) {
         this.ggfssEx = ggfssEx;
     }
 

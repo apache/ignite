@@ -121,33 +121,33 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /** Collect GGFS. */
-    private void ggfs(VisorNodeDataCollectorJobResult res) {
+    private void igfs(VisorNodeDataCollectorJobResult res) {
         try {
             IgfsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().igfs();
 
-            for (IgniteFs ggfs : ggfsProc.igfss()) {
+            for (IgniteFs igfs : ggfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(igfs.name());
 
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
-                                res.ggfsEndpoints().add(new VisorIgfsEndpoint(ggfs.name(), ignite.name(),
+                                res.igfsEndpoints().add(new VisorIgfsEndpoint(igfs.name(), ignite.name(),
                                     ep.getHost(), ep.getPort()));
                     }
 
-                    res.ggfss().add(VisorIgfs.from(ggfs));
+                    res.igfss().add(VisorIgfs.from(igfs));
                 }
                 finally {
                     if (debug)
-                        log(ignite.log(), "Collected GGFS: " + ggfs.name(), getClass(), start0);
+                        log(ignite.log(), "Collected IGFS: " + igfs.name(), getClass(), start0);
                 }
             }
         }
-        catch (Throwable ggfssEx) {
-            res.ggfssEx(ggfssEx);
+        catch (Throwable igfssEx) {
+            res.igfssEx(igfssEx);
         }
     }
 
@@ -205,7 +205,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected caches", getClass(), start0);
 
-        ggfs(res);
+        igfs(res);
 
         if (debug)
             start0 = log(ignite.log(), "Collected igfs", getClass(), start0);

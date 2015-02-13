@@ -63,18 +63,18 @@ public class VisorIgfs implements Serializable {
     }
 
     /**
-     * @param ggfs Source GGFS.
+     * @param igfs Source GGFS.
      * @return Data transfer object for given GGFS.
      * @throws IgniteCheckedException
      */
-    public static VisorIgfs from(IgniteFs ggfs) throws IgniteCheckedException {
-        assert ggfs != null;
+    public static VisorIgfs from(IgniteFs igfs) throws IgniteCheckedException {
+        assert igfs != null;
 
         return new VisorIgfs(
-            ggfs.name(),
-            ggfs.configuration().getDefaultMode(),
-            VisorIgfsMetrics.from(ggfs.metrics()),
-            ggfs.configuration().getSecondaryFileSystem() != null
+            igfs.name(),
+            igfs.configuration().getDefaultMode(),
+            VisorIgfsMetrics.from(igfs.metrics()),
+            igfs.configuration().getSecondaryFileSystem() != null
         );
     }
 

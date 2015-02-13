@@ -30,7 +30,7 @@ public class VisorIgfsEndpoint implements Serializable{
     private static final long  serialVersionUID = 0L;
 
     /** GGFS name. */
-    private final String ggfsName;
+    private final String igfsName;
 
     /** Grid name. */
     private final String gridName;
@@ -43,13 +43,13 @@ public class VisorIgfsEndpoint implements Serializable{
 
     /**
      * Create GGFS endpoint descriptor with given parameters.
-     * @param ggfsName GGFS name.
+     * @param igfsName GGFS name.
      * @param gridName Grid name.
      * @param hostName Host address / name.
      * @param port Port number.
      */
-    public VisorIgfsEndpoint(@Nullable String ggfsName, String gridName, @Nullable String hostName, int port) {
-        this.ggfsName = ggfsName;
+    public VisorIgfsEndpoint(@Nullable String igfsName, String gridName, @Nullable String hostName, int port) {
+        this.igfsName = igfsName;
         this.gridName = gridName;
         this.hostName = hostName;
         this.port = port;
@@ -58,8 +58,8 @@ public class VisorIgfsEndpoint implements Serializable{
     /**
      * @return GGFS name.
      */
-    @Nullable public String ggfsName() {
-        return ggfsName;
+    @Nullable public String igfsName() {
+        return igfsName;
     }
 
     /**
@@ -89,14 +89,14 @@ public class VisorIgfsEndpoint implements Serializable{
     public String authority() {
         String addr = hostName + ":" + port;
 
-        if (ggfsName == null && gridName == null)
+        if (igfsName == null && gridName == null)
             return addr;
-        else if (ggfsName == null)
+        else if (igfsName == null)
             return gridName + "@" + addr;
         else if (gridName == null)
-            return ggfsName + "@" + addr;
+            return igfsName + "@" + addr;
         else
-            return ggfsName + ":" + gridName + "@" + addr;
+            return igfsName + ":" + gridName + "@" + addr;
     }
 
     /** {@inheritDoc} */

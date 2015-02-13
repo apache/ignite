@@ -78,9 +78,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("igfs");
+        IgfsEx igfs = (IgfsEx)grid(0).fileSystem("igfs");
 
-        mgr = ggfs.context().data();
+        mgr = igfs.context().data();
     }
 
     /** {@inheritDoc} */
