@@ -621,20 +621,19 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         long ttl = req.accessTtl();
 
-        final GetExpiryPolicy expiryPlc = GetExpiryPolicy.forTtl(ttl);
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
 
-        IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-            getDhtAsync(nodeId,
-                req.messageId(),
-                req.keys(),
-                req.readThrough(),
-                req.reload(),
-                req.topologyVersion(),
-                req.subjectId(),
-                req.taskNameHash(),
-                false,
-                req.filter(),
-                expiryPlc);
+        IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut = getDhtAsync(nodeId,
+            req.messageId(),
+            req.keys(),
+            req.readThrough(),
+            req.reload(),
+            req.topologyVersion(),
+            req.subjectId(),
+            req.taskNameHash(),
+            false,
+            req.filter(),
+            expiryPlc);
 
         fut.listenAsync(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
