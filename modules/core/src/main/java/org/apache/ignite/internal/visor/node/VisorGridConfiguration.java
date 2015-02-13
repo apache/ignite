@@ -108,7 +108,7 @@ public class VisorGridConfiguration implements Serializable {
         rest(VisorRestConfiguration.from(c));
         userAttributes(c.getUserAttributes());
         caches(VisorCacheConfiguration.list(ignite, c.getCacheConfiguration()));
-        ggfss(VisorIgfsConfiguration.list(c.getIgfsConfiguration()));
+        igfss(VisorIgfsConfiguration.list(c.getIgfsConfiguration()));
         streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
         env(new HashMap<>(getenv()));
         systemProperties(getProperties());
@@ -308,7 +308,7 @@ public class VisorGridConfiguration implements Serializable {
     /**
      * @param igfss New igfss.
      */
-    public void ggfss(Iterable<VisorIgfsConfiguration> igfss) {
+    public void igfss(Iterable<VisorIgfsConfiguration> igfss) {
         this.igfss = igfss;
     }
 

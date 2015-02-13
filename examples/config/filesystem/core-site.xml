@@ -31,12 +31,12 @@
     <property>
         <!-- FS driver class for the 'igfs://' URIs. -->
         <name>fs.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem</value>
     </property>
 
     <property>
         <!-- FS driver class for the 'igfs://' URIs in Hadoop2.x -->
         <name>fs.AbstractFileSystem.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem</value>
     </property>
 </configuration>

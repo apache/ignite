@@ -123,13 +123,13 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect IGFS. */
     private void igfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgfsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().igfs();
+            IgfsProcessorAdapter igfsProc = ((IgniteKernal)ignite).context().igfs();
 
-            for (IgniteFs igfs : ggfsProc.igfss()) {
+            for (IgniteFs igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(igfs.name());
+                    Collection<IpcServerEndpoint> endPoints = igfsProc.endpoints(igfs.name());
 
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)

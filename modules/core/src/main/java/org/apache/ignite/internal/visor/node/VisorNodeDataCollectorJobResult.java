@@ -54,13 +54,13 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private Throwable cachesEx;
 
     /** Node IGFSs. */
-    private final Collection<VisorIgfs> ggfss = new ArrayList<>();
+    private final Collection<VisorIgfs> igfss = new ArrayList<>();
 
     /** All IGFS endpoints collected from nodes. */
-    private final Collection<VisorIgfsEndpoint> ggfsEndpoints = new ArrayList<>();
+    private final Collection<VisorIgfsEndpoint> igfsEndpoints = new ArrayList<>();
 
     /** Exception while collecting node IGFSs. */
-    private Throwable ggfssEx;
+    private Throwable igfssEx;
 
     /** Node streamers. */
     private final Collection<VisorStreamer> streamers = new ArrayList<>();
@@ -129,19 +129,19 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     }
 
     public Collection<VisorIgfs> igfss() {
-        return ggfss;
+        return igfss;
     }
 
     public Collection<VisorIgfsEndpoint> igfsEndpoints() {
-        return ggfsEndpoints;
+        return igfsEndpoints;
     }
 
     public Throwable igfssEx() {
-        return ggfssEx;
+        return igfssEx;
     }
 
-    public void igfssEx(Throwable ggfssEx) {
-        this.ggfssEx = ggfssEx;
+    public void igfssEx(Throwable igfssEx) {
+        this.igfssEx = igfssEx;
     }
 
     public Collection<VisorStreamer> streamers() {

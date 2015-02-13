@@ -48,7 +48,7 @@
     -->
     <property>
         <name>fs.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem</value>
     </property>
 
     <!--
@@ -56,7 +56,7 @@
     -->
     <property>
         <name>fs.AbstractFileSystem.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem</value>
     </property>
 
     <!--

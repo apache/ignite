@@ -57,13 +57,13 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private final Map<UUID, Throwable> cachesEx = new HashMap<>();
 
     /** All IGFS collected from nodes. */
-    private final Map<UUID, Collection<VisorIgfs>> ggfss = new HashMap<>();
+    private final Map<UUID, Collection<VisorIgfs>> igfss = new HashMap<>();
 
     /** All IGFS endpoints collected from nodes. */
-    private final Map<UUID, Collection<VisorIgfsEndpoint>> ggfsEndpoints = new HashMap<>();
+    private final Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints = new HashMap<>();
 
     /** Exceptions caught during collecting IGFS from nodes. */
-    private final Map<UUID, Throwable> ggfssEx = new HashMap<>();
+    private final Map<UUID, Throwable> igfssEx = new HashMap<>();
 
     /** All streamers collected from nodes. */
     private final Map<UUID, Collection<VisorStreamer>> streamers = new HashMap<>();
@@ -84,9 +84,9 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
                 eventsEx.isEmpty() &&
                 caches.isEmpty() &&
                 cachesEx.isEmpty() &&
-                ggfss.isEmpty() &&
-                ggfsEndpoints.isEmpty() &&
-                ggfssEx.isEmpty() &&
+                igfss.isEmpty() &&
+                igfsEndpoints.isEmpty() &&
+                igfssEx.isEmpty() &&
                 streamers.isEmpty() &&
                 streamersEx.isEmpty();
     }
@@ -151,21 +151,21 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      * @return All IGFS collected from nodes.
      */
     public Map<UUID, Collection<VisorIgfs>> igfss() {
-        return ggfss;
+        return igfss;
     }
 
     /**
      * @return All IGFS endpoints collected from nodes.
      */
     public Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints() {
-        return ggfsEndpoints;
+        return igfsEndpoints;
     }
 
     /**
      * @return Exceptions caught during collecting IGFS from nodes.
      */
     public Map<UUID, Throwable> igfssEx() {
-        return ggfssEx;
+        return igfssEx;
     }
 
     /**

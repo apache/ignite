@@ -122,22 +122,22 @@ public class VisorIgfsConfiguration implements Serializable {
     private long trashPurgeTimeout;
 
     /**
-     * @param ggfs IGFS configuration.
+     * @param igfs IGFS configuration.
      * @return Data transfer object for IGFS configuration properties.
      */
-    public static VisorIgfsConfiguration from(IgfsConfiguration ggfs) {
+    public static VisorIgfsConfiguration from(IgfsConfiguration igfs) {
         VisorIgfsConfiguration cfg = new VisorIgfsConfiguration();
 
-        cfg.name(ggfs.getName());
-        cfg.metaCacheName(ggfs.getMetaCacheName());
-        cfg.dataCacheName(ggfs.getDataCacheName());
-        cfg.blockSize(ggfs.getBlockSize());
-        cfg.prefetchBlocks(ggfs.getPrefetchBlocks());
-        cfg.streamBufferSize(ggfs.getStreamBufferSize());
-        cfg.perNodeBatchSize(ggfs.getPerNodeBatchSize());
-        cfg.perNodeParallelBatchCount(ggfs.getPerNodeParallelBatchCount());
+        cfg.name(igfs.getName());
+        cfg.metaCacheName(igfs.getMetaCacheName());
+        cfg.dataCacheName(igfs.getDataCacheName());
+        cfg.blockSize(igfs.getBlockSize());
+        cfg.prefetchBlocks(igfs.getPrefetchBlocks());
+        cfg.streamBufferSize(igfs.getStreamBufferSize());
+        cfg.perNodeBatchSize(igfs.getPerNodeBatchSize());
+        cfg.perNodeParallelBatchCount(igfs.getPerNodeParallelBatchCount());
 
-        Igfs secFs = ggfs.getSecondaryFileSystem();
+        Igfs secFs = igfs.getSecondaryFileSystem();
 
         if (secFs != null) {
             Map<String, String> props = secFs.properties();
@@ -146,26 +146,26 @@ public class VisorIgfsConfiguration implements Serializable {
             cfg.secondaryHadoopFileSystemConfigPath(props.get(SECONDARY_FS_CONFIG_PATH));
         }
 
-        cfg.defaultMode(ggfs.getDefaultMode());
-        cfg.pathModes(ggfs.getPathModes());
-        cfg.dualModePutExecutorService(compactClass(ggfs.getDualModePutExecutorService()));
-        cfg.dualModePutExecutorServiceShutdown(ggfs.getDualModePutExecutorServiceShutdown());
-        cfg.dualModeMaxPendingPutsSize(ggfs.getDualModeMaxPendingPutsSize());
-        cfg.maxTaskRangeLength(ggfs.getMaximumTaskRangeLength());
-        cfg.fragmentizerConcurrentFiles(ggfs.getFragmentizerConcurrentFiles());
-        cfg.fragmentizerLocalWritesRatio(ggfs.getFragmentizerLocalWritesRatio());
-        cfg.fragmentizerEnabled(ggfs.isFragmentizerEnabled());
-        cfg.fragmentizerThrottlingBlockLength(ggfs.getFragmentizerThrottlingBlockLength());
-        cfg.fragmentizerThrottlingDelay(ggfs.getFragmentizerThrottlingDelay());
+        cfg.defaultMode(igfs.getDefaultMode());
+        cfg.pathModes(igfs.getPathModes());
+        cfg.dualModePutExecutorService(compactClass(igfs.getDualModePutExecutorService()));
+        cfg.dualModePutExecutorServiceShutdown(igfs.getDualModePutExecutorServiceShutdown());
+        cfg.dualModeMaxPendingPutsSize(igfs.getDualModeMaxPendingPutsSize());
+        cfg.maxTaskRangeLength(igfs.getMaximumTaskRangeLength());
+        cfg.fragmentizerConcurrentFiles(igfs.getFragmentizerConcurrentFiles());
+        cfg.fragmentizerLocalWritesRatio(igfs.getFragmentizerLocalWritesRatio());
+        cfg.fragmentizerEnabled(igfs.isFragmentizerEnabled());
+        cfg.fragmentizerThrottlingBlockLength(igfs.getFragmentizerThrottlingBlockLength());
+        cfg.fragmentizerThrottlingDelay(igfs.getFragmentizerThrottlingDelay());
 
-        Map<String, String> endpointCfg = ggfs.getIpcEndpointConfiguration();
+        Map<String, String> endpointCfg = igfs.getIpcEndpointConfiguration();
         cfg.ipcEndpointConfiguration(endpointCfg != null ? endpointCfg.toString() : null);
 
-        cfg.ipcEndpointEnabled(ggfs.isIpcEndpointEnabled());
-        cfg.maxSpace(ggfs.getMaxSpaceSize());
-        cfg.managementPort(ggfs.getManagementPort());
-        cfg.sequenceReadsBeforePrefetch(ggfs.getSequentialReadsBeforePrefetch());
-        cfg.trashPurgeTimeout(ggfs.getTrashPurgeTimeout());
+        cfg.ipcEndpointEnabled(igfs.isIpcEndpointEnabled());
+        cfg.maxSpace(igfs.getMaxSpaceSize());
+        cfg.managementPort(igfs.getManagementPort());
+        cfg.sequenceReadsBeforePrefetch(igfs.getSequentialReadsBeforePrefetch());
+        cfg.trashPurgeTimeout(igfs.getTrashPurgeTimeout());
 
         return cfg;
     }
@@ -173,17 +173,17 @@ public class VisorIgfsConfiguration implements Serializable {
     /**
      * Construct data transfer object for igfs configurations properties.
      *
-     * @param ggfss igfs configurations.
+     * @param igfss Igfs configurations.
      * @return igfs configurations properties.
      */
-    public static Iterable<VisorIgfsConfiguration> list(IgfsConfiguration[] ggfss) {
-        if (ggfss == null)
+    public static Iterable<VisorIgfsConfiguration> list(IgfsConfiguration[] igfss) {
+        if (igfss == null)
             return Collections.emptyList();
 
-        final Collection<VisorIgfsConfiguration> cfgs = new ArrayList<>(ggfss.length);
+        final Collection<VisorIgfsConfiguration> cfgs = new ArrayList<>(igfss.length);
 
-        for (IgfsConfiguration ggfs : ggfss)
-            cfgs.add(from(ggfs));
+        for (IgfsConfiguration igfs : igfss)
+            cfgs.add(from(igfs));
 
         return cfgs;
     }

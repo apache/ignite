@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.ggfs;
+package org.apache.ignite.loadtests.igfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
