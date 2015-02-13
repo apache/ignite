@@ -299,9 +299,6 @@ public class CacheConfiguration extends MutableConfiguration {
     private CacheAffinityKeyMapper affMapper;
 
     /** */
-    private String indexingSpiName;
-
-    /** */
     private long preloadDelay;
 
     /** */
@@ -366,7 +363,6 @@ public class CacheConfiguration extends MutableConfiguration {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
-        indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
@@ -1457,34 +1453,6 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setAffinityMapper(CacheAffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
-    }
-
-    /**
-     * Gets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @return Name of SPI to use for indexing.
-     * @see IndexingSpi
-     */
-    public String getIndexingSpiName() {
-        return indexingSpiName;
-    }
-
-    /**
-     * Sets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @param indexingSpiName Name.
-     * @see IndexingSpi
-     */
-    public void setIndexingSpiName(String indexingSpiName) {
-        this.indexingSpiName = indexingSpiName;
     }
 
     /**

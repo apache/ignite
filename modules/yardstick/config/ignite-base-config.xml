@@ -44,18 +44,6 @@
             </bean>
         </property>
 
-        <!--<property name="indexingSpi">-->
-            <!--<list>-->
-                <!--<bean class="org.apache.ignite.spi.indexing.h2.H2IndexingSpi">-->
-                    <!--<property name="name" value="offheap"/>-->
-                    <!--<property name="maxOffHeapMemory" value="#{500*1024*1024}"/>-->
-                <!--</bean>-->
-                <!--<bean class="org.apache.ignite.spi.indexing.h2.H2IndexingSpi">-->
-                    <!--<property name="name" value="default"/>-->
-                <!--</bean>-->
-            <!--</list>-->
-        <!--</property>-->
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -149,8 +137,6 @@
 
                     <!-- Enable query indexing for query cache. -->
                     <property name="queryIndexEnabled" value="true"/>
-
-                    <property name="indexingSpiName" value="default"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -166,8 +152,6 @@
                     <property name="queryIndexEnabled" value="true"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
-
-                    <!--<property name="indexingSpiName" value="offheap"/>-->
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

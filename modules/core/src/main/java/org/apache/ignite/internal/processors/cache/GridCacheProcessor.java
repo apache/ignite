@@ -1163,9 +1163,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
                             rmtAttr.evictMaxOverflowRatio(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "indexingSpiName", "IndexingSpiName",
-                            locAttr.indexingSpiName(), rmtAttr.indexingSpiName(), true);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 

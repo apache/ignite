@@ -840,7 +840,6 @@ object VisorCacheCommand {
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
-        cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
         cacheT += ("Cache Interceptor", cfg.interceptor())
 
         cacheT += ("DGC Frequency", dgcCfg.frequency())
