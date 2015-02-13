@@ -257,7 +257,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<List<?>> res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         List<?> row = res.iterator().next();
 
@@ -269,7 +272,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         row = res.iterator().next();
 
@@ -309,6 +315,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         assertEquals(1, res.getValue().intValue());
 
         U.sleep(1020);
+
+        qry = cache.query(sql(Integer.class, "1=1")).getAll();
 
         res = F.first(qry);
 
@@ -1002,16 +1010,16 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(5, res.size());
 
-        Iterator<Cache.Entry<Integer, Integer>> it = res.iterator();
+        Set<Integer> checkDuplicate = new HashSet<>();
 
-        for (Integer i = 0; i < 5; i++) {
-            assertTrue(it.hasNext());
+        for (Cache.Entry<Integer, Integer> e : res) {
+            assert e.getKey() < 10 && e.getKey() >= 0;
+            assert e.getValue() < 10 && e.getValue() >= 0;
 
-            Cache.Entry<Integer, Integer> e = it.next();
-
-            assertEquals(i, e.getKey());
-            assertEquals(i, e.getValue());
+            checkDuplicate.add(e.getValue());
         }
+
+        assertEquals(5, checkDuplicate.size());
     }
 
     /**

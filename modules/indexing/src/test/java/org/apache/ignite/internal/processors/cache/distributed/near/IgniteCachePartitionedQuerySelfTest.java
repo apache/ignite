@@ -44,38 +44,6 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     }
 
     /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
-    public void testSingleNodeQuery() throws Exception {
-        Person p1 = new Person("Jon", 1500);
-        Person p2 = new Person("Jane", 2000);
-        Person p3 = new Person("Mike", 1800);
-        Person p4 = new Person("Bob", 1900);
-
-        IgniteCache<UUID, Person> cache0 = grid(0).jcache(null);
-
-        cache0.put(p1.id(), p1);
-        cache0.put(p2.id(), p2);
-        cache0.put(p3.id(), p3);
-        cache0.put(p4.id(), p4);
-
-        assertEquals(4, cache0.size());
-
-        QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.localQuery(sql(Person.class, "salary < 2000"));
-
-        Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();
-
-        assert entries != null;
-
-        assertEquals(3, entries.size());
-
-        checkResult(entries, p1, p3, p4);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testFieldsQuery() throws Exception {
@@ -93,7 +61,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
@@ -132,7 +100,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
         assert grid(0).nodes().size() == gridCount();
 
@@ -147,7 +115,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         info("Queried entries: " + entries);
 
         // Expect result including backup persons.
-        assertEquals(3 * gridCount(), entries.size());
+        assertEquals(gridCount(), entries.size());
 
         checkResult(entries, p1, p3, p4);
     }

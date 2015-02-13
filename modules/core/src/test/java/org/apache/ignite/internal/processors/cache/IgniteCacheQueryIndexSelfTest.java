@@ -89,7 +89,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         assert map.entrySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert map.keySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert map.values().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
-        assert cache.size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
+        assert cache.localSize() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.localSize();
     }
 
     /**
@@ -98,7 +98,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      */
     private void checkQuery(IgniteCache<Integer, CacheValue> cache) throws Exception {
         QueryCursor<Cache.Entry<Integer, CacheValue>> qry =
-            cache.query(new SqlQuery("val >= 5"));
+            cache.query(Query.sql(CacheValue.class, "val >= 5"));
 
         Collection<Cache.Entry<Integer, CacheValue>> queried = qry.getAll();
 
