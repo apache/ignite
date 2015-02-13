@@ -310,6 +310,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         U.sleep(1020);
 
+        qry = cache.query(sql(Integer.class, "1=1")).getAll();
+
         res = F.first(qry);
 
         assertNull(res);
