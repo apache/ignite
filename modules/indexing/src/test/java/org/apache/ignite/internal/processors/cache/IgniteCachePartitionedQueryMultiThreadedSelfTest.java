@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -80,7 +80,6 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         cc.setPreloadMode(CachePreloadMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
-
         c.setCacheConfiguration(cc);
 
         return c;
@@ -138,7 +137,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.size());
+        assertEquals(4, cache0.localSize());
 
         assert grid(0).nodes().size() == GRID_CNT;
 
