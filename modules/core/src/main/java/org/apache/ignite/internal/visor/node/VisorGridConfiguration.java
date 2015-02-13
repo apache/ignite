@@ -107,7 +107,7 @@ public class VisorGridConfiguration implements Serializable {
         includeEventTypes(c.getIncludeEventTypes());
         rest(VisorRestConfiguration.from(c));
         userAttributes(c.getUserAttributes());
-        caches(VisorCacheConfiguration.list(c.getCacheConfiguration()));
+        caches(VisorCacheConfiguration.list(ignite, c.getCacheConfiguration()));
         ggfss(VisorGgfsConfiguration.list(c.getGgfsConfiguration()));
         streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
         env(new HashMap<>(getenv()));
