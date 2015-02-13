@@ -72,7 +72,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final MockIgnite GRID = new MockIgnite();
 
     /** Mocked GGFS. */
-    private static final IgniteFs GGFS = new MockGgfs();
+    private static final IgniteFs GGFS = new MockIgfs();
 
     /** Planner. */
     private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
@@ -658,7 +658,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * Mocked GGFS.
      */
-    private static class MockGgfs implements IgfsEx {
+    private static class MockIgfs implements IgfsEx {
         /** {@inheritDoc} */
         @Override public boolean isProxy(URI path) {
             return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
