@@ -41,7 +41,30 @@ public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements
     }
 
     /** Allow all permissions. */
-    private static final GridSecurityPermissionSet ALLOW_ALL = new GridAllowAllPermissionSet();
+    private static final GridSecurityPermissionSet ALLOW_ALL = new GridSecurityPermissionSet() {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+            return null;
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)

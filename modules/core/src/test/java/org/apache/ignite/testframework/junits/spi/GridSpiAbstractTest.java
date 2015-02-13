@@ -96,6 +96,36 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /**
+     * @return Allow all permission security set.
+     */
+    protected GridSecurityPermissionSet getAllPermissionSet() {
+        return new GridSecurityPermissionSet() {
+            /** Serial version uid. */
+            private static final long serialVersionUID = 0L;
+
+            /** {@inheritDoc} */
+            @Override public boolean defaultAllowAll() {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+                return Collections.emptyMap();
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+                return Collections.emptyMap();
+            }
+
+            /** {@inheritDoc} */
+            @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+                return null;
+            }
+        };
+    }
+
+    /**
      * @throws Exception If failed.
      */
     private void resetTestData() throws Exception {
@@ -322,7 +352,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());
 
-                subj.permissions(new GridAllowAllPermissionSet());
+                subj.permissions(getAllPermissionSet());
 
                 return new GridSecurityContext(subj);
             }

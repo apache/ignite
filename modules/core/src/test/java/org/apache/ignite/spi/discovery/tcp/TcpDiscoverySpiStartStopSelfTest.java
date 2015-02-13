@@ -69,7 +69,7 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());
 
-                subj.permissions(new GridAllowAllPermissionSet());
+                subj.permissions(getAllPermissionSet());
 
                 return new GridSecurityContext(subj);
             }
