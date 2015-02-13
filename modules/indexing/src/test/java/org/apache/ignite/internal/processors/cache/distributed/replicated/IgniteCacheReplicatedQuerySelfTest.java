@@ -118,7 +118,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
                 c.put(i, i);
 
             // Client cache should be empty.
-            assertEquals(0, c.size());
+            assertEquals(0, c.localSize());
 
             Collection<Cache.Entry<Integer, Integer>> res =
                 c.query(new SqlQuery(Integer.class, "_key >= 5 order by _key")).getAll();
@@ -150,9 +150,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         for (int i = 0; i < keyCnt; i++)
             cache1.put(new CacheKey(i), new CacheValue("val" + i));
 
-        assertEquals(keyCnt, cache1.size());
-        assertEquals(keyCnt, cache2.size());
-        assertEquals(keyCnt, cache3.size());
+        assertEquals(keyCnt, cache1.localSize());
+        assertEquals(keyCnt, cache2.localSize());
+        assertEquals(keyCnt, cache3.localSize());
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
             cache1.query(new SqlQuery(CacheValue.class, "true"));
@@ -169,8 +169,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             cnt++;
         }
 
-        // Expect duplicates since we run query on full projection of 3 nodes and dedup flag is false.
-        assertEquals(keyCnt * 3, cnt);
+        assertEquals(keyCnt, cnt);
     }
 
     /**
@@ -243,7 +242,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             cache1.query(new SqlQuery(CacheValue.class, "val > 1 and val < 4"));
 
         // Distributed query.
-        assertEquals(6, qry.getAll().size());
+        assertEquals(2, qry.getAll().size());
 
         // Create new query, old query cannot be modified after it has been executed.
         qry = cache3.localQuery(new SqlQuery(CacheValue.class, "val > 1 and val < 4"));
@@ -297,9 +296,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
             cache1.query(new SqlQuery(CacheValue.class, "val > 0"));
 
-        assertEquals(keyCnt * 3, qry.getAll().size());
-
-        info("Query result: " + qry.getAll());
+        assertEquals(keyCnt, qry.getAll().size());
     }
 
     /**
