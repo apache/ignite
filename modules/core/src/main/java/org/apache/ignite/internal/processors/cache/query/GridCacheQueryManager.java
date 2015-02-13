@@ -1918,7 +1918,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.keyFields().size() + type.valueFields().size();
+                        int size = 2 + type.fields().size();
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
@@ -1926,10 +1926,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         fieldsMap.put("_KEY", type.keyClass().getName());
                         fieldsMap.put("_VAL", type.valueClass().getName());
 
-                        for (Map.Entry<String, Class<?>> e : type.keyFields().entrySet())
-                            fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
-
-                        for (Map.Entry<String, Class<?>> e : type.valueFields().entrySet())
+                        for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
 
                         fields.put(type.name(), fieldsMap);
