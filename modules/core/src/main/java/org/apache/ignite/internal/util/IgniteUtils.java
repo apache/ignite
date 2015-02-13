@@ -9179,6 +9179,6 @@ public abstract class IgniteUtils {
      */
     public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
         if (!cond)
-            throw new IgniteException("SPI parameter failed condition check: " + condDesc);
+            throw new IgniteException("Parameter failed condition check: " + condDesc);
     }
 }
