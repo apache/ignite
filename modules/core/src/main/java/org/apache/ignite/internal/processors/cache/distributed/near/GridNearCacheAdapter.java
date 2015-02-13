@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -46,6 +47,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final CachePeekMode[] NEAR_PEEK_MODE = {CachePeekMode.NEAR};
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -543,7 +547,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    public boolean clearLocally0(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    @Override public boolean clearLocally0(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
     }
 
@@ -695,7 +699,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             return new EntryIterator(nearSet.iterator(),
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {
-                        return !GridNearCacheAdapter.super.containsKey(e.getKey());
+                        try {
+                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
+                        }
+                        catch (IgniteCheckedException ex) {
+                            throw new IgniteException(ex);
+                        }
                     }
                 }));
         }

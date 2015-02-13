@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -482,13 +481,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         }
 
                         if (v != null) {
-                            if (cctx.cache().configuration().isStatisticsEnabled())
+                            if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                                 near.metrics0().onRead(true);
                         }
                         else {
                             primary = cctx.affinity().primary(key, topVer);
 
-                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled())
+                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                                 near.metrics0().onRead(false);
                         }
                     }

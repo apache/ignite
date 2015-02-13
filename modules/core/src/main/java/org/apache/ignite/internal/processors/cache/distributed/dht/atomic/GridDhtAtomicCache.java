@@ -967,7 +967,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (!success)
                     break;
-                else
+                else if (!skipVals)
                     metrics0().onRead(true);
             }
 
