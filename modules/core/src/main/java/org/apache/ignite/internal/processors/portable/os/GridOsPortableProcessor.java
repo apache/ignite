@@ -112,4 +112,9 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     @Override public Object field(Object obj, String fieldName) {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasField(Object obj, String fieldName) {
+        return false;
+    }
 }
