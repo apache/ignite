@@ -89,31 +89,31 @@
 
     <modules>
         <module>modules/core</module>
-        <module>modules/hadoop</module>
-        <module>modules/extdata/p2p</module>
-        <module>modules/extdata/uri</module>
-        <module>modules/clients</module>
-        <module>examples</module>
-        <module>modules/jdk8-backport</module>
-        <module>modules/tools</module>
-        <module>modules/spring</module>
-        <module>modules/hibernate</module>
-        <module>modules/web</module>
-        <module>modules/aop</module>
-        <module>modules/urideploy</module>
-        <module>modules/indexing</module>
-        <module>modules/geospatial</module>
-        <module>modules/ssh</module>
-        <module>modules/rest-http</module>
-        <module>modules/email</module>
-        <module>modules/jta</module>
-        <module>modules/aws</module>
-        <module>modules/schedule</module>
-        <module>modules/log4j</module>
-        <module>modules/slf4j</module>
-        <module>modules/jcl</module>
-        <module>modules/schema-load</module>
-        <module>modules/codegen</module>
+        <!--<module>modules/hadoop</module>-->
+        <!--<module>modules/extdata/p2p</module>-->
+        <!--<module>modules/extdata/uri</module>-->
+        <!--<module>modules/clients</module>-->
+        <!--<module>examples</module>-->
+        <!--<module>modules/jdk8-backport</module>-->
+        <!--<module>modules/tools</module>-->
+        <!--<module>modules/spring</module>-->
+        <!--<module>modules/hibernate</module>-->
+        <!--<module>modules/web</module>-->
+        <!--<module>modules/aop</module>-->
+        <!--<module>modules/urideploy</module>-->
+        <!--<module>modules/indexing</module>-->
+        <!--<module>modules/geospatial</module>-->
+        <!--<module>modules/ssh</module>-->
+        <!--<module>modules/rest-http</module>-->
+        <!--<module>modules/email</module>-->
+        <!--<module>modules/jta</module>-->
+        <!--<module>modules/aws</module>-->
+        <!--<module>modules/schedule</module>-->
+        <!--<module>modules/log4j</module>-->
+        <!--<module>modules/slf4j</module>-->
+        <!--<module>modules/jcl</module>-->
+        <!--<module>modules/schema-load</module>-->
+        <!--<module>modules/codegen</module>-->
     </modules>
 
     <dependencyManagement>
