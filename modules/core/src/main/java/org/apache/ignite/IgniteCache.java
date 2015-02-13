@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -191,17 +190,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
-    public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter);
 
-    public <R> QueryCursor<R> query(QueryReducer<Entry<K, V>, R> rmtRdc, QueryPredicate<K, V> filter);
 
-    public QueryCursor<List<?>> queryFields(QuerySqlPredicate<K, V> filter);
 
-    public <R> QueryCursor<R> queryFields(QueryReducer<List<?>, R> rmtRdc, QuerySqlPredicate<K, V> filter);
-
-    public QueryCursor<Entry<K, V>> localQuery(QueryPredicate<K, V> filter);
-
-    public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter);
 
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 

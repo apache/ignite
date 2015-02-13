@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
@@ -934,41 +933,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
 
-    /** {@inheritDoc} */
-    @Override public <R> QueryCursor<R> query(QueryReducer<Entry<K, V>, R> rmtRdc, QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
 
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
 
-    /** {@inheritDoc} */
-    @Override public <R> QueryCursor<R> queryFields(QueryReducer<List<?>, R> rmtRdc, QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K, V>> localQuery(QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
