@@ -553,7 +553,7 @@
                 <executions>
                     <execution>
                         <id>deploy-core</id>
-                        <phase>validate</phase>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>deploy-file</goal>
                         </goals>
