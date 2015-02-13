@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
@@ -653,11 +652,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setCloner(new CacheCloner() {
-                    @Nullable @Override public <T> T cloneValue(T val) {
-                        return null;
-                    }
-                });
                 cfg.setDefaultLockTimeout(1000);
                 cfg.setDefaultQueryTimeout(1000);
                 cfg.setDefaultTimeToLive(1000);
@@ -673,11 +667,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setCloner(new CacheCloner() {
-                    @Nullable @Override public <T> T cloneValue(T val) {
-                        return null;
-                    }
-                });
                 cfg.setDefaultLockTimeout(2 * 1000);
                 cfg.setDefaultQueryTimeout(2 * 1000);
                 cfg.setDefaultTimeToLive(2 * 1000);
@@ -690,7 +679,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         String log = strLog.toString();
 
-        assertTrue(log.contains("Cache cloner mismatch"));
         assertTrue(log.contains("Default lock timeout"));
         assertTrue(log.contains("Default query timeout"));
         assertTrue(log.contains("Default time to live"));

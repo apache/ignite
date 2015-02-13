@@ -179,7 +179,6 @@ public class VisorCacheConfiguration implements Serializable {
 //        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
         cfg.invalidate(ccfg.isInvalidate());
         cfg.startSize(ccfg.getStartSize());
-        cfg.cloner(compactClass(ccfg.getCloner()));
         cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
 //        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
         cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
