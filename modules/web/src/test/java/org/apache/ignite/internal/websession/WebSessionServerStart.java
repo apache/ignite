@@ -53,7 +53,7 @@ public class WebSessionServerStart {
         Server srv = new Server(port);
 
         WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/tests/webapp").getAbsolutePath(),
-            "/ggtest");
+            "/ignitetest");
 
         ctx.setInitParameter("cfgFilePath", "/examples/config/spring-cache.xml");
         ctx.setInitParameter("IgniteWebSessionsCacheName", "partitioned");
