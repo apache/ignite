@@ -127,7 +127,6 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.quiet(boolValue(IGNITE_QUIET, true));
         cfg.successFile(getProperty(IGNITE_SUCCESS_FILE));
         cfg.updateNotifier(boolValue(IGNITE_UPDATE_NOTIFIER, true));
-        cfg.securityCredentialsProvider(compactClass(c.getSecurityCredentialsProvider()));
 
         return cfg;
     }

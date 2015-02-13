@@ -289,7 +289,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         IgniteTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (IgniteTxLocalEx<K, V>)tx : null;
 
-        final GetExpiryPolicy expiry = accessExpiryPolicy(expiryPlc);
+        final IgniteCacheExpiryPolicy expiry = expiryPolicy(expiryPlc);
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
@@ -628,23 +628,23 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
-        return dht().isGgfsDataCache();
+    @Override public boolean isIgfsDataCache() {
+        return dht().isIgfsDataCache();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
-        return dht().ggfsDataSpaceUsed();
+    @Override public long igfsDataSpaceUsed() {
+        return dht().igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
-        return dht().ggfsDataSpaceMax();
+    @Override public long igfsDataSpaceMax() {
+        return dht().igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */
-    @Override public void onGgfsDataSizeChanged(long delta) {
-        dht().onGgfsDataSizeChanged(delta);
+    @Override public void onIgfsDataSizeChanged(long delta) {
+        dht().onIgfsDataSizeChanged(delta);
     }
 
     /** {@inheritDoc} */

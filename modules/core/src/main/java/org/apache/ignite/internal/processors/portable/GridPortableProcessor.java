@@ -130,4 +130,13 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Field value.
      */
     public Object field(Object obj, String fieldName);
+
+    /**
+     * Checks whether field is set in the object.
+     *
+     * @param obj Object.
+     * @param fieldName Field name.
+     * @return {@code true} if field is set.
+     */
+    public boolean hasField(Object obj, String fieldName);
 }

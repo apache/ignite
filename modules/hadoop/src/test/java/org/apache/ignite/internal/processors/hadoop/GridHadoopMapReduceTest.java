@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
@@ -51,16 +51,16 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
-        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
+        IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
-        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
         for (int i = 0; i < 8; i++) {
-            ggfs.delete(new IgniteFsPath(PATH_OUTPUT), true);
+            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
@@ -90,8 +90,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
@@ -180,15 +180,15 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             }
         }
 
-        final IgniteFsPath statPath = new IgniteFsPath("/xxx/yyy/zzz/" + jobId + "/performance");
+        final IgfsPath statPath = new IgfsPath("/xxx/yyy/zzz/" + jobId + "/performance");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ggfs.exists(statPath);
+                return igfs.exists(statPath);
             }
         }, 10000);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(statPath)));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(statPath)));
 
         assertEquals(apiEvtCnt, GridHadoopTestUtils.simpleCheckJobStatFile(reader));
     }

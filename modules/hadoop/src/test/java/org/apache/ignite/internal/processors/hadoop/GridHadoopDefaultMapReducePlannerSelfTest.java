@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.ignitefs.mapreduce.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.planner.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -71,14 +71,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /** Mocked Grid. */
     private static final MockIgnite GRID = new MockIgnite();
 
-    /** Mocked GGFS. */
-    private static final IgniteFs GGFS = new MockGgfs();
+    /** Mocked IGFS. */
+    private static final IgniteFs IGFS = new MockIgfs();
 
     /** Planner. */
     private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
 
     /** Block locations. */
-    private static final Map<Block, Collection<IgniteFsBlockLocation>> BLOCK_MAP = new HashMap<>();
+    private static final Map<Block, Collection<IgfsBlockLocation>> BLOCK_MAP = new HashMap<>();
 
     /** Proxy map. */
     private static final Map<URI, Boolean> PROXY_MAP = new HashMap<>();
@@ -104,14 +104,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsOneBlockPerNode() throws IgniteCheckedException {
+    public void testIgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_2));
-        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 100, ID_2));
+        mapIgfsBlock(split3.file(), 0, 100, location(0, 100, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
@@ -164,7 +164,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOneBlockPerNode() throws IgniteCheckedException {
+    public void testNonIgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_3);
@@ -220,14 +220,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
+    public void testIgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_1, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1, ID_2));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_1, ID_2));
-        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapIgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty(ID_2) ||
@@ -266,7 +266,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
+    public void testNonIgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_1, HOST_3);
@@ -308,12 +308,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralComplexBlocksPerNode() throws IgniteCheckedException {
+    public void testIgfsSeveralComplexBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2, HOST_3);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_1, ID_3));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_2, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_1, ID_3));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_2, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
@@ -344,7 +344,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOrphans() throws IgniteCheckedException {
+    public void testNonIgfsOrphans() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, INVALID_HOST_1, INVALID_HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, INVALID_HOST_1, INVALID_HOST_3);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, INVALID_HOST_2, INVALID_HOST_3);
@@ -473,15 +473,15 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * Create split.
      *
-     * @param ggfs GGFS flag.
+     * @param igfs IGFS flag.
      * @param file File.
      * @param start Start.
      * @param len Length.
      * @param hosts Hosts.
      * @return Split.
      */
-    private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
-        URI uri = URI.create((ggfs ? "ggfs://ggfs@" : "hdfs://") + file);
+    private static GridHadoopFileBlock split(boolean igfs, String file, long start, long len, String... hosts) {
+        URI uri = URI.create((igfs ? "igfs://igfs@" : "hdfs://") + file);
 
         return new GridHadoopFileBlock(hosts, uri, start, len);
     }
@@ -494,7 +494,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param nodeIds Node IDs.
      * @return Block location.
      */
-    private static IgniteFsBlockLocation location(long start, long len, UUID... nodeIds) {
+    private static IgfsBlockLocation location(long start, long len, UUID... nodeIds) {
         assert nodeIds != null && nodeIds.length > 0;
 
         Collection<ClusterNode> nodes = new ArrayList<>(nodeIds.length);
@@ -502,25 +502,25 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         for (UUID id : nodeIds)
             nodes.add(new GridTestNode(id));
 
-        return new GridGgfsBlockLocationImpl(start, len, nodes);
+        return new IgfsBlockLocationImpl(start, len, nodes);
     }
 
     /**
-     * Map GGFS block to nodes.
+     * Map IGFS block to nodes.
      *
      * @param file File.
      * @param start Start.
      * @param len Length.
      * @param locations Locations.
      */
-    private static void mapGgfsBlock(URI file, long start, long len, IgniteFsBlockLocation... locations) {
+    private static void mapIgfsBlock(URI file, long start, long len, IgfsBlockLocation... locations) {
         assert locations != null && locations.length > 0;
 
-        IgniteFsPath path = new IgniteFsPath(file);
+        IgfsPath path = new IgfsPath(file);
 
         Block block = new Block(path, start, len);
 
-        Collection<IgniteFsBlockLocation> locationsList = new ArrayList<>();
+        Collection<IgfsBlockLocation> locationsList = new ArrayList<>();
 
         Collections.addAll(locationsList, locations);
 
@@ -532,7 +532,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      */
     private static class Block {
         /** */
-        private final IgniteFsPath path;
+        private final IgfsPath path;
 
         /** */
         private final long start;
@@ -547,7 +547,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
          * @param start Start.
          * @param len Length.
          */
-        private Block(IgniteFsPath path, long start, long len) {
+        private Block(IgfsPath path, long start, long len) {
             this.path = path;
             this.start = start;
             this.len = len;
@@ -656,21 +656,21 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * Mocked GGFS.
+     * Mocked IGFS.
      */
-    private static class MockGgfs implements GridGgfsEx {
+    private static class MockIgfs implements IgfsEx {
         /** {@inheritDoc} */
         @Override public boolean isProxy(URI path) {
             return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) {
+        @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
             return BLOCK_MAP.get(new Block(path, start, len));
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len,
+        @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
             long maxLen) {
             return null;
         }
@@ -681,32 +681,32 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsContext context() {
+        @Override public IgfsContext context() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsPaths proxyPaths() {
+        @Override public IgfsPaths proxyPaths() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
+        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) {
+        @Override public IgfsInputStreamAdapter open(IgfsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
+        @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
             return null;
         }
 
@@ -721,7 +721,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsLocalMetrics localMetrics() {
+        @Override public IgfsLocalMetrics localMetrics() {
             return null;
         }
 
@@ -746,7 +746,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evictExclude(IgniteFsPath path, boolean primary) {
+        @Override public boolean evictExclude(IgfsPath path, boolean primary) {
             return false;
         }
 
@@ -756,57 +756,57 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsConfiguration configuration() {
+        @Override public IgfsConfiguration configuration() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean exists(IgniteFsPath path) {
+        @Override public boolean exists(IgfsPath path) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) {
+        @Nullable @Override public IgfsFile info(IgfsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsPathSummary summary(IgniteFsPath path) {
+        @Override public IgfsPathSummary summary(IgfsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
+        @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
+        @Override public void rename(IgfsPath src, IgfsPath dest) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public boolean delete(IgniteFsPath path, boolean recursive) {
+        @Override public boolean delete(IgfsPath path, boolean recursive) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path) {
+        @Override public void mkdirs(IgfsPath path) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
+        @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) {
+        @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) {
+        @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
             return null;
         }
 
@@ -821,40 +821,40 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) {
+        @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
             long blockSize, @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
             @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) {
+        @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
+        @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
             @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) {
+        @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsMetrics metrics() {
+        @Override public IgfsMetrics metrics() {
             return null;
         }
 
@@ -864,7 +864,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public long size(IgniteFsPath path) {
+        @Override public long size(IgfsPath path) {
             return 0;
         }
 
@@ -874,26 +874,26 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-            Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+            Collection<IgfsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-            Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+            Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
             long maxRangeLen, @Nullable T arg) {
             return null;
         }
@@ -925,10 +925,10 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
         /** {@inheritDoc} */
-        @Override public IgniteFs ggfsx(String name) {
-            assert F.eq("ggfs", name);
+        @Override public IgniteFs igfsx(String name) {
+            assert F.eq("igfs", name);
 
-            return GGFS;
+            return IGFS;
         }
 
         /** {@inheritDoc} */

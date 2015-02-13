@@ -165,10 +165,17 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("keys"));
 
                     // HashSet wrapping for correct serialization
-                    keys = new HashSet<>(keys);
+                    HashSet<Object> keys0 = new HashSet<>();
+
+                    for (Object getKey : keys) {
+                        if (getKey == null)
+                            throw new IgniteCheckedException("Failing getAll operation (null keys are not allowed).");
+
+                        keys0.add(getKey);
+                    }
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetAllCommand(keys), req.portableMode());
+                        new GetAllCommand(keys0), req.portableMode());
 
                     break;
                 }

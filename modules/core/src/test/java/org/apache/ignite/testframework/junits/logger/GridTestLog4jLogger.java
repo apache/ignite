@@ -65,9 +65,6 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * injection.
  */
 public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 

@@ -253,29 +253,6 @@
             </list>
         </property>
 
-        <!--
-            Use passcode authentication SPI.
-        - ->
-        <property name="authenticationSpi">
-            <bean class="org.apache.ignite.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
-                <property name="passcodes">
-                    <map>
-                        <entry key="REMOTE_NODE" value="s3cret"/>
-                        <entry key="REMOTE_CLIENT" value="s3cret"/>
-                    </map>
-                </property>
-            </bean>
-        </property>
-
-        <!- -
-            Use remember me secure session SPI.
-        -->
-        <property name="secureSessionSpi">
-            <bean class="org.gridgain.grid.rememberme.GridRememberMeSecureSessionSpi">
-                <!-- Session TTL = 1 hour -->
-                <property name="ttl" value="3600000"/>
-            </bean>
-        </property>
 
         <!--
             TCP discovery SPI (uses VM-shared IP-finder).

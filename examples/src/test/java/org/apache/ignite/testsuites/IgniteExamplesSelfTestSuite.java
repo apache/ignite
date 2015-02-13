@@ -51,7 +51,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(MonteCarloExamplesSelfTest.class));
         suite.addTest(new TestSuite(TaskExamplesSelfTest.class));
         suite.addTest(new TestSuite(SpringBeanExamplesSelfTest.class));
-        suite.addTest(new TestSuite(IgniteFsExamplesSelfTest.class));
+        suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
         suite.addTest(new TestSuite(ProjectionExampleSelfTest.class));

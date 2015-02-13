@@ -33,7 +33,7 @@
     </parent>
 
     <properties>
-        <ignite.version>1.0.0-SNAPSHOT</ignite.version>
+        <ignite.version>1.0.0-RC1-SNAPSHOT</ignite.version>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -550,9 +550,34 @@
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
                 <inherited>false</inherited>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>deploy-core</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>org.apache.ignite</groupId>
+                            <artifactId>ignite-core</artifactId>
+                            <version>${ignite.version}</version>
+                            <repositoryId>${distributionManagement.snapshotRepository.id}</repositoryId>
+                            <url>${distributionManagement.snapshotRepository.url}</url>
+                            <file>${basedir}/target/ignite-core-${ignite.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -704,11 +729,11 @@
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -716,11 +741,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -883,7 +908,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
@@ -899,11 +924,11 @@
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -911,11 +936,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -1019,23 +1044,8 @@
                                             </table>
                                         </td>
                                         <td width="100%" align="right" valign="center">
-                                            <table border=0 cellspacing=0 cellpadding=0>
-                                            <tr>
-                                                <td>
-                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                    </a>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            </table>
+                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
+                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
                                         </td>
                                     </tr>
                                     <tr>

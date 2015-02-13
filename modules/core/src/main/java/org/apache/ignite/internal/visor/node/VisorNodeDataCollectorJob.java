@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 import org.apache.ignite.streamer.*;
 
@@ -102,7 +102,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             for (GridCache cache : ignite.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName))) {
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
@@ -120,34 +120,34 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
     }
 
-    /** Collect GGFS. */
-    private void ggfs(VisorNodeDataCollectorJobResult res) {
+    /** Collect IGFS. */
+    private void igfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().ggfs();
+            IgfsProcessorAdapter igfsProc = ((IgniteKernal)ignite).context().igfs();
 
-            for (IgniteFs ggfs : ggfsProc.ggfss()) {
+            for (IgniteFs igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                    Collection<IpcServerEndpoint> endPoints = igfsProc.endpoints(igfs.name());
 
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
-                                res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), ignite.name(),
+                                res.igfsEndpoints().add(new VisorIgfsEndpoint(igfs.name(), ignite.name(),
                                     ep.getHost(), ep.getPort()));
                     }
 
-                    res.ggfss().add(VisorGgfs.from(ggfs));
+                    res.igfss().add(VisorIgfs.from(igfs));
                 }
                 finally {
                     if (debug)
-                        log(ignite.log(), "Collected GGFS: " + ggfs.name(), getClass(), start0);
+                        log(ignite.log(), "Collected IGFS: " + igfs.name(), getClass(), start0);
                 }
             }
         }
-        catch (Throwable ggfssEx) {
-            res.ggfssEx(ggfssEx);
+        catch (Throwable igfssEx) {
+            res.igfssEx(igfssEx);
         }
     }
 
@@ -205,10 +205,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected caches", getClass(), start0);
 
-        ggfs(res);
+        igfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected ggfs", getClass(), start0);
+            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
 
         streamers(res);
 

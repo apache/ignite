@@ -2106,8 +2106,6 @@ public abstract class IgniteUtils {
                                 Thread.sleep(10);
                             }
                             catch (InterruptedException ignored) {
-                                U.log(null, "Timer thread has been interrupted.");
-
                                 break;
                             }
                         }
@@ -9168,5 +9166,17 @@ public abstract class IgniteUtils {
         }
 
         return cnt;
+    }
+
+    /**
+     * Throws exception with uniform error message if given parameter's assertion condition
+     * is {@code false}.
+     *
+     * @param cond Assertion condition to check.
+     * @param condDesc Description of failed condition.
+     */
+    public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
+        if (!cond)
+            throw new IgniteException("Parameter failed condition check: " + condDesc);
     }
 }
