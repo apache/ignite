@@ -83,9 +83,6 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 
     /** */

@@ -2553,9 +2553,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private class GridCacheScanSwapEntry implements Cache.Entry<K, V> {
         /** */
-        private static final long serialVersionUID = 1262515168518736214L;
-
-        /** */
         private final AbstractLazySwapEntry e;
 
         /**
