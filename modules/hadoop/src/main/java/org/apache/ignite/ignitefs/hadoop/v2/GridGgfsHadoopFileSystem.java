@@ -100,7 +100,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private String uriAuthority;
 
     /** Client logger. */
-    private GridGgfsLogger clientLog;
+    private IgfsLogger clientLog;
 
     /** Server block size. */
     private long grpBlockSize;
@@ -256,10 +256,10 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = IgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
-                clientLog = GridGgfsLogger.disabledLogger();
+                clientLog = IgfsLogger.disabledLogger();
 
             modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
@@ -441,7 +441,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                     long size = status != null ? status.getLen() : -1;
 
-                    long logId = GridGgfsLogger.nextId();
+                    long logId = IgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
@@ -457,7 +457,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsLogger.nextId();
+                    logId = IgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
@@ -516,7 +516,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     replication, blockSize, progress, checksumOpt, createParent);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsLogger.nextId();
+                    long logId = IgfsLogger.nextId();
 
                     if (append)
                         clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
@@ -541,7 +541,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     stream = rmtClient.append(path, create, permMap);
 
                     if (clientLog.isLogEnabled()) {
-                        logId = GridGgfsLogger.nextId();
+                        logId = IgfsLogger.nextId();
 
                         clientLog.logAppend(logId, path, mode, bufSize);
                     }
@@ -554,7 +554,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                         permMap);
 
                     if (clientLog.isLogEnabled()) {
-                        logId = GridGgfsLogger.nextId();
+                        logId = IgfsLogger.nextId();
 
                         clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
                     }

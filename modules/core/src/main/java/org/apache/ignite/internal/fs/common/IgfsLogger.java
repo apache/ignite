@@ -31,7 +31,7 @@ import java.util.concurrent.locks.*;
 /**
  * GGFS client logger writing data to the file.
  */
-public final class GridGgfsLogger {
+public final class IgfsLogger {
     /** Field delimiter. */
     public static final String DELIM_FIELD = ";";
 
@@ -89,14 +89,14 @@ public final class GridGgfsLogger {
     private static final AtomicLong CNTR = new AtomicLong();
 
     /** Loggers. */
-    private static final ConcurrentHashMap8<String, GridGgfsLogger> loggers =
+    private static final ConcurrentHashMap8<String, IgfsLogger> loggers =
         new ConcurrentHashMap8<>();
 
     /** Lock for atomic logger adds/removals. */
     private static final ReadWriteLock logLock = new ReentrantReadWriteLock();
 
     /** Predefined disabled logger. */
-    private static final GridGgfsLogger disabledLogger = new GridGgfsLogger();
+    private static final IgfsLogger disabledLogger = new IgfsLogger();
 
     /** Logger enabled flag. */
     private boolean enabled;
@@ -148,7 +148,7 @@ public final class GridGgfsLogger {
      *
      * @return Disable logger instance.
      */
-    public static GridGgfsLogger disabledLogger() {
+    public static IgfsLogger disabledLogger() {
         return disabledLogger;
     }
 
@@ -161,19 +161,19 @@ public final class GridGgfsLogger {
      *
      * @return Logger instance.
      */
-    public static GridGgfsLogger logger(String endpoint, String ggfsName, String dir, int batchSize) {
+    public static IgfsLogger logger(String endpoint, String ggfsName, String dir, int batchSize) {
         if (endpoint == null)
             endpoint = "";
 
         logLock.readLock().lock();
 
         try {
-            GridGgfsLogger log = loggers.get(endpoint);
+            IgfsLogger log = loggers.get(endpoint);
 
             if (log == null) {
-                log = new GridGgfsLogger(endpoint, ggfsName, dir, batchSize);
+                log = new IgfsLogger(endpoint, ggfsName, dir, batchSize);
 
-                GridGgfsLogger log0 = loggers.putIfAbsent(endpoint, log);
+                IgfsLogger log0 = loggers.putIfAbsent(endpoint, log);
 
                 if (log0 != null)
                     log = log0;
@@ -191,7 +191,7 @@ public final class GridGgfsLogger {
     /**
      * Construct disabled file logger.
      */
-    private GridGgfsLogger() {
+    private IgfsLogger() {
         // No-op.
     }
 
@@ -203,7 +203,7 @@ public final class GridGgfsLogger {
      * @param dir Log file path.
      * @param batchSize Batch size.
      */
-    private GridGgfsLogger(String endpoint, String ggfsName, String dir, int batchSize) {
+    private IgfsLogger(String endpoint, String ggfsName, String dir, int batchSize) {
         A.notNull(endpoint, "endpoint cannot be null");
         A.notNull(dir, "dir cannot be null");
         A.ensure(batchSize > 0, "batch size cannot be negative");

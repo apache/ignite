@@ -29,7 +29,7 @@ import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsLogger.*;
+import static org.apache.ignite.internal.fs.common.IgfsLogger.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**

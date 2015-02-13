@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Single path command message. This is a plain bean.
  */
-public class GridGgfsPathControlRequest extends GridGgfsMessage {
+public class IgfsPathControlRequest extends IgfsMessage {
     /** Main path. */
     private IgniteFsPath path;
 
@@ -233,6 +233,6 @@ public class GridGgfsPathControlRequest extends GridGgfsMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsPathControlRequest.class, this, "cmd", command());
+        return S.toString(IgfsPathControlRequest.class, this, "cmd", command());
     }
 }

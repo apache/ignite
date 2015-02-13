@@ -32,7 +32,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     private Log log;
 
     /** Client logger. */
-    private GridGgfsLogger clientLog;
+    private IgfsLogger clientLog;
 
     /** Log stream ID. */
     private long logStreamId;
@@ -69,7 +69,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
      * @param clientLog Client logger.
      */
     public GridGgfsHadoopOutputStream(GridGgfsHadoopStreamDelegate delegate, Log log,
-        GridGgfsLogger clientLog, long logStreamId) {
+        IgfsLogger clientLog, long logStreamId) {
         this.delegate = delegate;
         this.log = log;
         this.clientLog = clientLog;

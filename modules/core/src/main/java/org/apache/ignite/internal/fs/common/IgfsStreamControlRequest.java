@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Read block request.
  */
-public class GridGgfsStreamControlRequest extends GridGgfsMessage {
+public class IgfsStreamControlRequest extends IgfsMessage {
     /** Stream id. */
     private long streamId;
 
@@ -95,7 +95,7 @@ public class GridGgfsStreamControlRequest extends GridGgfsMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsStreamControlRequest.class, this, "cmd", command(),
+        return S.toString(IgfsStreamControlRequest.class, this, "cmd", command(),
             "dataLen", data == null ? 0 : data.length);
     }
 }

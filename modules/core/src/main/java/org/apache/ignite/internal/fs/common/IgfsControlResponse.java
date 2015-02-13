@@ -27,12 +27,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 
 /**
  * GGFS path command response.
  */
-public class GridGgfsControlResponse extends GridGgfsMessage {
+public class IgfsControlResponse extends IgfsMessage {
     /** Generic error (not GGFS) while performing operations. */
     private static final int ERR_GENERIC = 0;
 
@@ -118,7 +118,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      *
      */
-    public GridGgfsControlResponse() {
+    public IgfsControlResponse() {
         command(CONTROL_RESPONSE);
     }
 
@@ -628,6 +628,6 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsControlResponse.class, this);
+        return S.toString(IgfsControlResponse.class, this);
     }
 }

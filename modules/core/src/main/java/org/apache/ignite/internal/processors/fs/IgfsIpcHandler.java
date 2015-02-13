@@ -99,16 +99,16 @@ class IgfsIpcHandler implements IgfsServerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final IgfsClientSession ses,
-        final GridGgfsMessage msg, DataInput in) {
+    @Override public IgniteInternalFuture<IgfsMessage> handleAsync(final IgfsClientSession ses,
+        final IgfsMessage msg, DataInput in) {
         try {
             // Even if will be closed right after this call, response write error will be ignored.
             if (stopping)
                 return null;
 
-            final GridGgfsIpcCommand cmd = msg.command();
+            final IgfsIpcCommand cmd = msg.command();
 
-            IgniteInternalFuture<GridGgfsMessage> fut;
+            IgniteInternalFuture<IgfsMessage> fut;
 
             switch (cmd) {
                 // Execute not-blocking command synchronously in worker thread.
@@ -116,7 +116,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 case MAKE_DIRECTORIES:
                 case LIST_FILES:
                 case LIST_PATHS: {
-                    GridGgfsMessage res = execute(ses, cmd, msg, in);
+                    IgfsMessage res = execute(ses, cmd, msg, in);
 
                     fut = res == null ? null : new GridFinishedFuture<>(ctx, res);
 
@@ -125,8 +125,8 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
                 // Execute command asynchronously in user's pool.
                 default: {
-                    fut = ctx.closure().callLocalSafe(new GridPlainCallable<GridGgfsMessage>() {
-                        @Override public GridGgfsMessage call() throws Exception {
+                    fut = ctx.closure().callLocalSafe(new GridPlainCallable<IgfsMessage>() {
+                        @Override public IgfsMessage call() throws Exception {
                             // No need to pass data input for non-write-block commands.
                             return execute(ses, cmd, msg, null);
                         }
@@ -152,12 +152,12 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Command execution result.
      * @throws Exception If failed.
      */
-    private GridGgfsMessage execute(IgfsClientSession ses, GridGgfsIpcCommand cmd, GridGgfsMessage msg,
+    private IgfsMessage execute(IgfsClientSession ses, IgfsIpcCommand cmd, IgfsMessage msg,
         @Nullable DataInput in)
         throws Exception {
         switch (cmd) {
             case HANDSHAKE:
-                return processHandshakeRequest((GridGgfsHandshakeRequest)msg);
+                return processHandshakeRequest((IgfsHandshakeRequest)msg);
 
             case STATUS:
                 return processStatusRequest();
@@ -195,7 +195,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Response message.
      * @throws IgniteCheckedException In case of handshake failure.
      */
-    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) throws IgniteCheckedException {
+    private IgfsMessage processHandshakeRequest(IgfsHandshakeRequest req) throws IgniteCheckedException {
         if (!F.eq(ctx.gridName(), req.gridName()))
             throw new IgniteCheckedException("Failed to perform handshake because actual Grid name differs from expected " +
                 "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
@@ -204,7 +204,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
             throw new IgniteCheckedException("Failed to perform handshake because actual GGFS name differs from expected " +
                 "[expected=" + req.ggfsName() + ", actual=" + ggfs.name() + ']');
 
-        GridGgfsControlResponse res = new GridGgfsControlResponse();
+        IgfsControlResponse res = new IgfsControlResponse();
 
         ggfs.clientLogDirectory(req.logDirectory());
 
@@ -222,10 +222,10 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Status response.
      * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsMessage processStatusRequest() throws IgniteCheckedException {
+    private IgfsMessage processStatusRequest() throws IgniteCheckedException {
         IgfsStatus status = ggfs.globalSpace();
 
-        GridGgfsControlResponse res = new GridGgfsControlResponse();
+        IgfsControlResponse res = new IgfsControlResponse();
 
         res.status(status);
 
@@ -241,14 +241,14 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Response message.
      * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsMessage processPathControlRequest(IgfsClientSession ses, GridGgfsIpcCommand cmd,
-        GridGgfsMessage msg) throws IgniteCheckedException {
-        GridGgfsPathControlRequest req = (GridGgfsPathControlRequest)msg;
+    private IgfsMessage processPathControlRequest(IgfsClientSession ses, IgfsIpcCommand cmd,
+        IgfsMessage msg) throws IgniteCheckedException {
+        IgfsPathControlRequest req = (IgfsPathControlRequest)msg;
 
         if (log.isDebugEnabled())
             log.debug("Processing path control request [ggfsName=" + ggfs.name() + ", req=" + req + ']');
 
-        GridGgfsControlResponse res = new GridGgfsControlResponse();
+        IgfsControlResponse res = new IgfsControlResponse();
 
         try {
             switch (cmd) {
@@ -396,13 +396,13 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException If failed.
      * @throws IOException If failed.
      */
-    private GridGgfsMessage processStreamControlRequest(IgfsClientSession ses, GridGgfsIpcCommand cmd,
-        GridGgfsMessage msg, DataInput in) throws IgniteCheckedException, IOException {
-        GridGgfsStreamControlRequest req = (GridGgfsStreamControlRequest)msg;
+    private IgfsMessage processStreamControlRequest(IgfsClientSession ses, IgfsIpcCommand cmd,
+        IgfsMessage msg, DataInput in) throws IgniteCheckedException, IOException {
+        IgfsStreamControlRequest req = (IgfsStreamControlRequest)msg;
 
         Long rsrcId = req.streamId();
 
-        GridGgfsControlResponse resp = new GridGgfsControlResponse();
+        IgfsControlResponse resp = new IgfsControlResponse();
 
         switch (cmd) {
             case CLOSE: {
@@ -513,7 +513,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Affinity key that maps on local node by the time this method is called if replication factor
      *      is {@code 0}, {@code null} otherwise.
      */
-    @Nullable private IgniteUuid affinityKey(GridGgfsPathControlRequest req) {
+    @Nullable private IgniteUuid affinityKey(IgfsPathControlRequest req) {
         // Do not generate affinity key for replicated or near-only cache.
         if (!req.colocate()) {
             if (log.isDebugEnabled())

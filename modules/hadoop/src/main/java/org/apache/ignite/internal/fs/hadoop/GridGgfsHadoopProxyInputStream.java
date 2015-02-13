@@ -30,7 +30,7 @@ public class GridGgfsHadoopProxyInputStream extends InputStream implements Seeka
     private final FSDataInputStream is;
 
     /** Client logger. */
-    private final GridGgfsLogger clientLog;
+    private final IgfsLogger clientLog;
 
     /** Log stream ID. */
     private final long logStreamId;
@@ -56,7 +56,7 @@ public class GridGgfsHadoopProxyInputStream extends InputStream implements Seeka
      * @param is Actual input stream to the secondary file system.
      * @param clientLog Client log.
      */
-    public GridGgfsHadoopProxyInputStream(FSDataInputStream is, GridGgfsLogger clientLog, long logStreamId) {
+    public GridGgfsHadoopProxyInputStream(FSDataInputStream is, IgfsLogger clientLog, long logStreamId) {
         assert is != null;
         assert clientLog != null;
 

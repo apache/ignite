@@ -17,19 +17,19 @@
 
 package org.apache.ignite.internal.fs.common;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 
 /**
  * GGFS status (total/used/free space) request.
  */
-public class GridGgfsStatusRequest extends GridGgfsMessage {
+public class IgfsStatusRequest extends IgfsMessage {
     /** {@inheritDoc} */
-    @Override public GridGgfsIpcCommand command() {
+    @Override public IgfsIpcCommand command() {
         return STATUS;
     }
 
     /** {@inheritDoc} */
-    @Override public void command(GridGgfsIpcCommand cmd) {
+    @Override public void command(IgfsIpcCommand cmd) {
         // No-op.
     }
 }

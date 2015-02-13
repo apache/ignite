@@ -25,12 +25,12 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 
 /**
  * Implementation of GGFS client message marshaller.
  */
-public class GridGgfsMarshaller {
+public class IgfsMarshaller {
     /** Packet header size. */
     public static final int HEADER_SIZE = 24;
 
@@ -41,7 +41,7 @@ public class GridGgfsMarshaller {
      * @param cmd Command.
      * @return Created header.
      */
-    public static byte[] createHeader(long reqId, GridGgfsIpcCommand cmd) {
+    public static byte[] createHeader(long reqId, IgfsIpcCommand cmd) {
         assert cmd != null;
 
         byte[] hdr = new byte[HEADER_SIZE];
@@ -60,7 +60,7 @@ public class GridGgfsMarshaller {
      * @param cmd Command.
      * @return Created header.
      */
-    public static byte[] fillHeader(byte[] hdr, long reqId, GridGgfsIpcCommand cmd) {
+    public static byte[] fillHeader(byte[] hdr, long reqId, IgfsIpcCommand cmd) {
         assert cmd != null;
 
         Arrays.fill(hdr, (byte)0);
@@ -78,7 +78,7 @@ public class GridGgfsMarshaller {
      * @param out Output.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshall(GridGgfsMessage msg, byte[] hdr, ObjectOutput out) throws IgniteCheckedException {
+    public void marshall(IgfsMessage msg, byte[] hdr, ObjectOutput out) throws IgniteCheckedException {
         assert hdr != null;
         assert hdr.length == HEADER_SIZE;
 
@@ -87,7 +87,7 @@ public class GridGgfsMarshaller {
                 case HANDSHAKE: {
                     out.write(hdr);
 
-                    GridGgfsHandshakeRequest req = (GridGgfsHandshakeRequest)msg;
+                    IgfsHandshakeRequest req = (IgfsHandshakeRequest)msg;
 
                     U.writeString(out, req.gridName());
                     U.writeString(out, req.ggfsName());
@@ -117,7 +117,7 @@ public class GridGgfsMarshaller {
                 case OPEN_CREATE: {
                     out.write(hdr);
 
-                    GridGgfsPathControlRequest req = (GridGgfsPathControlRequest)msg;
+                    IgfsPathControlRequest req = (IgfsPathControlRequest)msg;
 
                     writePath(out, req.path());
                     writePath(out, req.destinationPath());
@@ -149,7 +149,7 @@ public class GridGgfsMarshaller {
                 case WRITE_BLOCK: {
                     assert msg.command() != WRITE_BLOCK : "WRITE_BLOCK should be marshalled manually.";
 
-                    GridGgfsStreamControlRequest req = (GridGgfsStreamControlRequest)msg;
+                    IgfsStreamControlRequest req = (IgfsStreamControlRequest)msg;
 
                     U.longToBytes(req.streamId(), hdr, 12);
 
@@ -167,7 +167,7 @@ public class GridGgfsMarshaller {
                 case CONTROL_RESPONSE: {
                     out.write(hdr);
 
-                    GridGgfsControlResponse res = (GridGgfsControlResponse)msg;
+                    IgfsControlResponse res = (IgfsControlResponse)msg;
 
                     res.writeExternal(out);
 
@@ -194,16 +194,16 @@ public class GridGgfsMarshaller {
      * @return Message.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsMessage unmarshall(GridGgfsIpcCommand cmd, byte[] hdr, ObjectInput in) throws IgniteCheckedException {
+    public IgfsMessage unmarshall(IgfsIpcCommand cmd, byte[] hdr, ObjectInput in) throws IgniteCheckedException {
         assert hdr != null;
         assert hdr.length == HEADER_SIZE;
 
         try {
-            GridGgfsMessage msg;
+            IgfsMessage msg;
 
             switch (cmd) {
                 case HANDSHAKE: {
-                    GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
+                    IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
                     req.gridName(U.readString(in));
                     req.ggfsName(U.readString(in));
@@ -215,7 +215,7 @@ public class GridGgfsMarshaller {
                 }
 
                 case STATUS: {
-                    msg = new GridGgfsStatusRequest();
+                    msg = new IgfsStatusRequest();
 
                     break;
                 }
@@ -234,7 +234,7 @@ public class GridGgfsMarshaller {
                 case OPEN_READ:
                 case OPEN_APPEND:
                 case OPEN_CREATE: {
-                    GridGgfsPathControlRequest req = new GridGgfsPathControlRequest();
+                    IgfsPathControlRequest req = new IgfsPathControlRequest();
 
                     req.path(readPath(in));
                     req.destinationPath(readPath(in));
@@ -266,7 +266,7 @@ public class GridGgfsMarshaller {
                 case CLOSE:
                 case READ_BLOCK:
                 case WRITE_BLOCK: {
-                    GridGgfsStreamControlRequest req = new GridGgfsStreamControlRequest();
+                    IgfsStreamControlRequest req = new IgfsStreamControlRequest();
 
                     long streamId = U.bytesToLong(hdr, 12);
 
@@ -282,7 +282,7 @@ public class GridGgfsMarshaller {
                 }
 
                 case CONTROL_RESPONSE: {
-                    GridGgfsControlResponse res = new GridGgfsControlResponse();
+                    IgfsControlResponse res = new IgfsControlResponse();
 
                     res.readExternal(in);
 

@@ -20,24 +20,21 @@ package org.apache.ignite.internal.fs.common;
 import java.io.*;
 
 /**
- * Data output stream implementing ObjectOutput but throwing exceptions on methods working with objects.
+ * Data input stream implementing object input but throwing exceptions on object methods.
  */
-public class GridGgfsDataOutputStream extends DataOutputStream implements ObjectOutput {
+public class IgfsDataInputStream extends DataInputStream implements ObjectInput {
     /**
-     * Creates a new data output stream to write data to the specified
-     * underlying output stream. The counter <code>written</code> is
-     * set to zero.
+     * Creates a DataInputStream that uses the specified
+     * underlying InputStream.
      *
-     * @param   out   the underlying output stream, to be saved for later
-     *                use.
-     * @see     FilterOutputStream#out
+     * @param  in The specified input stream
      */
-    public GridGgfsDataOutputStream(OutputStream out) {
-        super(out);
+    public IgfsDataInputStream(InputStream in) {
+        super(in);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeObject(Object obj) throws IOException {
-        throw new IOException("This method must not be invoked on GGFS data output stream.");
+    @Override public Object readObject() throws ClassNotFoundException, IOException {
+        throw new IOException("This method must not be invoked on GGFS data input stream.");
     }
 }

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 
 /**
  * Handshake request.
  */
-public class GridGgfsHandshakeRequest extends GridGgfsMessage {
+public class IgfsHandshakeRequest extends IgfsMessage {
     /** Expected Grid name. */
     private String gridName;
 
@@ -35,12 +35,12 @@ public class GridGgfsHandshakeRequest extends GridGgfsMessage {
     private String logDir;
 
     /** {@inheritDoc} */
-    @Override public GridGgfsIpcCommand command() {
+    @Override public IgfsIpcCommand command() {
         return HANDSHAKE;
     }
 
     /** {@inheritDoc} */
-    @Override public void command(GridGgfsIpcCommand cmd) {
+    @Override public void command(IgfsIpcCommand cmd) {
         // No-op.
     }
 
@@ -88,6 +88,6 @@ public class GridGgfsHandshakeRequest extends GridGgfsMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsHandshakeRequest.class, this);
+        return S.toString(IgfsHandshakeRequest.class, this);
     }
 }

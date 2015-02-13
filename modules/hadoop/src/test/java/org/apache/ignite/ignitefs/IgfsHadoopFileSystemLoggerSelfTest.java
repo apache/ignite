@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
-import static org.apache.ignite.internal.fs.common.GridGgfsLogger.*;
+import static org.apache.ignite.internal.fs.common.IgfsLogger.*;
 
 /**
  * Grid GGFS client logger test.
@@ -87,14 +87,14 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDelete() throws Exception {
-        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger log = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
-        GridGgfsLogger sameLog0 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger sameLog0 = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // Loggers for the same endpoint must be the same object.
         assert log == sameLog0;
 
-        GridGgfsLogger otherLog = GridGgfsLogger.logger("other" + ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger otherLog = IgfsLogger.logger("other" + ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // Logger for another endpoint must be different.
         assert log != otherLog;
@@ -110,7 +110,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
         // When there are multiple loggers, closing one must not force flushing.
         assert !logFile.exists();
 
-        GridGgfsLogger sameLog1 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger sameLog1 = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         assert sameLog0 == sameLog1;
 
@@ -125,7 +125,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
 
         logFile.delete();
 
-        GridGgfsLogger sameLog2 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger sameLog2 = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // This time we expect new logger instance to be created.
         assert sameLog0 != sameLog2;
@@ -142,7 +142,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLogRead() throws Exception {
-        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger log = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         log.logOpen(1, PATH, PRIMARY, 2, 3L);
         log.logRandomRead(1, 4L, 5);
@@ -172,7 +172,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLogWrite() throws Exception {
-        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger log = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         log.logCreate(1, PATH, PRIMARY, true, 2, new Integer(3).shortValue(), 4L);
         log.logAppend(2, PATH, PRIMARY, 8);
@@ -197,7 +197,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testLogMisc() throws Exception {
-        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        IgfsLogger log = IgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         String newFile = "/dir3/file.test";
         String file1 = "/dir3/file1.test";

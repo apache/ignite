@@ -29,47 +29,47 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 
 /**
  * Communication with external process (TCP or shmem).
  */
 public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIpcIoListener {
     /** Expected result is boolean. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, Boolean> BOOL_RES = createClosure();
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Boolean> BOOL_RES = createClosure();
 
     /** Expected result is boolean. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, Long> LONG_RES = createClosure();
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Long> LONG_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgniteFsFile> FILE_RES = createClosure();
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgniteFsFile> FILE_RES = createClosure();
 
     /** Expected result is {@code GridGgfsHandshakeResponse} */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         IgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
 
     /** Expected result is {@code GridGgfsStatus} */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgfsStatus> STATUS_RES =
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsStatus> STATUS_RES =
         createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         IgfsInputStreamDescriptor> STREAM_DESCRIPTOR_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgniteFsFile>> FILE_COL_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgniteFsPath>> PATH_COL_RES = createClosure();
 
     /** Expected result is {@code GridGgfsPathSummary}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgniteFsPathSummary> SUMMARY_RES =
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgniteFsPathSummary> SUMMARY_RES =
         createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgniteFsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
     /** Grid name. */
@@ -143,7 +143,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
-        final GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
+        final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
         req.gridName(grid);
         req.ggfsName(ggfs);
@@ -166,7 +166,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(INFO);
         msg.path(path);
@@ -176,7 +176,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(UPDATE);
         msg.path(path);
@@ -187,7 +187,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(SET_TIMES);
         msg.path(path);
@@ -199,7 +199,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(RENAME);
         msg.path(src);
@@ -210,7 +210,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(DELETE);
         msg.path(path);
@@ -222,7 +222,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
         throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(AFFINITY);
         msg.path(path);
@@ -234,7 +234,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(PATH_SUMMARY);
         msg.path(path);
@@ -244,7 +244,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(MAKE_DIRECTORIES);
         msg.path(path);
@@ -255,7 +255,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(LIST_FILES);
         msg.path(path);
@@ -265,7 +265,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(LIST_PATHS);
         msg.path(path);
@@ -275,12 +275,12 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public IgfsStatus fsStatus() throws IgniteCheckedException {
-        return io.send(new GridGgfsStatusRequest()).chain(STATUS_RES).get();
+        return io.send(new IgfsStatusRequest()).chain(STATUS_RES).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(OPEN_READ);
         msg.path(path);
@@ -294,7 +294,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path,
         int seqReadsBeforePrefetch) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(OPEN_READ);
         msg.path(path);
@@ -309,7 +309,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(OPEN_CREATE);
         msg.path(path);
@@ -327,7 +327,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException {
-        final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
+        final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(OPEN_APPEND);
         msg.path(path);
@@ -344,7 +344,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
         final @Nullable byte[] outBuf, final int outOff, final int outLen) {
         assert len > 0;
 
-        final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
+        final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();
 
         msg.command(READ_BLOCK);
         msg.streamId((long) desc.target());
@@ -362,7 +362,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     /** {@inheritDoc} */
     @Override public void writeData(GridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
         throws IOException {
-        final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
+        final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();
 
         msg.command(WRITE_BLOCK);
         msg.streamId((long) desc.target());
@@ -385,7 +385,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public void closeStream(GridGgfsHadoopStreamDelegate desc) throws IOException {
-        final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
+        final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();
 
         msg.command(CLOSE);
         msg.streamId((long)desc.target());
@@ -451,10 +451,10 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      * @return Conversion closure.
      */
     @SuppressWarnings("unchecked")
-    private static <T> GridPlainClosure<GridPlainFuture<GridGgfsMessage>, T> createClosure() {
-        return new GridPlainClosure<GridPlainFuture<GridGgfsMessage>, T>() {
-            @Override public T apply(GridPlainFuture<GridGgfsMessage> fut) throws IgniteCheckedException {
-                GridGgfsControlResponse res = (GridGgfsControlResponse)fut.get();
+    private static <T> GridPlainClosure<GridPlainFuture<IgfsMessage>, T> createClosure() {
+        return new GridPlainClosure<GridPlainFuture<IgfsMessage>, T>() {
+            @Override public T apply(GridPlainFuture<IgfsMessage> fut) throws IgniteCheckedException {
+                IgfsControlResponse res = (IgfsControlResponse)fut.get();
 
                 if (res.hasError())
                     res.throwError();

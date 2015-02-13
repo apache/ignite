@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Grid file system commands to call remotely.
  */
-public enum GridGgfsIpcCommand {
+public enum IgfsIpcCommand {
     /** Handshake command which will send information necessary for client to handle requests correctly. */
     HANDSHAKE,
 
@@ -84,7 +84,7 @@ public enum GridGgfsIpcCommand {
     CONTROL_RESPONSE;
 
     /** All values */
-    private static final List<GridGgfsIpcCommand> ALL = Arrays.asList(values());
+    private static final List<IgfsIpcCommand> ALL = Arrays.asList(values());
 
     /**
      * Resolve command by its ordinal.
@@ -92,7 +92,7 @@ public enum GridGgfsIpcCommand {
      * @param ordinal Command ordinal.
      * @return Resolved command.
      */
-    public static GridGgfsIpcCommand valueOf(int ordinal) {
+    public static IgfsIpcCommand valueOf(int ordinal) {
         return ALL.get(ordinal);
     }
 }

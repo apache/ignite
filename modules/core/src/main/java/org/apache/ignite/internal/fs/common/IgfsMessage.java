@@ -21,21 +21,21 @@ package org.apache.ignite.internal.fs.common;
  * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
  * GGFS server (Ignite data node).
  */
-public abstract class GridGgfsMessage {
+public abstract class IgfsMessage {
     /** GGFS command. */
-    private GridGgfsIpcCommand cmd;
+    private IgfsIpcCommand cmd;
 
     /**
      * @return Command.
      */
-    public GridGgfsIpcCommand command() {
+    public IgfsIpcCommand command() {
         return cmd;
     }
 
     /**
      * @param cmd Command.
      */
-    public void command(GridGgfsIpcCommand cmd) {
+    public void command(IgfsIpcCommand cmd) {
         this.cmd = cmd;
     }
 }

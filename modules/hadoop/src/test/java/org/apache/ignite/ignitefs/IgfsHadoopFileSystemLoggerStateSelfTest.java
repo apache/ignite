@@ -320,6 +320,6 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         field.setAccessible(true);
 
-        return ((GridGgfsLogger)field.get(fs)).isLogEnabled();
+        return ((IgfsLogger)field.get(fs)).isLogEnabled();
     }
 }

@@ -46,7 +46,7 @@ public class IgfsServer {
     private final IgniteLogger log;
 
     /** GGFS marshaller. */
-    private final GridGgfsMarshaller marsh;
+    private final IgfsMarshaller marsh;
 
     /** Endpoint configuration. */
     private final Map<String,String> endpointCfg;
@@ -82,7 +82,7 @@ public class IgfsServer {
 
         log = ggfsCtx.kernalContext().log(IgfsServer.class);
 
-        marsh = new GridGgfsMarshaller();
+        marsh = new IgfsMarshaller();
     }
 
     /**
@@ -201,7 +201,7 @@ public class IgfsServer {
         private IpcEndpoint endpoint;
 
         /** Data output stream. */
-        private final GridGgfsDataOutputStream out;
+        private final IgfsDataOutputStream out;
 
         /** Client session object. */
         private IgfsClientSession ses;
@@ -223,15 +223,15 @@ public class IgfsServer {
 
             ses = new IgfsClientSession();
 
-            out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
+            out = new IgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
-                GridGgfsDataInputStream dis = new GridGgfsDataInputStream(endpoint.inputStream());
+                IgfsDataInputStream dis = new IgfsDataInputStream(endpoint.inputStream());
 
-                byte[] hdr = new byte[GridGgfsMarshaller.HEADER_SIZE];
+                byte[] hdr = new byte[IgfsMarshaller.HEADER_SIZE];
 
                 boolean first = true;
 
@@ -243,7 +243,7 @@ public class IgfsServer {
                     int ordinal = U.bytesToInt(hdr, 8);
 
                     if (first) { // First message must be HANDSHAKE.
-                        if (reqId != 0 || ordinal != GridGgfsIpcCommand.HANDSHAKE.ordinal()) {
+                        if (reqId != 0 || ordinal != IgfsIpcCommand.HANDSHAKE.ordinal()) {
                             U.warn(log, "Handshake failed.");
 
                             return;
@@ -252,30 +252,30 @@ public class IgfsServer {
                         first = false;
                     }
 
-                    final GridGgfsIpcCommand cmd = GridGgfsIpcCommand.valueOf(ordinal);
+                    final IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(ordinal);
 
-                    GridGgfsMessage msg = marsh.unmarshall(cmd, hdr, dis);
+                    IgfsMessage msg = marsh.unmarshall(cmd, hdr, dis);
 
-                    IgniteInternalFuture<GridGgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
+                    IgniteInternalFuture<IgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
 
                     // If fut is null, no response is required.
                     if (fut != null) {
                         if (fut.isDone()) {
-                            GridGgfsMessage res;
+                            IgfsMessage res;
 
                             try {
                                 res = fut.get();
                             }
                             catch (IgniteCheckedException e) {
-                                res = new GridGgfsControlResponse();
+                                res = new IgfsControlResponse();
 
-                                ((GridGgfsControlResponse)res).error(e);
+                                ((IgfsControlResponse)res).error(e);
                             }
 
                             try {
                                 synchronized (out) {
                                     // Reuse header.
-                                    GridGgfsMarshaller.fillHeader(hdr, reqId, res.command());
+                                    IgfsMarshaller.fillHeader(hdr, reqId, res.command());
 
                                     marsh.marshall(res, hdr, out);
 
@@ -287,22 +287,22 @@ public class IgfsServer {
                             }
                         }
                         else {
-                            fut.listenAsync(new CIX1<IgniteInternalFuture<GridGgfsMessage>>() {
-                                @Override public void applyx(IgniteInternalFuture<GridGgfsMessage> fut) {
-                                    GridGgfsMessage res;
+                            fut.listenAsync(new CIX1<IgniteInternalFuture<IgfsMessage>>() {
+                                @Override public void applyx(IgniteInternalFuture<IgfsMessage> fut) {
+                                    IgfsMessage res;
 
                                     try {
                                         res = fut.get();
                                     }
                                     catch (IgniteCheckedException e) {
-                                        res = new GridGgfsControlResponse();
+                                        res = new IgfsControlResponse();
 
-                                        ((GridGgfsControlResponse)res).error(e);
+                                        ((IgfsControlResponse)res).error(e);
                                     }
 
                                     try {
                                         synchronized (out) {
-                                            byte[] hdr = GridGgfsMarshaller.createHeader(reqId, res.command());
+                                            byte[] hdr = IgfsMarshaller.createHeader(reqId, res.command());
 
                                             marsh.marshall(res, hdr, out);
 

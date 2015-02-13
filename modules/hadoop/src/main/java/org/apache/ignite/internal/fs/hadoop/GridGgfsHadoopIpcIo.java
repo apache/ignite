@@ -54,10 +54,10 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     private IpcEndpoint endpoint;
 
     /** Endpoint output stream. */
-    private GridGgfsDataOutputStream out;
+    private IgfsDataOutputStream out;
 
     /** Protocol. */
-    private final GridGgfsMarshaller marsh;
+    private final IgfsMarshaller marsh;
 
     /** Client reader thread. */
     private Thread reader;
@@ -90,7 +90,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
      * @param marsh Protocol.
      * @param log Logger to use.
      */
-    public GridGgfsHadoopIpcIo(String endpointAddr, GridGgfsMarshaller marsh, Log log) {
+    public GridGgfsHadoopIpcIo(String endpointAddr, IgfsMarshaller marsh, Log log) {
         assert endpointAddr != null;
         assert marsh != null;
 
@@ -136,7 +136,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                     }
 
                     // Otherwise try creating a new one.
-                    clientIo = new GridGgfsHadoopIpcIo(endpoint, new GridGgfsMarshaller(), log);
+                    clientIo = new GridGgfsHadoopIpcIo(endpoint, new IgfsMarshaller(), log);
 
                     try {
                         clientIo.start();
@@ -239,7 +239,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             endpoint = IpcEndpointFactory.connectEndpoint(
                     endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
 
-            out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
+            out = new IgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
             reader = new ReaderThread();
 
@@ -316,14 +316,14 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws IgniteCheckedException {
+    @Override public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException {
         return send(msg, null, 0, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPlainFuture<T> send(GridGgfsMessage msg, @Nullable byte[] outBuf, int outOff,
+    @Override public <T> GridPlainFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff,
         int outLen) throws IgniteCheckedException {
-        assert outBuf == null || msg.command() == GridGgfsIpcCommand.READ_BLOCK;
+        assert outBuf == null || msg.command() == IgfsIpcCommand.READ_BLOCK;
 
         if (!busyLock.readLock().tryLock())
             throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
@@ -341,7 +341,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             fut.outputBuffer(outBuf);
             fut.outputOffset(outOff);
             fut.outputLength(outLen);
-            fut.read(msg.command() == GridGgfsIpcCommand.READ_BLOCK);
+            fut.read(msg.command() == IgfsIpcCommand.READ_BLOCK);
 
             GridGgfsHadoopFuture oldFut = reqMap.putIfAbsent(reqId, fut);
 
@@ -350,7 +350,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             if (log.isDebugEnabled())
                 log.debug("Sending GGFS message [reqId=" + reqId + ", msg=" + msg + ']');
 
-            byte[] hdr = GridGgfsMarshaller.createHeader(reqId, msg.command());
+            byte[] hdr = IgfsMarshaller.createHeader(reqId, msg.command());
 
             IgniteCheckedException err = null;
 
@@ -382,7 +382,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendPlain(GridGgfsMessage msg) throws IgniteCheckedException {
+    @Override public void sendPlain(IgfsMessage msg) throws IgniteCheckedException {
         if (!busyLock.readLock().tryLock())
             throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being " +
                 "concurrently closed).");
@@ -391,11 +391,11 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             if (stopping)
                 throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
 
-            assert msg.command() == GridGgfsIpcCommand.WRITE_BLOCK;
+            assert msg.command() == IgfsIpcCommand.WRITE_BLOCK;
 
-            GridGgfsStreamControlRequest req = (GridGgfsStreamControlRequest)msg;
+            IgfsStreamControlRequest req = (IgfsStreamControlRequest)msg;
 
-            byte[] hdr = GridGgfsMarshaller.createHeader(-1, GridGgfsIpcCommand.WRITE_BLOCK);
+            byte[] hdr = IgfsMarshaller.createHeader(-1, IgfsIpcCommand.WRITE_BLOCK);
 
             U.longToBytes(req.streamId(), hdr, 12);
             U.intToBytes(req.length(), hdr, 20);
@@ -471,10 +471,10 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             try {
                 InputStream in = endpoint.inputStream();
 
-                GridGgfsDataInputStream dis = new GridGgfsDataInputStream(in);
+                IgfsDataInputStream dis = new IgfsDataInputStream(in);
 
-                byte[] hdr = new byte[GridGgfsMarshaller.HEADER_SIZE];
-                byte[] msgHdr = new byte[GridGgfsControlResponse.RES_HEADER_SIZE];
+                byte[] hdr = new byte[IgfsMarshaller.HEADER_SIZE];
+                byte[] msgHdr = new byte[IgfsControlResponse.RES_HEADER_SIZE];
 
                 while (!Thread.currentThread().isInterrupted()) {
                     dis.readFully(hdr);
@@ -513,7 +513,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                         }
                         else {
                             try {
-                                GridGgfsIpcCommand cmd = GridGgfsIpcCommand.valueOf(U.bytesToInt(hdr, 8));
+                                IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(U.bytesToInt(hdr, 8));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Received GGFS response [reqId=" + reqId + ", cmd=" + cmd + ']');
@@ -531,7 +531,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                                         // Error code.
                                         Integer errCode = dis.readInt();
 
-                                        GridGgfsControlResponse.throwError(errCode, errMsg);
+                                        IgfsControlResponse.throwError(errCode, errMsg);
                                     }
 
                                     int blockLen = U.bytesToInt(msgHdr, 5);

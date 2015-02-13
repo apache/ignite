@@ -123,7 +123,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     private String uriAuthority;
 
     /** Client logger. */
-    private GridGgfsLogger clientLog;
+    private IgfsLogger clientLog;
 
     /** Secondary URI string. */
     private URI secondaryUri;
@@ -261,10 +261,10 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = IgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
-                clientLog = GridGgfsLogger.disabledLogger();
+                clientLog = IgfsLogger.disabledLogger();
 
             modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
@@ -502,7 +502,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                     long size = status != null ? status.getLen() : -1;
 
-                    long logId = GridGgfsLogger.nextId();
+                    long logId = IgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
@@ -518,7 +518,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsLogger.nextId();
+                    logId = IgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
@@ -570,7 +570,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                     secondaryFs.create(toSecondary(f), perm, overwrite, bufSize, replication, blockSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsLogger.nextId();
+                    long logId = IgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, PROXY, overwrite, bufSize, replication, blockSize);
 
@@ -590,7 +590,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsLogger.nextId();
+                    logId = IgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
                 }
@@ -647,7 +647,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 FSDataOutputStream os = secondaryFs.append(toSecondary(f), bufSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsLogger.nextId();
+                    long logId = IgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
 
@@ -664,7 +664,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsLogger.nextId();
+                    logId = IgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, mode, bufSize);
                 }

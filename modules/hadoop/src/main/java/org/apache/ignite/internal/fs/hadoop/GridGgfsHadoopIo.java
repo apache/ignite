@@ -34,7 +34,7 @@ public interface GridGgfsHadoopIo {
      * @return Future that will be completed.
      * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
-    public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws IgniteCheckedException;
+    public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException;
 
     /**
      * Sends given GGFS client message and asynchronously awaits for response. When IO detects response
@@ -48,7 +48,7 @@ public interface GridGgfsHadoopIo {
      * @return Future that will be completed when response is returned from closure.
      * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
-    public <T> GridPlainFuture<T> send(GridGgfsMessage msg, @Nullable byte[] outBuf, int outOff, int outLen)
+    public <T> GridPlainFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff, int outLen)
         throws IgniteCheckedException;
 
     /**
@@ -57,7 +57,7 @@ public interface GridGgfsHadoopIo {
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
      */
-    public void sendPlain(GridGgfsMessage msg) throws IgniteCheckedException;
+    public void sendPlain(IgfsMessage msg) throws IgniteCheckedException;
 
     /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.

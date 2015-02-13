@@ -30,7 +30,7 @@ public class GridGgfsHadoopProxyOutputStream extends OutputStream {
     private FSDataOutputStream os;
 
     /** Client logger. */
-    private final GridGgfsLogger clientLog;
+    private final IgfsLogger clientLog;
 
     /** Log stream ID. */
     private final long logStreamId;
@@ -57,7 +57,7 @@ public class GridGgfsHadoopProxyOutputStream extends OutputStream {
      * @param clientLog Client logger.
      * @param logStreamId Log stream ID.
      */
-    public GridGgfsHadoopProxyOutputStream(FSDataOutputStream os, GridGgfsLogger clientLog, long logStreamId) {
+    public GridGgfsHadoopProxyOutputStream(FSDataOutputStream os, IgfsLogger clientLog, long logStreamId) {
         assert os != null;
         assert clientLog != null;
 

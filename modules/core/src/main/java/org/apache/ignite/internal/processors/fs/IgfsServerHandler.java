@@ -38,8 +38,8 @@ public interface IgfsServerHandler {
      * @return Future that will be completed when response is ready or {@code null} if no
      *      response is required.
      */
-    @Nullable public IgniteInternalFuture<GridGgfsMessage> handleAsync(IgfsClientSession ses,
-        GridGgfsMessage msg, DataInput in);
+    @Nullable public IgniteInternalFuture<IgfsMessage> handleAsync(IgfsClientSession ses,
+        IgfsMessage msg, DataInput in);
 
     /**
      * Handles handles client close events.
