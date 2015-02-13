@@ -24,16 +24,16 @@ import org.apache.log4j.*;
 import java.io.*;
 
 /**
- * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
+ * Log4J {@link FileAppender} with added support for grid node IDs.
  */
-public class IgniteLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements IgniteLog4jFileAware {
+public class Log4JFileAppender extends FileAppender implements Log4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public IgniteLog4jDailyRollingFileAppender() {
+    public Log4JFileAppender() {
         init();
     }
 
@@ -42,11 +42,41 @@ public class IgniteLog4jDailyRollingFileAppender extends DailyRollingFileAppende
      *
      * @param layout Layout.
      * @param filename File name.
-     * @param datePtrn Date pattern.
      * @throws IOException If failed.
      */
-    public IgniteLog4jDailyRollingFileAppender(Layout layout, String filename, String datePtrn) throws IOException {
-        super(layout, filename, datePtrn);
+    public Log4JFileAppender(Layout layout, String filename) throws IOException {
+        super(layout, filename);
+
+        init();
+    }
+
+    /**
+     * Instantiate a FileAppender with given parameters.
+     *
+     * @param layout Layout.
+     * @param filename File name.
+     * @param append Append flag.
+     * @throws IOException If failed.
+     */
+    public Log4JFileAppender(Layout layout, String filename, boolean append) throws IOException {
+        super(layout, filename, append);
+
+        init();
+    }
+
+    /**
+     * Instantiate a FileAppender with given parameters.
+     *
+     * @param layout Layout.
+     * @param filename File name.
+     * @param append Append flag.
+     * @param bufIO Buffered IO flag.
+     * @param bufSize Buffer size.
+     * @throws IOException If failed.
+     */
+    public Log4JFileAppender(Layout layout, String filename, boolean append, boolean bufIO, int bufSize)
+        throws IOException {
+        super(layout, filename, append, bufIO, bufSize);
 
         init();
     }
@@ -59,6 +89,13 @@ public class IgniteLog4jDailyRollingFileAppender extends DailyRollingFileAppende
     }
 
     /** {@inheritDoc} */
+    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
+        throws IOException {
+        if (baseFileName != null)
+            super.setFile(fileName, fileAppend, bufIO, bufSize);
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized void updateFilePath(IgniteClosure<String, String> filePathClos) {
         A.notNull(filePathClos, "filePathClos");
 
@@ -66,12 +103,5 @@ public class IgniteLog4jDailyRollingFileAppender extends DailyRollingFileAppende
             baseFileName = fileName;
 
         fileName = filePathClos.apply(baseFileName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
-        throws IOException {
-        if (baseFileName != null)
-            super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }
