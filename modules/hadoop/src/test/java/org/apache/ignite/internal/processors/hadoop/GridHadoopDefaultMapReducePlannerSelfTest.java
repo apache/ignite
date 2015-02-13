@@ -72,7 +72,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final MockIgnite GRID = new MockIgnite();
 
     /** Mocked GGFS. */
-    private static final IgniteFs GGFS = new MockIgfs();
+    private static final IgniteFs IGFS = new MockIgfs();
 
     /** Planner. */
     private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
@@ -928,7 +928,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Override public IgniteFs igfsx(String name) {
             assert F.eq("igfs", name);
 
-            return GGFS;
+            return IGFS;
         }
 
         /** {@inheritDoc} */

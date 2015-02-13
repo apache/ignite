@@ -157,7 +157,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         cfg.addResource(U.resolveIgniteUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.igfs.impl.disable.cache", true);
-        cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, name), true);
+        cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, name), true);
 
         // Ensure that existing IO is reused.
         FileSystem fs1 = FileSystem.get(new URI("igfs://" + name + "/"), cfg);

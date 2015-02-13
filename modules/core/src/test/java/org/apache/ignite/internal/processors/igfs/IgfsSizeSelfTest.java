@@ -72,7 +72,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private static final String META_CACHE_NAME = "metaCache";
 
     /** GGFS name. */
-    private static final String GGFS_NAME = "igfs";
+    private static final String IGFS_NAME = "igfs";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -115,7 +115,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setName(GGFS_NAME);
+        ggfsCfg.setName(IGFS_NAME);
         ggfsCfg.setBlockSize(BLOCK_SIZE);
         ggfsCfg.setFragmentizerEnabled(false);
         ggfsCfg.setMaxSpaceSize(ggfsMaxData);
@@ -674,7 +674,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgfsBlockKey blockKey(IgfsPath path, long blockId) throws Exception {
-        IgfsEx ggfs0 = (IgfsEx)grid(0).fileSystem(GGFS_NAME);
+        IgfsEx ggfs0 = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
 
         IgniteUuid fileId = ggfs0.context().meta().fileId(path);
 
@@ -725,7 +725,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgfsImpl ggfs(int idx) throws Exception {
-        return (IgfsImpl)grid(idx).fileSystem(GGFS_NAME);
+        return (IgfsImpl)grid(idx).fileSystem(IGFS_NAME);
     }
 
     /**
@@ -736,7 +736,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgfsImpl ggfs(Ignite ignite) throws Exception {
-        return (IgfsImpl) ignite.fileSystem(GGFS_NAME);
+        return (IgfsImpl) ignite.fileSystem(IGFS_NAME);
     }
 
     /**

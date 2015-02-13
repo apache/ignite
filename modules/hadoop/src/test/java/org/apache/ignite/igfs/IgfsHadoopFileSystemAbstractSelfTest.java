@@ -2355,10 +2355,10 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
         cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         if (skipEmbed)
-            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
+            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, authority), true);
 
         if (skipLocShmem)
-            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
 
         return cfg;
     }

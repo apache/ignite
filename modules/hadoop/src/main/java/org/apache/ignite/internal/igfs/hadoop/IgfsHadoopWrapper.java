@@ -332,7 +332,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
             return curDelegate;
 
         // 2. Guess that we are in the same VM.
-        if (!parameter(conf, PARAM_GGFS_ENDPOINT_NO_EMBED, authority, false)) {
+        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false)) {
             IgfsEx ggfs = null;
 
             if (endpoint.grid() == null) {
@@ -379,7 +379,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
         }
 
         // 3. Try connecting using shmem.
-        if (!parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
+        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
             if (curDelegate == null && !U.isWindows()) {
                 IgfsHadoopEx hadoop = null;
 
@@ -401,7 +401,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
         }
 
         // 4. Try local TCP connection.
-        boolean skipLocTcp = parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
+        boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
         if (!skipLocTcp) {
             if (curDelegate == null) {

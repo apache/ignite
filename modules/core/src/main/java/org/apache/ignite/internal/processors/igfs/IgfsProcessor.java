@@ -51,7 +51,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Converts context to GGFS. */
-    private static final IgniteClosure<IgfsContext,IgniteFs> CTX_TO_GGFS = new C1<IgfsContext, IgniteFs>() {
+    private static final IgniteClosure<IgfsContext,IgniteFs> CTX_TO_IGFS = new C1<IgfsContext, IgniteFs>() {
         @Override public IgniteFs apply(IgfsContext ggfsCtx) {
             return ggfsCtx.igfs();
         }
@@ -168,7 +168,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Collection<IgniteFs> igfss() {
-        return F.viewReadOnly(igfsCache.values(), CTX_TO_GGFS);
+        return F.viewReadOnly(igfsCache.values(), CTX_TO_IGFS);
     }
 
     /** {@inheritDoc} */

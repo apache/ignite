@@ -218,7 +218,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             uriAuthority = name.getAuthority();
 
             // Override sequential reads before prefetch if needed.
-            seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
+            seqReadsBeforePrefetch = parameter(cfg, PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
 
             if (seqReadsBeforePrefetch > 0)
                 seqReadsBeforePrefetchOverride = true;
@@ -228,11 +228,11 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             dfltReplication = (short)cfg.getInt("dfs.replication", 3);
 
             // Get file colocation control flag.
-            colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
-            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
+            colocateFileWrites = parameter(cfg, PARAM_IGFS_COLOCATED_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_IGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
-            String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_IGFS_LOG_DIR);
+            String logDirCfg = parameter(cfg, PARAM_IGFS_LOG_DIR, uriAuthority, DFLT_IGFS_LOG_DIR);
 
             File logDirFile = U.resolveIgnitePath(logDirCfg);
 
@@ -247,14 +247,14 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
             IgfsPaths paths = handshake.secondaryPaths();
 
-            Boolean logEnabled = parameter(cfg, PARAM_GGFS_LOG_ENABLED, uriAuthority, false);
+            Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
             if (handshake.sampling() != null ? handshake.sampling() : logEnabled) {
                 // Initiate client logger.
                 if (logDir == null)
                     throw new IOException("Failed to resolve log directory: " + logDirCfg);
 
-                Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
+                Integer batchSize = parameter(cfg, PARAM_IGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
 
                 clientLog = IgfsLogger.logger(uriAuthority, handshake.igfsName(), logDir, batchSize);
             }

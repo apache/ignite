@@ -74,21 +74,21 @@ package org.apache.ignite.igfs.hadoop;
  */
 public class IgfsHadoopParameters {
     /** Parameter name for control over file colocation write mode. */
-    public static final String PARAM_GGFS_COLOCATED_WRITES = "fs.igfs.%s.colocated.writes";
+    public static final String PARAM_IGFS_COLOCATED_WRITES = "fs.igfs.%s.colocated.writes";
 
     /** Parameter name for custom sequential reads before prefetch value. */
-    public static final String PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH =
+    public static final String PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH =
         "fs.igfs.%s.open.sequential_reads_before_prefetch";
 
     /** Parameter name for client logger directory. */
-    public static final String PARAM_GGFS_LOG_DIR = "fs.igfs.%s.log.dir";
+    public static final String PARAM_IGFS_LOG_DIR = "fs.igfs.%s.log.dir";
 
     /** Parameter name for log batch size. */
-    public static final String PARAM_GGFS_LOG_BATCH_SIZE = "fs.igfs.%s.log.batch_size";
+    public static final String PARAM_IGFS_LOG_BATCH_SIZE = "fs.igfs.%s.log.batch_size";
 
     /** Parameter name for log enabled flag. */
-    public static final String PARAM_GGFS_LOG_ENABLED = "fs.igfs.%s.log.enabled";
+    public static final String PARAM_IGFS_LOG_ENABLED = "fs.igfs.%s.log.enabled";
 
     /** Parameter name for prefer local writes flag. */
-    public static final String PARAM_GGFS_PREFER_LOCAL_WRITES = "fs.igfs.prefer.local.writes";
+    public static final String PARAM_IGFS_PREFER_LOCAL_WRITES = "fs.igfs.prefer.local.writes";
 }

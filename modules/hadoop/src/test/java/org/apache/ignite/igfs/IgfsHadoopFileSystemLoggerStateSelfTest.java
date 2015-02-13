@@ -300,9 +300,9 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fsCfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "igfs:igfs-grid@"), logging);
+            fsCfg.setBoolean(String.format(PARAM_IGFS_LOG_ENABLED, "igfs:igfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "igfs:igfs-grid@"), U.getIgniteHome());
+        fsCfg.setStrings(String.format(PARAM_IGFS_LOG_DIR, "igfs:igfs-grid@"), U.getIgniteHome());
 
         return (IgfsHadoopFileSystem)FileSystem.get(new URI("igfs://igfs:igfs-grid@/"), fsCfg);
     }

@@ -82,7 +82,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  */
 public class IgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */
-    public static final String GGFS_MANAGEMENT = "fs.igfs.management.connection";
+    public static final String IGFS_MANAGEMENT = "fs.igfs.management.connection";
 
     /** Empty array of file block locations. */
     private static final BlockLocation[] EMPTY_BLOCK_LOCATIONS = new BlockLocation[0];
@@ -209,7 +209,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
             cacheEnabled = !cfg.getBoolean(disableCacheName, false);
 
-            mgmt = cfg.getBoolean(GGFS_MANAGEMENT, false);
+            mgmt = cfg.getBoolean(IGFS_MANAGEMENT, false);
 
             if (!IGFS_SCHEME.equals(name.getScheme()))
                 throw new IOException("Illegal file system URI [expected=" + IGFS_SCHEME +
@@ -222,7 +222,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             setUser(cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
 
             // Override sequential reads before prefetch if needed.
-            seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
+            seqReadsBeforePrefetch = parameter(cfg, PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
 
             if (seqReadsBeforePrefetch > 0)
                 seqReadsBeforePrefetchOverride = true;
@@ -232,11 +232,11 @@ public class IgfsHadoopFileSystem extends FileSystem {
             dfltReplication = (short)cfg.getInt("dfs.replication", 3);
 
             // Get file colocation control flag.
-            colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
-            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
+            colocateFileWrites = parameter(cfg, PARAM_IGFS_COLOCATED_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_IGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
-            String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_IGFS_LOG_DIR);
+            String logDirCfg = parameter(cfg, PARAM_IGFS_LOG_DIR, uriAuthority, DFLT_IGFS_LOG_DIR);
 
             File logDirFile = U.resolveIgnitePath(logDirCfg);
 
@@ -252,14 +252,14 @@ public class IgfsHadoopFileSystem extends FileSystem {
             IgfsPaths paths = handshake.secondaryPaths();
 
             // Initialize client logger.
-            Boolean logEnabled = parameter(cfg, PARAM_GGFS_LOG_ENABLED, uriAuthority, false);
+            Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
             if (handshake.sampling() != null ? handshake.sampling() : logEnabled) {
                 // Initiate client logger.
                 if (logDir == null)
                     throw new IOException("Failed to resolve log directory: " + logDirCfg);
 
-                Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
+                Integer batchSize = parameter(cfg, PARAM_IGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
 
                 clientLog = IgfsLogger.logger(uriAuthority, handshake.igfsName(), logDir, batchSize);
             }

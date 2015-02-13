@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.*;
  */
 public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractTest {
     /** GGFS block size. */
-    protected static final int GGFS_BLOCK_SIZE = 512 * 1024;
+    protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Amount of blocks to prefetch. */
     protected static final int PREFETCH_BLOCKS = 1;
@@ -129,7 +129,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
         ggfsCfg.setName(ggfsName);
-        ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
+        ggfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
         ggfsCfg.setIpcEndpointConfiguration(restCfg);
         ggfsCfg.setSecondaryFileSystem(secondaryFs);
@@ -221,7 +221,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
         // Write enough data to the secondary file system.
-        final int blockSize = GGFS_BLOCK_SIZE;
+        final int blockSize = IGFS_BLOCK_SIZE;
 
         IgfsOutputStream out = ggfsSecondary.append(FILE, false);
 
@@ -244,7 +244,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 
-        cfg.setInt(String.format(PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, "igfs:grid@"), seqReads);
+        cfg.setInt(String.format(PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, "igfs:grid@"), seqReads);
 
         FileSystem fs = FileSystem.get(new URI(PRIMARY_URI), cfg);
 
