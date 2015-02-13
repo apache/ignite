@@ -110,15 +110,15 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
-        ggfsCfg.setFragmentizerEnabled(true);
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(CFG_BLOCK_SIZE);
+        igfsCfg.setFragmentizerEnabled(true);
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }

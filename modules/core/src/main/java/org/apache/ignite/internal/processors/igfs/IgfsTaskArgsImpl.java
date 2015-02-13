@@ -32,7 +32,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** IGFS name. */
-    private String ggfsName;
+    private String igfsName;
 
     /** Paths. */
     private Collection<IgfsPath> paths;
@@ -59,16 +59,16 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     /**
      * Constructor.
      *
-     * @param ggfsName IGFS name.
+     * @param igfsName IGFS name.
      * @param paths Paths.
      * @param recRslvr Record resolver.
      * @param skipNonExistentFiles Skip non existent files flag.
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public IgfsTaskArgsImpl(String ggfsName, Collection<IgfsPath> paths, IgfsRecordResolver recRslvr,
+    public IgfsTaskArgsImpl(String igfsName, Collection<IgfsPath> paths, IgfsRecordResolver recRslvr,
         boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
-        this.ggfsName = ggfsName;
+        this.igfsName = igfsName;
         this.paths = paths;
         this.recRslvr = recRslvr;
         this.skipNonExistentFiles = skipNonExistentFiles;
@@ -78,7 +78,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
 
     /** {@inheritDoc} */
     @Override public String igfsName() {
-        return ggfsName;
+        return igfsName;
     }
 
     /** {@inheritDoc} */
@@ -113,7 +113,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ggfsName);
+        U.writeString(out, igfsName);
         U.writeCollection(out, paths);
 
         out.writeObject(recRslvr);
@@ -124,7 +124,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ggfsName = U.readString(in);
+        igfsName = U.readString(in);
         paths = U.readCollection(in);
 
         recRslvr = (IgfsRecordResolver)in.readObject();

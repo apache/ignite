@@ -101,7 +101,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
     /**
      * Constructs file output stream.
      *
-     * @param ggfsCtx IGFS context.
+     * @param igfsCtx IGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
      * @param prefetchBlocks Number of blocks to prefetch.
@@ -109,9 +109,9 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
      * @param secReader Optional secondary file system reader.
      * @param metrics Local IGFS metrics.
      */
-    IgfsInputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
+    IgfsInputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
         int seqReadsBeforePrefetch, @Nullable IgfsReader secReader, IgfsLocalMetrics metrics) {
-        assert ggfsCtx != null;
+        assert igfsCtx != null;
         assert path != null;
         assert fileInfo != null;
         assert metrics != null;
@@ -123,10 +123,10 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
         this.secReader = secReader;
         this.metrics = metrics;
 
-        meta = ggfsCtx.meta();
-        data = ggfsCtx.data();
+        meta = igfsCtx.meta();
+        data = igfsCtx.data();
 
-        log = ggfsCtx.kernalContext().log(IgfsInputStream.class);
+        log = igfsCtx.kernalContext().log(IgfsInputStream.class);
 
         maxLocCacheSize = (prefetchBlocks > 0 ? prefetchBlocks : 1) * 3 / 2;
 

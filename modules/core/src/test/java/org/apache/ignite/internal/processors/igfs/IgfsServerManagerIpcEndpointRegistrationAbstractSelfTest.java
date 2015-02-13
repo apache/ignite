@@ -170,16 +170,16 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
                 endPntCfg.put("host", endPntHost);
         }
 
-        IgfsConfiguration ggfsConfiguration = new IgfsConfiguration();
+        IgfsConfiguration igfsConfiguration = new IgfsConfiguration();
 
-        ggfsConfiguration.setDataCacheName("partitioned");
-        ggfsConfiguration.setMetaCacheName("replicated");
-        ggfsConfiguration.setName("igfs" + UUID.randomUUID());
-        ggfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+        igfsConfiguration.setDataCacheName("partitioned");
+        igfsConfiguration.setMetaCacheName("replicated");
+        igfsConfiguration.setName("igfs" + UUID.randomUUID());
+        igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 
         if (endPntCfg != null)
-            ggfsConfiguration.setIpcEndpointConfiguration(endPntCfg);
+            igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);
 
-        return ggfsConfiguration;
+        return igfsConfiguration;
     }
 }

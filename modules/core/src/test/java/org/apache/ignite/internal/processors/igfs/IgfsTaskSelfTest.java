@@ -68,7 +68,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private static final int REPEAT_CNT = 10;
 
     /** IGFS. */
-    private static IgniteFs ggfs;
+    private static IgniteFs igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -76,7 +76,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             Ignite g = G.start(config(i));
 
             if (i + 1 == NODE_CNT)
-                ggfs = g.fileSystem("igfs");
+                igfs = g.fileSystem("igfs");
         }
     }
 
@@ -87,7 +87,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs.format();
+        igfs.format();
     }
 
     /**
@@ -97,14 +97,14 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @return Grid configuration
      */
     private IgniteConfiguration config(int idx) {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(BLOCK_SIZE);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setFragmentizerEnabled(false);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(BLOCK_SIZE);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setFragmentizerEnabled(false);
 
         CacheConfiguration dataCacheCfg = new CacheConfiguration();
 
@@ -133,7 +133,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setGridName("node-" + idx);
 
@@ -152,9 +152,9 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
 
             generateFile(TOTAL_WORDS);
-            Long genLen = ggfs.info(FILE).length();
+            Long genLen = igfs.info(FILE).length();
 
-            IgniteBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
+            IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
                 new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
             assert F.eq(genLen, taskRes.getKey());
@@ -170,22 +170,22 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     public void testTaskAsync() throws Exception {
         U.sleep(3000);
 
-        assertFalse(ggfs.isAsync());
+        assertFalse(igfs.isAsync());
 
-        IgniteFs ggfsAsync = ggfs.withAsync();
+        IgniteFs igfsAsync = igfs.withAsync();
 
-        assertTrue(ggfsAsync.isAsync());
+        assertTrue(igfsAsync.isAsync());
 
         for (int i = 0; i < REPEAT_CNT; i++) {
             String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
 
             generateFile(TOTAL_WORDS);
-            Long genLen = ggfs.info(FILE).length();
+            Long genLen = igfs.info(FILE).length();
 
-            assertNull(ggfsAsync.execute(
+            assertNull(igfsAsync.execute(
                 new Task(), new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = igfsAsync.future();
 
             assertNotNull(fut);
 
@@ -195,9 +195,9 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             assert F.eq(TOTAL_WORDS, taskRes.getValue());
         }
 
-        ggfsAsync.format();
+        igfsAsync.format();
 
-        IgniteFuture<?> fut = ggfsAsync.future();
+        IgniteFuture<?> fut = igfsAsync.future();
 
         assertNotNull(fut);
 
@@ -214,7 +214,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         throws Exception {
         Random rnd = new Random(System.currentTimeMillis());
 
-        try (OutputStreamWriter writer = new OutputStreamWriter(ggfs.create(FILE, true))) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(igfs.create(FILE, true))) {
             int cnt = 0;
 
             while (cnt < wordCnt) {

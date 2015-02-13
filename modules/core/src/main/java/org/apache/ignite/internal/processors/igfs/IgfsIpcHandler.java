@@ -314,17 +314,17 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     break;
 
                 case OPEN_READ: {
-                    IgfsInputStreamAdapter ggfsIn = !req.flag() ? igfs.open(req.path(), bufSize) :
+                    IgfsInputStreamAdapter igfsIn = !req.flag() ? igfs.open(req.path(), bufSize) :
                         igfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
-                    long streamId = registerResource(ses, ggfsIn);
+                    long streamId = registerResource(ses, igfsIn);
 
                     if (log.isDebugEnabled())
                         log.debug("Opened IGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                    IgfsFileInfo info = new IgfsFileInfo(ggfsIn.fileInfo(), null,
-                        ggfsIn.fileInfo().modificationTime());
+                    IgfsFileInfo info = new IgfsFileInfo(igfsIn.fileInfo(), null,
+                        igfsIn.fileInfo().modificationTime());
 
                     res.response(new IgfsInputStreamDescriptor(streamId, info.length()));
 
@@ -446,12 +446,12 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 long pos = req.position();
                 int size = req.length();
 
-                IgfsInputStreamAdapter ggfsIn = (IgfsInputStreamAdapter)resource(ses, rsrcId);
+                IgfsInputStreamAdapter igfsIn = (IgfsInputStreamAdapter)resource(ses, rsrcId);
 
-                if (ggfsIn == null)
+                if (igfsIn == null)
                     throw new IgniteCheckedException("Input stream not found (already closed?): " + rsrcId);
 
-                byte[][] chunks = ggfsIn.readChunks(pos, size);
+                byte[][] chunks = igfsIn.readChunks(pos, size);
 
                 resp.response(chunks);
 

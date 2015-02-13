@@ -37,17 +37,17 @@ public abstract class IgfsManager {
     /**
      * Called when IGFS processor is started.
      *
-     * @param ggfsCtx IGFS context.
+     * @param igfsCtx IGFS context.
      */
-    public void start(IgfsContext ggfsCtx) throws IgniteCheckedException {
+    public void start(IgfsContext igfsCtx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
             assert false : "Method start is called more than once for manager: " + this;
 
-        assert ggfsCtx != null;
+        assert igfsCtx != null;
 
-        this.igfsCtx = ggfsCtx;
+        this.igfsCtx = igfsCtx;
 
-        log = ggfsCtx.kernalContext().log(getClass());
+        log = igfsCtx.kernalContext().log(getClass());
 
         start0();
 

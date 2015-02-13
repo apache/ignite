@@ -49,8 +49,8 @@ public class IgfsServerManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        IgfsConfiguration ggfsCfg = igfsCtx.configuration();
-        Map<String,String> cfg = ggfsCfg.getIpcEndpointConfiguration();
+        IgfsConfiguration igfsCfg = igfsCtx.configuration();
+        Map<String,String> cfg = igfsCfg.getIpcEndpointConfiguration();
 
         if (F.isEmpty(cfg)) {
             // Set default configuration.
@@ -60,14 +60,14 @@ public class IgfsServerManager extends IgfsManager {
             cfg.put("port", String.valueOf(DFLT_IPC_PORT));
         }
 
-        if (ggfsCfg.isIpcEndpointEnabled())
+        if (igfsCfg.isIpcEndpointEnabled())
             bind(cfg, /*management*/false);
 
-        if (ggfsCfg.getManagementPort() >= 0) {
+        if (igfsCfg.getManagementPort() >= 0) {
             cfg = new HashMap<>();
 
             cfg.put("type", "tcp");
-            cfg.put("port", String.valueOf(ggfsCfg.getManagementPort()));
+            cfg.put("port", String.valueOf(igfsCfg.getManagementPort()));
 
             bind(cfg, /*management*/true);
         }

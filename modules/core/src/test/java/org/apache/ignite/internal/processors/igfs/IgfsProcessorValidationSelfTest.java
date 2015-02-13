@@ -37,9 +37,9 @@ import static org.apache.ignite.igfs.IgfsMode.*;
  * Tests for node validation logic in {@link IgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link IgfsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.configuration.IgfsConfiguration[])}.
+ * {@link IgfsProcessor#validateLocalIgfsConfigurations(org.apache.ignite.configuration.IgfsConfiguration[])}.
  * <p>
- * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
+ * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkIgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
 public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
@@ -61,10 +61,10 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     private static final String metaCache2Name = "metaCache2";
 
     /** First IGFS config in grid #1. */
-    private IgfsConfiguration g1GgfsCfg1 = new IgfsConfiguration();
+    private IgfsConfiguration g1IgfsCfg1 = new IgfsConfiguration();
 
     /** Second IGFS config in grid#1. */
-    private IgfsConfiguration g1GgfsCfg2 = new IgfsConfiguration();
+    private IgfsConfiguration g1IgfsCfg2 = new IgfsConfiguration();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -81,15 +81,15 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        g1GgfsCfg1.setName("g1GgfsCfg1");
-        g1GgfsCfg1.setDataCacheName(dataCache1Name);
-        g1GgfsCfg1.setMetaCacheName(metaCache1Name);
+        g1IgfsCfg1.setName("g1IgfsCfg1");
+        g1IgfsCfg1.setDataCacheName(dataCache1Name);
+        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
 
-        g1GgfsCfg2.setName("g1GgfsCfg2");
-        g1GgfsCfg2.setDataCacheName(dataCache2Name);
-        g1GgfsCfg2.setMetaCacheName(metaCache2Name);
+        g1IgfsCfg2.setName("g1IgfsCfg2");
+        g1IgfsCfg2.setDataCacheName(dataCache2Name);
+        g1IgfsCfg2.setMetaCacheName(metaCache2Name);
 
-        cfg.setIgfsConfiguration(g1GgfsCfg1, g1GgfsCfg2);
+        cfg.setIgfsConfiguration(g1IgfsCfg1, g1IgfsCfg2);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -169,13 +169,13 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfGgfsConfigsHaveDifferentNames() throws Exception {
+    public void testLocalIfIgfsConfigsHaveDifferentNames() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        String ggfsCfgName = "igfs-cfg";
+        String igfsCfgName = "igfs-cfg";
 
-        g1GgfsCfg1.setName(ggfsCfgName);
-        g1GgfsCfg2.setName(ggfsCfgName);
+        g1IgfsCfg1.setName(igfsCfgName);
+        g1IgfsCfg2.setName(igfsCfgName);
 
         checkGridStartFails(g1Cfg, "Duplicate IGFS name found (check configuration and assign unique name", true);
     }
@@ -210,10 +210,10 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("NullableProblems")
-    public void testLocalNullGgfsNameIsSupported() throws Exception {
+    public void testLocalNullIgfsNameIsSupported() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g1GgfsCfg1.setName(null);
+        g1IgfsCfg1.setName(null);
 
         assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
     }
@@ -224,7 +224,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfOffheapIsDisabledAndMaxSpaceSizeIsGreater() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
+        g1IgfsCfg2.setMaxSpaceSize(999999999999999999L);
 
         checkGridStartFails(g1Cfg, "Maximum IGFS space size cannot be greater that size of available heap", true);
     }
@@ -238,7 +238,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
             cc.setOffHeapMaxMemory(1000000);
 
-        g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
+        g1IgfsCfg2.setMaxSpaceSize(999999999999999999L);
 
         checkGridStartFails(g1Cfg,
             "Maximum IGFS space size cannot be greater than size of available heap memory and offheap storage", true);
@@ -264,7 +264,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfNonPrimaryModeAndHadoopFileSystemUriIsNull() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g1GgfsCfg2.setDefaultMode(PROXY);
+        g1IgfsCfg2.setDefaultMode(PROXY);
 
         checkGridStartFails(g1Cfg, "secondaryFileSystem cannot be null when mode is SECONDARY", true);
     }
@@ -278,11 +278,11 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
 
-        g2GgfsCfg1.setBlockSize(g2GgfsCfg1.getBlockSize() + 100);
+        g2IgfsCfg1.setBlockSize(g2IgfsCfg1.getBlockSize() + 100);
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g1GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g1IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -310,17 +310,17 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfMetaCacheNameDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g2GgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2GgfsCfg2.setMetaCacheName("g2MetaCache2");
+        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
+        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
              CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -333,20 +333,20 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfMetaCacheNameEquals() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g2GgfsCfg1.setName("g2GgfsCfg1");
-        g2GgfsCfg2.setName("g2GgfsCfg2");
+        g2IgfsCfg1.setName("g2IgfsCfg1");
+        g2IgfsCfg2.setName("g2IgfsCfg2");
 
-        g2GgfsCfg1.setDataCacheName("g2DataCache1");
-        g2GgfsCfg2.setDataCacheName("g2DataCache2");
+        g2IgfsCfg1.setDataCacheName("g2DataCache1");
+        g2IgfsCfg2.setDataCacheName("g2DataCache2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
              CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -359,17 +359,17 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfDataCacheNameDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g2GgfsCfg1.setDataCacheName("g2DataCache1");
-        g2GgfsCfg2.setDataCacheName("g2DataCache2");
+        g2IgfsCfg1.setDataCacheName("g2DataCache1");
+        g2IgfsCfg2.setDataCacheName("g2DataCache2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
              CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -382,20 +382,20 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfDataCacheNameEquals() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g2GgfsCfg1.setName("g2GgfsCfg1");
-        g2GgfsCfg2.setName("g2GgfsCfg2");
+        g2IgfsCfg1.setName("g2IgfsCfg1");
+        g2IgfsCfg2.setName("g2IgfsCfg2");
 
-        g2GgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2GgfsCfg2.setMetaCacheName("g2MetaCache2");
+        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
+        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
              CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -408,19 +408,19 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfDefaultModeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g1GgfsCfg1.setDefaultMode(DUAL_ASYNC);
-        g1GgfsCfg2.setDefaultMode(DUAL_ASYNC);
+        g1IgfsCfg1.setDefaultMode(DUAL_ASYNC);
+        g1IgfsCfg2.setDefaultMode(DUAL_ASYNC);
 
-        g2GgfsCfg1.setDefaultMode(DUAL_SYNC);
-        g2GgfsCfg2.setDefaultMode(DUAL_SYNC);
+        g2IgfsCfg1.setDefaultMode(DUAL_SYNC);
+        g2IgfsCfg2.setDefaultMode(DUAL_SYNC);
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -433,16 +433,16 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfPathModeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        IgfsConfiguration g2GgfsCfg1 = new IgfsConfiguration(g1GgfsCfg1);
-        IgfsConfiguration g2GgfsCfg2 = new IgfsConfiguration(g1GgfsCfg2);
+        IgfsConfiguration g2IgfsCfg1 = new IgfsConfiguration(g1IgfsCfg1);
+        IgfsConfiguration g2IgfsCfg2 = new IgfsConfiguration(g1IgfsCfg2);
 
-        g2GgfsCfg1.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
-        g2GgfsCfg2.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
+        g2IgfsCfg1.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
+        g2IgfsCfg2.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
 

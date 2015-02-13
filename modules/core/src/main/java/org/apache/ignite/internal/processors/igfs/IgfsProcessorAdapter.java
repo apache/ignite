@@ -68,13 +68,13 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * Create compute job for the given IGFS job.
      *
      * @param job IGFS job.
-     * @param ggfsName IGFS name.
+     * @param igfsName IGFS name.
      * @param path Path.
      * @param start Start position.
      * @param length Length.
      * @param recRslv Record resolver.
      * @return Compute job.
      */
-    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgfsPath path,
+    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv);
 }

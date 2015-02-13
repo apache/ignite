@@ -42,10 +42,10 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private IgniteEx grid;
 
     /** Primary IGFS. */
-    private IgfsImpl ggfs;
+    private IgfsImpl igfs;
 
     /** Secondary IGFS. */
-    private IgfsImpl ggfsSecondary;
+    private IgfsImpl igfsSecondary;
 
     /** Default IGFS mode. */
     private IgfsMode mode;
@@ -82,22 +82,22 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void startUp() throws Exception {
         startUpSecondary();
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(512 * 1024);
 
         if (setNullMode)
-            ggfsCfg.setDefaultMode(null);
+            igfsCfg.setDefaultMode(null);
         else if (mode != null)
-            ggfsCfg.setDefaultMode(mode);
+            igfsCfg.setDefaultMode(mode);
 
-        ggfsCfg.setPathModes(pathModes);
+        igfsCfg.setPathModes(pathModes);
 
         if (setSecondaryFs)
-            ggfsCfg.setSecondaryFileSystem(ggfsSecondary);
+            igfsCfg.setSecondaryFileSystem(igfsSecondary);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -128,14 +128,14 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
         grid = (IgniteEx)G.start(cfg);
 
-        ggfs = (IgfsImpl)grid.fileSystem("igfs");
+        igfs = (IgfsImpl)grid.fileSystem("igfs");
     }
 
     /**
@@ -144,14 +144,14 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs-secondary");
-        ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs-secondary");
+        igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", "11500");
         }});
@@ -185,12 +185,12 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-        ggfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("igfs-secondary");
+        igfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("igfs-secondary");
     }
 
     /**
@@ -488,11 +488,11 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkMode(String pathStr, IgfsMode expMode) throws Exception {
-        assert ggfs != null;
+        assert igfs != null;
 
         IgfsPath path = new IgfsPath(pathStr);
 
-        IgfsModeResolver rslvr = ggfs.modeResolver();
+        IgfsModeResolver rslvr = igfs.modeResolver();
 
         IgfsMode mode = rslvr.resolveMode(path);
 
@@ -522,24 +522,24 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         IgfsPath file = new IgfsPath("/dir/file");
 
         // Create new directory.
-        ggfs.mkdirs(dir);
+        igfs.mkdirs(dir);
 
         // Create new file.
-        IgfsOutputStream os = ggfs.create(file, 1024, true, null, 0, 2048, null);
+        IgfsOutputStream os = igfs.create(file, 1024, true, null, 0, 2048, null);
 
         os.write(testData1);
 
         os.close();
 
         // Re-open it and append.
-        os = ggfs.append(file, 1024, false, null);
+        os = igfs.append(file, 1024, false, null);
 
         os.write(testData2);
 
         os.close();
 
         // Check file content.
-        IgfsInputStream is = ggfs.open(file);
+        IgfsInputStream is = igfs.open(file);
 
         assertEquals(testData.length, is.length());
 
@@ -552,15 +552,15 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         assert Arrays.equals(testData, data);
 
         if (secondaryUsed) {
-            assert ggfsSecondary.exists(dir);
-            assert ggfsSecondary.exists(file);
+            assert igfsSecondary.exists(dir);
+            assert igfsSecondary.exists(file);
 
             // In ASYNC mode we wait at most 2 seconds for background writer to finish.
             for (int i = 0; i < 20; i++) {
                 IgfsInputStream isSecondary = null;
 
                 try {
-                    isSecondary = ggfsSecondary.open(file);
+                    isSecondary = igfsSecondary.open(file);
 
                     if (isSecondary.length() == testData.length)
                         break;
@@ -572,7 +572,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
                 }
             }
 
-            IgfsInputStream isSecondary = ggfsSecondary.open(file);
+            IgfsInputStream isSecondary = igfsSecondary.open(file);
 
             assertEquals(testData.length, isSecondary.length());
 
@@ -581,8 +581,8 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             assert Arrays.equals(testData, data);
         }
         else {
-            assert !ggfsSecondary.exists(dir);
-            assert !ggfsSecondary.exists(file);
+            assert !igfsSecondary.exists(dir);
+            assert !igfsSecondary.exists(file);
         }
 
         int cacheSize = grid.cachex("partitioned").size();
@@ -593,12 +593,12 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             assert cacheSize != 0;
 
         // Now delete all.
-        ggfs.delete(dir, true);
+        igfs.delete(dir, true);
 
-        assert !ggfs.exists(dir);
-        assert !ggfs.exists(file);
+        assert !igfs.exists(dir);
+        assert !igfs.exists(file);
 
-        assert !ggfsSecondary.exists(dir);
-        assert !ggfsSecondary.exists(file);
+        assert !igfsSecondary.exists(dir);
+        assert !igfsSecondary.exists(file);
     }
 }

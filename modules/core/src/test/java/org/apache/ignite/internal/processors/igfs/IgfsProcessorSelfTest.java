@@ -59,7 +59,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected final SecureRandom rnd = new SecureRandom();
 
     /** File system. */
-    protected IgniteFs ggfs;
+    protected IgniteFs igfs;
 
     /** Meta cache. */
     private GridCache<Object, Object> metaCache;
@@ -71,7 +71,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         IgniteEx grid = grid(0);
 
-        ggfs = grid.fileSystem(ggfsName());
+        igfs = grid.fileSystem(igfsName());
 
         IgfsConfiguration[] cfgs = grid.configuration().getIgfsConfiguration();
 
@@ -86,7 +86,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        ggfs.format();
+        igfs.format();
     }
 
     /** {@inheritDoc} */
@@ -111,13 +111,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setName("igfs");
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setName("igfs");
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -151,15 +151,15 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @return FS name. */
-    public String ggfsName() {
+    public String igfsName() {
         return "igfs";
     }
 
     /** @throws Exception If failed. */
-    public void testGgfsEnabled() throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(ggfsName());
+    public void testigfsEnabled() throws Exception {
+        IgniteFs igfs = grid(0).fileSystem(igfsName());
 
-        assertNotNull(ggfs);
+        assertNotNull(igfs);
     }
 
     /**
@@ -170,25 +170,25 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testUpdateProperties() throws Exception {
         IgfsPath p = path("/tmp/my");
 
-        ggfs.mkdirs(p);
+        igfs.mkdirs(p);
 
-        Map<String, String> oldProps = ggfs.info(p).properties();
+        Map<String, String> oldProps = igfs.info(p).properties();
 
-        ggfs.update(p, F.asMap("a", "1"));
-        ggfs.update(p, F.asMap("b", "2"));
+        igfs.update(p, F.asMap("a", "1"));
+        igfs.update(p, F.asMap("b", "2"));
 
-        assertEquals("1", ggfs.info(p).property("a"));
-        assertEquals("2", ggfs.info(p).property("b"));
+        assertEquals("1", igfs.info(p).property("a"));
+        assertEquals("2", igfs.info(p).property("b"));
 
-        ggfs.update(p, F.asMap("b", "3"));
+        igfs.update(p, F.asMap("b", "3"));
 
         Map<String, String> expProps = new HashMap<>(oldProps);
         expProps.put("a", "1");
         expProps.put("b", "3");
 
-        assertEquals("3", ggfs.info(p).property("b"));
-        assertEquals(expProps, ggfs.info(p).properties());
-        assertEquals("5", ggfs.info(p).property("c", "5"));
+        assertEquals("3", igfs.info(p).property("b"));
+        assertEquals(expProps, igfs.info(p).properties());
+        assertEquals("5", igfs.info(p).property("c", "5"));
 
         assertUpdatePropertiesFails(null, null, NullPointerException.class, "Ouch! Argument cannot be null");
         assertUpdatePropertiesFails(p, null, NullPointerException.class, "Ouch! Argument cannot be null");
@@ -203,10 +203,10 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testCreate() throws Exception {
         IgfsPath path = path("/file");
 
-        try (IgfsOutputStream os = ggfs.create(path, false)) {
+        try (IgfsOutputStream os = igfs.create(path, false)) {
             assert os != null;
 
-            IgfsFileImpl info = (IgfsFileImpl)ggfs.info(path);
+            IgfsFileImpl info = (IgfsFileImpl)igfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsFileInfo fileInfo = (IgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());
@@ -216,7 +216,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             }
         }
         finally {
-            ggfs.delete(path("/"), true);
+            igfs.delete(path("/"), true);
         }
     }
 
@@ -228,19 +228,19 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testMakeListDeleteDirs() throws Exception {
         assertListDir("/");
 
-        ggfs.mkdirs(path("/ab/cd/ef"));
+        igfs.mkdirs(path("/ab/cd/ef"));
 
         assertListDir("/", "ab");
         assertListDir("/ab", "cd");
         assertListDir("/ab/cd", "ef");
 
-        ggfs.mkdirs(path("/ab/ef"));
-        ggfs.mkdirs(path("/cd/ef"));
-        ggfs.mkdirs(path("/cd/gh"));
-        ggfs.mkdirs(path("/ef"));
-        ggfs.mkdirs(path("/ef/1"));
-        ggfs.mkdirs(path("/ef/2"));
-        ggfs.mkdirs(path("/ef/3"));
+        igfs.mkdirs(path("/ab/ef"));
+        igfs.mkdirs(path("/cd/ef"));
+        igfs.mkdirs(path("/cd/gh"));
+        igfs.mkdirs(path("/ef"));
+        igfs.mkdirs(path("/ef/1"));
+        igfs.mkdirs(path("/ef/2"));
+        igfs.mkdirs(path("/ef/3"));
 
         assertListDir("/", "ef", "ab", "cd");
         assertListDir("/ab", "cd", "ef");
@@ -250,20 +250,20 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertListDir("/cd/ef");
         assertListDir("/ef", "1", "2", "3");
 
-        ggfs.delete(path("/ef/2"), false);
+        igfs.delete(path("/ef/2"), false);
 
         assertListDir("/", "ef", "ab", "cd");
         assertListDir("/ef", "1", "3");
 
         // Delete should return false for non-existing paths.
-        assertFalse(ggfs.delete(path("/ef/2"), false));
+        assertFalse(igfs.delete(path("/ef/2"), false));
 
         assertListDir("/", "ef", "ab", "cd");
         assertListDir("/ef", "1", "3");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.delete(path("/ef"), false);
+                igfs.delete(path("/ef"), false);
 
                 return null;
             }
@@ -272,7 +272,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertListDir("/", "ef", "ab", "cd");
         assertListDir("/ef", "1", "3");
 
-        ggfs.delete(path("/ef"), true);
+        igfs.delete(path("/ef"), true);
 
         assertListDir("/", "ab", "cd");
     }
@@ -295,7 +295,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int cur = cnt.incrementAndGet(); cur < max; cur = cnt.incrementAndGet())
-                    ggfs.mkdirs(path(cur));
+                    igfs.mkdirs(path(cur));
 
                 return null;
             }
@@ -308,7 +308,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int cur = cnt.incrementAndGet(); cur < max; cur = cnt.incrementAndGet()) {
-                    IgfsFile info = ggfs.info(path(cur));
+                    IgfsFile info = igfs.info(path(cur));
 
                     assertNotNull("Expects file exist: " + cur, info);
                     assertTrue("Expects file is a directory: " + cur, info.isDirectory());
@@ -325,7 +325,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int cur = cnt.incrementAndGet(); cur < max; cur = cnt.incrementAndGet())
-                    ggfs.delete(path(cur), true);
+                    igfs.delete(path(cur), true);
 
                 return null;
             }
@@ -335,82 +335,82 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testBasicOps() throws Exception {
         // Create directories.
-        ggfs.mkdirs(path("/A/B1/C1"));
+        igfs.mkdirs(path("/A/B1/C1"));
 
         for (Object key : metaCache.keySet())
             info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
 
-        ggfs.mkdirs(path("/A/B1/C2"));
-        ggfs.mkdirs(path("/A/B1/C3"));
-        ggfs.mkdirs(path("/A/B2/C1"));
-        ggfs.mkdirs(path("/A/B2/C2"));
+        igfs.mkdirs(path("/A/B1/C2"));
+        igfs.mkdirs(path("/A/B1/C3"));
+        igfs.mkdirs(path("/A/B2/C1"));
+        igfs.mkdirs(path("/A/B2/C2"));
 
-        ggfs.mkdirs(path("/A1/B1/C1"));
-        ggfs.mkdirs(path("/A1/B1/C2"));
-        ggfs.mkdirs(path("/A1/B1/C3"));
-        ggfs.mkdirs(path("/A2/B2/C1"));
-        ggfs.mkdirs(path("/A2/B2/C2"));
+        igfs.mkdirs(path("/A1/B1/C1"));
+        igfs.mkdirs(path("/A1/B1/C2"));
+        igfs.mkdirs(path("/A1/B1/C3"));
+        igfs.mkdirs(path("/A2/B2/C1"));
+        igfs.mkdirs(path("/A2/B2/C2"));
 
         for (Object key : metaCache.keySet())
             info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
 
         // Check existence.
-        assert ggfs.exists(path("/A/B1/C1"));
+        assert igfs.exists(path("/A/B1/C1"));
 
         // List items.
-        Collection<IgfsPath> paths = ggfs.listPaths(path("/"));
+        Collection<IgfsPath> paths = igfs.listPaths(path("/"));
 
         assert paths.size() == 3 : "Unexpected paths: " + paths;
 
-        paths = ggfs.listPaths(path("/A"));
+        paths = igfs.listPaths(path("/A"));
 
         assert paths.size() == 2 : "Unexpected paths: " + paths;
 
-        paths = ggfs.listPaths(path("/A/B1"));
+        paths = igfs.listPaths(path("/A/B1"));
 
         assert paths.size() == 3 : "Unexpected paths: " + paths;
 
         // Delete.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.delete(path("/"), false);
+                igfs.delete(path("/"), false);
 
                 return null;
             }
         }, IgfsException.class, null);
 
-        ggfs.delete(path("/A1/B1/C1"), false);
-        assertNull(ggfs.info(path("/A1/B1/C1")));
+        igfs.delete(path("/A1/B1/C1"), false);
+        assertNull(igfs.info(path("/A1/B1/C1")));
 
-        ggfs.delete(path("/A1/B1/C2"), false);
-        assertNull(ggfs.info(path("/A1/B1/C2")));
+        igfs.delete(path("/A1/B1/C2"), false);
+        assertNull(igfs.info(path("/A1/B1/C2")));
 
-        ggfs.delete(path("/A1/B1/C3"), false);
-        assertNull(ggfs.info(path("/A1/B1/C3")));
+        igfs.delete(path("/A1/B1/C3"), false);
+        assertNull(igfs.info(path("/A1/B1/C3")));
 
-        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/A1/B1")));
+        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/A1/B1")));
 
-        ggfs.delete(path("/A2/B2"), true);
-        assertNull(ggfs.info(path("/A2/B2")));
+        igfs.delete(path("/A2/B2"), true);
+        assertNull(igfs.info(path("/A2/B2")));
 
-        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/A2")));
+        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/A2")));
 
-        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
+        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
 
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.delete(path("/"), false);
+                igfs.delete(path("/"), false);
 
                 return null;
             }
         }, IgfsException.class, null);
-        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
+        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
 
-        ggfs.delete(path("/"), true);
-        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/")));
+        igfs.delete(path("/"), true);
+        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
 
-        ggfs.delete(path("/"), false);
-        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/")));
+        igfs.delete(path("/"), false);
+        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
 
         for (Cache.Entry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
@@ -430,26 +430,26 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         IgfsPath fileSubdir1 = path("/dir1/subdir1/file");
         IgfsPath fileDir2 = path("/dir2/file");
 
-        IgfsOutputStream os = ggfs.create(fileDir1, false);
+        IgfsOutputStream os = igfs.create(fileDir1, false);
         os.write(new byte[1000]);
         os.close();
 
-        os = ggfs.create(fileSubdir1, false);
+        os = igfs.create(fileSubdir1, false);
         os.write(new byte[2000]);
         os.close();
 
-        os = ggfs.create(fileDir2, false);
+        os = igfs.create(fileDir2, false);
         os.write(new byte[4000]);
         os.close();
 
-        assert ggfs.size(fileDir1) == 1000;
-        assert ggfs.size(fileSubdir1) == 2000;
-        assert ggfs.size(fileDir2) == 4000;
+        assert igfs.size(fileDir1) == 1000;
+        assert igfs.size(fileSubdir1) == 2000;
+        assert igfs.size(fileDir2) == 4000;
 
-        assert ggfs.size(dir1) == 3000;
-        assert ggfs.size(subDir1) == 2000;
+        assert igfs.size(dir1) == 3000;
+        assert igfs.size(subDir1) == 2000;
 
-        assert ggfs.size(dir2) == 4000;
+        assert igfs.size(dir2) == 4000;
     }
 
     /**
@@ -469,7 +469,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testRename() throws Exception {
         // Create directories.
-        ggfs.mkdirs(path("/A/B1/C1"));
+        igfs.mkdirs(path("/A/B1/C1"));
 
         for (Object key : metaCache.keySet())
             info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
@@ -477,7 +477,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.rename(path("/A/B1/C1"), path("/A/B1/C1/C2"));
+                igfs.rename(path("/A/B1/C1"), path("/A/B1/C1/C2"));
 
                 return null;
             }
@@ -486,7 +486,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.rename(path("/A/B1/C1"), path("/A/B1/C1/D/C2"));
+                igfs.rename(path("/A/B1/C1"), path("/A/B1/C1/D/C2"));
 
                 return null;
             }
@@ -496,7 +496,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override
             public Object call() throws Exception {
-                ggfs.rename(path("/A/B1/C1"), path("/A/B1/C1/D/E/C2"));
+                igfs.rename(path("/A/B1/C1"), path("/A/B1/C1/D/E/C2"));
 
                 return null;
             }
@@ -526,15 +526,15 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             final IgfsPath p1 = path(e.get1());
             final IgfsPath p2 = path(e.get2());
 
-            assertTrue("Entry: " + e, ggfs.exists(p1));
-            ggfs.rename(p1, p2);
-            assertFalse("Entry: " + e, ggfs.exists(p1));
-            assertTrue("Entry: " + e, ggfs.exists(p2));
+            assertTrue("Entry: " + e, igfs.exists(p1));
+            igfs.rename(p1, p2);
+            assertFalse("Entry: " + e, igfs.exists(p1));
+            assertTrue("Entry: " + e, igfs.exists(p2));
 
             // Test root rename.
             GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ggfs.rename(root, p1);
+                    igfs.rename(root, p1);
 
                     return null;
                 }
@@ -543,7 +543,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             // Test root rename.
             GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ggfs.rename(p1, root);
+                    igfs.rename(p1, root);
 
                     return null;
                 }
@@ -553,7 +553,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             if (!root.equals(p2)) {
                 GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        ggfs.rename(root, p2);
+                        igfs.rename(root, p2);
 
                         return null;
                     }
@@ -561,14 +561,14 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             }
 
             // Test same rename.
-            ggfs.rename(p1, p1);
-            ggfs.rename(p2, p2);
+            igfs.rename(p1, p1);
+            igfs.rename(p2, p2);
         }
 
         // List items.
-        assertEquals(Arrays.asList(path("/A")), sorted(ggfs.listPaths(root)));
-        assertEquals(Arrays.asList(path("/A/B1")), sorted(ggfs.listPaths(path("/A"))));
-        assertEquals(Arrays.asList(path("/A/B1/C1")), sorted(ggfs.listPaths(path("/A/B1"))));
+        assertEquals(Arrays.asList(path("/A")), sorted(igfs.listPaths(root)));
+        assertEquals(Arrays.asList(path("/A/B1")), sorted(igfs.listPaths(path("/A"))));
+        assertEquals(Arrays.asList(path("/A/B1/C1")), sorted(igfs.listPaths(path("/A/B1"))));
 
         String text = "Test long number: " + rnd.nextLong();
 
@@ -577,9 +577,9 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         // Validate renamed during reading.
 
-        try (IgfsInputStream in0 = ggfs.open(path("/A/a"))) {
+        try (IgfsInputStream in0 = igfs.open(path("/A/a"))) {
             // Rename file.
-            ggfs.rename(path("/A/a"), path("/b"));
+            igfs.rename(path("/A/a"), path("/b"));
 
             assertEquals(text, IOUtils.toString(in0, UTF_8));
         }
@@ -589,9 +589,9 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertEquals(text, read("/b"));
 
         // Cleanup.
-        ggfs.delete(root, true);
+        igfs.delete(root, true);
 
-        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(root));
+        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(root));
     }
 
     /**
@@ -619,7 +619,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertCreateFails("/", false, "Failed to resolve parent directory");
 
         // Create directories.
-        ggfs.mkdirs(path("/A/B1/C1"));
+        igfs.mkdirs(path("/A/B1/C1"));
 
         // Error - path points to directory.
         for (String path : Arrays.asList("/A", "/A/B1", "/A/B1/C1")) {
@@ -655,7 +655,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             assertEquals(text2 + text1 + text2, append(path, true, text2));
 
             // Delete this file.
-            ggfs.delete(path(path), true);
+            igfs.delete(path(path), true);
 
             // Error - file doesn't exist.
             assertOpenFails(path, "File not found");
@@ -668,7 +668,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             for (String full = text1, cur = ""; full.length() < 10000; cur = ", long=" + rnd.nextLong())
                 assertEquals(full += cur, append(path, rnd.nextBoolean(), cur));
 
-            ggfs.delete(path(path), false);
+            igfs.delete(path(path), false);
         }
     }
 
@@ -677,11 +677,11 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testDeleteCacheConsistency() throws Exception {
         IgfsPath path = new IgfsPath("/someFile");
 
-        try (IgfsOutputStream out = ggfs.create(path, true)) {
+        try (IgfsOutputStream out = igfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
         }
 
-        IgniteUuid fileId = U.field(ggfs.info(path), "fileId");
+        IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
         GridCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
         GridCache<IgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
@@ -692,12 +692,12 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertTrue(info.isFile());
         assertNotNull(metaCache.get(info.id()));
 
-        IgfsDataManager dataMgr = ((IgfsEx)ggfs).context().data();
+        IgfsDataManager dataMgr = ((IgfsEx)igfs).context().data();
 
         for (int i = 0; i < info.blocksCount(); i++)
             assertNotNull(dataCache.get(dataMgr.blockKey(i, info)));
 
-        ggfs.delete(path, true);
+        igfs.delete(path, true);
 
         for (int i = 0; i < 25; i++) {
             if (metaCache.get(info.id()) == null)
@@ -757,18 +757,18 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testFormatNonEmpty() throws Exception {
         String dirPath = "/A/B/C";
 
-        ggfs.mkdirs(path(dirPath));
+        igfs.mkdirs(path(dirPath));
 
         String filePath = "/someFile";
 
         create(filePath, false, "Some text.");
 
-        ggfs.format();
+        igfs.format();
 
-        assert !ggfs.exists(path(dirPath));
-        assert !ggfs.exists(path(filePath));
+        assert !igfs.exists(path(dirPath));
+        assert !igfs.exists(path(filePath));
 
-        assert grid(0).cachex(ggfs.configuration().getMetaCacheName()).size() == 2; // ROOT + TRASH.
+        assert grid(0).cachex(igfs.configuration().getMetaCacheName()).size() == 2; // ROOT + TRASH.
     }
 
     /**
@@ -777,7 +777,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFormatEmpty() throws Exception {
-        ggfs.format();
+        igfs.format();
     }
 
     /**
@@ -794,7 +794,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < buf.length; i++)
             buf[i] = (byte)(i * i);
 
-        IgfsOutputStream os = ggfs.create(path, bufSize, true, null, 0, 1024, null);
+        IgfsOutputStream os = igfs.create(path, bufSize, true, null, 0, 1024, null);
 
         try {
             for (int i = 0; i < cnt; i++)
@@ -806,7 +806,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             os.close();
         }
 
-        os = ggfs.append(path, chunkSize, false, null);
+        os = igfs.append(path, chunkSize, false, null);
 
         try {
             for (int i = 0; i < cnt; i++)
@@ -820,7 +820,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         byte[] readBuf = new byte[chunkSize];
 
-        try (IgfsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = igfs.open(path)) {
             long pos = 0;
 
             for (int k = 0; k < 2 * cnt; k++) {
@@ -845,11 +845,11 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      */
     private String create(String path, boolean overwrite, String text) throws Exception {
 
-        try (IgfsOutputStream out = ggfs.create(path(path), overwrite)) {
+        try (IgfsOutputStream out = igfs.create(path(path), overwrite)) {
             IOUtils.write(text, out, UTF_8);
         }
 
-        assertNotNull(ggfs.info(path(path)));
+        assertNotNull(igfs.info(path(path)));
 
         return read(path);
     }
@@ -865,11 +865,11 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      */
     private String append(String path, boolean create, String text) throws Exception {
 
-        try (IgfsOutputStream out = ggfs.append(path(path), create)) {
+        try (IgfsOutputStream out = igfs.append(path(path), create)) {
             IOUtils.write(text, out, UTF_8);
         }
 
-        assertNotNull(ggfs.info(path(path)));
+        assertNotNull(igfs.info(path(path)));
 
         return read(path);
     }
@@ -883,7 +883,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      */
     private String read(String path) throws Exception {
 
-        try (IgfsInputStream in = ggfs.open(path(path))) {
+        try (IgfsInputStream in = igfs.open(path(path))) {
             return IOUtils.toString(in, UTF_8);
         }
     }
@@ -900,7 +900,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         Class<? extends Throwable> cls, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
-                return ggfs.update(path, props);
+                return igfs.update(path, props);
             }
         }, cls, msg);
     }
@@ -915,7 +915,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     private void assertCreateFails(final String path, final boolean overwrite, @Nullable String msg) {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.create(path(path), overwrite);
+                igfs.create(path(path), overwrite);
 
                 return false;
             }
@@ -932,7 +932,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     private void assertAppendFails(final String path, final boolean create, @Nullable String msg) {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.append(path(path), create);
+                igfs.append(path(path), create);
 
                 return false;
             }
@@ -948,7 +948,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     private void assertOpenFails(final String path, @Nullable String msg) {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.open(path(path));
+                igfs.open(path(path));
 
                 return false;
             }
@@ -963,7 +963,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void assertListDir(String path, String... item) throws IgniteCheckedException {
-        Collection<IgfsFile> files = ggfs.listFiles(new IgfsPath(path));
+        Collection<IgfsFile> files = igfs.listFiles(new IgfsPath(path));
 
         List<String> names = new ArrayList<>(item.length);
 

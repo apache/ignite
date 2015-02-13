@@ -40,7 +40,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private static final int MAX_BLOCKS_CNT = 16;
 
     /** IGFS context. */
-    private IgfsContext ggfsCtx;
+    private IgfsContext igfsCtx;
 
     /** Meta info manager. */
     private final IgfsMetaManager meta;
@@ -89,7 +89,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /**
      * Constructs file output stream.
      *
-     * @param ggfsCtx IGFS context.
+     * @param igfsCtx IGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
      * @param bufSize The size of the buffer to be used.
@@ -98,7 +98,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws IgniteCheckedException If stream creation failed.
      */
-    IgfsOutputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
+    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
         int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
         throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
@@ -113,9 +113,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (fileInfo.lockId() == null)
             throw new IgfsException("Failed to acquire file lock (concurrently modified?): " + path);
 
-        this.ggfsCtx = ggfsCtx;
-        meta = ggfsCtx.meta();
-        data = ggfsCtx.data();
+        this.igfsCtx = igfsCtx;
+        meta = igfsCtx.meta();
+        data = igfsCtx.data();
 
         this.fileInfo = fileInfo;
         this.mode = mode;
@@ -404,7 +404,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @return Affinity range.
      */
     private IgfsFileAffinityRange initialStreamRange(IgfsFileInfo fileInfo) {
-        if (!ggfsCtx.configuration().isFragmentizerEnabled())
+        if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
         if (!Boolean.parseBoolean(fileInfo.properties().get(IgniteFs.PROP_PREFER_LOCAL_WRITES)))

@@ -2026,7 +2026,7 @@ public final class IgfsImpl implements IgfsEx {
         /**
          * Constructor.
          *
-         * @param ggfsCtx IGFS context.
+         * @param igfsCtx IGFS context.
          * @param path Path to stored file.
          * @param fileInfo File info.
          * @param prefetchBlocks Prefetch blocks.
@@ -2034,10 +2034,10 @@ public final class IgfsImpl implements IgfsEx {
          * @param secReader Optional secondary file system reader.
          * @param metrics Metrics.
          */
-        IgfsEventAwareInputStream(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo,
+        IgfsEventAwareInputStream(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo,
             int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgfsReader secReader,
             IgfsLocalMetrics metrics) {
-            super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
+            super(igfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
 
             metrics.incrementFilesOpenedForRead();
         }
@@ -2085,12 +2085,12 @@ public final class IgfsImpl implements IgfsEx {
                     private Ignite g;
 
                     @Nullable @Override public IgniteBiTuple<Long, Long> execute() {
-                        IgniteFs ggfs = ((IgniteKernal)g).context().igfs().igfs(igfsName);
+                        IgniteFs igfs = ((IgniteKernal)g).context().igfs().igfs(igfsName);
 
-                        if (ggfs == null)
+                        if (igfs == null)
                             return F.t(0L, 0L);
 
-                        IgfsMetrics metrics = ggfs.metrics();
+                        IgfsMetrics metrics = igfs.metrics();
 
                         long loc = metrics.localSpaceSize();
 

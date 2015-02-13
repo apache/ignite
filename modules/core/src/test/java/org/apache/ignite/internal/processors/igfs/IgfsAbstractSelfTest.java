@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Test fo regular GGFs operations.
+ * Test fo regular igfs operations.
  */
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
@@ -173,26 +173,26 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * Start grid with IGFS.
      *
      * @param gridName Grid name.
-     * @param ggfsName IGFS name
+     * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @param restCfg Rest configuration string (optional).
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithIgfs(String gridName, String ggfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(ggfsName);
-        ggfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
-        ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(restCfg);
-        ggfsCfg.setSecondaryFileSystem(secondaryFs);
-        ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
-        ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName(igfsName);
+        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
+        igfsCfg.setDefaultMode(mode);
+        igfsCfg.setIpcEndpointConfiguration(restCfg);
+        igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
+        igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -225,7 +225,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
@@ -2132,21 +2132,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the given directories and files in the given IGFS.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param dirs Directories.
      * @param files Files.
      * @throws Exception If failed.
      */
-    public static void create(Igfs ggfs, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files)
+    public static void create(Igfs igfs, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files)
         throws Exception {
         if (dirs != null) {
             for (IgfsPath dir : dirs)
-                ggfs.mkdirs(dir);
+                igfs.mkdirs(dir);
         }
 
         if (files != null) {
             for (IgfsPath file : files) {
-                OutputStream os = ggfs.create(file, true);
+                OutputStream os = igfs.create(file, true);
 
                 os.close();
             }
@@ -2182,26 +2182,26 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the file in the given IGFS and write provided data chunks to it.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param file File.
      * @param overwrite Overwrite flag.
      * @param blockSize Block size.
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(IgniteFs ggfs, IgfsPath file, boolean overwrite, long blockSize,
+    protected void createFile(IgniteFs igfs, IgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.create(file, 256, overwrite, null, 0, blockSize, null);
+            os = igfs.create(file, 256, overwrite, null, 0, blockSize, null);
 
             writeFileChunks(os, chunks);
         }
         finally {
             U.closeQuiet(os);
 
-            awaitFileClose(ggfs, file);
+            awaitFileClose(igfs, file);
         }
     }
 
@@ -2246,12 +2246,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Await for previously opened output stream to close. This is achieved by requesting dummy update on the file.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param file File.
      */
-    public static void awaitFileClose(Igfs ggfs, IgfsPath file) {
+    public static void awaitFileClose(Igfs igfs, IgfsPath file) {
         try {
-            ggfs.update(file, Collections.singletonMap("prop", "val"));
+            igfs.update(file, Collections.singletonMap("prop", "val"));
         }
         catch (IgniteException ignore) {
             // No-op.
@@ -2261,61 +2261,61 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Ensure that the given paths exist in the given IGFSs.
      *
-     * @param ggfs First IGFS.
-     * @param ggfsSecondary Second IGFS.
+     * @param igfs First IGFS.
+     * @param igfsSecondary Second IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath... paths) throws Exception {
-        checkExist(ggfs, paths);
+    protected void checkExist(IgfsImpl igfs, IgfsImpl igfsSecondary, IgfsPath... paths) throws Exception {
+        checkExist(igfs, paths);
 
         if (dual)
-            checkExist(ggfsSecondary, paths);
+            checkExist(igfsSecondary, paths);
     }
 
     /**
      * Ensure that the given paths exist in the given IGFS.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
-    protected void checkExist(IgfsImpl ggfs, IgfsPath... paths) throws IgniteCheckedException {
+    protected void checkExist(IgfsImpl igfs, IgfsPath... paths) throws IgniteCheckedException {
         for (IgfsPath path : paths) {
-            assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + ggfs.name() +
+            assert igfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + igfs.name() +
                 ", path=" + path + ']';
-            assert ggfs.exists(path) : "Path doesn't exist [igfs=" + ggfs.name() + ", path=" + path + ']';
+            assert igfs.exists(path) : "Path doesn't exist [igfs=" + igfs.name() + ", path=" + path + ']';
         }
     }
 
     /**
      * Ensure that the given paths don't exist in the given IGFSs.
      *
-     * @param ggfs First IGFS.
-     * @param ggfsSecondary Second IGFS.
+     * @param igfs First IGFS.
+     * @param igfsSecondary Second IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath... paths)
+    protected void checkNotExist(IgfsImpl igfs, IgfsImpl igfsSecondary, IgfsPath... paths)
         throws Exception {
-        checkNotExist(ggfs, paths);
+        checkNotExist(igfs, paths);
 
         if (dual)
-            checkNotExist(ggfsSecondary, paths);
+            checkNotExist(igfsSecondary, paths);
     }
 
     /**
      * Ensure that the given paths don't exist in the given IGFS.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(IgfsImpl ggfs, IgfsPath... paths) throws Exception {
+    protected void checkNotExist(IgfsImpl igfs, IgfsPath... paths) throws Exception {
         for (IgfsPath path : paths) {
-            assert ggfs.context().meta().fileId(path) == null : "Path exists [igfs=" + ggfs.name() + ", path=" +
+            assert igfs.context().meta().fileId(path) == null : "Path exists [igfs=" + igfs.name() + ", path=" +
                 path + ']';
-            assert !ggfs.exists(path) : "Path exists [igfs=" + ggfs.name() + ", path=" + path + ']';
+            assert !igfs.exists(path) : "Path exists [igfs=" + igfs.name() + ", path=" + path + ']';
         }
     }
 
@@ -2323,39 +2323,39 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * Ensure that the given file exists in the given IGFSs and that it has exactly the same content as provided in the
      * "data" parameter.
      *
-     * @param ggfs First IGFS.
-     * @param ggfsSecondary Second IGFS.
+     * @param igfs First IGFS.
+     * @param igfsSecondary Second IGFS.
      * @param file File.
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath file,
+    protected void checkFile(IgfsImpl igfs, IgfsImpl igfsSecondary, IgfsPath file,
         @Nullable byte[]... chunks) throws Exception {
-        checkExist(ggfs, file);
-        checkFileContent(ggfs, file, chunks);
+        checkExist(igfs, file);
+        checkFileContent(igfs, file, chunks);
 
         if (dual) {
-            checkExist(ggfsSecondary, file);
-            checkFileContent(ggfsSecondary, file, chunks);
+            checkExist(igfsSecondary, file);
+            checkFileContent(igfsSecondary, file, chunks);
         }
     }
 
     /**
      * Ensure that the given file has exactly the same content as provided in the "data" parameter.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param file File.
      * @param chunks Expected data.
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected void checkFileContent(IgfsImpl ggfs, IgfsPath file, @Nullable byte[]... chunks)
+    protected void checkFileContent(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException, IgniteCheckedException {
         if (chunks != null && chunks.length > 0) {
             IgfsInputStream is = null;
 
             try {
-                is = ggfs.open(file);
+                is = igfs.open(file);
 
                 int chunkIdx = 0;
 
@@ -2364,7 +2364,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                     is.readFully(0, buf);
 
-                    assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + ggfs.name() + ", chunkIdx=" + chunkIdx +
+                    assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + igfs.name() + ", chunkIdx=" + chunkIdx +
                         ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
 
                     chunkIdx++;
@@ -2415,31 +2415,31 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Safely clear IGFSs.
      *
-     * @param ggfs First IGFS.
-     * @param ggfsSecondary Second IGFS.
+     * @param igfs First IGFS.
+     * @param igfsSecondary Second IGFS.
      * @throws Exception If failed.
      */
-    protected void clear(IgniteFs ggfs, IgniteFs ggfsSecondary) throws Exception {
-        clear(ggfs);
+    protected void clear(IgniteFs igfs, IgniteFs igfsSecondary) throws Exception {
+        clear(igfs);
 
         if (dual)
-            clear(ggfsSecondary);
+            clear(igfsSecondary);
     }
 
     /**
      * Clear particular IGFS.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @throws Exception If failed.
      */
-    public static void clear(IgniteFs ggfs) throws Exception {
+    public static void clear(IgniteFs igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
         Map<IgfsPath, IgfsFileWorker> workerMap =
-            (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(ggfs);
+            (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
 
         for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
@@ -2448,6 +2448,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Clear igfs.
-        ggfs.format();
+        igfs.format();
     }
 }

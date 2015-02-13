@@ -87,7 +87,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private boolean nearEnabled;
 
     /** IGFS maximum space. */
-    private long ggfsMaxData;
+    private long igfsMaxData;
 
     /** Trash purge timeout. */
     private long trashPurgeTimeout;
@@ -96,7 +96,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         cacheMode = null;
         nearEnabled = false;
-        ggfsMaxData = 0;
+        igfsMaxData = 0;
         trashPurgeTimeout = 0;
 
         mgmtPort = 11400;
@@ -111,16 +111,16 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setName(IGFS_NAME);
-        ggfsCfg.setBlockSize(BLOCK_SIZE);
-        ggfsCfg.setFragmentizerEnabled(false);
-        ggfsCfg.setMaxSpaceSize(ggfsMaxData);
-        ggfsCfg.setTrashPurgeTimeout(trashPurgeTimeout);
-        ggfsCfg.setManagementPort(++mgmtPort);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setName(IGFS_NAME);
+        igfsCfg.setBlockSize(BLOCK_SIZE);
+        igfsCfg.setFragmentizerEnabled(false);
+        igfsCfg.setMaxSpaceSize(igfsMaxData);
+        igfsCfg.setTrashPurgeTimeout(trashPurgeTimeout);
+        igfsCfg.setManagementPort(++mgmtPort);
 
         CacheConfiguration dataCfg = defaultCacheConfiguration();
 
@@ -154,7 +154,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCfg, dataCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -350,7 +350,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 int total = 0;
 
-                IgfsInputStream is = ggfs(i).open(file.path());
+                IgfsInputStream is = igfs(i).open(file.path());
 
                 while (true) {
                     int read = is.read(buf);
@@ -399,7 +399,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         // Delete data and ensure that all counters are 0 now.
         for (IgfsFile file : files) {
-            ggfs(0).delete(file.path(), false);
+            igfs(0).delete(file.path(), false);
 
             // Await for actual delete to occur.
             for (IgfsBlock block : file.blocks()) {
@@ -423,26 +423,26 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkOversize() throws Exception {
-        ggfsMaxData = BLOCK_SIZE;
+        igfsMaxData = BLOCK_SIZE;
 
         startUp();
 
         final IgfsPath path = new IgfsPath("/file");
 
         // This write is expected to be successful.
-        IgfsOutputStream os = ggfs(0).create(path, false);
+        IgfsOutputStream os = igfs(0).create(path, false);
         os.write(chunk(BLOCK_SIZE - 1));
         os.close();
 
         // This write must be successful as well.
-        os = ggfs(0).append(path, false);
+        os = igfs(0).append(path, false);
         os.write(chunk(1));
         os.close();
 
         // This write must fail w/ exception.
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgfsOutputStream osErr = ggfs(0).append(path, false);
+                IgfsOutputStream osErr = igfs(0).append(path, false);
 
                 try {
                     osErr.write(chunk(BLOCK_SIZE));
@@ -463,7 +463,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
-            ggfsMaxData + ", allowed=" + ggfsMaxData + ']');
+            igfsMaxData + ", allowed=" + igfsMaxData + ']');
     }
 
     /**
@@ -474,27 +474,27 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private void checkOversizeDelay() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        ggfsMaxData = 256;
+        igfsMaxData = 256;
         trashPurgeTimeout = 2000;
 
         startUp();
 
-        IgfsImpl ggfs = ggfs(0);
+        IgfsImpl igfs = igfs(0);
 
         final IgfsPath path = new IgfsPath("/file");
         final IgfsPath otherPath = new IgfsPath("/fileOther");
 
         // Fill cache with data up to it's limit.
-        IgfsOutputStream os = ggfs.create(path, false);
-        os.write(chunk((int)ggfsMaxData));
+        IgfsOutputStream os = igfs.create(path, false);
+        os.write(chunk((int)igfsMaxData));
         os.close();
 
-        final GridCache<IgniteUuid, IgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
-            ggfs.configuration().getMetaCacheName());
+        final GridCache<IgniteUuid, IgfsFileInfo> metaCache = igfs.context().kernalContext().cache().cache(
+            igfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.
-        final IgniteUuid id = ggfs.context().meta().fileId(path);
-        final IgfsFileInfo info = ggfs.context().meta().info(id);
+        final IgniteUuid id = igfs.context().meta().fileId(path);
+        final IgfsFileInfo info = igfs.context().meta().info(id);
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
 
@@ -542,7 +542,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             assert metaCache.get(TRASH_ID) != null;
 
             // Now the file is locked and is located in trash, try adding some more data.
-            os = ggfs.create(otherPath, false);
+            os = igfs.create(otherPath, false);
             os.write(new byte[1]);
 
             latch.countDown();
@@ -674,9 +674,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgfsBlockKey blockKey(IgfsPath path, long blockId) throws Exception {
-        IgfsEx ggfs0 = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
+        IgfsEx igfs0 = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
 
-        IgniteUuid fileId = ggfs0.context().meta().fileId(path);
+        IgniteUuid fileId = igfs0.context().meta().fileId(path);
 
         return new IgfsBlockKey(fileId, null, true, blockId);
     }
@@ -724,7 +724,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return IGFS.
      * @throws Exception If failed.
      */
-    private IgfsImpl ggfs(int idx) throws Exception {
+    private IgfsImpl igfs(int idx) throws Exception {
         return (IgfsImpl)grid(idx).fileSystem(IGFS_NAME);
     }
 
@@ -735,7 +735,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return IGFS.
      * @throws Exception If failed.
      */
-    private IgfsImpl ggfs(Ignite ignite) throws Exception {
+    private IgfsImpl igfs(Ignite ignite) throws Exception {
         return (IgfsImpl) ignite.fileSystem(IGFS_NAME);
     }
 
@@ -765,9 +765,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // Create empty file locally.
             IgfsPath path = new IgfsPath("/file-" + i);
 
-            ggfs(0).create(path, false).close();
+            igfs(0).create(path, false).close();
 
-            IgfsMetaManager meta = ggfs(0).context().meta();
+            IgfsMetaManager meta = igfs(0).context().meta();
 
             IgniteUuid fileId = meta.fileId(path);
 
@@ -789,7 +789,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             // Actual write.
             for (IgfsBlock block : blocks) {
-                IgfsOutputStream os = ggfs(0).append(path, false);
+                IgfsOutputStream os = igfs(0).append(path, false);
 
                 os.write(chunk(block.length()));
 
