@@ -242,7 +242,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
         ggfsCfg.setManagementPort(-1);
         ggfsCfg.setBlockSize(512 * 1024);
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         return cfg;
     }

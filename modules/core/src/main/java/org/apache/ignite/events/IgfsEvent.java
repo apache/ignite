@@ -59,9 +59,9 @@ import static org.apache.ignite.events.EventType.*;
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  *
- * @see EventType#EVT_GGFS_FILE_CREATED
- * @see EventType#EVT_GGFS_FILE_RENAMED
- * @see EventType#EVT_GGFS_FILE_DELETED
+ * @see EventType#EVT_IGFS_FILE_CREATED
+ * @see EventType#EVT_IGFS_FILE_RENAMED
+ * @see EventType#EVT_IGFS_FILE_DELETED
  */
 public class IgfsEvent extends EventAdapter {
     /** */
@@ -95,8 +95,8 @@ public class IgfsEvent extends EventAdapter {
 
     /**
      * Constructs an event instance for path modification event
-     * ({@link EventType#EVT_GGFS_FILE_RENAMED},
-     * {@link EventType#EVT_GGFS_DIR_RENAMED}).
+     * ({@link EventType#EVT_IGFS_FILE_RENAMED},
+     * {@link EventType#EVT_IGFS_DIR_RENAMED}).
      *
      * @param path File or directory path.
      * @param newPath New file or directory path.
@@ -111,8 +111,8 @@ public class IgfsEvent extends EventAdapter {
 
     /**
      * Constructs an event instance for close events:
-     * ({@link EventType#EVT_GGFS_FILE_CLOSED_READ},
-     * {@link EventType#EVT_GGFS_FILE_CLOSED_WRITE}).
+     * ({@link EventType#EVT_IGFS_FILE_CLOSED_READ},
+     * {@link EventType#EVT_IGFS_FILE_CLOSED_WRITE}).
      *
      * @param path File path.
      * @param node Node.
@@ -127,7 +127,7 @@ public class IgfsEvent extends EventAdapter {
 
     /**
      * Constructs an event instance for file metadata update events
-     * ({@link EventType#EVT_GGFS_META_UPDATED}).
+     * ({@link EventType#EVT_IGFS_META_UPDATED}).
      *
      * @param path File path.
      * @param node Node.
@@ -151,7 +151,7 @@ public class IgfsEvent extends EventAdapter {
 
     /**
      * New file or directory path for this event (used in
-     * {@link EventType#EVT_GGFS_FILE_RENAMED} event).
+     * {@link EventType#EVT_IGFS_FILE_RENAMED} event).
      *
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.
@@ -187,7 +187,7 @@ public class IgfsEvent extends EventAdapter {
     public boolean isDirectory() {
         int t = type();
 
-        return t == EVT_GGFS_DIR_CREATED || t == EVT_GGFS_DIR_RENAMED || t == EVT_GGFS_DIR_DELETED;
+        return t == EVT_IGFS_DIR_CREATED || t == EVT_IGFS_DIR_RENAMED || t == EVT_IGFS_DIR_DELETED;
     }
 
     /** {@inheritDoc} */

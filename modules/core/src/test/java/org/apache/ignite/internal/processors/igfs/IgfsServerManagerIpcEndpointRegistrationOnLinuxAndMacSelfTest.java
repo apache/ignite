@@ -34,7 +34,7 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setGgfsConfiguration(
+        cfg.setIgfsConfiguration(
             igniteFsConfiguration(null, null, null), // Check null IPC endpoint config won't bring any hassles.
             igniteFsConfiguration("tcp", DFLT_IPC_PORT + 1, null),
             igniteFsConfiguration("shmem", DFLT_IPC_PORT + 2, null));

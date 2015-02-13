@@ -60,7 +60,7 @@ public class IpcSharedMemoryNodeStartup {
         ggfsCfg.setMetaCacheName("partitioned");
         ggfsCfg.setName("igfs");
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 

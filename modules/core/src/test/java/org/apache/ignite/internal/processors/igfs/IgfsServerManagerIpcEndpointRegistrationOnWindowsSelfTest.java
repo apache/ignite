@@ -40,7 +40,7 @@ public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
             @Override public Object call() throws Exception {
                 IgniteConfiguration cfg = gridConfiguration();
 
-                cfg.setGgfsConfiguration(igniteFsConfiguration("shmem", IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT,
+                cfg.setIgfsConfiguration(igniteFsConfiguration("shmem", IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT,
                     null));
 
                 return G.start(cfg);

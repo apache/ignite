@@ -236,7 +236,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
-            String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
+            String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_IGFS_LOG_DIR);
 
             File logDirFile = U.resolveIgnitePath(logDirCfg);
 
@@ -259,7 +259,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 if (logDir == null)
                     throw new IOException("Failed to resolve log directory: " + logDirCfg);
 
-                Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
+                Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
 
                 clientLog = IgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }

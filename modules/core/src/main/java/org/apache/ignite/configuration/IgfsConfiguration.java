@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 
 /**
  * {@code GGFS} configuration. More than one file system can be configured within grid.
- * {@code GGFS} configuration is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getGgfsConfiguration()}
+ * {@code GGFS} configuration is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getIgfsConfiguration()}
  * method.
  * <p>
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}
@@ -55,10 +55,10 @@ public class IgfsConfiguration {
     public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
 
     /** Default batch size for logging. */
-    public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
+    public static final int DFLT_IGFS_LOG_BATCH_SIZE = 100;
 
     /** Default {@code GGFS} log directory. */
-    public static final String DFLT_GGFS_LOG_DIR = "work/igfs/log";
+    public static final String DFLT_IGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BATCH_SIZE = 100;

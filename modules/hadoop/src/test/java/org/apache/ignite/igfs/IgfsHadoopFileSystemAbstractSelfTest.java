@@ -210,7 +210,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
             cfg.setDiscoverySpi(discoSpi);
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-            cfg.setGgfsConfiguration(ggfsCfg);
+            cfg.setIgfsConfiguration(ggfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
             cfg.setCommunicationSpi(communicationSpi());
@@ -276,7 +276,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
-        cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
+        cfg.setIgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setCommunicationSpi(communicationSpi());
 

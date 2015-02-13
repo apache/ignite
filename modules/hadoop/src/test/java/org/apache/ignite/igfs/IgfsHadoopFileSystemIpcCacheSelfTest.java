@@ -79,7 +79,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

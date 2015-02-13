@@ -612,8 +612,8 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
 
                 if (info != null) {
-                    if (evts.isRecordable(EVT_GGFS_META_UPDATED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
+                    if (evts.isRecordable(EVT_IGFS_META_UPDATED))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_META_UPDATED, props));
 
                     return new IgfsFileImpl(path, info, data.groupBlockSize());
                 }
@@ -720,16 +720,16 @@ public final class IgfsImpl implements IgfsEx {
                 meta.move(srcDesc.fileId, srcFileName, srcDesc.parentId, destFileName, destDesc.fileId);
 
                 if (srcDesc.isFile) { // Renamed a file.
-                    if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
+                    if (evts.isRecordable(EVT_IGFS_FILE_RENAMED))
                         evts.record(new IgfsEvent(
                             src,
                             newDest ? dest : new IgfsPath(dest, destFileName),
                             localNode(),
-                            EVT_GGFS_FILE_RENAMED));
+                            EVT_IGFS_FILE_RENAMED));
                 }
                 else { // Renamed a directory.
-                    if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                        evts.record(new IgfsEvent(src, dest, localNode(), EVT_GGFS_DIR_RENAMED));
+                    if (evts.isRecordable(EVT_IGFS_DIR_RENAMED))
+                        evts.record(new IgfsEvent(src, dest, localNode(), EVT_IGFS_DIR_RENAMED));
                 }
             }
             catch (IgniteCheckedException e) {
@@ -780,11 +780,11 @@ public final class IgfsImpl implements IgfsEx {
                 // Record event if needed.
                 if (res && desc != null) {
                     if (desc.isFile) {
-                        if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                            evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                        if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
+                            evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_DELETED));
                     }
-                    else if (evts.isRecordable(EVT_GGFS_DIR_DELETED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_DIR_DELETED));
+                    else if (evts.isRecordable(EVT_IGFS_DIR_DELETED))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_DIR_DELETED));
                 }
 
                 return res;
@@ -899,8 +899,8 @@ public final class IgfsImpl implements IgfsEx {
 
                             fileId = oldId == null ? fileInfo.id() : oldId; // Update node ID.
 
-                            if (oldId == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
-                                evts.record(new IgfsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
+                            if (oldId == null && evts.isRecordable(EVT_IGFS_DIR_CREATED))
+                                evts.record(new IgfsEvent(curPath, localNode(), EVT_IGFS_DIR_CREATED));
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1107,8 +1107,8 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
-                    if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+                    if (evts.isRecordable(EVT_IGFS_FILE_OPENED_READ))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_READ));
 
                     return os;
                 }
@@ -1128,8 +1128,8 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
-                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+                if (evts.isRecordable(EVT_IGFS_FILE_OPENED_READ))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_READ));
 
                 return os;
             }
@@ -1210,8 +1210,8 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
                         bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
-                    if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                    if (evts.isRecordable(EVT_IGFS_FILE_OPENED_WRITE))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_WRITE));
 
                     return os;
                 }
@@ -1258,20 +1258,20 @@ public final class IgfsImpl implements IgfsEx {
                     // Only one file is deleted, so we use internal data loader.
                     deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
-                    if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                    if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_DELETED));
                 }
 
-                if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+                if (evts.isRecordable(EVT_IGFS_FILE_CREATED))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CREATED));
 
                 info = meta.lock(info.id());
 
                 IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, info, parentId,
                     bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
-                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                if (evts.isRecordable(EVT_IGFS_FILE_OPENED_WRITE))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_WRITE));
 
                 return os;
             }
@@ -1347,8 +1347,8 @@ public final class IgfsImpl implements IgfsEx {
                     if (oldId != null)
                         info = meta.info(oldId);
 
-                    if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+                    if (evts.isRecordable(EVT_IGFS_FILE_CREATED))
+                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CREATED));
                 }
 
                 if (!info.isFile())
@@ -1356,8 +1356,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 info = meta.lock(info.id());
 
-                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                if (evts.isRecordable(EVT_IGFS_FILE_OPENED_WRITE))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_WRITE));
 
                 return new IgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
                     cfg.getStreamBufferSize() : bufSize, mode, batch);
@@ -2010,8 +2010,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 metrics.decrementFilesOpenedForWrite();
 
-                if (evts.isRecordable(EVT_GGFS_FILE_CLOSED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_WRITE, bytes()));
+                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_WRITE))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_WRITE, bytes()));
             }
         }
     }
@@ -2050,8 +2050,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 metrics.decrementFilesOpenedForRead();
 
-                if (evts.isRecordable(EVT_GGFS_FILE_CLOSED_READ))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_GGFS_FILE_CLOSED_READ, bytes()));
+                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_READ))
+                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_READ, bytes()));
             }
         }
     }

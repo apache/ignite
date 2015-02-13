@@ -58,7 +58,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setGgfsConfiguration(
+        cfg.setIgfsConfiguration(
             igniteFsConfiguration("tcp", DFLT_IPC_PORT, null)
         );
 
@@ -77,7 +77,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setGgfsConfiguration(
+        cfg.setIgfsConfiguration(
             igniteFsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
             igniteFsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
 

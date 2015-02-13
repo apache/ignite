@@ -76,7 +76,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         ggfsCfg.setFragmentizerThrottlingBlockLength(16 * GGFS_BLOCK_SIZE);
         ggfsCfg.setFragmentizerThrottlingDelay(10);
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         return cfg;
     }

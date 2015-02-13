@@ -78,7 +78,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
         }});
 
         cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         return cfg;
     }

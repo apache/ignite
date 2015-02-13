@@ -1561,7 +1561,7 @@ public class IgnitionEx {
             myCfg.setMarshalLocalJobs(cfg.isMarshalLocalJobs());
             myCfg.setNodeId(nodeId);
 
-            IgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+            IgfsConfiguration[] ggfsCfgs = cfg.getIgfsConfiguration();
 
             if (ggfsCfgs != null) {
                 IgfsConfiguration[] clone = ggfsCfgs.clone();
@@ -1569,7 +1569,7 @@ public class IgnitionEx {
                 for (int i = 0; i < ggfsCfgs.length; i++)
                     clone[i] = new IgfsConfiguration(ggfsCfgs[i]);
 
-                myCfg.setGgfsConfiguration(clone);
+                myCfg.setIgfsConfiguration(clone);
             }
 
             StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();

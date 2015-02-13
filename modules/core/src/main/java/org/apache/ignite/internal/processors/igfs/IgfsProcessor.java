@@ -73,7 +73,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        IgfsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
+        IgfsConfiguration[] cfgs = ctx.config().getIgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
@@ -202,7 +202,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         // is daemon;
         // doesn't have configured GGFS;
         // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getGgfsConfiguration()) ||
+        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getIgfsConfiguration()) ||
             F.isEmpty(gridCfg.getCacheConfiguration()))
             return;
 
@@ -216,9 +216,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
-        assert gridCfg.getGgfsConfiguration() != null;
+        assert gridCfg.getIgfsConfiguration() != null;
 
-        for (IgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
+        for (IgfsConfiguration ggfsCfg : gridCfg.getIgfsConfiguration()) {
             CacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
 
             if (cacheCfg == null)

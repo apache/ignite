@@ -222,10 +222,10 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     boolean ret = meta.delete(TRASH_ID, name, id);
 
-                    if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
+                    if (evts.isRecordable(EVT_IGFS_FILE_PURGED)) {
                         if (info.path() != null)
                             evts.record(new IgfsEvent(info.path(),
-                                ggfsCtx.kernalContext().discovery().localNode(), EVT_GGFS_FILE_PURGED));
+                                ggfsCtx.kernalContext().discovery().localNode(), EVT_IGFS_FILE_PURGED));
                         else
                             LT.warn(log, null, "Removing file without path info: " + info);
                     }

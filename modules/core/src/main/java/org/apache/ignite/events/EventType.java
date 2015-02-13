@@ -691,7 +691,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_CREATED = 116;
+    public static final int EVT_IGFS_FILE_CREATED = 116;
 
     /**
      * Built-in event type: GGFS file renamed.
@@ -703,7 +703,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_RENAMED = 117;
+    public static final int EVT_IGFS_FILE_RENAMED = 117;
 
     /**
      * Built-in event type: GGFS file deleted.
@@ -715,7 +715,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_DELETED = 118;
+    public static final int EVT_IGFS_FILE_DELETED = 118;
 
     /**
      * Built-in event type: GGFS file opened for reading.
@@ -727,7 +727,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_OPENED_READ = 119;
+    public static final int EVT_IGFS_FILE_OPENED_READ = 119;
 
     /**
      * Built-in event type: GGFS file opened for writing.
@@ -739,7 +739,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_OPENED_WRITE = 120;
+    public static final int EVT_IGFS_FILE_OPENED_WRITE = 120;
 
     /**
      * Built-in event type: GGFS file or directory metadata updated.
@@ -751,7 +751,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_META_UPDATED = 121;
+    public static final int EVT_IGFS_META_UPDATED = 121;
 
     /**
      * Built-in event type: GGFS file closed.
@@ -763,7 +763,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_CLOSED_WRITE = 122;
+    public static final int EVT_IGFS_FILE_CLOSED_WRITE = 122;
 
     /**
      * Built-in event type: GGFS file closed.
@@ -775,7 +775,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_CLOSED_READ = 123;
+    public static final int EVT_IGFS_FILE_CLOSED_READ = 123;
 
     /**
      * Built-in event type: GGFS directory created.
@@ -787,7 +787,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_CREATED = 124;
+    public static final int EVT_IGFS_DIR_CREATED = 124;
 
     /**
      * Built-in event type: GGFS directory renamed.
@@ -799,7 +799,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_RENAMED = 125;
+    public static final int EVT_IGFS_DIR_RENAMED = 125;
 
     /**
      * Built-in event type: GGFS directory deleted.
@@ -811,7 +811,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_DELETED = 126;
+    public static final int EVT_IGFS_DIR_DELETED = 126;
 
     /**
      * Built-in event type: GGFS file purged.
@@ -823,7 +823,7 @@ public interface EventType {
      *
      * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_PURGED = 127;
+    public static final int EVT_IGFS_FILE_PURGED = 127;
 
     /**
      * Built-in event type: authorization succeed.
@@ -1076,19 +1076,19 @@ public interface EventType {
      *
      * @see SecureSessionEvent
      */
-    public static final int[] EVTS_GGFS = {
-        EVT_GGFS_FILE_CREATED,
-        EVT_GGFS_FILE_RENAMED,
-        EVT_GGFS_FILE_DELETED,
-        EVT_GGFS_FILE_OPENED_READ,
-        EVT_GGFS_FILE_OPENED_WRITE,
-        EVT_GGFS_FILE_CLOSED_WRITE,
-        EVT_GGFS_FILE_CLOSED_READ,
-        EVT_GGFS_FILE_PURGED,
-        EVT_GGFS_META_UPDATED,
-        EVT_GGFS_DIR_CREATED,
-        EVT_GGFS_DIR_RENAMED,
-        EVT_GGFS_DIR_DELETED,
+    public static final int[] EVTS_IGFS = {
+        EVT_IGFS_FILE_CREATED,
+        EVT_IGFS_FILE_RENAMED,
+        EVT_IGFS_FILE_DELETED,
+        EVT_IGFS_FILE_OPENED_READ,
+        EVT_IGFS_FILE_OPENED_WRITE,
+        EVT_IGFS_FILE_CLOSED_WRITE,
+        EVT_IGFS_FILE_CLOSED_READ,
+        EVT_IGFS_FILE_PURGED,
+        EVT_IGFS_META_UPDATED,
+        EVT_IGFS_DIR_CREATED,
+        EVT_IGFS_DIR_RENAMED,
+        EVT_IGFS_DIR_DELETED,
     };
 
     /**

@@ -118,7 +118,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
         ggfsCfg.setFragmentizerEnabled(true);
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         return cfg;
     }

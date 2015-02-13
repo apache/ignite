@@ -97,7 +97,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         if (ggfsEnabled()) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
-            cfg.setGgfsConfiguration(ggfsConfiguration());
+            cfg.setIgfsConfiguration(ggfsConfiguration());
         }
 
         if (restEnabled()) {

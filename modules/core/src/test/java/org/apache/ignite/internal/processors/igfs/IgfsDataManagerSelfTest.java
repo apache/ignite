@@ -103,7 +103,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
 
-        cfg.setGgfsConfiguration(igfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }

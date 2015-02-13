@@ -89,7 +89,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1GgfsCfg2.setDataCacheName(dataCache2Name);
         g1GgfsCfg2.setMetaCacheName(metaCache2Name);
 
-        cfg.setGgfsConfiguration(g1GgfsCfg1, g1GgfsCfg2);
+        cfg.setIgfsConfiguration(g1GgfsCfg1, g1GgfsCfg2);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -282,7 +282,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g2GgfsCfg1.setBlockSize(g2GgfsCfg1.getBlockSize() + 100);
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g1GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g1GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -320,7 +320,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
              CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -346,7 +346,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
              CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -369,7 +369,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
              CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -395,7 +395,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
              CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -420,7 +420,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 
@@ -442,7 +442,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+        g2Cfg.setIgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
 

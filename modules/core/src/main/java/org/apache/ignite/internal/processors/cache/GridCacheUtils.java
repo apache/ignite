@@ -1584,7 +1584,7 @@ public class GridCacheUtils {
      * @return {@code True} in this is GGFS data or meta cache.
      */
     public static boolean isGgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+        IgfsConfiguration[] ggfsCfgs = cfg.getIgfsConfiguration();
 
         if (ggfsCfgs != null) {
             for (IgfsConfiguration ggfsCfg : ggfsCfgs) {

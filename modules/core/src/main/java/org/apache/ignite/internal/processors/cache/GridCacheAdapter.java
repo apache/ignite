@@ -237,7 +237,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         mxBean = new CacheMetricsMXBeanImpl(this);
 
-        IgfsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
+        IgfsConfiguration[] ggfsCfgs = gridCfg.getIgfsConfiguration();
 
         if (ggfsCfgs != null) {
             for (IgfsConfiguration ggfsCfg : ggfsCfgs) {

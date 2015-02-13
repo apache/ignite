@@ -1641,11 +1641,11 @@ public class IgfsMetaManager extends IgfsManager {
                                 parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
 
                                 // Fire notification about missing directories creation.
-                                if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
+                                if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
                                     IgfsPath evtPath = parent0;
 
                                     while (!parentPath.equals(evtPath)) {
-                                        pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                        pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_IGFS_DIR_CREATED));
 
                                         evtPath = evtPath.parent();
 
@@ -1684,13 +1684,13 @@ public class IgfsMetaManager extends IgfsManager {
                                 IgniteInternalFuture<?> delFut = igfsCtx.data().delete(oldInfo);
 
                                 // Record PURGE event if needed.
-                                if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
+                                if (evts.isRecordable(EVT_IGFS_FILE_PURGED)) {
                                     delFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> t) {
                                             try {
                                                 t.get(); // Ensure delete succeeded.
 
-                                                evts.record(new IgfsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
+                                                evts.record(new IgfsEvent(path, locNode, EVT_IGFS_FILE_PURGED));
                                             }
                                             catch (IgniteCheckedException e) {
                                                 LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
@@ -1703,13 +1703,13 @@ public class IgfsMetaManager extends IgfsManager {
                                 }
 
                                 // Record DELETE event if needed.
-                                if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                                    pendingEvts.add(new IgfsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
+                                if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
+                                    pendingEvts.add(new IgfsEvent(path, locNode, EVT_IGFS_FILE_DELETED));
                             }
 
                             // Record CREATE event if needed.
-                            if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                                pendingEvts.add(new IgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
+                            if (evts.isRecordable(EVT_IGFS_FILE_CREATED))
+                                pendingEvts.add(new IgfsEvent(path, locNode, EVT_IGFS_FILE_CREATED));
 
                             return new IgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
                         }
@@ -1975,11 +1975,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                         synchronize(fs, parentPath, parentPathInfo, path, true, null);
 
-                        if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
+                        if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
                             IgfsPath evtPath = path;
 
                             while (!parentPath.equals(evtPath)) {
-                                pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_IGFS_DIR_CREATED));
 
                                 evtPath = evtPath.parent();
 
@@ -2076,15 +2076,15 @@ public class IgfsMetaManager extends IgfsManager {
 
                         // Record event if needed.
                         if (srcInfo.isFile()) {
-                            if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
+                            if (evts.isRecordable(EVT_IGFS_FILE_RENAMED))
                                 pendingEvts.add(new IgfsEvent(
                                     src,
                                     destInfo == null ? dest : new IgfsPath(dest, src.name()),
                                     locNode,
-                                    EVT_GGFS_FILE_RENAMED));
+                                    EVT_IGFS_FILE_RENAMED));
                         }
-                        else if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                            pendingEvts.add(new IgfsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
+                        else if (evts.isRecordable(EVT_IGFS_DIR_RENAMED))
+                            pendingEvts.add(new IgfsEvent(src, dest, locNode, EVT_IGFS_DIR_RENAMED));
 
                         return true;
                     }

@@ -393,7 +393,7 @@ public class IgniteConfiguration {
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** GGFS configuration. */
-    private IgfsConfiguration[] ggfsCfg;
+    private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
@@ -473,7 +473,7 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        ggfsCfg = cfg.getGgfsConfiguration();
+        igfsCfg = cfg.getIgfsConfiguration();
         ggfsPoolSize = cfg.getGgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
@@ -2142,17 +2142,17 @@ public class IgniteConfiguration {
      *
      * @return GGFS configurations.
      */
-    public IgfsConfiguration[] getGgfsConfiguration() {
-        return ggfsCfg;
+    public IgfsConfiguration[] getIgfsConfiguration() {
+        return igfsCfg;
     }
 
     /**
      * Sets GGFS configurations.
      *
-     * @param ggfsCfg GGFS configurations.
+     * @param igfsCfg GGFS configurations.
      */
-    public void setGgfsConfiguration(IgfsConfiguration... ggfsCfg) {
-        this.ggfsCfg = ggfsCfg;
+    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
     }
 
     /**

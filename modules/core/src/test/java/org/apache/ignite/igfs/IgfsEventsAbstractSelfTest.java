@@ -116,9 +116,9 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setGridName(gridName);
 
-        cfg.setIncludeEventTypes(concat(EVTS_GGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
+        cfg.setIncludeEventTypes(concat(EVTS_IGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
 
@@ -164,7 +164,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         if (lsnr != null) {
-            grid(1).events().stopLocalListen(lsnr, EVTS_GGFS);
+            grid(1).events().stopLocalListen(lsnr, EVTS_IGFS);
 
             lsnr = null;
         }
@@ -200,7 +200,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1/dir2/dir3");
 
@@ -222,39 +222,39 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/dir3"), evt.path());
 
         evt = (IgfsEvent)evtList.get(3);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/dir3/file1"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(4);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/dir3/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(5);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/dir3/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         evt = (IgfsEvent)evtList.get(6);
-        assertEquals(EVT_GGFS_FILE_RENAMED, evt.type());
+        assertEquals(EVT_IGFS_FILE_RENAMED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/dir3/file1"), evt.path());
         assertEquals(new IgfsPath("/dir1/dir2/dir3/mvFile1"), evt.newPath());
 
         evt = (IgfsEvent)evtList.get(7);
-        assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
+        assertEquals(EVT_IGFS_DIR_DELETED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt.path());
     }
 
@@ -281,7 +281,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1");
 
@@ -304,38 +304,38 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(3);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(4);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(5);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(6);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(7);
-        assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
+        assertEquals(EVT_IGFS_DIR_DELETED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
     }
 
@@ -362,7 +362,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1");
 
@@ -381,18 +381,18 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_DIR_RENAMED, evt.type());
+        assertEquals(EVT_IGFS_DIR_RENAMED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
         assertEquals(new IgfsPath("/mvDir1"), evt.newPath());
         assertTrue(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
+        assertEquals(EVT_IGFS_DIR_DELETED, evt.type());
         assertEquals(new IgfsPath("/mvDir1"), evt.path());
         assertTrue(evt.isDirectory());
     }
@@ -419,7 +419,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1");
 
@@ -444,42 +444,42 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(3);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         evt = (IgfsEvent)evtList.get(4);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(5);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(6);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/file2"), evt.path());
         assertEquals(0, evt.dataSize());
 
         assertOneToOne(
             evtList.subList(7, 11),
-            new EventPredicate(EVT_GGFS_FILE_DELETED, new IgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_GGFS_FILE_PURGED, new IgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_GGFS_FILE_DELETED, new IgfsPath("/dir1/file2")),
-            new EventPredicate(EVT_GGFS_FILE_PURGED, new IgfsPath("/dir1/file2"))
+            new EventPredicate(EVT_IGFS_FILE_DELETED, new IgfsPath("/dir1/file1")),
+            new EventPredicate(EVT_IGFS_FILE_PURGED, new IgfsPath("/dir1/file1")),
+            new EventPredicate(EVT_IGFS_FILE_DELETED, new IgfsPath("/dir1/file2")),
+            new EventPredicate(EVT_IGFS_FILE_PURGED, new IgfsPath("/dir1/file2"))
         );
     }
 
@@ -506,7 +506,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1/dir2");
 
@@ -526,15 +526,15 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt.path());
 
         IgfsEvent evt3 = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_DIR_DELETED, evt3.type());
+        assertEquals(EVT_IGFS_DIR_DELETED, evt3.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt3.path());
     }
 
@@ -560,7 +560,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1/dir2");
 
@@ -578,28 +578,28 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(3);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(4);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         IgfsEvent evt4 = (IgfsEvent)evtList.get(5);
-        assertEquals(EVT_GGFS_FILE_RENAMED, evt4.type());
+        assertEquals(EVT_IGFS_FILE_RENAMED, evt4.type());
         assertEquals(new IgfsPath("/dir1/dir2/file1"), evt4.path());
         assertEquals(new IgfsPath("/dir1/file1"), evt4.newPath());
     }
@@ -627,7 +627,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         IgfsPath dir = new IgfsPath("/dir1/dir2");
 
@@ -642,15 +642,15 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
+        assertEquals(EVT_IGFS_DIR_CREATED, evt.type());
         assertEquals(new IgfsPath("/dir1/dir2"), evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
+        assertEquals(EVT_IGFS_DIR_DELETED, evt.type());
         assertEquals(new IgfsPath("/dir1"), evt.path());
     }
 
@@ -677,7 +677,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         final IgfsPath file = new IgfsPath("/file1");
 
@@ -699,15 +699,15 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         final IgfsPath file1 = new IgfsPath("/file1");
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(file1, evt.path());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(file1, evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(file1, evt.path());
         assertEquals(0, evt.dataSize());
 
@@ -717,35 +717,35 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_GGFS_FILE_DELETED && e0.path().equals(file1);
+                    return e0.type() == EVT_IGFS_FILE_DELETED && e0.path().equals(file1);
                 }
             },
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_GGFS_FILE_PURGED && e0.path().equals(file1);
+                    return e0.type() == EVT_IGFS_FILE_PURGED && e0.path().equals(file1);
                 }
             },
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_GGFS_FILE_CREATED && e0.path().equals(file1);
+                    return e0.type() == EVT_IGFS_FILE_CREATED && e0.path().equals(file1);
                 }
             },
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_GGFS_FILE_OPENED_WRITE && e0.path().equals(file1);
+                    return e0.type() == EVT_IGFS_FILE_OPENED_WRITE && e0.path().equals(file1);
                 }
             },
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_GGFS_FILE_CLOSED_WRITE && e0.path().equals(file1);
+                    return e0.type() == EVT_IGFS_FILE_CLOSED_WRITE && e0.path().equals(file1);
                 }
             }
         );
@@ -773,7 +773,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return true;
             }
-        }, EVTS_GGFS);
+        }, EVTS_IGFS);
 
         final IgfsPath file = new IgfsPath("/file1");
 
@@ -796,24 +796,24 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(evtsCnt, evtList.size());
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
-        assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
+        assertEquals(EVT_IGFS_FILE_CREATED, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(1);
-        assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_WRITE, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(2);
-        assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_WRITE, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
         assertEquals((long)dataSize, evt.dataSize());
 
         evt = (IgfsEvent)evtList.get(3);
-        assertEquals(EVT_GGFS_FILE_OPENED_READ, evt.type());
+        assertEquals(EVT_IGFS_FILE_OPENED_READ, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
 
         evt = (IgfsEvent)evtList.get(4);
-        assertEquals(EVT_GGFS_FILE_CLOSED_READ, evt.type());
+        assertEquals(EVT_IGFS_FILE_CLOSED_READ, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
         assertEquals((long)dataSize, evt.dataSize());
     }

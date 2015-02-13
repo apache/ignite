@@ -87,7 +87,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         Ignite g = G.start(cfg);
 

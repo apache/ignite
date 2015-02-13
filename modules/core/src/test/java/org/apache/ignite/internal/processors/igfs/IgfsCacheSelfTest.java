@@ -62,7 +62,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setName("igfs");
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(ggfsCfg);
 
         return cfg;
     }
