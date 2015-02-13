@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * GGFS endpoint descriptor.
  */
-public class VisorGgfsEndpoint implements Serializable{
+public class VisorIgfsEndpoint implements Serializable{
     /** */
     private static final long  serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class VisorGgfsEndpoint implements Serializable{
      * @param hostName Host address / name.
      * @param port Port number.
      */
-    public VisorGgfsEndpoint(@Nullable String ggfsName, String gridName, @Nullable String hostName, int port) {
+    public VisorIgfsEndpoint(@Nullable String ggfsName, String gridName, @Nullable String hostName, int port) {
         this.ggfsName = ggfsName;
         this.gridName = gridName;
         this.hostName = hostName;
@@ -101,6 +101,6 @@ public class VisorGgfsEndpoint implements Serializable{
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfsEndpoint.class, this);
+        return S.toString(VisorIgfsEndpoint.class, this);
     }
 }

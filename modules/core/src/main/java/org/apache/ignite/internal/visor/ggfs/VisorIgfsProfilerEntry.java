@@ -26,14 +26,14 @@ import java.util.*;
 /**
  * Visor GGFS profiler information about one file.
  */
-public class VisorGgfsProfilerEntry implements Serializable {
+public class VisorIgfsProfilerEntry implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Timestamp comparator. */
-    public static final Comparator<VisorGgfsProfilerEntry> ENTRY_TIMESTAMP_COMPARATOR =
-        new Comparator<VisorGgfsProfilerEntry>() {
-            @Override public int compare(VisorGgfsProfilerEntry a, VisorGgfsProfilerEntry b) {
+    public static final Comparator<VisorIgfsProfilerEntry> ENTRY_TIMESTAMP_COMPARATOR =
+        new Comparator<VisorIgfsProfilerEntry>() {
+            @Override public int compare(VisorIgfsProfilerEntry a, VisorIgfsProfilerEntry b) {
                 return Long.compare(a.timestamp, b.timestamp);
         }
     };
@@ -72,7 +72,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     private double uniformity = -1;
 
     /** Counters for uniformity calculation.  */
-    private final VisorGgfsProfilerUniformityCounters counters;
+    private final VisorIgfsProfilerUniformityCounters counters;
 
     /** Read speed in bytes per second or {@code -1} if speed not available. */
     private final long readSpeed;
@@ -81,7 +81,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     private final long writeSpeed;
 
     /** Create data transfer object with given parameters. */
-    public VisorGgfsProfilerEntry(
+    public VisorIgfsProfilerEntry(
         String path,
         long timestamp,
         IgfsMode mode,
@@ -92,7 +92,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
         long bytesWritten,
         long writeTime,
         long userWriteTime,
-        VisorGgfsProfilerUniformityCounters counters
+        VisorIgfsProfilerUniformityCounters counters
     ) {
         assert counters != null;
 
@@ -213,7 +213,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     /**
      * @return Counters for uniformity calculation.
      */
-    public VisorGgfsProfilerUniformityCounters counters() {
+    public VisorIgfsProfilerUniformityCounters counters() {
         return counters;
     }
 
@@ -233,6 +233,6 @@ public class VisorGgfsProfilerEntry implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfsProfilerEntry.class, this);
+        return S.toString(VisorIgfsProfilerEntry.class, this);
     }
 }

@@ -18,60 +18,53 @@
 package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.lang.*;
 
 /**
- * Task to set GGFS instance sampling state.
+ * Format GGFS instance.
  */
 @GridInternal
-public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<String, Boolean>, Void> {
+public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** {@inheritDoc} */
+    @Override protected VisorGgfsFormatJob job(String arg) {
+        return new VisorGgfsFormatJob(arg, debug);
+    }
+
     /**
-     * Job that perform parsing of GGFS profiler logs.
+     * Job that format GGFS.
      */
-    private static class VisorGgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
+    private static class VisorGgfsFormatJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with given argument.
-         *
-         * @param arg Job argument.
+         * @param arg GGFS name to format.
          * @param debug Debug flag.
          */
-        public VisorGgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+        private VisorGgfsFormatJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
+        @Override protected Void run(String ggfsName) {
             try {
-                ((IgfsEx)ignite.fileSystem(arg.get1())).globalSampling(arg.get2());
-
-                return null;
+                ignite.fileSystem(ggfsName).format();
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+                throw new IgniteException("Failed to format IgniteFs: " + ggfsName, iae);
             }
-            catch(IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+
+            return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGgfsSamplingStateJob.class, this);
+            return S.toString(VisorGgfsFormatJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorGgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
-        return new VisorGgfsSamplingStateJob(arg, debug);
     }
 }

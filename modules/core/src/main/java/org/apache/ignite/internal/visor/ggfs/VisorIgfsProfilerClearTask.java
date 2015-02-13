@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * Remove all GGFS profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
+public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
     /** */
     private static final long serialVersionUID = 0L;
 

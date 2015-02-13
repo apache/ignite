@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.visor.ggfs.VisorGgfsProfiler.*;
+import static org.apache.ignite.internal.visor.ggfs.VisorIgfsProfiler.*;
 
 /**
  * Class to support uniformity calculation.
@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.visor.ggfs.VisorGgfsProfiler.*;
  *
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
-public class VisorGgfsProfilerUniformityCounters implements Serializable {
+public class VisorIgfsProfilerUniformityCounters implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -143,7 +143,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
      *
      * @param other Counters to add.
      */
-    public void aggregate(VisorGgfsProfilerUniformityCounters other) {
+    public void aggregate(VisorIgfsProfilerUniformityCounters other) {
         if (fileSize < other.fileSize)
             compact(other.fileSize);
         else if (fileSize > other.fileSize)

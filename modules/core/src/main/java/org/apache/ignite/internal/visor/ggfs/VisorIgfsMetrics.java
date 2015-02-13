@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Data transfer object for {@link org.apache.ignite.ignitefs.IgfsMetrics}.
  */
-public class VisorGgfsMetrics implements Serializable {
+public class VisorIgfsMetrics implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -75,10 +75,10 @@ public class VisorGgfsMetrics implements Serializable {
      * @param m GGFS metrics.
      * @return Data transfer object for given GGFS metrics.
      */
-    public static VisorGgfsMetrics from(IgfsMetrics m) {
+    public static VisorIgfsMetrics from(IgfsMetrics m) {
         assert m != null;
 
-        VisorGgfsMetrics metrics = new VisorGgfsMetrics();
+        VisorIgfsMetrics metrics = new VisorIgfsMetrics();
 
         metrics.totalSpaceSize(m.maxSpaceSize());
         metrics.usedSpaceSize(m.localSpaceSize());
@@ -104,7 +104,7 @@ public class VisorGgfsMetrics implements Serializable {
      * @param m Metrics to add.
      * @return Self for method chaining.
      */
-    public VisorGgfsMetrics add(VisorGgfsMetrics m) {
+    public VisorIgfsMetrics add(VisorIgfsMetrics m) {
         assert m != null;
 
         totalSpaceSz += m.totalSpaceSz;
@@ -131,7 +131,7 @@ public class VisorGgfsMetrics implements Serializable {
      * @param n Nodes count.
      * @return Self for method chaining.
      */
-    public VisorGgfsMetrics aggregate(int n) {
+    public VisorIgfsMetrics aggregate(int n) {
         if (n > 0) {
             foldersCnt /= n;
             filesCnt /= n;
@@ -345,6 +345,6 @@ public class VisorGgfsMetrics implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfsMetrics.class, this);
+        return S.toString(VisorIgfsMetrics.class, this);
     }
 }

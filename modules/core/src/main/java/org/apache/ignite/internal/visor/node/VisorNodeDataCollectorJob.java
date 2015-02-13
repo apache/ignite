@@ -133,11 +133,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
-                                res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), ignite.name(),
+                                res.ggfsEndpoints().add(new VisorIgfsEndpoint(ggfs.name(), ignite.name(),
                                     ep.getHost(), ep.getPort()));
                     }
 
-                    res.ggfss().add(VisorGgfs.from(ggfs));
+                    res.ggfss().add(VisorIgfs.from(ggfs));
                 }
                 finally {
                     if (debug)

@@ -54,10 +54,10 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private Throwable cachesEx;
 
     /** Node GGFSs. */
-    private final Collection<VisorGgfs> ggfss = new ArrayList<>();
+    private final Collection<VisorIgfs> ggfss = new ArrayList<>();
 
     /** All GGFS endpoints collected from nodes. */
-    private final Collection<VisorGgfsEndpoint> ggfsEndpoints = new ArrayList<>();
+    private final Collection<VisorIgfsEndpoint> ggfsEndpoints = new ArrayList<>();
 
     /** Exception while collecting node GGFSs. */
     private Throwable ggfssEx;
@@ -128,11 +128,11 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
         this.cachesEx = cachesEx;
     }
 
-    public Collection<VisorGgfs> ggfss() {
+    public Collection<VisorIgfs> ggfss() {
         return ggfss;
     }
 
-    public Collection<VisorGgfsEndpoint> ggfsEndpoints() {
+    public Collection<VisorIgfsEndpoint> ggfsEndpoints() {
         return ggfsEndpoints;
     }
 

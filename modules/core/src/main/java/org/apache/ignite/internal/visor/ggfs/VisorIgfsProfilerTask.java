@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * Task that parse hadoop profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<VisorGgfsProfilerEntry>> {
+public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<VisorIgfsProfilerEntry>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -122,7 +122,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     /**
      * Job that do actual profiler work.
      */
-    private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
+    private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorIgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -160,7 +160,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) {
+        @Override protected Collection<VisorIgfsProfilerEntry> run(String arg) {
             try {
                 Path logsDir = resolveGgfsProfilerLogsDir(ignite.fileSystem(arg));
 
@@ -297,8 +297,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /**
          * Aggregate information from parsed lines grouped by {@code streamId}.
          */
-        private VisorGgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
-            VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
+        private VisorIgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
+            VisorIgfsProfilerUniformityCounters counters = new VisorIgfsProfilerUniformityCounters();
 
             Collections.sort(lines, PARSED_LINE_BY_TS_COMPARATOR);
 
@@ -369,7 +369,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
             // Return only fully parsed data with path.
             return path.isEmpty() ? null :
-                new VisorGgfsProfilerEntry(
+                new VisorIgfsProfilerEntry(
                     path,
                     ts,
                     mode,
@@ -388,7 +388,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @return Collection of parsed and aggregated entries.
          * @throws IOException if failed to read log file.
          */
-        private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
+        private Collection<VisorIgfsProfilerEntry> parseFile(Path p) throws IOException {
             Collection<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
@@ -431,20 +431,20 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Aggregate each group.
-            Collection<VisorGgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
+            Collection<VisorIgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
 
             for (List<VisorGgfsProfilerParsedLine> lines : byStreamId.values()) {
-                VisorGgfsProfilerEntry entry = aggregateParsedLines(lines);
+                VisorIgfsProfilerEntry entry = aggregateParsedLines(lines);
 
                 if (entry != null)
                     entries.add(entry);
             }
 
             // Group by files.
-            Map<String, List<VisorGgfsProfilerEntry>> byPath = new HashMap<>();
+            Map<String, List<VisorIgfsProfilerEntry>> byPath = new HashMap<>();
 
-            for (VisorGgfsProfilerEntry entry: entries) {
-                List<VisorGgfsProfilerEntry> grp = byPath.get(entry.path());
+            for (VisorIgfsProfilerEntry entry: entries) {
+                List<VisorIgfsProfilerEntry> grp = byPath.get(entry.path());
 
                 if (grp == null) {
                     grp = new ArrayList<>();
@@ -456,10 +456,10 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Aggregate by files.
-            Collection<VisorGgfsProfilerEntry> res = new ArrayList<>(byPath.size());
+            Collection<VisorIgfsProfilerEntry> res = new ArrayList<>(byPath.size());
 
-            for (List<VisorGgfsProfilerEntry> lst : byPath.values())
-                res.add(VisorGgfsProfiler.aggregateGgfsProfilerEntries(lst));
+            for (List<VisorIgfsProfilerEntry> lst : byPath.values())
+                res.add(VisorIgfsProfiler.aggregateGgfsProfilerEntries(lst));
 
             return res;
         }
@@ -470,8 +470,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param logDir Folder were log files located.
          * @return List of line with aggregated information by files.
          */
-        private Collection<VisorGgfsProfilerEntry> parse(Path logDir, String ggfsName) throws IOException {
-            Collection<VisorGgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
+        private Collection<VisorIgfsProfilerEntry> parse(Path logDir, String ggfsName) throws IOException {
+            Collection<VisorIgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
                 PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:ggfs-log-" + ggfsName + "-*.csv");

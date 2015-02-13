@@ -26,7 +26,7 @@ import java.io.*;
 /**
  * Data transfer object for {@link org.apache.ignite.IgniteFs}.
  */
-public class VisorGgfs implements Serializable {
+public class VisorIgfs implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +37,7 @@ public class VisorGgfs implements Serializable {
     private final IgfsMode mode;
 
     /** GGFS metrics. */
-    private final VisorGgfsMetrics metrics;
+    private final VisorIgfsMetrics metrics;
 
     /** Whether GGFS has configured secondary file system. */
     private final boolean secondaryFsConfigured;
@@ -50,10 +50,10 @@ public class VisorGgfs implements Serializable {
      * @param metrics GGFS metrics.
      * @param secondaryFsConfigured Whether GGFS has configured secondary file system.
      */
-    public VisorGgfs(
+    public VisorIgfs(
         String name,
         IgfsMode mode,
-        VisorGgfsMetrics metrics,
+        VisorIgfsMetrics metrics,
         boolean secondaryFsConfigured
     ) {
         this.name = name;
@@ -67,13 +67,13 @@ public class VisorGgfs implements Serializable {
      * @return Data transfer object for given GGFS.
      * @throws IgniteCheckedException
      */
-    public static VisorGgfs from(IgniteFs ggfs) throws IgniteCheckedException {
+    public static VisorIgfs from(IgniteFs ggfs) throws IgniteCheckedException {
         assert ggfs != null;
 
-        return new VisorGgfs(
+        return new VisorIgfs(
             ggfs.name(),
             ggfs.configuration().getDefaultMode(),
-            VisorGgfsMetrics.from(ggfs.metrics()),
+            VisorIgfsMetrics.from(ggfs.metrics()),
             ggfs.configuration().getSecondaryFileSystem() != null
         );
     }
@@ -95,7 +95,7 @@ public class VisorGgfs implements Serializable {
     /**
      * @return GGFS metrics.
      */
-    public VisorGgfsMetrics metrics() {
+    public VisorIgfsMetrics metrics() {
         return metrics;
     }
 
@@ -108,6 +108,6 @@ public class VisorGgfs implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGgfs.class, this);
+        return S.toString(VisorIgfs.class, this);
     }
 }

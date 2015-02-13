@@ -28,7 +28,7 @@ import java.util.*;
  * Resets GGFS metrics.
  */
 @GridInternal
-public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Various global constants for GGFS profiler.
  */
-public class VisorGgfsProfiler {
+public class VisorIgfsProfiler {
     /** Default file block size to calculate uniformity. */
     public static final int UNIFORMITY_DFLT_BLOCK_SIZE = 4096;
 
@@ -38,7 +38,7 @@ public class VisorGgfsProfiler {
      * @param entries Entries to sum.
      * @return Single aggregated entry.
      */
-    public static VisorGgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorGgfsProfilerEntry> entries) {
+    public static VisorIgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorIgfsProfilerEntry> entries) {
         assert !F.isEmpty(entries);
 
         if (entries.size() == 1)
@@ -46,7 +46,7 @@ public class VisorGgfsProfiler {
         else {
             String path = entries.get(0).path();
 
-            Collections.sort(entries, VisorGgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
+            Collections.sort(entries, VisorIgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
 
             long timestamp = 0;
             long size = 0;
@@ -57,9 +57,9 @@ public class VisorGgfsProfiler {
             long writeTime = 0;
             long userWriteTime = 0;
             IgfsMode mode = null;
-            VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
+            VisorIgfsProfilerUniformityCounters counters = new VisorIgfsProfilerUniformityCounters();
 
-            for (VisorGgfsProfilerEntry entry : entries) {
+            for (VisorIgfsProfilerEntry entry : entries) {
                 // Take last timestamp.
                 timestamp = entry.timestamp();
 
@@ -80,7 +80,7 @@ public class VisorGgfsProfiler {
                 counters.aggregate(entry.counters());
             }
 
-            return new VisorGgfsProfilerEntry(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
+            return new VisorIgfsProfilerEntry(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
                 bytesWritten, writeTime, userWriteTime, counters);
         }
     }
