@@ -63,25 +63,25 @@ public class IgfsControlResponse extends IgfsMessage {
     /** Response is Long. */
     public static final int RES_TYPE_LONG = 1;
 
-    /** Response is GridGgfsFile. */
+    /** Response is IgfsFile. */
     public static final int RES_TYPE_IGFS_FILE = 2;
 
-    /** Response is GridGgfsFileInfo. */
+    /** Response is IgfsFileInfo. */
     public static final int RES_TYPE_IGFS_STREAM_DESCRIPTOR = 3;
 
-    /** Response is GridGgfsPath. */
+    /** Response is IgfsPath. */
     public static final int RES_TYPE_IGFS_PATH = 4;
 
-    /** Response is collection of GridGgfsFile. */
+    /** Response is collection of IgfsFile. */
     public static final int RES_TYPE_COL_IGFS_FILE = 5;
 
-    /** Response is collection of GridGgfsPath. */
+    /** Response is collection of IgfsPath. */
     public static final int RES_TYPE_COL_IGFS_PATH = 6;
 
-    /** Response is collection of GridGgfsBlockLocation. */
+    /** Response is collection of IgfsBlockLocation. */
     public static final int RES_TYPE_COL_IGFS_BLOCK_LOCATION = 7;
 
-    /** Response is collection of GridGgfsBlockLocation. */
+    /** Response is collection of IgfsBlockLocation. */
     public static final int RES_TYPE_BYTE_ARRAY = 8;
 
     /** Response is an error containing stream ID and error message. */

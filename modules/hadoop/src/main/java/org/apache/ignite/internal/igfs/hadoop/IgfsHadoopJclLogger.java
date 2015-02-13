@@ -107,6 +107,6 @@ public class IgfsHadoopJclLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridGgfsHadoopJclLogger [impl=" + impl + ']';
+        return "IgfsHadoopJclLogger [impl=" + impl + ']';
     }
 }

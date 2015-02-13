@@ -30,17 +30,17 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * IGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially IGFS task
+ * IGFS task which can be executed on the grid using one of {@code IgniteFs.execute()} methods. Essentially IGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
  * {@link IgfsTask#createJob(org.apache.ignite.igfs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Each file participating in IGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
- * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
+ * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code IgniteFs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
- * Once file is split into ranges, each range is passed to {@code GridGgfsTask.createJob()} method in order to create a
+ * Once file is split into ranges, each range is passed to {@code IgfsTask.createJob()} method in order to create a
  * {@link IgfsJob}.
  * <p>
  * Finally all generated jobs are sent to Grid nodes for execution.
@@ -49,9 +49,9 @@ import java.util.*;
  * <p>
  * Here is an example of such a task:
  * <pre name="code" class="java">
- * public class WordCountTask extends GridGgfsTask&lt;String, Integer&gt; {
+ * public class WordCountTask extends IgfsTask&lt;String, Integer&gt; {
  *     &#64;Override
- *     public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range, GridGgfsTaskArgs&lt;T&gt; args) throws IgniteCheckedException {
+ *     public IgfsJob createJob(IgfsPath path, IgfsFileRange range, IgfsTaskArgs&lt;T&gt; args) throws IgniteCheckedException {
  *         // New job will be created for each range within each file.
  *         // We pass user-provided argument (which is essentially a word to look for) to that job.
  *         return new WordCountJob(args.userArgument());

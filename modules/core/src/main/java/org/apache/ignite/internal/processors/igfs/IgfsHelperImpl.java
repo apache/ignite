@@ -43,7 +43,7 @@ public class IgfsHelperImpl implements IgfsHelper {
 
             if (evictFilter != null && !(evictFilter instanceof CacheIgfsEvictionFilter))
                 throw new IgniteCheckedException("Eviction filter cannot be set explicitly when using " +
-                    "CacheGgfsPerBlockLruEvictionPolicy:" + cfg.getName());
+                    "CacheIgfsPerBlockLruEvictionPolicy:" + cfg.getName());
         }
     }
 

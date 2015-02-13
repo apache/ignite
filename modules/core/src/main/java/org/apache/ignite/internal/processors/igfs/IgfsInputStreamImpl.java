@@ -95,7 +95,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
     /** Time consumed on reading. */
     private long time;
 
-    /** Local GGFs metrics. */
+    /** Local IGFS metrics. */
     private final IgfsLocalMetrics metrics;
 
     /**

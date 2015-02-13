@@ -78,12 +78,12 @@
             </bean>
         </property>
 
-        <property name="ggfsConfiguration">
+        <property name="igfsConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.IgfsConfiguration">
-                    <property name="name" value="ggfs"/>
-                    <property name="metaCacheName" value="ggfs-meta"/>
-                    <property name="dataCacheName" value="ggfs-data"/>
+                    <property name="name" value="igfs"/>
+                    <property name="metaCacheName" value="igfs-meta"/>
+                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Must correlate with cache affinity mapper. -->
                     <property name="blockSize" value="#{128 * 1024}"/>
@@ -107,7 +107,7 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="ggfs-data"/>
+                    <property name="name" value="igfs-data"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>
@@ -123,7 +123,7 @@
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="ggfs-meta"/>
+                    <property name="name" value="igfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>

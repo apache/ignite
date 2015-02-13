@@ -50,7 +50,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
     /** Buffer size. */
     private final int bufSize; // Buffer size. Must not be less then file block size.
 
-    /** Ggfs instance for this handler. */
+    /** IGFS instance for this handler. */
     private IgfsEx igfs;
 
     /** Resource ID generator. */

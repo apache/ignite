@@ -64,7 +64,7 @@ public class IgfsContext {
      * @param dataMgr Data manager.
      * @param srvMgr Server manager.
      * @param fragmentizerMgr Fragmentizer manager.
-     * @throws IgniteCheckedException If GGFs context instantiation is failed.
+     * @throws IgniteCheckedException If IGFS context instantiation is failed.
      */
     public IgfsContext(
         GridKernalContext ctx,

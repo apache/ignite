@@ -158,7 +158,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Launches GgfsSharedMemoryTestServer and GgfsSharedMemoryTestClient.
+     * Launches IgfsSharedMemoryTestServer and IgfsSharedMemoryTestClient.
      * After successful connection kills firstly server and secondly client.
      *
      * @return Collection of shared memory IDs created while client-server interactions.
@@ -188,7 +188,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Launches GgfsSharedMemoryTestServer and connects to it with client endpoint.
+     * Launches IgfsSharedMemoryTestServer and connects to it with client endpoint.
      * After couple of reads-writes kills the server and checks client throws correct exception.
      *
      * @return List of shared memory IDs created while client-server interactions.
@@ -322,9 +322,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Starts {@code GgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
+     * Starts {@code IgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
      *
-     * @return Start result of the {@code GgfsSharedMemoryTestClient}.
+     * @return Start result of the {@code IgfsSharedMemoryTestClient}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestClient() throws Exception {
@@ -371,9 +371,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Starts {@code GgfsSharedMemoryTestServer}. The method waits while server being started.
+     * Starts {@code IgfsSharedMemoryTestServer}. The method waits while server being started.
      *
-     * @return Start result of the {@code GgfsSharedMemoryTestServer}.
+     * @return Start result of the {@code IgfsSharedMemoryTestServer}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestServer() throws Exception {

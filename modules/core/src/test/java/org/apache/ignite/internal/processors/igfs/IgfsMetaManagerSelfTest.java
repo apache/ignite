@@ -142,7 +142,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("dir", new IgfsListingEntry(dir), "file", new IgfsListingEntry(file)),
             mgr.directoryListing(ROOT_ID));
 
-        //GridGgfsFileInfo tmp = mgr.info(dir.id());
+        //IgfsFileInfo tmp = mgr.info(dir.id());
 
         assertEquals(dir, mgr.info(dir.id()));
         assertEquals(file, mgr.info(file.id()));

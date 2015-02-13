@@ -63,7 +63,7 @@
             </bean>
         </property>
 
-        <property name="ggfsConfiguration">
+        <property name="igfsConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.IgfsConfiguration">
                     <property name="name" value="ignitefs"/>

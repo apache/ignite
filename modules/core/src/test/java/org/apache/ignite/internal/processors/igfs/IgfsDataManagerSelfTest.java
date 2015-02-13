@@ -394,7 +394,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int blockSize = 10;
         final int grpSize = blockSize * DATA_BLOCK_GROUP_CNT;
 
-        //GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, 0);
+        //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
         IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {

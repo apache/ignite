@@ -313,7 +313,7 @@ public class IgfsConfiguration {
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
@@ -333,7 +333,7 @@ public class IgfsConfiguration {
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
@@ -779,7 +779,7 @@ public class IgfsConfiguration {
      * maximum range length to 16Mb, then 64 ranges will be returned resulting in 64 jobs which could be executed in
      * parallel.
      * <p>
-     * Note that some {@code GridGgfs.execute()} methods can override value of this parameter.
+     * Note that some {@code IgniteFs.execute()} methods can override value of this parameter.
      * <p>
      * In case value of this parameter is set to {@code 0} or negative value, it is simply ignored. Default value is
      * {@code 0}.

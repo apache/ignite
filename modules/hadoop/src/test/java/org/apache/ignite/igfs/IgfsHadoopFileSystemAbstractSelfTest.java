@@ -353,7 +353,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
             @Override public Object call() throws Exception {
                 return new IgfsHadoopFileSystem().getUri();
             }
-        }, IllegalStateException.class, "URI is null (was GridGgfsHadoopFileSystem properly initialized?).");
+        }, IllegalStateException.class, "URI is null (was IgfsHadoopFileSystem properly initialized?).");
     }
 
     /** @throws Exception If failed. */

@@ -95,7 +95,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param bufSize The size of the buffer to be used.
      * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
-     * @param metrics Local GGFs metrics.
+     * @param metrics Local IGFS metrics.
      * @throws IgniteCheckedException If stream creation failed.
      */
     IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,

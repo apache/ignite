@@ -52,7 +52,7 @@
     <!--
         Abstract IGFS file system configuration to be used as a template.
     -->
-    <bean id="ggfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
+    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -110,16 +110,16 @@
         </property>
 
         <!--
-            Configure one IGFS file system instance named "ggfs" on this node.
+            Configure one IGFS file system instance named "igfs" on this node.
         -->
-        <property name="ggfsConfiguration">
+        <property name="igfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="ggfsCfgBase">
-                    <property name="name" value="ggfs"/>
+                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="igfsCfgBase">
+                    <property name="name" value="igfs"/>
 
                     <!-- Caches with these names must be configured. -->
-                    <property name="metaCacheName" value="ggfs-meta"/>
-                    <property name="dataCacheName" value="ggfs-data"/>
+                    <property name="metaCacheName" value="igfs-meta"/>
+                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Configure TCP endpoint for communication with the file system instance. -->
                     <property name="ipcEndpointConfiguration">
@@ -140,12 +140,12 @@
             <list>
                 <!-- File system metadata cache. -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
-                    <property name="name" value="ggfs-meta"/>
+                    <property name="name" value="igfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
-                    <property name="name" value="ggfs-data"/>
+                    <property name="name" value="igfs-data"/>
                 </bean>
             </list>
         </property>

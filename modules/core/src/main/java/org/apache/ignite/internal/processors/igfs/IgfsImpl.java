@@ -73,7 +73,7 @@ public final class IgfsImpl implements IgfsEx {
     /** FS configuration. */
     private IgfsConfiguration cfg;
 
-    /** Ggfs context. */
+    /** IGFS context. */
     private IgfsContext igfsCtx;
 
     /** Event storage manager. */

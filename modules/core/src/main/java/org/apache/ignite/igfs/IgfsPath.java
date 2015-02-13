@@ -30,11 +30,11 @@ import java.util.*;
  * {@code IGFS} path to file in the file system. For example, to get information about
  * a file you would use the following code:
  * <pre name="code" class="java">
- *     GridGgfsPath dirPath = new GridGgfsPath("/my/working/dir");
- *     GridGgfsPath filePath = new GridGgfsPath(dirPath, "file.txt");
+ *     IgfsPath dirPath = new IgfsPath("/my/working/dir");
+ *     IgfsPath filePath = new IgfsPath(dirPath, "file.txt");
  *
  *     // Get metadata about file.
- *     GridGgfsFile file = igfs.info(filePath);
+ *     IgfsFile file = igfs.info(filePath);
  * </pre>
  */
 public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {

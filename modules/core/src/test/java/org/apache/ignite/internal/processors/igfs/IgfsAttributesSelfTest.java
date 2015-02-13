@@ -38,7 +38,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
         pathModes.put("path1", PRIMARY);
         pathModes.put("path2", PROXY);
 
-        IgfsAttributes attrs = new IgfsAttributes("testGgfsName", 513000, 888, "meta", "data", DUAL_SYNC,
+        IgfsAttributes attrs = new IgfsAttributes("testIgfsName", 513000, 888, "meta", "data", DUAL_SYNC,
             pathModes, true);
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

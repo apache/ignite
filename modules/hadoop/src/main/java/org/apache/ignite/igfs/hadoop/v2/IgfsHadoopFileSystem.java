@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  *
  *  &lt;property&gt;
  *      &lt;name&gt;fs.igfs.impl&lt;/name&gt;
- *      &lt;value&gt;org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
+ *      &lt;value&gt;org.apache.ignite.igfs.hadoop.IgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
  * You should also add Ignite JAR and all libraries to Hadoop classpath. To

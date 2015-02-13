@@ -25,10 +25,10 @@ import java.util.*;
  * {@code IGFS} file or directory descriptor. For example, to get information about
  * a file you would use the following code:
  * <pre name="code" class="java">
- *     GridGgfsPath filePath = new GridGgfsPath("my/working/dir", "file.txt");
+ *     IgfsPath filePath = new IgfsPath("my/working/dir", "file.txt");
  *
  *     // Get metadata about file.
- *     GridGgfsFile file = igfs.info(filePath);
+ *     IgfsFile file = igfs.info(filePath);
  * </pre>
  */
 public interface IgfsFile {

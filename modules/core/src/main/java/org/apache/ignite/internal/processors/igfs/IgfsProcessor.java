@@ -228,7 +228,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
                 // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
-                // Configuration will be validated later, while starting GridGgfsProcessor.
+                // Configuration will be validated later, while starting IgfsProcessor.
                 continue;
 
             attrVals.add(new IgfsAttributes(
@@ -301,12 +301,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
                     // Offheap is disabled.
                     throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxGgfsSpaceSize=" + maxSpaceSize + ']');
+                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
                 else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
                     // Offheap is enabled, but limited.
                     throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
                         "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxGgfsSpaceSize=" + maxSpaceSize + ']');
+                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
             }
 
             if (dataCache.configuration().getCacheMode() == PARTITIONED) {
@@ -366,8 +366,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
-                            ", locGgfsName=" + locAttr.igfsName() +
-                            ", rmtGgfsName=" + rmtAttr.igfsName() + ']');
+                            ", locIgfsName=" + locAttr.igfsName() +
+                            ", rmtIgfsName=" + rmtAttr.igfsName() + ']');
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new IgniteCheckedException("Data cache names should be different for different IGFS instances " +
@@ -376,8 +376,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
-                            ", locGgfsName=" + locAttr.igfsName() +
-                            ", rmtGgfsName=" + rmtAttr.igfsName() + ']');
+                            ", locIgfsName=" + locAttr.igfsName() +
+                            ", rmtIgfsName=" + rmtAttr.igfsName() + ']');
 
                     continue;
                 }

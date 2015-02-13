@@ -718,7 +718,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Get GGfs of a node with the given index.
+     * Get IGFS of a node with the given index.
      *
      * @param idx Node index.
      * @return IGFS.
@@ -729,7 +729,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Get GGfs of the given node.
+     * Get IGFS of the given node.
      *
      * @param ignite Node;
      * @return IGFS.

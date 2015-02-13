@@ -41,34 +41,34 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     /** Expected result is boolean. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Long> LONG_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsFile}. */
+    /** Expected result is {@code IgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsFile> FILE_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsHandshakeResponse} */
+    /** Expected result is {@code IgfsHandshakeResponse} */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         IgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsStatus} */
+    /** Expected result is {@code IgfsStatus} */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsStatus> STATUS_RES =
         createClosure();
 
-    /** Expected result is {@code GridGgfsFile}. */
+    /** Expected result is {@code IgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         IgfsInputStreamDescriptor> STREAM_DESCRIPTOR_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsFile}. */
+    /** Expected result is {@code IgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgfsFile>> FILE_COL_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsFile}. */
+    /** Expected result is {@code IgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgfsPath>> PATH_COL_RES = createClosure();
 
-    /** Expected result is {@code GridGgfsPathSummary}. */
+    /** Expected result is {@code IgfsPathSummary}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsPathSummary> SUMMARY_RES =
         createClosure();
 
-    /** Expected result is {@code GridGgfsFile}. */
+    /** Expected result is {@code IgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 

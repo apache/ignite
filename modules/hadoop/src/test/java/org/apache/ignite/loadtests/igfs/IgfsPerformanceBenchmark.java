@@ -74,7 +74,7 @@ public class IgfsPerformanceBenchmark {
 
         System.out.println("Warming up...");
 
-//        warmUp(fs, ggfsHome, op, fileLen);
+//        warmUp(fs, igfsHome, op, fileLen);
 
         System.out.println("Finished warm up.");
 

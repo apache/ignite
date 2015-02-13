@@ -24,7 +24,7 @@ import java.io.*;
 
 /**
  * Defines executable unit for {@link IgfsTask}. Before this job is executed, it is assigned one of the
- * ranges provided by the {@link IgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
+ * ranges provided by the {@link IgfsRecordResolver} passed to one of the {@code IgniteFs.execute(...)} methods.
  * <p>
  * {@link #execute(org.apache.ignite.IgniteFs, IgfsFileRange, org.apache.ignite.igfs.IgfsInputStream)} method is given {@link IgfsFileRange} this
  * job is expected to operate on, and already opened {@link org.apache.ignite.igfs.IgfsInputStream} for the file this range belongs to.

@@ -25,7 +25,7 @@ import java.io.*;
 public class IgfsTestInputGenerator {
     public static void main(String[] args) throws IOException {
         if (args.length != 2) {
-            System.out.println("Run: GridGgfsTestInputGenerator <file name> <length>");
+            System.out.println("Run: IgfsTestInputGenerator <file name> <length>");
             System.exit(-1);
         }
 

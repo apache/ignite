@@ -22,14 +22,14 @@ import org.apache.ignite.igfs.*;
 import java.util.*;
 
 /**
- * IGFS task arguments. When you initiate new IGFS task execution using one of {@code GridGgfs.execute(...)} methods,
- * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
+ * IGFS task arguments. When you initiate new IGFS task execution using one of {@code IgniteFs.execute(...)} methods,
+ * all passed parameters are encapsulated in a single {@code IgfsTaskArgs} object. Later on this object is
  * passed to {@link IgfsTask#createJob(org.apache.ignite.igfs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
  *     <li>IGFS name</li>
- *     <li>File paths passed to {@code GridGgfs.execute()} method</li>
+ *     <li>File paths passed to {@code IgniteFs.execute()} method</li>
  *     <li>{@link IgfsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>

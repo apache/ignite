@@ -36,7 +36,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
-//        suite.addTest(new TestSuite(GridGgfsSizeSelfTest.class)); TODO Enable after GG-9035
+//        suite.addTest(new TestSuite(IgfsSizeSelfTest.class)); TODO Enable after GG-9035
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));

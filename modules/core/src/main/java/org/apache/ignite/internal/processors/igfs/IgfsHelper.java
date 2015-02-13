@@ -40,7 +40,7 @@ public interface IgfsHelper {
     public abstract void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException;
 
     /**
-     * Check whether object is of type {@code GridGgfsBlockKey}
+     * Check whether object is of type {@code IgfsBlockKey}
      *
      * @param key Key.
      * @return {@code True} if IGFS block key.

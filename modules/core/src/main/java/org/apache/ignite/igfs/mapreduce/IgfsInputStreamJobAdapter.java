@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.*;
 import java.io.*;
 
 /**
- * Convenient {@link IgfsJob} adapter. It limits data returned from {@link org.apache.ignite.igfs.IgfsInputStream} to bytes within
+ * Convenient {@link IgfsJob} adapter. It limits data returned from {@link IgfsInputStream} to bytes within
  * the {@link IgfsFileRange} assigned to the job.
  * <p>
- * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into
+ * Under the covers it simply puts job's {@code IgfsInputStream} position to range start and wraps in into
  * {@link GridFixedSizeInputStream} limited to range length.
  */
 public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {

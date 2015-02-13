@@ -30,14 +30,14 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Ggfs supporting asynchronous operations.
+ * Igfs supporting asynchronous operations.
  */
 public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements IgfsEx {
     /** */
     private final IgfsImpl igfs;
 
     /**
-     * @param igfs Ggfs.
+     * @param igfs Igfs.
      */
     public IgfsAsyncImpl(IgfsImpl igfs) {
         super(true);

@@ -196,7 +196,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param name New gGFS instance name.
+     * @param name New IGFS instance name.
      */
     public void name(@Nullable String name) {
         this.name = name;
@@ -336,7 +336,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param dfltMode New gGFS instance mode.
+     * @param dfltMode New IGFS instance mode.
      */
     public void defaultMode(IgfsMode dfltMode) {
         defaultMode = dfltMode;
