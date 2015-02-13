@@ -1108,6 +1108,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         this.outMesQueueSize = outMesQueueSize;
     }
 
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return CPU count.
+     */
     private static int cpuCnt(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 
@@ -1122,6 +1126,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return cpus;
     }
 
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return CPU load.
+     */
     private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 
@@ -1136,6 +1144,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return cpus;
     }
 
+    /**
+     * @param neighborhood Cluster neighborhood.
+     * @return GC CPU load.
+     */
     private static int gcCpus(Map<String, Collection<ClusterNode>> neighborhood) {
         int cpus = 0;
 
