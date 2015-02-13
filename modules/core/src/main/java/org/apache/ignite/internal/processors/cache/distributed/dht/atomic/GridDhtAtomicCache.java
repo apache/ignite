@@ -1101,8 +1101,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         expiry = expiryPolicy(req.expiry());
 
-                        if (plc != null)
-                            expiry = new UpdateExpiryPolicy(plc);
+                        GridCacheReturn<Object> retVal = null;
 
                         if (keys.size() > 1 &&                             // Several keys ...
                             writeThrough() &&                              // and store is enabled ...
