@@ -96,17 +96,17 @@ public class IgfsMetaManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        cfg = ggfsCtx.configuration();
+        cfg = igfsCtx.configuration();
 
-        metaCache = ggfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
+        metaCache = igfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
 
-        metaCacheStartFut = ggfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader()
+        metaCacheStartFut = igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader()
             .startFuture();
 
         if (metaCache.configuration().getAtomicityMode() != TRANSACTIONAL)
             throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
-        evts = ggfsCtx.kernalContext().event();
+        evts = igfsCtx.kernalContext().event();
 
         sampling = new IgfsSamplingKey(cfg.getName());
 
@@ -114,15 +114,15 @@ public class IgfsMetaManager extends IgfsManager {
 
         id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
 
-        log = ggfsCtx.kernalContext().log(IgfsMetaManager.class);
+        log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        locNode = ggfsCtx.kernalContext().discovery().localNode();
+        locNode = igfsCtx.kernalContext().discovery().localNode();
 
         // Start background delete worker.
-        delWorker = new IgfsDeleteWorker(ggfsCtx);
+        delWorker = new IgfsDeleteWorker(igfsCtx);
 
         delWorker.start();
     }
@@ -154,7 +154,7 @@ public class IgfsMetaManager extends IgfsManager {
     Collection<ClusterNode> metaCacheNodes() {
         if (busyLock.enterBusy()) {
             try {
-                return ggfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);
+                return igfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);
             }
             finally {
                 busyLock.leaveBusy();
@@ -1665,7 +1665,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     "the secondary file system because the path points to a directory: " + path);
 
                             IgfsFileInfo newInfo = new IgfsFileInfo(status.blockSize(), status.length(), affKey,
-                                IgniteUuid.randomUuid(), ggfsCtx.ggfs().evictExclude(path, false), status.properties());
+                                IgniteUuid.randomUuid(), igfsCtx.ggfs().evictExclude(path, false), status.properties());
 
                             // Add new file info to the listing optionally removing the previous one.
                             IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
@@ -1681,7 +1681,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 id2InfoPrj.invoke(parentInfo.id(),
                                     new UpdateListing(path.name(), new IgfsListingEntry(newInfo), false));
 
-                                IgniteInternalFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
+                                IgniteInternalFuture<?> delFut = igfsCtx.data().delete(oldInfo);
 
                                 // Record PURGE event if needed.
                                 if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
@@ -1786,7 +1786,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 IgfsReader reader = fs.open(path, bufSize);
 
                                 try {
-                                    ggfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
+                                    igfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
                                 }
                                 finally {
                                     reader.close();
@@ -2298,8 +2298,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // Recreate the path locally.
                 IgfsFileInfo curInfo = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
-                    new IgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.length(),
-                        ggfsCtx.ggfs().evictExclude(curPath, false), status.properties());
+                    new IgfsFileInfo(igfsCtx.configuration().getBlockSize(), status.length(),
+                        igfsCtx.ggfs().evictExclude(curPath, false), status.properties());
 
                 IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 

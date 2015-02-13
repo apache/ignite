@@ -149,35 +149,35 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        ggfs = ggfsCtx.ggfs();
+        ggfs = igfsCtx.ggfs();
 
-        dataCachePrj = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName());
-        dataCache = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName());
+        dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
+        dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
 
-        dataCacheStartFut = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName())
+        dataCacheStartFut = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName())
             .preloader().startFuture();
 
         if (dataCache.configuration().getAtomicityMode() != TRANSACTIONAL)
             throw new IgniteCheckedException("Data cache should be transactional: " +
-                ggfsCtx.configuration().getDataCacheName());
+                igfsCtx.configuration().getDataCacheName());
 
-        metrics = ggfsCtx.ggfs().localMetrics();
+        metrics = igfsCtx.ggfs().localMetrics();
 
         assert dataCachePrj != null;
 
-        CacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
-            .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
+        CacheAffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
+            .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
 
-        grpBlockSize = ggfsCtx.configuration().getBlockSize() * grpSize;
+        grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
 
-        String ggfsName = ggfsCtx.configuration().getName();
+        String ggfsName = igfsCtx.configuration().getName();
 
         topic = F.isEmpty(ggfsName) ? TOPIC_GGFS : TOPIC_GGFS.topic(ggfsName);
 
-        ggfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
+        igfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (msg instanceof IgfsBlocksMessage)
                     processBlocksMessage(nodeId, (IgfsBlocksMessage)msg);
@@ -186,13 +186,13 @@ public class IgfsDataManager extends IgfsManager {
             }
         });
 
-        ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
+        igfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
                 DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                if (ggfsCtx.ggfsNode(discoEvt.eventNode())) {
+                if (igfsCtx.ggfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {
                         future.onError(discoEvt.eventNode().id(),
                             new ClusterTopologyCheckedException("Node left grid before write completed: " + evt.node().id()));
@@ -201,14 +201,14 @@ public class IgfsDataManager extends IgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ggfsSvc = ggfsCtx.kernalContext().getGgfsExecutorService();
+        ggfsSvc = igfsCtx.kernalContext().getGgfsExecutorService();
 
-        trashPurgeTimeout = ggfsCtx.configuration().getTrashPurgeTimeout();
+        trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
 
-        putExecSvc = ggfsCtx.configuration().getDualModePutExecutorService();
+        putExecSvc = igfsCtx.configuration().getDualModePutExecutorService();
 
         if (putExecSvc != null)
-            putExecSvcShutdown = ggfsCtx.configuration().getDualModePutExecutorServiceShutdown();
+            putExecSvcShutdown = igfsCtx.configuration().getDualModePutExecutorServiceShutdown();
         else {
             int coresCnt = Runtime.getRuntime().availableProcessors();
 
@@ -218,9 +218,9 @@ public class IgfsDataManager extends IgfsManager {
             putExecSvcShutdown = true;
         }
 
-        maxPendingPuts = ggfsCtx.configuration().getDualModeMaxPendingPutsSize();
+        maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
 
-        delWorker = new AsyncDeleteWorker(ggfsCtx.kernalContext().gridName(),
+        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
             "ggfs-" + ggfsName + "-delete-worker", log);
     }
 
@@ -274,7 +274,7 @@ public class IgfsDataManager extends IgfsManager {
         if (!isAffinityNode(dataCache.configuration()))
             return null;
 
-        UUID nodeId = ggfsCtx.kernalContext().localNodeId();
+        UUID nodeId = igfsCtx.kernalContext().localNodeId();
 
         if (prevAffKey != null && dataCache.affinity().mapKeyToNode(prevAffKey).isLocal())
             return prevAffKey;
@@ -304,9 +304,9 @@ public class IgfsDataManager extends IgfsManager {
      */
     private IgniteDataLoader<IgfsBlockKey, byte[]> dataLoader() {
         IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
-            ggfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
+            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
-        IgfsConfiguration cfg = ggfsCtx.configuration();
+        IgfsConfiguration cfg = igfsCtx.configuration();
 
         if (cfg.getPerNodeBatchSize() > 0)
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
@@ -356,7 +356,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 ClusterNode primaryNode = affNodes.iterator().next();
 
-                if (primaryNode.id().equals(ggfsCtx.kernalContext().localNodeId())) {
+                if (primaryNode.id().equals(igfsCtx.kernalContext().localNodeId())) {
                     res.add(i);
 
                     prevPrimaryFlag = true;
@@ -393,7 +393,7 @@ public class IgfsDataManager extends IgfsManager {
         final IgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled() &&
-            dataCache.affinity().isPrimaryOrBackup(ggfsCtx.kernalContext().discovery().localNode(), key)) {
+            dataCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), key)) {
             log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
                 ", blockIdx=" + blockIdx + ']');
         }
@@ -406,7 +406,7 @@ public class IgfsDataManager extends IgfsManager {
                     byte[] res = fut.get();
 
                     if (res == null) {
-                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
+                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>(igfsCtx.kernalContext());
 
                         IgniteInternalFuture<byte[]> oldRmtReadFut = rmtReadFuts.putIfAbsent(key, rmtReadFut);
 
@@ -490,7 +490,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
     public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(ggfsCtx.kernalContext(), fileInfo.id());
+        WriteCompletionFuture fut = new WriteCompletionFuture(igfsCtx.kernalContext(), fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
 
@@ -599,7 +599,7 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);
 
-            return new GridFinishedFuture<>(ggfsCtx.kernalContext());
+            return new GridFinishedFuture<>(igfsCtx.kernalContext());
         }
         else
             return delWorker.deleteAsync(fileInfo);
@@ -707,12 +707,12 @@ public class IgfsDataManager extends IgfsManager {
 
                         bytesProcessed += block.length;
 
-                        if (bytesProcessed >= ggfsCtx.configuration().getFragmentizerThrottlingBlockLength()) {
+                        if (bytesProcessed >= igfsCtx.configuration().getFragmentizerThrottlingBlockLength()) {
                             ldr.flush();
 
                             bytesProcessed = 0;
 
-                            U.sleep(ggfsCtx.configuration().getFragmentizerThrottlingDelay());
+                            U.sleep(igfsCtx.configuration().getFragmentizerThrottlingDelay());
                         }
                     }
                     else if (log.isDebugEnabled())
@@ -1033,7 +1033,7 @@ public class IgfsDataManager extends IgfsManager {
             callGgfsLocalSafe(new GridPlainCallable<Object>() {
                 @Override @Nullable public Object call() throws Exception {
                     try {
-                        ggfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
+                        igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         completionFut.onError(nodeId, e);
@@ -1102,7 +1102,7 @@ public class IgfsDataManager extends IgfsManager {
                     ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
 
                 completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                    ggfsCtx.kernalContext().localNodeId(), e));
+                    igfsCtx.kernalContext().localNodeId(), e));
 
                 return;
             }
@@ -1257,14 +1257,14 @@ public class IgfsDataManager extends IgfsManager {
 
                 // Additional size check.
                 if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
-                    return new GridFinishedFuture<Object>(ggfsCtx.kernalContext(),
+                    return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
                         new IgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ggfsCtx.kernalContext(), new IgniteCheckedException("Failed to store data " +
+                return new GridFinishedFuture<>(igfsCtx.kernalContext(), new IgniteCheckedException("Failed to store data " +
                     "block due to unexpected exception.", e));
             }
         }
@@ -1290,7 +1290,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 try {
                     // Send reply back to node.
-                    ggfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
+                    igfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
@@ -1307,7 +1307,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
-            ackMsg.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
+            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);
@@ -1364,7 +1364,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // Check if we have enough free space to do colocated writes.
         if (dataCachePrj.ggfsDataSpaceUsed() > dataCachePrj.ggfsDataSpaceMax() *
-            ggfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
+            igfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
             // Forbid further co-location.
             locRange.markDone();
 
@@ -1675,7 +1675,7 @@ public class IgfsDataManager extends IgfsManager {
          * Gracefully stops worker by adding STOP_INFO to queue.
          */
         private void stop() {
-            delReqs.offer(F.t(new GridFutureAdapter<>(ggfsCtx.kernalContext()), stopInfo));
+            delReqs.offer(F.t(new GridFutureAdapter<>(igfsCtx.kernalContext()), stopInfo));
         }
 
         /**
@@ -1683,7 +1683,7 @@ public class IgfsDataManager extends IgfsManager {
          * @return Future which completes when entry is actually removed.
          */
         private IgniteInternalFuture<Object> deleteAsync(IgfsFileInfo info) {
-            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
+            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
 
             delReqs.offer(F.t(fut, info));
 

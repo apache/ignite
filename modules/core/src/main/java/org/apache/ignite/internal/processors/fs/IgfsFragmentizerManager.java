@@ -79,11 +79,11 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (!ggfsCtx.configuration().isFragmentizerEnabled())
+        if (!igfsCtx.configuration().isFragmentizerEnabled())
             return;
 
         // We care only about node leave and fail events.
-        ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
+        igfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
@@ -95,20 +95,20 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
         fragmentizerWorker = new FragmentizerWorker();
 
-        String ggfsName = ggfsCtx.configuration().getName();
+        String ggfsName = igfsCtx.configuration().getName();
 
         topic = F.isEmpty(ggfsName) ? TOPIC_GGFS : TOPIC_GGFS.topic(ggfsName);
 
-        ggfsCtx.kernalContext().io().addMessageListener(topic, fragmentizerWorker);
+        igfsCtx.kernalContext().io().addMessageListener(topic, fragmentizerWorker);
 
         new IgniteThread(fragmentizerWorker).start();
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (ggfsCtx.configuration().isFragmentizerEnabled()) {
+        if (igfsCtx.configuration().isFragmentizerEnabled()) {
             // Check at startup if this node is a fragmentizer coordinator.
-            DiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
+            DiscoveryEvent locJoinEvt = igfsCtx.kernalContext().discovery().localJoinEvent();
 
             checkLaunchCoordinator(locJoinEvt);
         }
@@ -164,12 +164,12 @@ public class IgfsFragmentizerManager extends IgfsManager {
     private void sendWithRetries(UUID nodeId, IgfsCommunicationMessage msg) throws IgniteCheckedException {
         for (int i = 0; i < MESSAGE_SEND_RETRY_COUNT; i++) {
             try {
-                ggfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
+                igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
 
                 return;
             }
             catch (IgniteCheckedException e) {
-                if (!ggfsCtx.kernalContext().discovery().alive(nodeId))
+                if (!igfsCtx.kernalContext().discovery().alive(nodeId))
                     throw new ClusterTopologyCheckedException("Failed to send message (node left the grid) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
 
@@ -200,11 +200,11 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 Collection<ClusterNode> nodes = discoEvt.topologyNodes();
 
                 for (ClusterNode node : nodes) {
-                    if (node.order() < minNodeOrder && ggfsCtx.ggfsNode(node))
+                    if (node.order() < minNodeOrder && igfsCtx.ggfsNode(node))
                         minNodeOrder = node.order();
                 }
 
-                ClusterNode locNode = ggfsCtx.kernalContext().grid().localNode();
+                ClusterNode locNode = igfsCtx.kernalContext().grid().localNode();
 
                 if (locNode.order() == minNodeOrder) {
                     if (log.isDebugEnabled())
@@ -241,12 +241,12 @@ public class IgfsFragmentizerManager extends IgfsManager {
      */
     @SuppressWarnings("fallthrough")
     private void processFragmentizerRequest(IgfsFragmentizerRequest req) throws IgniteCheckedException {
-        req.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
+        req.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
 
         Collection<IgfsFileAffinityRange> ranges = req.fragmentRanges();
         IgniteUuid fileId = req.fileId();
 
-        IgfsFileInfo fileInfo = ggfsCtx.meta().info(fileId);
+        IgfsFileInfo fileInfo = igfsCtx.meta().info(fileId);
 
         if (fileInfo == null) {
             if (log.isDebugEnabled())
@@ -265,10 +265,10 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 switch (range.status()) {
                     case RANGE_STATUS_INITIAL: {
                         // Mark range as moving.
-                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
+                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
 
                         if (updated == null) {
-                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+                            igfsCtx.data().cleanBlocks(fileInfo, range, true);
 
                             continue;
                         }
@@ -278,13 +278,13 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
                     case RANGE_STATUS_MOVING: {
                         // Move colocated blocks.
-                        ggfsCtx.data().spreadBlocks(fileInfo, range);
+                        igfsCtx.data().spreadBlocks(fileInfo, range);
 
                         // Mark range as moved.
-                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
+                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
 
                         if (updated == null) {
-                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+                            igfsCtx.data().cleanBlocks(fileInfo, range, true);
 
                             continue;
                         }
@@ -294,13 +294,13 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
                     case RANGE_STATUS_MOVED: {
                         // Remove old blocks.
-                        ggfsCtx.data().cleanBlocks(fileInfo, range, false);
+                        igfsCtx.data().cleanBlocks(fileInfo, range, false);
 
                         // Remove range from map.
-                        updated = ggfsCtx.meta().updateInfo(fileId, deleteRange(range));
+                        updated = igfsCtx.meta().updateInfo(fileId, deleteRange(range));
 
                         if (updated == null)
-                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+                            igfsCtx.data().cleanBlocks(fileInfo, range, true);
                     }
                 }
             }
@@ -386,10 +386,10 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerCoordinator() {
-            super(ggfsCtx.kernalContext().gridName(), "fragmentizer-coordinator", ggfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().gridName(), "fragmentizer-coordinator", igfsCtx.kernalContext().log());
 
-            ggfsCtx.kernalContext().event().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
-            ggfsCtx.kernalContext().io().addMessageListener(topic, this);
+            igfsCtx.kernalContext().event().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            igfsCtx.kernalContext().io().addMessageListener(topic, this);
         }
 
         /** {@inheritDoc} */
@@ -400,7 +400,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
             while (!isCancelled()) {
                 // If we have room for files, add them to fragmentizer.
                 try {
-                    while (fragmentingFiles.size() < ggfsCtx.configuration().getFragmentizerConcurrentFiles()) {
+                    while (fragmentingFiles.size() < igfsCtx.configuration().getFragmentizerConcurrentFiles()) {
                         IgfsFileInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
 
                         // If no colocated files found, exit loop.
@@ -510,7 +510,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
             else if (msg instanceof IgfsSyncMessage) {
                 IgfsSyncMessage sync = (IgfsSyncMessage)msg;
 
-                if (sync.response() && sync.order() == ggfsCtx.kernalContext().grid().localNode().order()) {
+                if (sync.response() && sync.order() == igfsCtx.kernalContext().grid().localNode().order()) {
                     if (log.isDebugEnabled())
                         log.debug("Received fragmentizer sync response from remote node: " + nodeId);
 
@@ -552,15 +552,15 @@ public class IgfsFragmentizerManager extends IgfsManager {
         private void syncStart() throws InterruptedException {
             Collection<UUID> startSync0 = startSync = new GridConcurrentHashSet<>(
                 F.viewReadOnly(
-                    ggfsCtx.kernalContext().discovery().allNodes(),
+                    igfsCtx.kernalContext().discovery().allNodes(),
                     F.node2id(),
                     new P1<ClusterNode>() {
                         @Override public boolean apply(ClusterNode n) {
-                            return ggfsCtx.ggfsNode(n);
+                            return igfsCtx.ggfsNode(n);
                         }
                     }));
 
-            ClusterNode locNode = ggfsCtx.kernalContext().grid().localNode();
+            ClusterNode locNode = igfsCtx.kernalContext().grid().localNode();
 
             while (!startSync0.isEmpty()) {
                 for (UUID nodeId : startSync0) {
@@ -574,7 +574,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         sendWithRetries(nodeId, syncReq);
 
                         // Close window between message sending and discovery event.
-                        if (!ggfsCtx.kernalContext().discovery().alive(nodeId))
+                        if (!igfsCtx.kernalContext().discovery().alive(nodeId))
                             startSync0.remove(nodeId);
                     }
                     catch (IgniteCheckedException e) {
@@ -617,7 +617,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
             Map<UUID, Collection<IgfsFileAffinityRange>> grpMap = U.newHashMap(map.ranges().size());
 
             for (IgfsFileAffinityRange range : map.ranges()) {
-                UUID nodeId = ggfsCtx.data().affinityNode(range.affinityKey()).id();
+                UUID nodeId = igfsCtx.data().affinityNode(range.affinityKey()).id();
 
                 Collection<IgfsFileAffinityRange> nodeRanges = grpMap.get(nodeId);
 
@@ -627,7 +627,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                     grpMap.put(nodeId, nodeRanges);
                 }
 
-                nodeRanges.addAll(range.split(ggfsCtx.data().groupBlockSize()));
+                nodeRanges.addAll(range.split(igfsCtx.data().groupBlockSize()));
             }
 
             Collection<UUID> nodeIds = new IdentityHashSet(grpMap.keySet());
@@ -684,7 +684,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
      * @throws IgniteCheckedException In case of error.
      */
     @Nullable private IgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
-        return fragmentizerEnabled ? ggfsCtx.meta().fileForFragmentizer(exclude) : null;
+        return fragmentizerEnabled ? igfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 
     /**
@@ -698,7 +698,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerWorker() {
-            super(ggfsCtx.kernalContext().gridName(), "fragmentizer-worker", ggfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().gridName(), "fragmentizer-worker", igfsCtx.kernalContext().log());
         }
 
         /** {@inheritDoc} */

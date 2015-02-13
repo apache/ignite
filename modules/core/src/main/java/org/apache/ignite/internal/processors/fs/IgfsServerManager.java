@@ -49,7 +49,7 @@ public class IgfsServerManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        IgfsConfiguration ggfsCfg = ggfsCtx.configuration();
+        IgfsConfiguration ggfsCfg = igfsCtx.configuration();
         Map<String,String> cfg = ggfsCfg.getIpcEndpointConfiguration();
 
         if (F.isEmpty(cfg)) {
@@ -88,7 +88,7 @@ public class IgfsServerManager extends IgfsManager {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
-        IgfsServer ipcSrv = new IgfsServer(ggfsCtx, endpointCfg, mgmt);
+        IgfsServer ipcSrv = new IgfsServer(igfsCtx, endpointCfg, mgmt);
 
         try {
             ipcSrv.start();
@@ -161,7 +161,7 @@ public class IgfsServerManager extends IgfsManager {
          * Constructor.
          */
         private BindWorker() {
-            super(ggfsCtx.kernalContext().gridName(), "bind-worker", ggfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().gridName(), "bind-worker", igfsCtx.kernalContext().log());
         }
 
         /**
@@ -186,7 +186,7 @@ public class IgfsServerManager extends IgfsManager {
                 while (it.hasNext()) {
                     IgniteBiTuple<Map<String, String>, Boolean> cfg = it.next();
 
-                    IgfsServer ipcSrv = new IgfsServer(ggfsCtx, cfg.get1(), cfg.get2());
+                    IgfsServer ipcSrv = new IgfsServer(igfsCtx, cfg.get1(), cfg.get2());
 
                     try {
                         ipcSrv.start();

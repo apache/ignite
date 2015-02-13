@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class IgfsManager {
     /** GGFS context. */
-    protected IgfsContext ggfsCtx;
+    protected IgfsContext igfsCtx;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -45,7 +45,7 @@ public abstract class IgfsManager {
 
         assert ggfsCtx != null;
 
-        this.ggfsCtx = ggfsCtx;
+        this.igfsCtx = ggfsCtx;
 
         log = ggfsCtx.kernalContext().log(getClass());
 
