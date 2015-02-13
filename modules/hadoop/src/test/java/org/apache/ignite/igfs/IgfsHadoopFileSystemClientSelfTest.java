@@ -163,7 +163,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        IgfsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().ggfs();
+        IgfsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().igfs();
 
         Map<String, IgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
 

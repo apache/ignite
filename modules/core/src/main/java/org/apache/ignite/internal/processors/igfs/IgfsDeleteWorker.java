@@ -91,9 +91,9 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         evts = igfsCtx.kernalContext().event();
 
-        String ggfsName = igfsCtx.igfs().name();
+        String igfsName = igfsCtx.igfs().name();
 
-        topic = F.isEmpty(ggfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(ggfsName);
+        topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
 
         assert meta != null;
         assert data != null;

@@ -96,8 +96,8 @@ public class IgfsDataManager extends IgfsManager {
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
 
-    /** GGFS executor service. */
-    private ExecutorService ggfsSvc;
+    /** IGFS executor service. */
+    private ExecutorService igfsSvc;
 
     /** Request ID counter for write messages. */
     private AtomicLong reqIdCtr = new AtomicLong();
@@ -201,7 +201,7 @@ public class IgfsDataManager extends IgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ggfsSvc = igfsCtx.kernalContext().getGgfsExecutorService();
+        igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
         trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
 
@@ -1164,7 +1164,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private <T> void callIgfsLocalSafe(Callable<T> c) {
         try {
-            ggfsSvc.submit(c);
+            igfsSvc.submit(c);
         }
         catch (RejectedExecutionException ignored) {
             // This exception will happen if network speed is too low and data comes faster

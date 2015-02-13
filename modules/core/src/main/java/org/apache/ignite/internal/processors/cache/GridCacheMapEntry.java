@@ -195,7 +195,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         assert Thread.holdsLock(this);
 
         // In case we deal with GGFS cache, count updated data
-        if (cctx.cache().isIgfsDataCache() && cctx.kernalContext().ggfsHelper().isIgfsBlockKey(key())) {
+        if (cctx.cache().isIgfsDataCache() && cctx.kernalContext().igfsHelper().isIgfsBlockKey(key())) {
             int newSize = valueLength((byte[])val, valBytes != null ? GridCacheValueBytes.marshaled(valBytes) :
                 GridCacheValueBytes.nil());
             int oldSize = valueLength((byte[])this.val, this.val == null ? valueBytesUnlocked() :

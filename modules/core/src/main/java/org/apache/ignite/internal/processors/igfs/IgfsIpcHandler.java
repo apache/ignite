@@ -51,7 +51,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
     private final int bufSize; // Buffer size. Must not be less then file block size.
 
     /** Ggfs instance for this handler. */
-    private IgfsEx ggfs;
+    private IgfsEx igfs;
 
     /** Resource ID generator. */
     private AtomicLong rsrcIdGen = new AtomicLong();
@@ -62,16 +62,16 @@ class IgfsIpcHandler implements IgfsServerHandler {
     /**
      * Constructs GGFS IPC handler.
      *
-     * @param ggfsCtx Context.
+     * @param igfsCtx Context.
      */
-    IgfsIpcHandler(IgfsContext ggfsCtx) {
-        assert ggfsCtx != null;
+    IgfsIpcHandler(IgfsContext igfsCtx) {
+        assert igfsCtx != null;
 
-        ctx = ggfsCtx.kernalContext();
-        ggfs = ggfsCtx.igfs();
+        ctx = igfsCtx.kernalContext();
+        igfs = igfsCtx.igfs();
 
         // Keep buffer size multiple of block size so no extra byte array copies is performed.
-        bufSize = ggfsCtx.configuration().getBlockSize() * 2;
+        bufSize = igfsCtx.configuration().getBlockSize() * 2;
 
         log = ctx.log(IgfsIpcHandler.class);
     }
@@ -200,16 +200,16 @@ class IgfsIpcHandler implements IgfsServerHandler {
             throw new IgniteCheckedException("Failed to perform handshake because actual Grid name differs from expected " +
                 "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
 
-        if (!F.eq(ggfs.name(), req.ggfsName()))
+        if (!F.eq(igfs.name(), req.igfsName()))
             throw new IgniteCheckedException("Failed to perform handshake because actual GGFS name differs from expected " +
-                "[expected=" + req.ggfsName() + ", actual=" + ggfs.name() + ']');
+                "[expected=" + req.igfsName() + ", actual=" + igfs.name() + ']');
 
         IgfsControlResponse res = new IgfsControlResponse();
 
-        ggfs.clientLogDirectory(req.logDirectory());
+        igfs.clientLogDirectory(req.logDirectory());
 
-        IgfsHandshakeResponse handshake = new IgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(),
-            ggfs.groupBlockSize(), ggfs.globalSampling());
+        IgfsHandshakeResponse handshake = new IgfsHandshakeResponse(igfs.name(), igfs.proxyPaths(),
+            igfs.groupBlockSize(), igfs.globalSampling());
 
         res.handshake(handshake);
 
@@ -223,7 +223,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException If failed.
      */
     private IgfsMessage processStatusRequest() throws IgniteCheckedException {
-        IgfsStatus status = ggfs.globalSpace();
+        IgfsStatus status = igfs.globalSpace();
 
         IgfsControlResponse res = new IgfsControlResponse();
 
@@ -246,81 +246,81 @@ class IgfsIpcHandler implements IgfsServerHandler {
         IgfsPathControlRequest req = (IgfsPathControlRequest)msg;
 
         if (log.isDebugEnabled())
-            log.debug("Processing path control request [igfsName=" + ggfs.name() + ", req=" + req + ']');
+            log.debug("Processing path control request [igfsName=" + igfs.name() + ", req=" + req + ']');
 
         IgfsControlResponse res = new IgfsControlResponse();
 
         try {
             switch (cmd) {
                 case EXISTS:
-                    res.response(ggfs.exists(req.path()));
+                    res.response(igfs.exists(req.path()));
 
                     break;
 
                 case INFO:
-                    res.response(ggfs.info(req.path()));
+                    res.response(igfs.info(req.path()));
 
                     break;
 
                 case PATH_SUMMARY:
-                    res.response(ggfs.summary(req.path()));
+                    res.response(igfs.summary(req.path()));
 
                     break;
 
                 case UPDATE:
-                    res.response(ggfs.update(req.path(), req.properties()));
+                    res.response(igfs.update(req.path(), req.properties()));
 
                     break;
 
                 case RENAME:
-                    ggfs.rename(req.path(), req.destinationPath());
+                    igfs.rename(req.path(), req.destinationPath());
 
                     res.response(true);
 
                     break;
 
                 case DELETE:
-                    res.response(ggfs.delete(req.path(), req.flag()));
+                    res.response(igfs.delete(req.path(), req.flag()));
 
                     break;
 
                 case MAKE_DIRECTORIES:
-                    ggfs.mkdirs(req.path(), req.properties());
+                    igfs.mkdirs(req.path(), req.properties());
 
                     res.response(true);
 
                     break;
 
                 case LIST_PATHS:
-                    res.paths(ggfs.listPaths(req.path()));
+                    res.paths(igfs.listPaths(req.path()));
 
                     break;
 
                 case LIST_FILES:
-                    res.files(ggfs.listFiles(req.path()));
+                    res.files(igfs.listFiles(req.path()));
 
                     break;
 
                 case SET_TIMES:
-                    ggfs.setTimes(req.path(), req.accessTime(), req.modificationTime());
+                    igfs.setTimes(req.path(), req.accessTime(), req.modificationTime());
 
                     res.response(true);
 
                     break;
 
                 case AFFINITY:
-                    res.locations(ggfs.affinity(req.path(), req.start(), req.length()));
+                    res.locations(igfs.affinity(req.path(), req.start(), req.length()));
 
                     break;
 
                 case OPEN_READ: {
-                    IgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
-                        ggfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
+                    IgfsInputStreamAdapter ggfsIn = !req.flag() ? igfs.open(req.path(), bufSize) :
+                        igfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
                     long streamId = registerResource(ses, ggfsIn);
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS input stream for file read [igfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     IgfsFileInfo info = new IgfsFileInfo(ggfsIn.fileInfo(), null,
@@ -332,7 +332,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 }
 
                 case OPEN_CREATE: {
-                    long streamId = registerResource(ses, ggfs.create(
+                    long streamId = registerResource(ses, igfs.create(
                         req.path(),       // Path.
                         bufSize,          // Buffer size.
                         req.flag(),       // Overwrite if exists.
@@ -343,7 +343,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file create [igfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS output stream for file create [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -352,7 +352,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 }
 
                 case OPEN_APPEND: {
-                    long streamId = registerResource(ses, ggfs.append(
+                    long streamId = registerResource(ses, igfs.append(
                         req.path(),        // Path.
                         bufSize,           // Buffer size.
                         req.flag(),        // Create if absent.
@@ -360,7 +360,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file append [igfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS output stream for file append [igfsName=" + igfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -379,7 +379,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Finished processing path control request [igfsName=" + ggfs.name() + ", req=" + req +
+            log.debug("Finished processing path control request [igfsName=" + igfs.name() + ", req=" + req +
                 ", res=" + res + ']');
 
         return res;
@@ -409,7 +409,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 Closeable res = resource(ses, rsrcId);
 
                 if (log.isDebugEnabled())
-                    log.debug("Requested to close resource [igfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
+                    log.debug("Requested to close resource [igfsName=" + igfs.name() + ", rsrcId=" + rsrcId +
                         ", res=" + res + ']');
 
                 if (res == null)
@@ -430,11 +430,11 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
                 boolean success = ses.unregisterResource(rsrcId, res);
 
-                assert success : "Failed to unregister resource [igfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
+                assert success : "Failed to unregister resource [igfsName=" + igfs.name() + ", rsrcId=" + rsrcId +
                     ", res=" + res + ']';
 
                 if (log.isDebugEnabled())
-                    log.debug("Closed GGFS stream [igfsName=" + ggfs.name() + ", streamId=" + rsrcId +
+                    log.debug("Closed GGFS stream [igfsName=" + igfs.name() + ", streamId=" + rsrcId +
                         ", ses=" + ses + ']');
 
                 resp.response(true);
@@ -517,16 +517,16 @@ class IgfsIpcHandler implements IgfsServerHandler {
         // Do not generate affinity key for replicated or near-only cache.
         if (!req.colocate()) {
             if (log.isDebugEnabled())
-                log.debug("Will not generate affinity key for path control request [igfsName=" + ggfs.name() +
+                log.debug("Will not generate affinity key for path control request [igfsName=" + igfs.name() +
                     ", req=" + req + ']');
 
             return null;
         }
 
-        IgniteUuid key = ggfs.nextAffinityKey();
+        IgniteUuid key = igfs.nextAffinityKey();
 
         if (log.isDebugEnabled())
-            log.debug("Generated affinity key for path control request [igfsName=" + ggfs.name() +
+            log.debug("Generated affinity key for path control request [igfsName=" + igfs.name() +
                 ", req=" + req + ", key=" + key + ']');
 
         return key;

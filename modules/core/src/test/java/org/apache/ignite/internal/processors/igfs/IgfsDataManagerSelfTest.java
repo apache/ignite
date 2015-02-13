@@ -68,7 +68,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     private static final int BUSY_WAIT_SLEEP_INTERVAL = 200;
 
     /** GGFS block size. */
-    private static final int GGFS_BLOCK_SIZE = 64 * 1024;
+    private static final int IGFS_BLOCK_SIZE = 64 * 1024;
 
     /** Random numbers generator. */
     private final SecureRandom rnd = new SecureRandom();
@@ -99,7 +99,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
+        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
 
@@ -236,7 +236,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDataStoringRemainder() throws Exception {
-        final int blockSize = GGFS_BLOCK_SIZE;
+        final int blockSize = IGFS_BLOCK_SIZE;
 
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
@@ -322,7 +322,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testDataStoringFlush() throws Exception {
-        final int blockSize = GGFS_BLOCK_SIZE;
+        final int blockSize = IGFS_BLOCK_SIZE;
         final int writesCnt = 64;
 
         for (int i = 0; i < 10; i++) {

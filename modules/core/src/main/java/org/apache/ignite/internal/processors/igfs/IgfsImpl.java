@@ -74,7 +74,7 @@ public final class IgfsImpl implements IgfsEx {
     private IgfsConfiguration cfg;
 
     /** Ggfs context. */
-    private IgfsContext ggfsCtx;
+    private IgfsContext igfsCtx;
 
     /** Event storage manager. */
     private GridEventStorageManager evts;
@@ -121,19 +121,19 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * Creates GGFS instance with given context.
      *
-     * @param ggfsCtx Context.
+     * @param igfsCtx Context.
      * @throws IgniteCheckedException In case of error.
      */
-    IgfsImpl(IgfsContext ggfsCtx) throws IgniteCheckedException {
-        assert ggfsCtx != null;
+    IgfsImpl(IgfsContext igfsCtx) throws IgniteCheckedException {
+        assert igfsCtx != null;
 
-        this.ggfsCtx = ggfsCtx;
+        this.igfsCtx = igfsCtx;
 
-        cfg = ggfsCtx.configuration();
-        log = ggfsCtx.kernalContext().log(IgfsImpl.class);
-        evts = ggfsCtx.kernalContext().event();
-        meta = ggfsCtx.meta();
-        data = ggfsCtx.data();
+        cfg = igfsCtx.configuration();
+        log = igfsCtx.kernalContext().log(IgfsImpl.class);
+        evts = igfsCtx.kernalContext().event();
+        meta = igfsCtx.meta();
+        data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
         /* Default GGFS mode. */
@@ -161,8 +161,8 @@ public final class IgfsImpl implements IgfsEx {
 
         cfgModes.putAll(dfltModes);
 
-        if (ggfsCtx.configuration().getPathModes() != null) {
-            for (Map.Entry<String, IgfsMode> e : ggfsCtx.configuration().getPathModes().entrySet()) {
+        if (igfsCtx.configuration().getPathModes() != null) {
+            for (Map.Entry<String, IgfsMode> e : igfsCtx.configuration().getPathModes().entrySet()) {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
@@ -194,9 +194,9 @@ public final class IgfsImpl implements IgfsEx {
             modeRslvr.modesOrdered());
 
         // Check whether GGFS LRU eviction policy is set on data cache.
-        String dataCacheName = ggfsCtx.configuration().getDataCacheName();
+        String dataCacheName = igfsCtx.configuration().getDataCacheName();
 
-        for (CacheConfiguration cacheCfg : ggfsCtx.kernalContext().config().getCacheConfiguration()) {
+        for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
                 CacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 
@@ -209,8 +209,8 @@ public final class IgfsImpl implements IgfsEx {
 
         topic = F.isEmpty(name()) ? TOPIC_IGFS : TOPIC_IGFS.topic(name());
 
-        ggfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
-        ggfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        igfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
+        igfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /**
@@ -218,7 +218,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     private ClusterNode localNode() {
         if (locNode == null)
-            locNode = ggfsCtx.kernalContext().discovery().localNode();
+            locNode = igfsCtx.kernalContext().discovery().localNode();
 
         return locNode;
     }
@@ -249,8 +249,8 @@ public final class IgfsImpl implements IgfsEx {
         if (secondaryFs instanceof AutoCloseable)
             U.closeQuiet((AutoCloseable)secondaryFs);
 
-        ggfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
-        ggfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);
+        igfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
+        igfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);
 
         if (interrupted)
             Thread.currentThread().interrupt();
@@ -360,7 +360,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsContext context() {
-        return ggfsCtx;
+        return igfsCtx;
     }
 
     /**
@@ -400,7 +400,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
         if (enterBusy()) {
             try {
-                IgniteBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
+                IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
                     new IgfsGlobalSpaceTask(name()), null);
 
                 return new IgfsStatus(space.get1(), space.get2());
@@ -1104,7 +1104,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_OPENED_READ))
@@ -1125,7 +1125,7 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, info,
+                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 if (evts.isRecordable(EVT_IGFS_FILE_OPENED_READ))
@@ -1497,8 +1497,8 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 return new IgfsMetricsAdapter(
-                    ggfsCtx.data().spaceSize(),
-                    ggfsCtx.data().maxSpaceSize(),
+                    igfsCtx.data().spaceSize(),
+                    igfsCtx.data().maxSpaceSize(),
                     secondarySpaceSize,
                     sum.directoriesCount(),
                     sum.filesCount(),
@@ -1604,9 +1604,9 @@ public final class IgfsImpl implements IgfsEx {
             IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
             if (id == null)
-                return new GridFinishedFuture<Object>(ggfsCtx.kernalContext());
+                return new GridFinishedFuture<Object>(igfsCtx.kernalContext());
             else {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
 
                 GridFutureAdapter<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1625,7 +1625,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<Object>(ggfsCtx.kernalContext(), e);
+            return new GridFinishedFuture<Object>(igfsCtx.kernalContext(), e);
         }
     }
 
@@ -1637,10 +1637,10 @@ public final class IgfsImpl implements IgfsEx {
             if (log.isDebugEnabled())
                 log.debug("Constructing delete future for trash entries: " + ids);
 
-            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>(ggfsCtx.kernalContext());
+            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>(igfsCtx.kernalContext());
 
             for (IgniteUuid id : ids) {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
 
                 IgniteInternalFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1662,7 +1662,7 @@ public final class IgfsImpl implements IgfsEx {
             return resFut;
         }
         else
-            return new GridFinishedFuture<>(ggfsCtx.kernalContext());
+            return new GridFinishedFuture<>(igfsCtx.kernalContext());
     }
 
     /**
@@ -1715,7 +1715,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param attrs Attributes.
      * @return {@code True} in case GGFS with the same name exists among provided attributes
      */
-    private boolean sameGgfs(IgfsAttributes[] attrs) {
+    private boolean sameIgfs(IgfsAttributes[] attrs) {
         if (attrs != null) {
             String ggfsName = name();
 
@@ -1802,7 +1802,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
-        return ggfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
+        return igfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -1836,7 +1836,7 @@ public final class IgfsImpl implements IgfsEx {
     <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
-        return ggfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
+        return igfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
             new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -1997,7 +1997,7 @@ public final class IgfsImpl implements IgfsEx {
         IgfsEventAwareOutputStream(IgfsPath path, IgfsFileInfo fileInfo,
             IgniteUuid parentId, int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch)
             throws IgniteCheckedException {
-            super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
+            super(igfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
             metrics.incrementFilesOpenedForWrite();
         }
@@ -2065,13 +2065,13 @@ public final class IgfsImpl implements IgfsEx {
         private static final long serialVersionUID = 0L;
 
         /** GGFS name. */
-        private String ggfsName;
+        private String igfsName;
 
         /**
-         * @param ggfsName GGFS name.
+         * @param igfsName GGFS name.
          */
-        private IgfsGlobalSpaceTask(@Nullable String ggfsName) {
-            this.ggfsName = ggfsName;
+        private IgfsGlobalSpaceTask(@Nullable String igfsName) {
+            this.igfsName = igfsName;
         }
 
         /** {@inheritDoc} */
@@ -2085,7 +2085,7 @@ public final class IgfsImpl implements IgfsEx {
                     private Ignite g;
 
                     @Nullable @Override public IgniteBiTuple<Long, Long> execute() {
-                        IgniteFs ggfs = ((IgniteKernal)g).context().ggfs().ggfs(ggfsName);
+                        IgniteFs ggfs = ((IgniteKernal)g).context().igfs().igfs(igfsName);
 
                         if (ggfs == null)
                             return F.t(0L, 0L);
@@ -2133,14 +2133,14 @@ public final class IgfsImpl implements IgfsEx {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
             if (msg instanceof IgfsDeleteMessage) {
-                ClusterNode node = ggfsCtx.kernalContext().discovery().node(nodeId);
+                ClusterNode node = igfsCtx.kernalContext().discovery().node(nodeId);
 
                 if (node != null) {
-                    if (sameGgfs((IgfsAttributes[])node.attribute(ATTR_GGFS))) {
+                    if (sameIgfs((IgfsAttributes[]) node.attribute(ATTR_IGFS))) {
                         IgfsDeleteMessage msg0 = (IgfsDeleteMessage)msg;
 
                         try {
-                            msg0.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
+                            msg0.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to unmarshal message (will ignore): " + msg0, e);
@@ -2175,7 +2175,7 @@ public final class IgfsImpl implements IgfsEx {
             DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
             if (evt0.eventNode() != null) {
-                if (sameGgfs((IgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {
+                if (sameIgfs((IgfsAttributes[]) evt0.eventNode().attribute(ATTR_IGFS))) {
                     Collection<IgniteUuid> rmv = new HashSet<>();
 
                     for (Map.Entry<IgniteUuid, GridFutureAdapter<Object>> fut : delFuts.entrySet()) {

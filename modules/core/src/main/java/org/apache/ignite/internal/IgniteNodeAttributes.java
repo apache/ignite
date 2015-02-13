@@ -64,7 +64,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_GGFS = ATTR_PREFIX + ".igfs";
+    public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
     public static final String ATTR_MONGO = ATTR_PREFIX + ".mongo";

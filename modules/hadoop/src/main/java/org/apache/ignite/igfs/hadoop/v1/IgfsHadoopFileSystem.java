@@ -261,7 +261,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_IGFS_LOG_BATCH_SIZE);
 
-                clientLog = IgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = IgfsLogger.logger(uriAuthority, handshake.igfsName(), logDir, batchSize);
             }
             else
                 clientLog = IgfsLogger.disabledLogger();

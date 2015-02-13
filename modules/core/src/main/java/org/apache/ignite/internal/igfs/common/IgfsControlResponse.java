@@ -37,7 +37,7 @@ public class IgfsControlResponse extends IgfsMessage {
     private static final int ERR_GENERIC = 0;
 
     /** Generic GGFS error while performing operations. */
-    private static final int ERR_GGFS_GENERIC = 1;
+    private static final int ERR_IGFS_GENERIC = 1;
 
     /** Target file not found. */
     private static final int ERR_FILE_NOT_FOUND = 2;
@@ -64,22 +64,22 @@ public class IgfsControlResponse extends IgfsMessage {
     public static final int RES_TYPE_LONG = 1;
 
     /** Response is GridGgfsFile. */
-    public static final int RES_TYPE_GGFS_FILE = 2;
+    public static final int RES_TYPE_IGFS_FILE = 2;
 
     /** Response is GridGgfsFileInfo. */
-    public static final int RES_TYPE_GGFS_STREAM_DESCRIPTOR = 3;
+    public static final int RES_TYPE_IGFS_STREAM_DESCRIPTOR = 3;
 
     /** Response is GridGgfsPath. */
-    public static final int RES_TYPE_GGFS_PATH = 4;
+    public static final int RES_TYPE_IGFS_PATH = 4;
 
     /** Response is collection of GridGgfsFile. */
-    public static final int RES_TYPE_COL_GGFS_FILE = 5;
+    public static final int RES_TYPE_COL_IGFS_FILE = 5;
 
     /** Response is collection of GridGgfsPath. */
-    public static final int RES_TYPE_COL_GGFS_PATH = 6;
+    public static final int RES_TYPE_COL_IGFS_PATH = 6;
 
     /** Response is collection of GridGgfsBlockLocation. */
-    public static final int RES_TYPE_COL_GGFS_BLOCK_LOCATION = 7;
+    public static final int RES_TYPE_COL_IGFS_BLOCK_LOCATION = 7;
 
     /** Response is collection of GridGgfsBlockLocation. */
     public static final int RES_TYPE_BYTE_ARRAY = 8;
@@ -94,7 +94,7 @@ public class IgfsControlResponse extends IgfsMessage {
     public static final int RES_TYPE_STATUS = 11;
 
     /** Response is a path summary. */
-    public static final int RES_TYPE_GGFS_PATH_SUMMARY = 12;
+    public static final int RES_TYPE_IGFS_PATH_SUMMARY = 12;
 
     /** Message header size. */
     public static final int RES_HEADER_SIZE = 9;
@@ -160,7 +160,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void response(IgfsInputStreamDescriptor res) {
-        resType = RES_TYPE_GGFS_STREAM_DESCRIPTOR;
+        resType = RES_TYPE_IGFS_STREAM_DESCRIPTOR;
 
         this.res = res;
     }
@@ -169,7 +169,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void response(IgfsFile res) {
-        resType = RES_TYPE_GGFS_FILE;
+        resType = RES_TYPE_IGFS_FILE;
 
         this.res = res;
     }
@@ -178,7 +178,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void response(IgfsPath res) {
-        resType = RES_TYPE_GGFS_PATH;
+        resType = RES_TYPE_IGFS_PATH;
 
         this.res = res;
     }
@@ -187,7 +187,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Path summary response.
      */
     public void response(IgfsPathSummary res) {
-        resType = RES_TYPE_GGFS_PATH_SUMMARY;
+        resType = RES_TYPE_IGFS_PATH_SUMMARY;
 
         this.res = res;
     }
@@ -196,7 +196,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void files(Collection<IgfsFile> res) {
-        resType = RES_TYPE_COL_GGFS_FILE;
+        resType = RES_TYPE_COL_IGFS_FILE;
 
         this.res = res;
     }
@@ -205,7 +205,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void paths(Collection<IgfsPath> res) {
-        resType = RES_TYPE_COL_GGFS_PATH;
+        resType = RES_TYPE_COL_IGFS_PATH;
 
         this.res = res;
     }
@@ -214,7 +214,7 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param res Response.
      */
     public void locations(Collection<IgfsBlockLocation> res) {
-        resType = RES_TYPE_COL_GGFS_BLOCK_LOCATION;
+        resType = RES_TYPE_COL_IGFS_BLOCK_LOCATION;
 
         this.res = res;
     }
@@ -272,7 +272,7 @@ public class IgfsControlResponse extends IgfsMessage {
             throw new IgfsInvalidHdfsVersionException(err);
         else if (errCode == ERR_CORRUPTED_FILE)
             throw new IgfsCorruptedFileException(err);
-        else if (errCode == ERR_GGFS_GENERIC)
+        else if (errCode == ERR_IGFS_GENERIC)
             throw new IgfsException(err);
 
         throw new IgniteCheckedException(err);
@@ -346,7 +346,7 @@ public class IgfsControlResponse extends IgfsMessage {
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
         else if (e.hasCause(IgfsException.class))
-            return ERR_GGFS_GENERIC;
+            return ERR_IGFS_GENERIC;
 
         return ERR_GENERIC;
     }
@@ -401,10 +401,10 @@ public class IgfsControlResponse extends IgfsMessage {
 
                 break;
 
-            case RES_TYPE_GGFS_PATH:
-            case RES_TYPE_GGFS_PATH_SUMMARY:
-            case RES_TYPE_GGFS_FILE:
-            case RES_TYPE_GGFS_STREAM_DESCRIPTOR:
+            case RES_TYPE_IGFS_PATH:
+            case RES_TYPE_IGFS_PATH_SUMMARY:
+            case RES_TYPE_IGFS_FILE:
+            case RES_TYPE_IGFS_STREAM_DESCRIPTOR:
             case RES_TYPE_HANDSHAKE:
             case RES_TYPE_STATUS: {
                 out.writeBoolean(res != null);
@@ -415,9 +415,9 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_COL_GGFS_FILE:
-            case RES_TYPE_COL_GGFS_PATH:
-            case RES_TYPE_COL_GGFS_BLOCK_LOCATION: {
+            case RES_TYPE_COL_IGFS_FILE:
+            case RES_TYPE_COL_IGFS_PATH:
+            case RES_TYPE_COL_IGFS_BLOCK_LOCATION: {
                 Collection<Externalizable> items = (Collection<Externalizable>)res;
 
                 if (items != null) {
@@ -471,7 +471,7 @@ public class IgfsControlResponse extends IgfsMessage {
 
                 break;
 
-            case RES_TYPE_GGFS_PATH: {
+            case RES_TYPE_IGFS_PATH: {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
@@ -485,7 +485,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_GGFS_PATH_SUMMARY: {
+            case RES_TYPE_IGFS_PATH_SUMMARY: {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
@@ -499,7 +499,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_GGFS_FILE: {
+            case RES_TYPE_IGFS_FILE: {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
@@ -513,7 +513,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_GGFS_STREAM_DESCRIPTOR: {
+            case RES_TYPE_IGFS_STREAM_DESCRIPTOR: {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
@@ -555,7 +555,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_COL_GGFS_FILE: {
+            case RES_TYPE_COL_IGFS_FILE: {
                 Collection<IgfsFile> files = null;
 
                 int size = in.readInt();
@@ -577,7 +577,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_COL_GGFS_PATH: {
+            case RES_TYPE_COL_IGFS_PATH: {
                 Collection<IgfsPath> paths = null;
 
                 int size = in.readInt();
@@ -599,7 +599,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 break;
             }
 
-            case RES_TYPE_COL_GGFS_BLOCK_LOCATION: {
+            case RES_TYPE_COL_IGFS_BLOCK_LOCATION: {
                 Collection<IgfsBlockLocation> locations = null;
 
                 int size = in.readInt();

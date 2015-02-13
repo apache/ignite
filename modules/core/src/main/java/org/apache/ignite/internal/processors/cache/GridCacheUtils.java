@@ -1581,16 +1581,16 @@ public class GridCacheUtils {
     /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
-     * @return {@code True} in this is GGFS data or meta cache.
+     * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isGgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgfsConfiguration[] ggfsCfgs = cfg.getIgfsConfiguration();
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgfsConfiguration ggfsCfg : ggfsCfgs) {
-                // GGFS config probably has not been validated yet => possible NPE, so we check for null.
-                if (ggfsCfg != null &&
-                    (F.eq(cacheName, ggfsCfg.getDataCacheName()) || F.eq(cacheName, ggfsCfg.getMetaCacheName())))
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null &&
+                    (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))
                     return true;
             }
         }

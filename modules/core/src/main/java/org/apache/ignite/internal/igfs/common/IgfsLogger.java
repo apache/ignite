@@ -161,7 +161,7 @@ public final class IgfsLogger {
      *
      * @return Logger instance.
      */
-    public static IgfsLogger logger(String endpoint, String ggfsName, String dir, int batchSize) {
+    public static IgfsLogger logger(String endpoint, String igfsName, String dir, int batchSize) {
         if (endpoint == null)
             endpoint = "";
 
@@ -171,7 +171,7 @@ public final class IgfsLogger {
             IgfsLogger log = loggers.get(endpoint);
 
             if (log == null) {
-                log = new IgfsLogger(endpoint, ggfsName, dir, batchSize);
+                log = new IgfsLogger(endpoint, igfsName, dir, batchSize);
 
                 IgfsLogger log0 = loggers.putIfAbsent(endpoint, log);
 
@@ -199,11 +199,11 @@ public final class IgfsLogger {
      * Construct normal file logger.
      *
      * @param endpoint Endpoint.
-     * @param ggfsName GGFS name.
+     * @param igfsName IGFS name.
      * @param dir Log file path.
      * @param batchSize Batch size.
      */
-    private IgfsLogger(String endpoint, String ggfsName, String dir, int batchSize) {
+    private IgfsLogger(String endpoint, String igfsName, String dir, int batchSize) {
         A.notNull(endpoint, "endpoint cannot be null");
         A.notNull(dir, "dir cannot be null");
         A.ensure(batchSize > 0, "batch size cannot be negative");
@@ -220,7 +220,7 @@ public final class IgfsLogger {
         A.ensure(dirFile.isDirectory(), "dir must point to a directory");
         A.ensure(dirFile.exists(), "dir must exist");
 
-        file = new File(dirFile, "igfs-log-" + ggfsName + "-" + pid + ".csv");
+        file = new File(dirFile, "igfs-log-" + igfsName + "-" + pid + ".csv");
 
         entries = new ConcurrentLinkedDeque8<>();
 

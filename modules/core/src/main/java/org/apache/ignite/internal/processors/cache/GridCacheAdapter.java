@@ -169,7 +169,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private CacheAffinity<K> aff;
 
     /** Whether this cache is GGFS data cache. */
-    private boolean ggfsDataCache;
+    private boolean igfsDataCache;
 
     /** Whether this cache is Mongo data cache. */
     @SuppressWarnings("UnusedDeclaration")
@@ -180,10 +180,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private boolean mongoMetaCache;
 
     /** Current GGFS data cache size. */
-    private LongAdder ggfsDataCacheSize;
+    private LongAdder igfsDataCacheSize;
 
     /** Max space for GGFS. */
-    private long ggfsDataSpaceMax;
+    private long igfsDataSpaceMax;
 
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
@@ -237,18 +237,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         mxBean = new CacheMetricsMXBeanImpl(this);
 
-        IgfsConfiguration[] ggfsCfgs = gridCfg.getIgfsConfiguration();
+        IgfsConfiguration[] igfsCfgs = gridCfg.getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgfsConfiguration ggfsCfg : ggfsCfgs) {
-                if (F.eq(ctx.name(), ggfsCfg.getDataCacheName())) {
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                if (F.eq(ctx.name(), igfsCfg.getDataCacheName())) {
                     if (!ctx.isNear()) {
-                        ggfsDataCache = true;
-                        ggfsDataCacheSize = new LongAdder();
+                        igfsDataCache = true;
+                        igfsDataCacheSize = new LongAdder();
 
-                        ggfsDataSpaceMax = ggfsCfg.getMaxSpaceSize();
+                        igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
 
-                        if (ggfsDataSpaceMax == 0) {
+                        if (igfsDataSpaceMax == 0) {
                             long maxMem = Runtime.getRuntime().maxMemory();
 
                             // We leave JVM at least 500M of memory for correct operation.
@@ -259,7 +259,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                             long dfltMaxSize = (long)(0.8f * maxMem);
 
-                            ggfsDataSpaceMax = Math.min(dfltMaxSize, jvmFreeSize);
+                            igfsDataSpaceMax = Math.min(dfltMaxSize, jvmFreeSize);
                         }
                     }
 
@@ -4746,19 +4746,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
-        return ggfsDataCache;
+        return igfsDataCache;
     }
 
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceUsed() {
-        assert ggfsDataCache;
+        assert igfsDataCache;
 
-        return ggfsDataCacheSize.longValue();
+        return igfsDataCacheSize.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceMax() {
-        return ggfsDataSpaceMax;
+        return igfsDataSpaceMax;
     }
 
     /** {@inheritDoc} */
@@ -4777,9 +4777,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param delta Size delta.
      */
     public void onIgfsDataSizeChanged(long delta) {
-        assert ggfsDataCache;
+        assert igfsDataCache;
 
-        ggfsDataCacheSize.add(delta);
+        igfsDataCacheSize.add(delta);
     }
 
     /**

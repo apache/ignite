@@ -146,7 +146,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
         final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
         req.gridName(grid);
-        req.ggfsName(ggfs);
+        req.igfsName(ggfs);
         req.logDirectory(logDir);
 
         return io.send(req).chain(HANDSHAKE_RES).get();

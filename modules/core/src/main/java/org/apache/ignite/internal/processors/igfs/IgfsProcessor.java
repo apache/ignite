@@ -167,12 +167,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Collection<IgniteFs> ggfss() {
+    @Override public Collection<IgniteFs> igfss() {
         return F.viewReadOnly(ggfsCache.values(), CTX_TO_GGFS);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFs ggfs(@Nullable String name) {
+    @Override @Nullable public IgniteFs igfs(@Nullable String name) {
         IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
         return ggfsCtx == null ? null : ggfsCtx.igfs();
@@ -242,7 +242,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 ggfsCfg.isFragmentizerEnabled()));
         }
 
-        attrs.put(ATTR_GGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
+        attrs.put(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
     }
 
     /**
@@ -347,8 +347,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws IgniteCheckedException {
-        IgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_GGFS);
-        IgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_GGFS);
+        IgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_IGFS);
+        IgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_IGFS);
 
         if (F.isEmpty(locAttrs) || F.isEmpty(rmtAttrs))
             return;

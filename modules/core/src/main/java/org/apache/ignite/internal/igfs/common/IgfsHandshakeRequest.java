@@ -29,7 +29,7 @@ public class IgfsHandshakeRequest extends IgfsMessage {
     private String gridName;
 
     /** Expected GGFS name. */
-    private String ggfsName;
+    private String igfsName;
 
     /** Logger directory. */
     private String logDir;
@@ -61,15 +61,15 @@ public class IgfsHandshakeRequest extends IgfsMessage {
     /**
      * @return GGFS name.
      */
-    public String ggfsName() {
-        return ggfsName;
+    public String igfsName() {
+        return igfsName;
     }
 
     /**
-     * @param ggfsName GGFS name.
+     * @param igfsName GGFS name.
      */
-    public void ggfsName(String ggfsName) {
-        this.ggfsName = ggfsName;
+    public void igfsName(String igfsName) {
+        this.igfsName = igfsName;
     }
 
     /**

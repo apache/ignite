@@ -90,7 +90,7 @@ public class IgfsMarshaller {
                     IgfsHandshakeRequest req = (IgfsHandshakeRequest)msg;
 
                     U.writeString(out, req.gridName());
-                    U.writeString(out, req.ggfsName());
+                    U.writeString(out, req.igfsName());
                     U.writeString(out, req.logDirectory());
 
                     break;
@@ -206,7 +206,7 @@ public class IgfsMarshaller {
                     IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
                     req.gridName(U.readString(in));
-                    req.ggfsName(U.readString(in));
+                    req.igfsName(U.readString(in));
                     req.logDirectory(U.readString(in));
 
                     msg = req;

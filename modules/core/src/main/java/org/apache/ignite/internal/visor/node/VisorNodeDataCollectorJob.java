@@ -102,7 +102,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             for (GridCache cache : ignite.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName))) {
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
@@ -123,9 +123,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect GGFS. */
     private void ggfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgfsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().ggfs();
+            IgfsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().igfs();
 
-            for (IgniteFs ggfs : ggfsProc.ggfss()) {
+            for (IgniteFs ggfs : ggfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {

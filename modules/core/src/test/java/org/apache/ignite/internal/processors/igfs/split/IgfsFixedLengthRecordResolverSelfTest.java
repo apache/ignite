@@ -103,7 +103,7 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
         IgfsFileRange split;
 
         try (IgfsInputStream is = read()) {
-            split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
+            split = rslvr.resolveRecords(igfs, is, split(suggestedStart, suggestedLen));
         }
 
         assert split != null : "Split is null.";
@@ -129,7 +129,7 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
         IgfsFileRange split;
 
         try (IgfsInputStream is = read()) {
-            split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
+            split = rslvr.resolveRecords(igfs, is, split(suggestedStart, suggestedLen));
         }
 
         assert split == null : "Split is not null.";

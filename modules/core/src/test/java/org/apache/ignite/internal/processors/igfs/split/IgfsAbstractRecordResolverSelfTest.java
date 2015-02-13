@@ -46,17 +46,17 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** GGFS. */
-    protected static IgniteFs ggfs;
+    protected static IgniteFs igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(512);
-        ggfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(512);
+        igfsCfg.setDefaultMode(PRIMARY);
 
         CacheConfiguration dataCacheCfg = new CacheConfiguration();
 
@@ -87,11 +87,11 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         Ignite g = G.start(cfg);
 
-        ggfs = g.fileSystem("igfs");
+        igfs = g.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs.format();
+        igfs.format();
     }
 
     /**
@@ -153,7 +153,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     protected IgfsInputStream read() throws Exception {
-        return ggfs.open(FILE);
+        return igfs.open(FILE);
     }
 
     /**
@@ -163,7 +163,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     protected void write(byte[]... chunks) throws Exception {
-        IgfsOutputStream os =  ggfs.create(FILE, true);
+        IgfsOutputStream os =  igfs.create(FILE, true);
 
         if (chunks != null) {
             for (byte[] chunk : chunks)

@@ -29,7 +29,7 @@ public class IgfsHandshakeResponse implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** GGFS name. */
-    private String ggfsName;
+    private String igfsName;
 
     /** SECONDARY paths. */
     private IgfsPaths paths;
@@ -53,10 +53,10 @@ public class IgfsHandshakeResponse implements Externalizable {
      * @param paths Secondary paths.
      * @param blockSize Server default block size.
      */
-    public IgfsHandshakeResponse(String ggfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
+    public IgfsHandshakeResponse(String igfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
         assert paths != null;
 
-        this.ggfsName = ggfsName;
+        this.igfsName = igfsName;
         this.paths = paths;
         this.blockSize = blockSize;
         this.sampling = sampling;
@@ -65,8 +65,8 @@ public class IgfsHandshakeResponse implements Externalizable {
     /**
      * @return GGFS name.
      */
-    public String ggfsName() {
-        return ggfsName;
+    public String igfsName() {
+        return igfsName;
     }
 
     /**
@@ -92,7 +92,7 @@ public class IgfsHandshakeResponse implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ggfsName);
+        U.writeString(out, igfsName);
 
         paths.writeExternal(out);
 
@@ -108,7 +108,7 @@ public class IgfsHandshakeResponse implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ggfsName = U.readString(in);
+        igfsName = U.readString(in);
 
         paths = new IgfsPaths();
 

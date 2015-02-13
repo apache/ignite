@@ -69,7 +69,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         sysPool = ctx.getSystemExecutorService();
         pubPool = ctx.getExecutorService();
-        igfsPool = ctx.getGgfsExecutorService();
+        igfsPool = ctx.getIgfsExecutorService();
     }
 
     /** {@inheritDoc} */
