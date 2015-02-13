@@ -15,39 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.context;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
  */
-public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
-    /** Version. */
-    private final Object ver;
-
-    /**
-     * @param key Key.
-     * @param val Value (always null).
-     * @param ver Version.
-     */
-    public CacheVersionedEntryImpl(K key, V val, Object ver) {
-        super(key, val);
-
-        assert val == null;
-
-        this.ver = ver;
-    }
-
-    /**
-     * @return Version.
-     */
-    @Nullable public Object version() {
-        return ver;
+public class IgniteCacheReplicatedExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", ver=" + ver + ']';
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CLOCK;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

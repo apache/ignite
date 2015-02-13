@@ -44,6 +44,10 @@ import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.streamer.*;
 
 import javax.management.*;
+import javax.cache.processor.*;
+import javax.cache.expiry.*;
+import javax.cache.integration.*;
+import javax.cache.event.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -415,6 +419,9 @@ public class IgniteConfiguration {
     /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
+    /** User's class loader. */
+    private ClassLoader classLdr;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -457,6 +464,7 @@ public class IgniteConfiguration {
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
+        classLdr = cfg.getClassLoader();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
@@ -2332,6 +2340,24 @@ public class IgniteConfiguration {
      */
     public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;
+    }
+
+    /**
+     * Sets loader which will be used for instantiating execution context ({@link EntryProcessor EntryProcessors},
+     * {@link CacheEntryListener CacheEntryListeners}, {@link CacheLoader CacheLoaders} and
+     * {@link ExpiryPolicy ExpiryPolicys}).
+     *
+     * @param classLdr Class loader.
+     */
+    public void setClassLoader(ClassLoader classLdr) {
+        this.classLdr = classLdr;
+    }
+
+    /**
+     * @return User's class loader.
+     */
+    public ClassLoader getClassLoader() {
+        return classLdr;
     }
 
     /** {@inheritDoc} */

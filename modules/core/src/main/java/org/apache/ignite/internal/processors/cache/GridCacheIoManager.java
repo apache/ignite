@@ -500,7 +500,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyException("Failed to send message because node left grid [nodeId=" + nodeId +
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 
         send(n, msg, plc);
