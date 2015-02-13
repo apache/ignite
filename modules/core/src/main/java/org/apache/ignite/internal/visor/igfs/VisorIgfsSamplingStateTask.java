@@ -15,59 +15,63 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.ggfs;
+package org.apache.ignite.internal.visor.igfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
-
-import java.util.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Resets GGFS metrics.
+ * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<String, Boolean>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override protected VisorIgfsResetMetricsJob job(Set<String> arg) {
-        return new VisorIgfsResetMetricsJob(arg, debug);
-    }
-
     /**
-     * Job that reset GGFS metrics.
+     * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorIgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
+    private static class VisorIgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg GGFS names.
+         * Create job with given argument.
+         *
+         * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorIgfsResetMetricsJob(Set<String> arg, boolean debug) {
+        public VisorIgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> ggfsNames) {
-            for (String ggfsName: ggfsNames)
-                try {
-                    ignite.fileSystem(ggfsName).resetMetrics();
-                }
-                catch (IllegalArgumentException iae) {
-                    throw new IgniteException("Failed to reset metrics for GGFS: " + ggfsName, iae);
-                }
+        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
+            try {
+                ((IgfsEx)ignite.fileSystem(arg.get1())).globalSampling(arg.get2());
 
-            return null;
+                return null;
+            }
+            catch (IllegalArgumentException iae) {
+                throw new IgniteException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+            }
+            catch(IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorIgfsResetMetricsJob.class, this);
+            return S.toString(VisorIgfsSamplingStateJob.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VisorIgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
+        return new VisorIgfsSamplingStateJob(arg, debug);
     }
 }

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.closure;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
@@ -55,7 +53,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private final Executor pubPool;
 
     /** */
-    private final Executor ggfsPool;
+    private final Executor igfsPool;
 
     /** Lock to control execution after stop. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
@@ -71,7 +69,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         sysPool = ctx.getSystemExecutorService();
         pubPool = ctx.getExecutorService();
-        ggfsPool = ctx.getGgfsExecutorService();
+        igfsPool = ctx.getGgfsExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -689,8 +687,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             case SYSTEM_POOL:
                 return sysPool;
 
-            case GGFS_POOL:
-                return ggfsPool;
+            case IGFS_POOL:
+                return igfsPool;
 
             default:
                 throw new IllegalArgumentException("Invalid closure execution policy: " + plc);
@@ -711,7 +709,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             case SYSTEM_POOL:
                 return "system";
 
-            case GGFS_POOL:
+            case IGFS_POOL:
                 return "igfs";
 
             default:

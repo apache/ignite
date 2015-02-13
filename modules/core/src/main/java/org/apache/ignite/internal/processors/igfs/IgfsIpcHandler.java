@@ -130,7 +130,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                             // No need to pass data input for non-write-block commands.
                             return execute(ses, cmd, msg, null);
                         }
-                    }, GridClosurePolicy.GGFS_POOL);
+                    }, GridClosurePolicy.IGFS_POOL);
                 }
             }
 

@@ -15,56 +15,59 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.ggfs;
+package org.apache.ignite.internal.visor.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 
+import java.util.*;
+
 /**
- * Format GGFS instance.
+ * Resets GGFS metrics.
  */
 @GridInternal
-public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
+public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorIgfsFormatJob job(String arg) {
-        return new VisorIgfsFormatJob(arg, debug);
+    @Override protected VisorIgfsResetMetricsJob job(Set<String> arg) {
+        return new VisorIgfsResetMetricsJob(arg, debug);
     }
 
     /**
-     * Job that format GGFS.
+     * Job that reset GGFS metrics.
      */
-    private static class VisorIgfsFormatJob extends VisorJob<String, Void> {
+    private static class VisorIgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg GGFS name to format.
+         * @param arg GGFS names.
          * @param debug Debug flag.
          */
-        private VisorIgfsFormatJob(String arg, boolean debug) {
+        private VisorIgfsResetMetricsJob(Set<String> arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String ggfsName) {
-            try {
-                ignite.fileSystem(ggfsName).format();
-            }
-            catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to format IgniteFs: " + ggfsName, iae);
-            }
+        @Override protected Void run(Set<String> ggfsNames) {
+            for (String ggfsName: ggfsNames)
+                try {
+                    ignite.fileSystem(ggfsName).resetMetrics();
+                }
+                catch (IllegalArgumentException iae) {
+                    throw new IgniteException("Failed to reset metrics for GGFS: " + ggfsName, iae);
+                }
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorIgfsFormatJob.class, this);
+            return S.toString(VisorIgfsResetMetricsJob.class, this);
         }
     }
 }

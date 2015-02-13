@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 import org.apache.ignite.streamer.*;
 

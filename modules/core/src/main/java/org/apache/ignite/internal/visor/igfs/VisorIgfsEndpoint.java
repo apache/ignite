@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.ggfs;
+package org.apache.ignite.internal.visor.igfs;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

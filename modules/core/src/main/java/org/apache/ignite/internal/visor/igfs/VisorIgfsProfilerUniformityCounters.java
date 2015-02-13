@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.ggfs;
+package org.apache.ignite.internal.visor.igfs;
 
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.visor.ggfs.VisorIgfsProfiler.*;
+import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.*;
 
 /**
  * Class to support uniformity calculation.
