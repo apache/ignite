@@ -320,7 +320,6 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * Reloads entry from underlying storage.
      *
-     * @param filter Filter for entries.
      * @return Reloaded value.
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.

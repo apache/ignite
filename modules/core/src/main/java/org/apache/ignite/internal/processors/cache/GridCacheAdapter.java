@@ -694,8 +694,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                 Map<K, V> kvMap = fut.get();
 
-                Map<K, Boolean> res = U.newHashMap(kvMap.size());
-
                 for (Map.Entry<K, V> entry : kvMap.entrySet())
                     if (entry.getValue() == null)
                         return false;
@@ -713,7 +711,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         PeekModes modes = parsePeekModes(peekModes);
 
-        List<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
+        Collection<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
 
         if (ctx.isLocal()) {
             modes.primary = true;
@@ -2546,7 +2544,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     res = resMap.isEmpty() ? null : resMap.values().iterator().next();
                 }
 
-                return res != null ? res : new CacheInvokeResult<T>((T)null);
+                return res != null ? res : new CacheInvokeResult<>((T)null);
             }
         });
     }
@@ -4130,12 +4128,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         PeekModes modes = parsePeekModes(peekModes);
 
-        ClusterGroup grp;
-
-        if (modes.near)
-            grp = ctx.grid().forCacheNodes(name(), SIZE_NODES);
-        else
-            grp = ctx.grid().forDataNodes(name());
+        ClusterGroup grp = modes.near ? ctx.grid().forCacheNodes(name(), SIZE_NODES) : ctx.grid().forDataNodes(name());
 
         Collection<ClusterNode> nodes = grp.nodes();
 
@@ -4986,7 +4979,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Filters to evaluate.
      * @return Key set.
      */
-    public Set<K> keySet(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         return map.keySet(filter);
     }
 
