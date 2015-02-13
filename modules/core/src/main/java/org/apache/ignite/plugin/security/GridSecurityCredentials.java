@@ -30,11 +30,6 @@ import java.io.*;
  * are provided by {@link GridSecurityCredentialsProvider} which is specified on
  * client or node startup in configuration.
  * <p>
- * For grid node, security credentials provider is specified in
- * {@link GridPluginConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
- * configuration property. For Java clients, you can provide credentials in
- * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} method.
- * <p>
  * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
  * environment, possibly in encrypted format. Ignite comes with
