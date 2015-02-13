@@ -165,9 +165,6 @@ class VisorEventsCommand {
                 case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
                 case "sw" => arr ++= EVTS_SWAPSPACE.toList
                 case "di" => arr ++= EVTS_DISCOVERY.toList
-                case "au" => arr ++= EVTS_AUTHENTICATION.toList
-                case "az" => arr ++= EVTS_AUTHORIZATION.toList
-                case "se" => arr ++= EVTS_SECURE_SESSION.toList
                 case t => throw new IllegalArgumentException("Unknown event type: " + t)
             }
 
@@ -192,9 +189,6 @@ class VisorEventsCommand {
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t if EVTS_CACHE_PRELOAD.contains(t) => "cp"
-            case t if EVTS_AUTHENTICATION.contains(t) => "au"
-            case t if EVTS_AUTHORIZATION.contains(t) => "az"
-            case t if EVTS_SECURE_SESSION.contains(t) => "se"
         }
     }
 

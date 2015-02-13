@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.security;
+package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;

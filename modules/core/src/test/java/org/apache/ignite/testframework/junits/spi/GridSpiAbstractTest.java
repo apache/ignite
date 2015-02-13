@@ -19,7 +19,7 @@ package org.apache.ignite.testframework.junits.spi;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -38,6 +38,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -93,6 +94,68 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             tests.put(getClass(), data = new TestData<>());
 
         return data;
+    }
+
+    /**
+     * @return Allow all permission security set.
+     */
+    private GridSecurityPermissionSet getAllPermissionSet() {
+        return new GridSecurityPermissionSet() {
+            /** Serial version uid. */
+            private static final long serialVersionUID = 0L;
+
+            /** {@inheritDoc} */
+            @Override public boolean defaultAllowAll() {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+                return Collections.emptyMap();
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+                return Collections.emptyMap();
+            }
+
+            /** {@inheritDoc} */
+            @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+                return null;
+            }
+        };
+    }
+
+    /**
+     * @return Grid allow all security subject.
+     */
+    protected GridSecuritySubject getGridSecuritySubject(final GridSecuritySubjectType type, final UUID id) {
+        return new GridSecuritySubject() {
+            /** {@inheritDoc} */
+            @Override public UUID id() {
+                return id;
+            }
+
+            /** {@inheritDoc} */
+            @Override public GridSecuritySubjectType type() {
+                return type;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object login() {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public InetSocketAddress address() {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public GridSecurityPermissionSet permissions() {
+                return getAllPermissionSet();
+            }
+        };
     }
 
     /**
@@ -319,10 +382,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
-                    GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                subj.permissions(new GridAllowAllPermissionSet());
+                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
                 return new GridSecurityContext(subj);
             }

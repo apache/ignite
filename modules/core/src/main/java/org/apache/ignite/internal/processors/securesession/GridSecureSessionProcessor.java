@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.securesession;
+package org.apache.ignite.internal.processors.securesession;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * This interface defines a grid secure session manager.
+ * This interface defines a grid secure session processor.
  */
 public interface GridSecureSessionProcessor extends GridProcessor {
     /**
@@ -53,8 +53,7 @@ public interface GridSecureSessionProcessor extends GridProcessor {
         @Nullable Object params) throws IgniteCheckedException;
 
     /**
-     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
-     *      implementation, {@code false} otherwise.
+     * @return GridSecureSessionProcessor is enable.
      */
     public boolean enabled();
 }

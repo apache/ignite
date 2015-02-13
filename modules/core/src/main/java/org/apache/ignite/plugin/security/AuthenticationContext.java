@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.authentication;
-
-import org.apache.ignite.plugin.security.*;
+package org.apache.ignite.plugin.security;
 
 import java.net.*;
 import java.util.*;
@@ -25,7 +23,7 @@ import java.util.*;
 /**
  * Authentication context.
  */
-public class AuthenticationContextAdapter implements AuthenticationContext {
+public class AuthenticationContext {
     /** Subject type. */
     private GridSecuritySubjectType subjType;
 
@@ -43,7 +41,7 @@ public class AuthenticationContextAdapter implements AuthenticationContext {
      *
      * @return Subject type.
      */
-    @Override public GridSecuritySubjectType subjectType() {
+    public GridSecuritySubjectType subjectType() {
         return subjType;
     }
 
@@ -61,7 +59,7 @@ public class AuthenticationContextAdapter implements AuthenticationContext {
      *
      * @return Subject ID.
      */
-    @Override public UUID subjectId() {
+    public UUID subjectId() {
         return subjId;
     }
 
@@ -79,7 +77,7 @@ public class AuthenticationContextAdapter implements AuthenticationContext {
      *
      * @return Security credentials.
      */
-    @Override public GridSecurityCredentials credentials() {
+    public GridSecurityCredentials credentials() {
         return credentials;
     }
 
@@ -97,7 +95,7 @@ public class AuthenticationContextAdapter implements AuthenticationContext {
      *
      * @return Subject network address.
      */
-    @Override public InetSocketAddress address() {
+    public InetSocketAddress address() {
         return addr;
     }
 

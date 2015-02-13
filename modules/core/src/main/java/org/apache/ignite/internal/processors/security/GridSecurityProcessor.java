@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.security;
+package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * This interface defines a grid authentication manager.
+ * This interface defines a grid authentication processor.
  */
 public interface GridSecurityProcessor extends GridProcessor {
     /**
@@ -92,8 +91,7 @@ public interface GridSecurityProcessor extends GridProcessor {
     public void onSessionExpired(UUID subjId);
 
     /**
-     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
-     *      implementation, {@code false} otherwise.
+     * @return GridSecurityProcessor is enable.
      */
     public boolean enabled();
 }

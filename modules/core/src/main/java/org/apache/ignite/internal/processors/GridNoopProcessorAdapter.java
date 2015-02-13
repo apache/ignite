@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers;
+package org.apache.ignite.internal.processors;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * No-op {@link GridManager} adapter.
+ * No-op {@link GridProcessor} adapter.
  */
-public class GridNoopManagerAdapter implements GridProcessor {
+public class GridNoopProcessorAdapter implements GridProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public GridNoopManagerAdapter(GridKernalContext ctx) {
+    public GridNoopProcessorAdapter(GridKernalContext ctx) {
         // No-op.
     }
 

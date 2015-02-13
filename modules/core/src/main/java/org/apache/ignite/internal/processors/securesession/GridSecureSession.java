@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.securesession;
+package org.apache.ignite.internal.processors.securesession;
 
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.security.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Secure session object.
@@ -50,5 +51,10 @@ public class GridSecureSession {
      */
     public byte[] sessionToken() {
         return sesTok;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSecureSession.class, this);
     }
 }
