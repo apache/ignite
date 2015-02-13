@@ -26,10 +26,10 @@ import org.apache.ignite.testframework.junits.common.*;
  */
 public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     /** IgniteFs config with shared memory IPC. */
-    private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
+    private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/igfs-shmem.xml";
 
     /** IgniteFs config with loopback IPC. */
-    private static final String IGNITEFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
+    private static final String IGNITEFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
 
     /**
      * @throws Exception If failed.
