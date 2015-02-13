@@ -509,31 +509,31 @@
             </plugin>
 
             <!-- ensure proper cleanup after install -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>flatten.clean.after</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}</directory>
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-clean-plugin</artifactId>-->
+                <!--<inherited>false</inherited>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>flatten.clean.after</id>-->
+                        <!--<phase>install</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>clean</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--<excludeDefaultDirectories>true</excludeDefaultDirectories>-->
+                            <!--<filesets>-->
+                                <!--<fileset>-->
+                                    <!--<directory>${project.basedir}</directory>-->
                                     <!--<includes>-->
                                         <!--<include>**/pom-installed.xml</include>-->
                                     <!--</includes>-->
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+                                <!--</fileset>-->
+                            <!--</filesets>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
