@@ -1034,7 +1034,7 @@ public interface EventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see SecureSessionEvent
+     * @see IgniteFsEvent
      */
     public static final int[] EVTS_GGFS = {
         EVT_GGFS_FILE_CREATED,
