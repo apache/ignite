@@ -1182,23 +1182,16 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     ) {
         assert optimistic();
 
-        if (expiryPlc == null)
-            expiryPlc = ctx.expiry();
+        IgniteCacheExpiryPolicy plc = ctx.cache().expiryPolicy(expiryPlc);
 
-        if (expiryPlc != null) {
-            IgniteCacheExpiryPolicy plc = ctx.cache().accessExpiryPolicy(expiryPlc);
+        if (plc != null) {
+            if (accessMap == null)
+                accessMap = new HashMap<>();
 
-            if (plc != null) {
-                if (accessMap == null)
-                    accessMap = new HashMap<>();
-
-                accessMap.put(key, plc);
-            }
-
-            return plc;
+            accessMap.put(key, plc);
         }
 
-        return null;
+        return plc;
     }
 
     /**

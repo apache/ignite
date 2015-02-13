@@ -26,10 +26,10 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -37,11 +37,8 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import javax.cache.processor.*;
@@ -205,8 +202,8 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS pool size. */
-    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
+    /** IGFS pool size. */
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -301,12 +298,6 @@ public class IgniteConfiguration {
     /** Collision SPI. */
     private CollisionSpi colSpi;
 
-    /** Authentication SPI. */
-    private AuthenticationSpi authSpi;
-
-    /** Secure session SPI. */
-    private SecureSessionSpi sesSpi;
-
     /** Deployment SPI. */
     private DeploymentSpi deploySpi;
 
@@ -392,14 +383,11 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** GGFS configuration. */
-    private IgniteFsConfiguration[] ggfsCfg;
+    /** IGFS configuration. */
+    private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
-
-    /** Security credentials. */
-    private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
@@ -447,8 +435,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        authSpi = cfg.getAuthenticationSpi();
-        sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
@@ -473,8 +459,8 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
+        igfsCfg = cfg.getIgfsConfiguration();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -498,8 +484,6 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
-        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -922,7 +906,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.apache.ignite.logger.log4j.IgniteLog4jLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j.Log4JLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -994,14 +978,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing GGFS messages.
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
      * <p>
      * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool size to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for IGFS outgoing message sending.
      */
-    public int getGgfsThreadPoolSize() {
-        return ggfsPoolSize;
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
     }
 
     /**
@@ -1045,13 +1029,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Set thread pool size that will be used to process outgoing GGFS messages.
+     * Set thread pool size that will be used to process outgoing IGFS messages.
      *
-     * @param poolSize Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsThreadPoolSize()
+     * @param poolSize Executor service to use for outgoing IGFS messages.
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
-    public void setGgfsThreadPoolSize(int poolSize) {
-        this.ggfsPoolSize = poolSize;
+    public void setIgfsThreadPoolSize(int poolSize) {
+        this.igfsPoolSize = poolSize;
     }
 
     /**
@@ -1686,48 +1670,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} will be used.
-     *
-     * @return Grid authentication SPI implementation or {@code null} to use default implementation.
-     */
-    public AuthenticationSpi getAuthenticationSpi() {
-        return authSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi}.
-     *
-     * @param authSpi Fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getAuthenticationSpi()
-     */
-    public void setAuthenticationSpi(AuthenticationSpi authSpi) {
-        this.authSpi = authSpi;
-    }
-
-    /**
-     * Should return fully configured secure session SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} will be used.
-     *
-     * @return Grid secure session SPI implementation or {@code null} to use default implementation.
-     */
-    public SecureSessionSpi getSecureSessionSpi() {
-        return sesSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi}.
-     *
-     * @param sesSpi Fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getSecureSessionSpi()
-     */
-    public void setSecureSessionSpi(SecureSessionSpi sesSpi) {
-        this.sesSpi = sesSpi;
-    }
-
-    /**
      * Should return fully configured deployment SPI implementation. If not provided,
      * {@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi} will be used.
      *
@@ -2138,21 +2080,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets GGFS configurations.
+     * Gets IGFS configurations.
      *
-     * @return GGFS configurations.
+     * @return IGFS configurations.
      */
-    public IgniteFsConfiguration[] getGgfsConfiguration() {
-        return ggfsCfg;
+    public IgfsConfiguration[] getIgfsConfiguration() {
+        return igfsCfg;
     }
 
     /**
-     * Sets GGFS configurations.
+     * Sets IGFS configurations.
      *
-     * @param ggfsCfg GGFS configurations.
+     * @param igfsCfg IGFS configurations.
      */
-    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
-        this.ggfsCfg = ggfsCfg;
+    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
     }
 
     /**
@@ -2189,24 +2131,6 @@ public class IgniteConfiguration {
      */
     public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
         this.hadoopCfg = hadoopCfg;
-    }
-
-    /**
-     * Gets security credentials.
-     *
-     * @return Security credentials.
-     */
-    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
-        return securityCred;
-    }
-
-    /**
-     * Sets security credentials.
-     *
-     * @param securityCred Security credentials.
-     */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
-        this.securityCred = securityCred;
     }
 
     /**

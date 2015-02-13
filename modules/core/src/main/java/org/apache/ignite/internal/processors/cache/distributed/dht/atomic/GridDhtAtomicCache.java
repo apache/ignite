@@ -885,7 +885,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final GetExpiryPolicy expiry = skipVals ? null : accessExpiryPolicy(expiryPlc);
+        final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
@@ -1099,13 +1099,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        ExpiryPolicy plc = req.expiry() != null ? req.expiry() : ctx.expiry();
+                        expiry = expiryPolicy(req.expiry());
 
                         if (plc != null)
                             expiry = new UpdateExpiryPolicy(plc);
 
-                        GridCacheReturn<Object> retVal = null;
-                        
                         if (keys.size() > 1 &&                             // Several keys ...
                             writeThrough() &&                              // and store is enabled ...
                             !ctx.store().isLocalStore() &&                 // and this is not local store ...
@@ -2935,95 +2933,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             pendingResponses.remove(nodeId, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class UpdateExpiryPolicy implements IgniteCacheExpiryPolicy {
-        /** */
-        private final ExpiryPolicy plc;
-
-        /** */
-        private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
-
-        /** */
-        private Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrsMap;
-
-        /**
-         * @param plc Expiry policy.
-         */
-        private UpdateExpiryPolicy(ExpiryPolicy plc) {
-            assert plc != null;
-
-            this.plc = plc;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forCreate() {
-            return toTtl(plc.getExpiryForCreation());
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forUpdate() {
-            return toTtl(plc.getExpiryForUpdate());
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forAccess() {
-            return toTtl(plc.getExpiryForAccess());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void ttlUpdated(Object key,
-            byte[] keyBytes,
-            GridCacheVersion ver,
-            @Nullable Collection<UUID> rdrs) {
-            if (entries == null)
-                entries = new HashMap<>();
-
-            IgniteBiTuple<byte[], GridCacheVersion> t = new IgniteBiTuple<>(keyBytes, ver);
-
-            entries.put(key, t);
-
-            if (rdrs != null && !rdrs.isEmpty()) {
-                if (rdrsMap == null)
-                    rdrsMap = new HashMap<>();
-
-                for (UUID nodeId : rdrs) {
-                    Collection<IgniteBiTuple<byte[], GridCacheVersion>> col = rdrsMap.get(nodeId);
-
-                    if (col == null)
-                        rdrsMap.put(nodeId, col = new ArrayList<>());
-
-                    col.add(t);
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            if (entries != null)
-                entries.clear();
-
-            if (rdrsMap != null)
-                rdrsMap.clear();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
-            return entries;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
-            return rdrsMap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(UpdateExpiryPolicy.class, this);
         }
     }
 }

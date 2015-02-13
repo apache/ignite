@@ -605,11 +605,16 @@ public interface GridCacheEntryEx<K, V> {
      * @param offheap Read from offheap flag.
      * @param swap Read from swap flag.
      * @param topVer Topology version.
+     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
+    @Nullable public V peek(boolean heap,
+        boolean offheap,
+        boolean swap,
+        long topVer,
+        @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**

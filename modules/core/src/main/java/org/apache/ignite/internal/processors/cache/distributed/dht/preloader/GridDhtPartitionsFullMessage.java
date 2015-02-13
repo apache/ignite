@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -48,12 +47,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /** Topology version. */
     private long topVer;
-
-    @GridDirectTransient
-    private List<List<ClusterNode>> affAssignment;
-
-    /** */
-    private byte[] affAssignmentBytes;
 
     /**
      * Required by {@link Externalizable}.
@@ -98,9 +91,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         if (parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
-
-        if (affAssignment != null)
-            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
     }
 
     /**
@@ -117,29 +107,12 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         this.topVer = topVer;
     }
 
-    /**
-     * @return Affinity assignment for topology version.
-     */
-    public List<List<ClusterNode>> affinityAssignment() {
-        return affAssignment;
-    }
-
-    /**
-     * @param affAssignment Affinity assignment for topology version.
-     */
-    public void affinityAssignment(List<List<ClusterNode>> affAssignment) {
-        this.affAssignment = affAssignment;
-    }
-
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
-
-        if (affAssignmentBytes != null)
-            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -161,8 +134,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         _clone.parts = parts;
         _clone.partsBytes = partsBytes;
         _clone.topVer = topVer;
-        _clone.affAssignment = affAssignment;
-        _clone.affAssignmentBytes = affAssignmentBytes;
     }
 
     /** {@inheritDoc} */
@@ -182,18 +153,12 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (state) {
             case 5:
-                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
-                    return false;
-
-                state++;
-
-            case 6:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
                 state++;
 
-            case 7:
+            case 6:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -214,14 +179,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (state) {
             case 5:
-                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 6:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -229,7 +186,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
                 state++;
 
-            case 7:
+            case 6:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())

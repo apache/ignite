@@ -835,8 +835,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
+    @Nullable @Override public V peek(boolean heap,
+        boolean offheap,
+        boolean swap,
+        long topVer,
+        @Nullable IgniteCacheExpiryPolicy plc)
+    {
         return null;
     }
 }

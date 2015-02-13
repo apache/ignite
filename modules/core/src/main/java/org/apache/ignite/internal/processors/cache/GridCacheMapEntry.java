@@ -194,8 +194,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     protected void value(@Nullable V val, @Nullable byte[] valBytes) {
         assert Thread.holdsLock(this);
 
-        // In case we deal with GGFS cache, count updated data
-        if (cctx.cache().isGgfsDataCache() && cctx.kernalContext().ggfsHelper().isGgfsBlockKey(key())) {
+        // In case we deal with IGFS cache, count updated data
+        if (cctx.cache().isIgfsDataCache() && cctx.kernalContext().igfsHelper().isIgfsBlockKey(key())) {
             int newSize = valueLength((byte[])val, valBytes != null ? GridCacheValueBytes.marshaled(valBytes) :
                 GridCacheValueBytes.nil());
             int oldSize = valueLength((byte[])this.val, this.val == null ? valueBytesUnlocked() :
@@ -204,7 +204,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             int delta = newSize - oldSize;
 
             if (delta != 0 && !cctx.isNear())
-                cctx.cache().onGgfsDataSizeChanged(delta);
+                cctx.cache().onIgfsDataSizeChanged(delta);
         }
 
         if (!isOffHeapValuesOnly()) {
@@ -257,7 +257,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * Isolated method to get length of GGFS block.
+     * Isolated method to get length of IGFS block.
      *
      * @param val Value.
      * @param valBytes Value bytes.
@@ -2700,14 +2700,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Nullable @Override public V peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer)
+        long topVer,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, IgniteCheckedException
     {
         assert heap || offheap || swap;
 
         try {
             if (heap) {
-                GridTuple<V> val = peekGlobal(false, topVer, null);
+                GridTuple<V> val = peekGlobal(false, topVer, null, expiryPlc);
 
                 if (val != null)
                     return val.get();
@@ -2790,13 +2791,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return peekTx(failFast, filter, tx);
 
             case GLOBAL:
-                return peekGlobal(failFast, topVer, filter);
+                return peekGlobal(failFast, topVer, filter, null);
 
             case NEAR_ONLY:
-                return peekGlobal(failFast, topVer, filter);
+                return peekGlobal(failFast, topVer, filter, null);
 
             case PARTITIONED_ONLY:
-                return peekGlobal(failFast, topVer, filter);
+                return peekGlobal(failFast, topVer, filter, null);
 
             case SMART:
                 /*
@@ -2810,7 +2811,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                  * may have enlisted into the same transaction and that's why we pass 'true'
                  * to 'e.peek(true)' method in this case.
                  */
-                return tx == null || tx.state() != ACTIVE ? peekGlobal(failFast, topVer, filter) :
+                return tx == null || tx.state() != ACTIVE ? peekGlobal(failFast, topVer, filter, null) :
                     peekTxThenGlobal(failFast, filter, tx);
 
             case SWAP:
@@ -2901,7 +2902,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        return peekGlobal(failFast, topVer, filter);
+        return peekGlobal(failFast, topVer, filter, null);
     }
 
     /**
@@ -2921,14 +2922,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param failFast Fail fast flag.
      * @param topVer Topology version.
      * @param filter Filter.
+     * @param expiryPlc Optional expiry policy.
      * @return Peeked value.
      * @throws GridCacheFilterFailedException If filter failed.
      * @throws GridCacheEntryRemovedException If entry got removed.
      * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable private GridTuple<V> peekGlobal(boolean failFast, long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    @Nullable private GridTuple<V> peekGlobal(boolean failFast,
+        long topVer,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
+        )
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
@@ -2951,6 +2956,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     ver = this.ver;
                     val = rawGetOrUnmarshalUnlocked(false);
+
+                    if (val != null && expiryPlc != null) {
+                        long ttl = expiryPlc.forAccess();
+
+                        if (ttl != CU.TTL_NOT_CHANGED) {
+                            updateTtl(ttl);
+
+                            expiryPlc.ttlUpdated(key(),
+                                getOrMarshalKeyBytes(),
+                                version(),
+                                hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
+                        }
+                    }
                 }
 
                 if (!cctx.isAll(wrap(), filter))

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.hadoop;
 import com.google.common.base.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 
 import java.io.*;
 import java.util.*;
@@ -36,8 +36,8 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     /** Output path. */
     protected static final String PATH_OUTPUT = "/output";
 
-    /** GGFS instance. */
-    protected GridGgfsEx ggfs;
+    /** IGFS instance. */
+    protected IgfsEx igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -53,7 +53,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (GridGgfsEx)startGrids(gridCount()).fileSystem(ggfsName);
+        igfs = (IgfsEx)startGrids(gridCount()).fileSystem(igfsName);
     }
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -98,7 +98,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
         }
 
         //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(ggfs.create(new IgniteFsPath(path), true));
+        PrintWriter testInputFileWriter = new PrintWriter(igfs.create(new IgfsPath(path), true));
 
         int j = 0;
 
@@ -122,7 +122,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
      * @throws Exception If could not read the file.
      */
     protected String readAndSortFile(String fileName) throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(new IgniteFsPath(fileName))));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(new IgfsPath(fileName))));
 
         List<String> list = new ArrayList<>();
 

@@ -577,11 +577,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
+    @Override public boolean isIgfsDataCache() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isGgfsDataCache();
+            return delegate.isIgfsDataCache();
         }
         finally {
             gate.leave(prev);
@@ -589,11 +589,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
+    @Override public long igfsDataSpaceUsed() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.ggfsDataSpaceUsed();
+            return delegate.igfsDataSpaceUsed();
         }
         finally {
             gate.leave(prev);
@@ -601,11 +601,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
+    @Override public long igfsDataSpaceMax() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.ggfsDataSpaceMax();
+            return delegate.igfsDataSpaceMax();
         }
         finally {
             gate.leave(prev);
@@ -1244,11 +1244,15 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Nullable @Override public V localPeek(K key,
+        CachePeekMode[] peekModes,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws IgniteCheckedException
+    {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.localPeek(key, peekModes);
+            return delegate.localPeek(key, peekModes, plc);
         }
         finally {
             gate.leave(prev);

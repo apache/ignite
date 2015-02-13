@@ -194,7 +194,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : accessExpiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
             skipVals);
     }
 
@@ -238,7 +238,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             validateCacheKeys(keys);
 
         if (expiryPlc == null)
-            expiryPlc = accessExpiryPolicy(ctx.expiry());
+            expiryPlc = expiryPolicy(null);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {

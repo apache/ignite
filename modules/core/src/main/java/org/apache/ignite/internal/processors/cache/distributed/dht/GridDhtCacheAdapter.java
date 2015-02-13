@@ -618,7 +618,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         long ttl = req.accessTtl();
 
-        final GetExpiryPolicy expiryPlc = GetExpiryPolicy.forTtl(ttl);
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
 
         IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId,

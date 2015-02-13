@@ -576,17 +576,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         UUID subjId = ctx.subjectIdPerCall(null, prj);
 
-        ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
-
-        if (expiryPlc == null)
-            expiryPlc = ctx.expiry();
-
         Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
 
         if (keyCheck)
             validateCacheKeys(keys);
 
-        final GetExpiryPolicy expiry = accessExpiryPolicy(expiryPlc);
+        final IgniteCacheExpiryPolicy expiry = expiryPolicy(prj != null ? prj.expiry() : null);
 
         boolean success = true;
 

@@ -24,16 +24,16 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs:///</value>
+        <value>igfs:///</value>
     </property>
 
     <property>
-        <name>fs.ggfs.impl</name>
-        <value>org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <name>fs.igfs.impl</name>
+        <value>org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem</value>
     </property>
 
     <property>
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
-        <value>org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <name>fs.AbstractFileSystem.igfs.impl</name>
+        <value>org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem</value>
     </property>
 </configuration>

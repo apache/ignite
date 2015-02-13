@@ -39,7 +39,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
 
 /**
@@ -117,7 +117,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
             }
 
             // For map-reduce jobs prefer local writes.
-            jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
+            jobConf.setBooleanIfUnset(PARAM_IGFS_PREFER_LOCAL_WRITES, true);
 
             jobCtx = new JobContextImpl(jobConf, new JobID(jobId.globalId().toString(), jobId.localId()));
 

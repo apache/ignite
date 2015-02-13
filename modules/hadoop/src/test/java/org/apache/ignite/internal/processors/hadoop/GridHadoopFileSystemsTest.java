@@ -46,7 +46,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -149,12 +149,12 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
     }
 
     /**
-     * Test GGFS multi-thread working directory.
+     * Test IGFS multi-thread working directory.
      *
      * @throws Exception If fails.
      */
-    public void testGgfs() throws Exception {
-        testFileSystem(URI.create(ggfsScheme()));
+    public void testIgfs() throws Exception {
+        testFileSystem(URI.create(igfsScheme()));
     }
 
     /**
