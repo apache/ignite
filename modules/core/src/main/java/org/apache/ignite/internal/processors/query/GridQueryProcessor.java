@@ -76,7 +76,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private Map<Integer, String> portableIds;
 
     /** Type resolvers per space name. */
-    private Map<String, CacheQueryTypeResolver> typeResolvers = new HashMap<>();
+    private Map<String,QueryTypeResolver> typeResolvers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -280,7 +280,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id = null;
 
-            CacheQueryTypeResolver rslvr = typeResolvers.get(space);
+            QueryTypeResolver rslvr = typeResolvers.get(space);
 
             if (rslvr != null) {
                 String typeName = rslvr.resolveTypeName(key, val);

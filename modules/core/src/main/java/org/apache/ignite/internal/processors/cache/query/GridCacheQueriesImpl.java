@@ -206,7 +206,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
     }
 

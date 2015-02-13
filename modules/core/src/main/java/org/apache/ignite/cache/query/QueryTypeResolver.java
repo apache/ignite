@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 /**
  * Interface allowing to override table name for portable objects stored in cache.
  */
-public interface CacheQueryTypeResolver {
+public interface QueryTypeResolver {
     /**
      * Allows to override type name for portable objects being stored in cache.
      *

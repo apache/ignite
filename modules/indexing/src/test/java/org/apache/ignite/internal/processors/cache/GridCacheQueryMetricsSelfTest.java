@@ -93,7 +93,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         // Execute query.
         qry.execute().get();
 
-        CacheQueryMetrics m = cache.queries().metrics();
+        QueryMetrics m = cache.queries().metrics();
 
         assert m != null;
 
@@ -135,7 +135,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         // Execute.
         qry.execute().get();
 
-        CacheQueryMetrics m = qry.metrics();
+        QueryMetrics m = qry.metrics();
 
         info("Metrics: " + m);
 

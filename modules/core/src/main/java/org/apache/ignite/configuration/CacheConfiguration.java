@@ -1593,7 +1593,6 @@ public class CacheConfiguration extends MutableConfiguration {
      * Sets query configuration.
      *
      * @param qryCfg Query configuration.
-     * @see org.apache.ignite.cache.query.CacheQueryConfiguration
      */
     public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;

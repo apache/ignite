@@ -1726,7 +1726,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @return Cache queries metrics.
      */
-    public CacheQueryMetrics metrics() {
+    public QueryMetrics metrics() {
         return metrics.copy();
     }
 

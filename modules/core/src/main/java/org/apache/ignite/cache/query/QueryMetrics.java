@@ -22,7 +22,7 @@ package org.apache.ignite.cache.query;
  * particular query via {@link CacheQuery#metrics()} method or accumulated metrics
  * for all queries via {@link CacheQueries#metrics()}.
  */
-public interface CacheQueryMetrics {
+public interface QueryMetrics {
     /**
      * Gets minimum execution time of query.
      *

@@ -286,7 +286,7 @@ public interface CacheQuery<T> {
      *
      * @return Query metrics.
      */
-    public CacheQueryMetrics metrics();
+    public QueryMetrics metrics();
 
     /**
      * Resets metrics for this query.
