@@ -40,8 +40,6 @@ import java.util.*;
  * <li>{@link #EVTS_CACHE_PRELOAD}</li>
  * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_SWAPSPACE}</li>
- * <li>{@link #EVTS_AUTHENTICATION}</li>
- * <li>{@link #EVTS_SECURE_SESSION}</li>
  * </ul>
  * <p>
  * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -620,32 +618,6 @@ public interface EventType {
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
     /**
-     * Built-in event type: secure session validation succeed.
-     * <p>
-     * Secure session validation succeed. This event is triggered every time
-     * a validation of secure session procedure finished without exception.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SecureSessionEvent
-     */
-    public static final int EVT_SECURE_SESSION_VALIDATION_SUCCEEDED = 113;
-
-    /**
-     * Built-in event type: secure session validation failed.
-     * <br>
-     * Secure session validation failed. This means that  there was some error event
-     * during secure session validation procedure and validation was not succeed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SecureSessionEvent
-     */
-    public static final int EVT_SECURE_SESSION_VALIDATION_FAILED = 114;
-
-    /**
      * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -1015,18 +987,6 @@ public interface EventType {
     public static final int[] EVTS_AUTHORIZATION = {
         EVT_AUTHORIZATION_SUCCEEDED,
         EVT_AUTHORIZATION_FAILED
-    };
-
-    /**
-     * All secure session events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all GGFS events.
-     *
-     * @see IgniteFsEvent
-     */
-    public static final int[] EVTS_SECURE_SESSION = {
-        EVT_SECURE_SESSION_VALIDATION_SUCCEEDED,
-        EVT_SECURE_SESSION_VALIDATION_FAILED
     };
 
     /**
