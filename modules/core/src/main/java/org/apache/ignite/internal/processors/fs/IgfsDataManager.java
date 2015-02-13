@@ -306,7 +306,7 @@ public class IgfsDataManager extends IgfsManager {
         IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
             ggfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
-        IgniteFsConfiguration cfg = ggfsCtx.configuration();
+        IgfsConfiguration cfg = ggfsCtx.configuration();
 
         if (cfg.getPerNodeBatchSize() > 0)
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());

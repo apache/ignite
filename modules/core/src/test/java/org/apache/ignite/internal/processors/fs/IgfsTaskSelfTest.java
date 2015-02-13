@@ -97,7 +97,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @return Grid configuration
      */
     private IgniteConfiguration config(int idx) {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

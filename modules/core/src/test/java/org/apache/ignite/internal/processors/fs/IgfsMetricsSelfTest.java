@@ -101,7 +101,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
@@ -159,7 +159,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startSecondary() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

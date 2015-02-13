@@ -37,7 +37,7 @@ import java.util.*;
  * <p>
  * Each file participating in GGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
- * is provided (either through {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
+ * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
  * Once file is split into ranges, each range is passed to {@code GridGgfsTask.createJob()} method in order to create a

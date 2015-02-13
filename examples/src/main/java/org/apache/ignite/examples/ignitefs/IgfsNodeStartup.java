@@ -28,7 +28,7 @@ import org.apache.ignite.*;
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-public class IgniteFsNodeStartup {
+public class IgfsNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *

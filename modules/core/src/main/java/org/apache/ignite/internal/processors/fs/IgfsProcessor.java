@@ -73,17 +73,17 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        IgniteFsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
+        IgfsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
         validateLocalGgfsConfigurations(cfgs);
 
         // Start GGFS instances.
-        for (IgniteFsConfiguration cfg : cfgs) {
+        for (IgfsConfiguration cfg : cfgs) {
             IgfsContext ggfsCtx = new IgfsContext(
                 ctx,
-                new IgniteFsConfiguration(cfg),
+                new IgfsConfiguration(cfg),
                 new IgfsMetaManager(),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
@@ -218,7 +218,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         assert gridCfg.getGgfsConfiguration() != null;
 
-        for (IgniteFsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
+        for (IgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
             CacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
@@ -258,10 +258,10 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      * @param cfgs GGFS configurations
      * @throws IgniteCheckedException If any of GGFS configurations is invalid.
      */
-    private void validateLocalGgfsConfigurations(IgniteFsConfiguration[] cfgs) throws IgniteCheckedException {
+    private void validateLocalGgfsConfigurations(IgfsConfiguration[] cfgs) throws IgniteCheckedException {
         Collection<String> cfgNames = new HashSet<>();
 
-        for (IgniteFsConfiguration cfg : cfgs) {
+        for (IgfsConfiguration cfg : cfgs) {
             String name = cfg.getName();
 
             if (cfgNames.contains(name))

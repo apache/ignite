@@ -192,7 +192,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsConfiguration configuration() {
+    @Override public IgfsConfiguration configuration() {
         return ggfs.configuration();
     }
 

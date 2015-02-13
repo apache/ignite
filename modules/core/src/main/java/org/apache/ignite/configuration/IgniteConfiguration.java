@@ -393,7 +393,7 @@ public class IgniteConfiguration {
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** GGFS configuration. */
-    private IgniteFsConfiguration[] ggfsCfg;
+    private IgfsConfiguration[] ggfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
@@ -2142,7 +2142,7 @@ public class IgniteConfiguration {
      *
      * @return GGFS configurations.
      */
-    public IgniteFsConfiguration[] getGgfsConfiguration() {
+    public IgfsConfiguration[] getGgfsConfiguration() {
         return ggfsCfg;
     }
 
@@ -2151,7 +2151,7 @@ public class IgniteConfiguration {
      *
      * @param ggfsCfg GGFS configurations.
      */
-    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
+    public void setGgfsConfiguration(IgfsConfiguration... ggfsCfg) {
         this.ggfsCfg = ggfsCfg;
     }
 

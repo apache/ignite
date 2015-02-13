@@ -63,7 +63,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheConfiguration(metaConfiguration(), dataConfiguration());
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setName("ggfs");
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);

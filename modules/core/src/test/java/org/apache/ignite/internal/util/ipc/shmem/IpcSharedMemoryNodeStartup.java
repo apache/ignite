@@ -41,7 +41,7 @@ public class IpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception{
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

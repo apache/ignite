@@ -50,7 +50,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

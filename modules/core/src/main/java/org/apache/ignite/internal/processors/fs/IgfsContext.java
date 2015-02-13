@@ -37,7 +37,7 @@ public class IgfsContext {
     private final GridKernalContext ctx;
 
     /** Configuration. */
-    private final IgniteFsConfiguration cfg;
+    private final IgfsConfiguration cfg;
 
     /** Managers. */
     private List<IgfsManager> mgrs = new LinkedList<>();
@@ -68,7 +68,7 @@ public class IgfsContext {
      */
     public IgfsContext(
         GridKernalContext ctx,
-        IgniteFsConfiguration cfg,
+        IgfsConfiguration cfg,
         IgfsMetaManager metaMgr,
         IgfsDataManager dataMgr,
         IgfsServerManager srvMgr,
@@ -102,7 +102,7 @@ public class IgfsContext {
     /**
      * @return GGFS configuration.
      */
-    public IgniteFsConfiguration configuration() {
+    public IgfsConfiguration configuration() {
         return cfg;
     }
 

@@ -182,7 +182,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgfsMode mode,
         @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

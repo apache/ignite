@@ -110,7 +110,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);

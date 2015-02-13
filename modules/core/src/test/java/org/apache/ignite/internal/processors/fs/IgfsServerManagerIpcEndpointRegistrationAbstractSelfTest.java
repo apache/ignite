@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
@@ -154,7 +154,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @param endPntHost End point host.
      * @return test-purposed IgniteFsConfiguration.
      */
-    protected IgniteFsConfiguration igniteFsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
+    protected IgfsConfiguration igniteFsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
         @Nullable String endPntHost) throws IgniteCheckedException {
         HashMap<String, String> endPntCfg = null;
 
@@ -170,7 +170,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
                 endPntCfg.put("host", endPntHost);
         }
 
-        IgniteFsConfiguration ggfsConfiguration = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsConfiguration = new IgfsConfiguration();
 
         ggfsConfiguration.setDataCacheName("partitioned");
         ggfsConfiguration.setMetaCacheName("replicated");

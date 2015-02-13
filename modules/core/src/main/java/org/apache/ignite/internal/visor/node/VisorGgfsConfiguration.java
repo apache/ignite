@@ -125,7 +125,7 @@ public class VisorGgfsConfiguration implements Serializable {
      * @param ggfs GGFS configuration.
      * @return Data transfer object for GGFS configuration properties.
      */
-    public static VisorGgfsConfiguration from(IgniteFsConfiguration ggfs) {
+    public static VisorGgfsConfiguration from(IgfsConfiguration ggfs) {
         VisorGgfsConfiguration cfg = new VisorGgfsConfiguration();
 
         cfg.name(ggfs.getName());
@@ -176,13 +176,13 @@ public class VisorGgfsConfiguration implements Serializable {
      * @param ggfss ggfs configurations.
      * @return ggfs configurations properties.
      */
-    public static Iterable<VisorGgfsConfiguration> list(IgniteFsConfiguration[] ggfss) {
+    public static Iterable<VisorGgfsConfiguration> list(IgfsConfiguration[] ggfss) {
         if (ggfss == null)
             return Collections.emptyList();
 
         final Collection<VisorGgfsConfiguration> cfgs = new ArrayList<>(ggfss.length);
 
-        for (IgniteFsConfiguration ggfs : ggfss)
+        for (IgfsConfiguration ggfs : ggfss)
             cfgs.add(from(ggfs));
 
         return cfgs;

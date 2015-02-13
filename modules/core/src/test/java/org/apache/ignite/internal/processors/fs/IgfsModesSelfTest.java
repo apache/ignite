@@ -82,7 +82,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void startUp() throws Exception {
         startUpSecondary();
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
@@ -144,7 +144,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");

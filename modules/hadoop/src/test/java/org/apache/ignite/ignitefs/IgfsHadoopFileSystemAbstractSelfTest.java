@@ -172,7 +172,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary GGFS.
-            IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+            IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
@@ -318,8 +318,8 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected IgniteFsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
-        IgniteFsConfiguration cfg = new IgniteFsConfiguration();
+    protected IgfsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
+        IgfsConfiguration cfg = new IgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
         cfg.setMetaCacheName("replicated");
@@ -648,7 +648,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
         FSDataOutputStream os = fs.create(file, false, 128);
 
-        final int cnt = 5 * IgniteFsConfiguration.DFLT_BLOCK_SIZE; // Write 5 blocks.
+        final int cnt = 5 * IgfsConfiguration.DFLT_BLOCK_SIZE; // Write 5 blocks.
 
         for (int i = 0; i < cnt; i++)
             os.writeInt(i);

@@ -111,7 +111,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);

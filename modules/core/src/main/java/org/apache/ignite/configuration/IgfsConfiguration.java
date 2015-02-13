@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}
  * configuration files under Ignite installation to see sample {@code GGFS} configuration.
  */
-public class IgniteFsConfiguration {
+public class IgfsConfiguration {
     /** Default file system user name. */
     public static final String DFLT_USER_NAME = System.getProperty("user.name", "anonymous");
 
@@ -165,7 +165,7 @@ public class IgniteFsConfiguration {
     /**
      * Constructs default configuration.
      */
-    public IgniteFsConfiguration() {
+    public IgfsConfiguration() {
         // No-op.
     }
 
@@ -174,7 +174,7 @@ public class IgniteFsConfiguration {
      *
      * @param cfg Configuration to copy.
      */
-    public IgniteFsConfiguration(IgniteFsConfiguration cfg) {
+    public IgfsConfiguration(IgfsConfiguration cfg) {
         assert cfg != null;
 
         /*
@@ -802,6 +802,6 @@ public class IgniteFsConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsConfiguration.class, this);
+        return S.toString(IgfsConfiguration.class, this);
     }
 }

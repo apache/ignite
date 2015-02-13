@@ -82,7 +82,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     private void startUp() throws Exception {
         startUpSecondary();
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
@@ -150,7 +150,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");

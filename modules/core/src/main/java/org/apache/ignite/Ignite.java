@@ -196,9 +196,9 @@ public interface Ignite extends AutoCloseable {
      * @param <V> Value type.
      * @param name Cache name.
      * @return Cache instance for given name.
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
      */
     public <K, V> GridCache<K, V> cache(@Nullable String name);
 
@@ -206,9 +206,9 @@ public interface Ignite extends AutoCloseable {
      * Gets all configured caches.
      * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
      *
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
     public Collection<GridCache<?, ?>> caches();

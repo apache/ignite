@@ -24,7 +24,7 @@ package org.apache.ignite.ignitefs.hadoop;
  * <ul>
  *     <li>
  *         {@code fs.ggfs.[name].open.sequential_reads_before_prefetch} - this parameter overrides
- *         the one specified in {@link org.apache.ignite.configuration.IgniteFsConfiguration#getSequentialReadsBeforePrefetch()}
+ *         the one specified in {@link org.apache.ignite.configuration.IgfsConfiguration#getSequentialReadsBeforePrefetch()}
  *         GGFS data node configuration property.
  *     </li>
  *     <li>

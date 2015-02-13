@@ -75,7 +75,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("partitioned");

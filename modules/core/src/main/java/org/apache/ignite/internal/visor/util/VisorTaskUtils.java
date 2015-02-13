@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.

@@ -99,13 +99,13 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
-     * Constructs directory or file info with {@link org.apache.ignite.configuration.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with {@link org.apache.ignite.configuration.IgfsConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
      */
     public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
-        this(isDir, null, isDir ? 0 : IgniteFsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
+        this(isDir, null, isDir ? 0 : IgfsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
             System.currentTimeMillis(), false);
     }
 

@@ -689,7 +689,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_CREATED = 116;
 
@@ -701,7 +701,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_RENAMED = 117;
 
@@ -713,7 +713,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_DELETED = 118;
 
@@ -725,7 +725,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_OPENED_READ = 119;
 
@@ -737,7 +737,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_OPENED_WRITE = 120;
 
@@ -749,7 +749,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_META_UPDATED = 121;
 
@@ -761,7 +761,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_CLOSED_WRITE = 122;
 
@@ -773,7 +773,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_CLOSED_READ = 123;
 
@@ -785,7 +785,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_DIR_CREATED = 124;
 
@@ -797,7 +797,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_DIR_RENAMED = 125;
 
@@ -809,7 +809,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_DIR_DELETED = 126;
 
@@ -821,7 +821,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int EVT_GGFS_FILE_PURGED = 127;
 
@@ -1062,7 +1062,7 @@ public interface EventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all GGFS events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
     public static final int[] EVTS_SECURE_SESSION = {
         EVT_SECURE_SESSION_VALIDATION_SUCCEEDED,

@@ -75,7 +75,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
      * @throws Exception If failed.
      */
     private void startUp() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");

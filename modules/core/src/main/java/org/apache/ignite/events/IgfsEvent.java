@@ -63,7 +63,7 @@ import static org.apache.ignite.events.EventType.*;
  * @see EventType#EVT_GGFS_FILE_RENAMED
  * @see EventType#EVT_GGFS_FILE_DELETED
  */
-public class IgniteFsEvent extends EventAdapter {
+public class IgfsEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -87,7 +87,7 @@ public class IgniteFsEvent extends EventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public IgniteFsEvent(IgfsPath path, ClusterNode node, int type) {
+    public IgfsEvent(IgfsPath path, ClusterNode node, int type) {
         super(node, "GGFS event.", type);
 
         this.path = path;
@@ -103,7 +103,7 @@ public class IgniteFsEvent extends EventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public IgniteFsEvent(IgfsPath path, IgfsPath newPath, ClusterNode node, int type) {
+    public IgfsEvent(IgfsPath path, IgfsPath newPath, ClusterNode node, int type) {
         this(path, node, type);
 
         this.newPath = newPath;
@@ -119,7 +119,7 @@ public class IgniteFsEvent extends EventAdapter {
      * @param type Event type.
      * @param dataSize Transferred data size in bytes.
      */
-    public IgniteFsEvent(IgfsPath path, ClusterNode node, int type, long dataSize) {
+    public IgfsEvent(IgfsPath path, ClusterNode node, int type, long dataSize) {
         this(path, node, type);
 
         this.dataSize = dataSize;
@@ -134,7 +134,7 @@ public class IgniteFsEvent extends EventAdapter {
      * @param type Event type.
      * @param meta Modified properties.
      */
-    public IgniteFsEvent(IgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
+    public IgfsEvent(IgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
         this(path, node, type);
 
         this.meta = meta;
@@ -192,6 +192,6 @@ public class IgniteFsEvent extends EventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsEvent.class, this, super.toString());
+        return S.toString(IgfsEvent.class, this, super.toString());
     }
 }

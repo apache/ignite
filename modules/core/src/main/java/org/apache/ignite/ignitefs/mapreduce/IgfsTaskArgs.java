@@ -33,7 +33,7 @@ import java.util.*;
  *     <li>{@link IgfsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>
- *     <li>Maximum file range length for that task (see {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
+ *     <li>Maximum file range length for that task (see {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
  */
 public interface IgfsTaskArgs<T> {

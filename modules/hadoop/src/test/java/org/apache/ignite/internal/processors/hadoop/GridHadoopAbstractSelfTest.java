@@ -129,8 +129,8 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return GGFS configuration.
      */
-    public IgniteFsConfiguration ggfsConfiguration() {
-        IgniteFsConfiguration cfg = new IgniteFsConfiguration();
+    public IgfsConfiguration ggfsConfiguration() {
+        IgfsConfiguration cfg = new IgfsConfiguration();
 
         cfg.setName(ggfsName);
         cfg.setBlockSize(ggfsBlockSize);

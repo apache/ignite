@@ -75,7 +75,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      *
      * @return GGFS configuration.
      */
-    public IgniteFsConfiguration configuration();
+    public IgfsConfiguration configuration();
 
     /**
      * Gets summary (total number of files, total number of directories and total length)
@@ -284,7 +284,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -322,7 +322,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

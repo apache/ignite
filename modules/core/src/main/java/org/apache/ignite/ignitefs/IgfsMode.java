@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  * Secondary Hadoop file system is provided for pass-through, write-through, and
  * read-through purposes.
  * <p>
- * This mode is configured via {@link org.apache.ignite.configuration.IgniteFsConfiguration#getDefaultMode()}
+ * This mode is configured via {@link org.apache.ignite.configuration.IgfsConfiguration#getDefaultMode()}
  * configuration property.
  */
 public enum IgfsMode {
@@ -39,7 +39,7 @@ public enum IgfsMode {
      * through to secondary Hadoop file system. If this mode is enabled, then
      * secondary Hadoop file system must be configured.
      *
-     * @see org.apache.ignite.configuration.IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     PROXY,
 
@@ -50,7 +50,7 @@ public enum IgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see org.apache.ignite.configuration.IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     DUAL_SYNC,
 
@@ -61,7 +61,7 @@ public enum IgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see org.apache.ignite.configuration.IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     DUAL_ASYNC;
 

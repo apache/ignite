@@ -756,7 +756,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsConfiguration configuration() {
+        @Override public IgfsConfiguration configuration() {
             return null;
         }
 

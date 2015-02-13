@@ -79,7 +79,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void startPrimary() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
@@ -149,7 +149,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void startSecondary() throws Exception {
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

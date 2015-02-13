@@ -33,10 +33,10 @@ import java.util.*;
  * Remote nodes should always be started with configuration file which includes
  * IgniteFs: {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
  * <p>
- * Alternatively you can run {@link IgniteFsNodeStartup} in another JVM which will start
+ * Alternatively you can run {@link IgfsNodeStartup} in another JVM which will start
  * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
  */
-public class IgniteFsMapReduceExample {
+public class IgfsMapReduceExample {
     /**
      * Executes example.
      *

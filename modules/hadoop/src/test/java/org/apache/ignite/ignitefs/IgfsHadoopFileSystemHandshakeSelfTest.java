@@ -227,7 +227,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");

@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * GGFS endpoint abstraction.

@@ -51,7 +51,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 @SuppressWarnings("all")
 public class IgfsMetaManager extends IgfsManager {
     /** GGFS configuration. */
-    private IgniteFsConfiguration cfg;
+    private IgfsConfiguration cfg;
 
     /** Metadata cache. */
     private GridCache<Object, Object> metaCache;
@@ -1605,7 +1605,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert path != null;
 
                 // Events to fire (can be done outside of a transaction).
-                final Deque<IgniteFsEvent> pendingEvts = new LinkedList<>();
+                final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
@@ -1645,7 +1645,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     IgfsPath evtPath = parent0;
 
                                     while (!parentPath.equals(evtPath)) {
-                                        pendingEvts.addFirst(new IgniteFsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                        pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
                                         evtPath = evtPath.parent();
 
@@ -1690,7 +1690,7 @@ public class IgfsMetaManager extends IgfsManager {
                                             try {
                                                 t.get(); // Ensure delete succeeded.
 
-                                                evts.record(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
+                                                evts.record(new IgfsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
                                             }
                                             catch (IgniteCheckedException e) {
                                                 LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
@@ -1704,12 +1704,12 @@ public class IgfsMetaManager extends IgfsManager {
 
                                 // Record DELETE event if needed.
                                 if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                                    pendingEvts.add(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
+                                    pendingEvts.add(new IgfsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
                             }
 
                             // Record CREATE event if needed.
                             if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                                pendingEvts.add(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
+                                pendingEvts.add(new IgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
 
                             return new IgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
                         }
@@ -1731,7 +1731,7 @@ public class IgfsMetaManager extends IgfsManager {
                     return synchronizeAndExecute(task, fs, false, path.parent());
                 }
                 finally {
-                    for (IgniteFsEvent evt : pendingEvts)
+                    for (IgfsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }
@@ -1953,7 +1953,7 @@ public class IgfsMetaManager extends IgfsManager {
                     return true; // No additional handling for root directory is needed.
 
                 // Events to fire (can be done outside of a transaction).
-                final Deque<IgniteFsEvent> pendingEvts = new LinkedList<>();
+                final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
@@ -1979,7 +1979,7 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsPath evtPath = path;
 
                             while (!parentPath.equals(evtPath)) {
-                                pendingEvts.addFirst(new IgniteFsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
                                 evtPath = evtPath.parent();
 
@@ -2003,7 +2003,7 @@ public class IgfsMetaManager extends IgfsManager {
                     return synchronizeAndExecute(task, fs, false, path.parent());
                 }
                 finally {
-                    for (IgniteFsEvent evt : pendingEvts)
+                    for (IgfsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }
@@ -2037,7 +2037,7 @@ public class IgfsMetaManager extends IgfsManager {
                     return false; // Root directory cannot be renamed.
 
                 // Events to fire (can be done outside of a transaction).
-                final Collection<IgniteFsEvent> pendingEvts = new LinkedList<>();
+                final Collection<IgfsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
@@ -2077,14 +2077,14 @@ public class IgfsMetaManager extends IgfsManager {
                         // Record event if needed.
                         if (srcInfo.isFile()) {
                             if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
-                                pendingEvts.add(new IgniteFsEvent(
+                                pendingEvts.add(new IgfsEvent(
                                     src,
                                     destInfo == null ? dest : new IgfsPath(dest, src.name()),
                                     locNode,
                                     EVT_GGFS_FILE_RENAMED));
                         }
                         else if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                            pendingEvts.add(new IgniteFsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
+                            pendingEvts.add(new IgfsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
 
                         return true;
                     }
@@ -2102,7 +2102,7 @@ public class IgfsMetaManager extends IgfsManager {
                     return synchronizeAndExecute(task, fs, false, src, dest);
                 }
                 finally {
-                    for (IgniteFsEvent evt : pendingEvts)
+                    for (IgfsEvent evt : pendingEvts)
                         evts.record(evt);
                 }
             }

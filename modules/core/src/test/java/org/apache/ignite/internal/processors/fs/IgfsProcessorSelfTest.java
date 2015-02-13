@@ -73,7 +73,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         ggfs = grid.fileSystem(ggfsName());
 
-        IgniteFsConfiguration[] cfgs = grid.configuration().getGgfsConfiguration();
+        IgfsConfiguration[] cfgs = grid.configuration().getGgfsConfiguration();
 
         assert cfgs.length == 1;
 
@@ -111,7 +111,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);

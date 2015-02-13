@@ -42,7 +42,7 @@ public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
             startGrid("test2", configPath);
             startGrid("test3", configPath);
 
-            IgniteFsExample.main(EMPTY_ARGS);
+            IgfsExample.main(EMPTY_ARGS);
         }
         finally {
             stopAllGrids();

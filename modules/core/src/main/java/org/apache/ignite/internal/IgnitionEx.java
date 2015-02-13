@@ -1561,13 +1561,13 @@ public class IgnitionEx {
             myCfg.setMarshalLocalJobs(cfg.isMarshalLocalJobs());
             myCfg.setNodeId(nodeId);
 
-            IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+            IgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
 
             if (ggfsCfgs != null) {
-                IgniteFsConfiguration[] clone = ggfsCfgs.clone();
+                IgfsConfiguration[] clone = ggfsCfgs.clone();
 
                 for (int i = 0; i < ggfsCfgs.length; i++)
-                    clone[i] = new IgniteFsConfiguration(ggfsCfgs[i]);
+                    clone[i] = new IgfsConfiguration(ggfsCfgs[i]);
 
                 myCfg.setGgfsConfiguration(clone);
             }

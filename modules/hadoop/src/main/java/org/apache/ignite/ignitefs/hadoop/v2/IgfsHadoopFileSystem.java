@@ -39,7 +39,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;

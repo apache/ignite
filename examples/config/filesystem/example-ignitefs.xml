@@ -65,7 +65,7 @@
 
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration">
+                <bean class="org.apache.ignite.configuration.IgfsConfiguration">
                     <property name="name" value="ignitefs"/>
                     <property name="metaCacheName" value="ignitefs-meta"/>
                     <property name="dataCacheName" value="ignitefs-data"/>

@@ -65,12 +65,12 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
+        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
         ggfsCfg.setName("ggfs");
-        ggfsCfg.setManagementPort(IgniteFsConfiguration.DFLT_MGMT_PORT + cnt);
+        ggfsCfg.setManagementPort(IgfsConfiguration.DFLT_MGMT_PORT + cnt);
 
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "shmem");
