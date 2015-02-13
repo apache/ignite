@@ -93,10 +93,10 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static byte[] chunk;
 
     /** Primary IGFS. */
-    protected static IgfsImpl ggfs;
+    protected static IgfsImpl igfs;
 
     /** Secondary IGFS. */
-    protected static IgfsImpl ggfsSecondary;
+    protected static IgfsImpl igfsSecondary;
 
     /** IGFS mode. */
     protected final IgfsMode mode;
@@ -115,26 +115,26 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
      * Start grid with IGFS.
      *
      * @param gridName Grid name.
-     * @param ggfsName IGFS name
+     * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @param restCfg Rest configuration string (optional).
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName(ggfsName);
-        ggfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
-        ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(restCfg);
-        ggfsCfg.setSecondaryFileSystem(secondaryFs);
-        ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
-        ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName(igfsName);
+        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
+        igfsCfg.setDefaultMode(mode);
+        igfsCfg.setIpcEndpointConfiguration(restCfg);
+        igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
+        igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -166,7 +166,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
@@ -181,20 +181,20 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "igfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithIgfs("grid-secondary", "igfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
         Igfs hadoopFs = new IgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
 
-        Ignite ignite = startGridWithGgfs("grid", "igfs", mode, hadoopFs, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithIgfs("grid", "igfs", mode, hadoopFs, PRIMARY_REST_CFG);
 
-        ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("igfs-secondary");
-        ggfs = (IgfsImpl) ignite.fileSystem("igfs");
+        igfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("igfs-secondary");
+        igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        clear(ggfs);
-        clear(ggfsSecondary);
+        clear(igfs);
+        clear(igfsSecondary);
     }
 
     /** {@inheritDoc} */
@@ -218,12 +218,12 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
      * @throws Exception IF failed.
      */
     public void testOpenPrefetchOverride() throws Exception {
-        create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
         // Write enough data to the secondary file system.
         final int blockSize = IGFS_BLOCK_SIZE;
 
-        IgfsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgfsOutputStream out = igfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 
@@ -235,7 +235,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
 
         out.close();
 
-        awaitFileClose(ggfsSecondary, FILE);
+        awaitFileClose(igfsSecondary, FILE);
 
         // Instantiate file system with overridden "seq reads before prefetch" property.
         Configuration cfg = new Configuration();
@@ -261,14 +261,14 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         fsIn.readFully(0, readBuf, 0, readBuf.length);
 
         // Wait for a while for prefetch to finish (if any).
-        IgfsMetaManager meta = ggfs.context().meta();
+        IgfsMetaManager meta = igfs.context().meta();
 
         IgfsFileInfo info = meta.info(meta.fileId(FILE));
 
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<IgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
-            ggfs.configuration().getDataCacheName());
+        GridCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().cache(
+            igfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {
             if (dataCache.containsKey(key))
@@ -280,12 +280,12 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         fsIn.close();
 
         // Remove the file from the secondary file system.
-        ggfsSecondary.delete(FILE, false);
+        igfsSecondary.delete(FILE, false);
 
         // Try reading the third block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgfsInputStream in0 = ggfs.open(FILE);
+                IgfsInputStream in0 = igfs.open(FILE);
 
                 in0.seek(blockSize * 2);
 

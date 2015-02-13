@@ -45,7 +45,7 @@ import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
  */
 public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractTest {
     /** IGFS. */
-    private IgfsEx ggfs;
+    private IgfsEx igfs;
 
     /** File system. */
     private FileSystem fs;
@@ -60,7 +60,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
     @Override protected void afterTest() throws Exception {
         U.closeQuiet(fs);
 
-        ggfs = null;
+        igfs = null;
         fs = null;
 
         G.stopAll(true);
@@ -75,14 +75,14 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
      * @throws Exception If failed.
      */
     private void startUp() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", "10500");
         }});
@@ -116,16 +116,16 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
-        ggfs = (IgfsEx)g.fileSystem("igfs");
+        igfs = (IgfsEx)g.fileSystem("igfs");
 
-        ggfs.globalSampling(sampling);
+        igfs.globalSampling(sampling);
 
         fs = fileSystem();
     }
@@ -222,7 +222,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fs.close();
 
         // "Not set" => true transition.
-        ggfs.globalSampling(true);
+        igfs.globalSampling(true);
 
         fs = fileSystem();
 
@@ -231,14 +231,14 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fs.close();
 
         // True => "not set" transition.
-        ggfs.globalSampling(null);
+        igfs.globalSampling(null);
 
         fs = fileSystem();
 
         assert !logEnabled();
 
         // "Not-set" => false transition.
-        ggfs.globalSampling(false);
+        igfs.globalSampling(false);
 
         fs = fileSystem();
 
@@ -247,7 +247,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fs.close();
 
         // False => "not=set" transition.
-        ggfs.globalSampling(null);
+        igfs.globalSampling(null);
 
         fs = fileSystem();
 
@@ -256,8 +256,8 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fs.close();
 
         // True => false transition.
-        ggfs.globalSampling(true);
-        ggfs.globalSampling(false);
+        igfs.globalSampling(true);
+        igfs.globalSampling(false);
 
         fs = fileSystem();
 
@@ -266,7 +266,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         fs.close();
 
         // False => true transition.
-        ggfs.globalSampling(true);
+        igfs.globalSampling(true);
 
         fs = fileSystem();
 
@@ -283,7 +283,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         startUp();
 
         assertEquals(Paths.get(U.getIgniteHome()).normalize().toString(),
-            ggfs.clientLogDirectory());
+            igfs.clientLogDirectory());
     }
 
     /**

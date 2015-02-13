@@ -83,21 +83,21 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     private void startUp() throws Exception {
         startUpSecondary();
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setPathModes(pathModes);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setDefaultMode(mode);
+        igfsCfg.setPathModes(pathModes);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", "10500");
         }});
 
-        ggfsCfg.setManagementPort(-1);
-        ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
+        igfsCfg.setManagementPort(-1);
+        igfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
             "igfs://igfs-secondary:igfs-grid-secondary@127.0.0.1:11500/",
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
@@ -130,7 +130,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -151,14 +151,14 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs-secondary");
-        ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs-secondary");
+        igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", "11500");
         }});
@@ -192,7 +192,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 

@@ -33,7 +33,7 @@ import java.util.concurrent.*;
  */
 public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** Target IGFS. */
-    private final IgfsEx ggfs;
+    private final IgfsEx igfs;
 
     /** Buffer size. */
     private final int bufSize;
@@ -48,22 +48,22 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /**
      * Constructor.
      *
-     * @param ggfs Target IGFS.
+     * @param igfs Target IGFS.
      * @param log Log.
      */
-    public IgfsHadoopInProc(IgfsEx ggfs, Log log) {
-        this.ggfs = ggfs;
+    public IgfsHadoopInProc(IgfsEx igfs, Log log) {
+        this.igfs = igfs;
         this.log = log;
 
-        bufSize = ggfs.configuration().getBlockSize() * 2;
+        bufSize = igfs.configuration().getBlockSize() * 2;
     }
 
     /** {@inheritDoc} */
     @Override public IgfsHandshakeResponse handshake(String logDir) {
-        ggfs.clientLogDirectory(logDir);
+        igfs.clientLogDirectory(logDir);
 
-        return new IgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(), ggfs.groupBlockSize(),
-            ggfs.globalSampling());
+        return new IgfsHandshakeResponse(igfs.name(), igfs.proxyPaths(), igfs.groupBlockSize(),
+            igfs.globalSampling());
     }
 
     /** {@inheritDoc} */
@@ -83,7 +83,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public IgfsFile info(IgfsPath path) throws IgniteCheckedException {
         try {
-            return ggfs.info(path);
+            return igfs.info(path);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -96,7 +96,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public IgfsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
-            return ggfs.update(path, props);
+            return igfs.update(path, props);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -109,7 +109,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
         try {
-            ggfs.setTimes(path, accessTime, modificationTime);
+            igfs.setTimes(path, accessTime, modificationTime);
 
             return true;
         }
@@ -125,7 +125,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Boolean rename(IgfsPath src, IgfsPath dest) throws IgniteCheckedException {
         try {
-            ggfs.rename(src, dest);
+            igfs.rename(src, dest);
 
             return true;
         }
@@ -140,7 +140,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Boolean delete(IgfsPath path, boolean recursive) throws IgniteCheckedException {
         try {
-            return ggfs.delete(path, recursive);
+            return igfs.delete(path, recursive);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -153,7 +153,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public IgfsStatus fsStatus() throws IgniteCheckedException {
         try {
-            return ggfs.globalSpace();
+            return igfs.globalSpace();
         }
         catch (IllegalStateException e) {
             throw new IgfsHadoopCommunicationException("Failed to get file system status because Grid is " +
@@ -164,7 +164,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) throws IgniteCheckedException {
         try {
-            return ggfs.listPaths(path);
+            return igfs.listPaths(path);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -177,7 +177,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteCheckedException {
         try {
-            return ggfs.listFiles(path);
+            return igfs.listFiles(path);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -190,7 +190,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public Boolean mkdirs(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
-            ggfs.mkdirs(path, props);
+            igfs.mkdirs(path, props);
 
             return true;
         }
@@ -206,7 +206,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public IgfsPathSummary contentSummary(IgfsPath path) throws IgniteCheckedException {
         try {
-            return ggfs.summary(path);
+            return igfs.summary(path);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -221,7 +221,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
         throws IgniteCheckedException {
         try {
-            return ggfs.affinity(path, start, len);
+            return igfs.affinity(path, start, len);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
@@ -234,7 +234,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public IgfsHadoopStreamDelegate open(IgfsPath path) throws IgniteCheckedException {
         try {
-            IgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
+            IgfsInputStreamAdapter stream = igfs.open(path, bufSize);
 
             return new IgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
@@ -250,7 +250,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public IgfsHadoopStreamDelegate open(IgfsPath path, int seqReadsBeforePrefetch)
         throws IgniteCheckedException {
         try {
-            IgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
+            IgfsInputStreamAdapter stream = igfs.open(path, bufSize, seqReadsBeforePrefetch);
 
             return new IgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
@@ -266,8 +266,8 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public IgfsHadoopStreamDelegate create(IgfsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
-            IgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
-                colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
+            IgfsOutputStream stream = igfs.create(path, bufSize, overwrite,
+                colocate ? igfs.nextAffinityKey() : null, replication, blockSize, props);
 
             return new IgfsHadoopStreamDelegate(this, stream);
         }
@@ -283,7 +283,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public IgfsHadoopStreamDelegate append(IgfsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
-            IgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
+            IgfsOutputStream stream = igfs.append(path, bufSize, create, props);
 
             return new IgfsHadoopStreamDelegate(this, stream);
         }

@@ -75,20 +75,20 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("partitioned");
-        ggfsCfg.setName("igfs");
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("partitioned");
+        igfsCfg.setName("igfs");
 
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "shmem");
             put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
         }});
 
-        ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
+        igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 

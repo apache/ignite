@@ -104,14 +104,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsOneBlockPerNode() throws IgniteCheckedException {
+    public void testIgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_2));
-        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 100, ID_2));
+        mapIgfsBlock(split3.file(), 0, 100, location(0, 100, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
@@ -164,7 +164,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOneBlockPerNode() throws IgniteCheckedException {
+    public void testNonIgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_3);
@@ -220,14 +220,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
+    public void testIgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_1, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1, ID_2));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_1, ID_2));
-        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapIgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty(ID_2) ||
@@ -266,7 +266,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
+    public void testNonIgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_1, HOST_3);
@@ -308,12 +308,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralComplexBlocksPerNode() throws IgniteCheckedException {
+    public void testIgfsSeveralComplexBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2, HOST_3);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2, HOST_3);
 
-        mapGgfsBlock(split1.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_1, ID_3));
-        mapGgfsBlock(split2.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_2, ID_3));
+        mapIgfsBlock(split1.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_1, ID_3));
+        mapIgfsBlock(split2.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_2, ID_3));
 
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
@@ -344,7 +344,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOrphans() throws IgniteCheckedException {
+    public void testNonIgfsOrphans() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, INVALID_HOST_1, INVALID_HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, INVALID_HOST_1, INVALID_HOST_3);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, INVALID_HOST_2, INVALID_HOST_3);
@@ -473,15 +473,15 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     /**
      * Create split.
      *
-     * @param ggfs IGFS flag.
+     * @param igfs IGFS flag.
      * @param file File.
      * @param start Start.
      * @param len Length.
      * @param hosts Hosts.
      * @return Split.
      */
-    private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
-        URI uri = URI.create((ggfs ? "igfs://igfs@" : "hdfs://") + file);
+    private static GridHadoopFileBlock split(boolean igfs, String file, long start, long len, String... hosts) {
+        URI uri = URI.create((igfs ? "igfs://igfs@" : "hdfs://") + file);
 
         return new GridHadoopFileBlock(hosts, uri, start, len);
     }
@@ -513,7 +513,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param len Length.
      * @param locations Locations.
      */
-    private static void mapGgfsBlock(URI file, long start, long len, IgfsBlockLocation... locations) {
+    private static void mapIgfsBlock(URI file, long start, long len, IgfsBlockLocation... locations) {
         assert locations != null && locations.length > 0;
 
         IgfsPath path = new IgfsPath(file);

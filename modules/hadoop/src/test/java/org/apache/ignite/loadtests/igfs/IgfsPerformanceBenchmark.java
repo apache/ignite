@@ -64,9 +64,9 @@ public class IgfsPerformanceBenchmark {
         final String fsPrefix = argument(args, 5, FS_PREFIX);
         final short replication = (short)intArgument(args, 6, 3);
 
-        final Path ggfsHome = new Path(fsPrefix);
+        final Path igfsHome = new Path(fsPrefix);
 
-        final FileSystem fs = ggfs(ggfsHome, cfgPath);
+        final FileSystem fs = igfs(igfsHome, cfgPath);
 
         final AtomicLong progress = new AtomicLong();
 
@@ -80,7 +80,7 @@ public class IgfsPerformanceBenchmark {
 
         if (op == OP_READ) {
             for (int i = 0; i < threadNum; i++)
-                benchmarkWrite(fs, new Path(ggfsHome, "in-" + i), fileLen, bufSize, replication, null);
+                benchmarkWrite(fs, new Path(igfsHome, "in-" + i), fileLen, bufSize, replication, null);
         }
 
         long total = 0;
@@ -94,10 +94,10 @@ public class IgfsPerformanceBenchmark {
                 try {
                     for (int i = 0; i < 200; i++) {
                         if (op == OP_WRITE)
-                            benchmarkWrite(fs, new Path(ggfsHome, "out-" + fileIdx), fileLen, bufSize, replication,
+                            benchmarkWrite(fs, new Path(igfsHome, "out-" + fileIdx), fileLen, bufSize, replication,
                                 progress);
                         else
-                            benchmarkRead(fs, new Path(ggfsHome, "in-" + fileIdx), bufSize, progress);
+                            benchmarkRead(fs, new Path(igfsHome, "in-" + fileIdx), bufSize, progress);
                     }
 
                     System.out.println("Finished " + (op == OP_WRITE ? "writing" : "reading") + " data.");
@@ -135,11 +135,11 @@ public class IgfsPerformanceBenchmark {
      * Warms up server side.
      *
      * @param fs File system.
-     * @param ggfsHome IGFS home.
+     * @param igfsHome IGFS home.
      * @throws Exception If failed.
      */
-    private static void warmUp(FileSystem fs, Path ggfsHome, int op, long fileLen) throws Exception {
-        Path file = new Path(ggfsHome, "out-0");
+    private static void warmUp(FileSystem fs, Path igfsHome, int op, long fileLen) throws Exception {
+        Path file = new Path(igfsHome, "out-0");
 
         benchmarkWrite(fs, file, fileLen, 1024 * 1024, (short)1, null);
 
@@ -203,7 +203,7 @@ public class IgfsPerformanceBenchmark {
     }
 
     /** {@inheritDoc} */
-    private static FileSystem ggfs(Path home, String cfgPath) throws IOException {
+    private static FileSystem igfs(Path home, String cfgPath) throws IOException {
         Configuration cfg = new Configuration();
 
         cfg.addResource(U.resolveIgniteUrl(cfgPath));

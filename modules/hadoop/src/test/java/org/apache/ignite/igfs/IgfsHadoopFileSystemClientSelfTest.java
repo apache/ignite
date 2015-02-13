@@ -66,19 +66,19 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", String.valueOf(DFLT_IPC_PORT));
         }});
 
         cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -133,18 +133,18 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
 
             IgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 
-            final IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(delegate, LOG,
+            final IgfsHadoopOutputStream igfsOut = new IgfsHadoopOutputStream(delegate, LOG,
                 IgfsLogger.disabledLogger(), 0);
 
             // This call should return fine as exception is thrown for the first time.
-            ggfsOut.write(data);
+            igfsOut.write(data);
 
             U.sleep(500);
 
             // This call should throw an IO exception.
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ggfsOut.write(data);
+                    igfsOut.write(data);
 
                     return null;
                 }
@@ -163,17 +163,17 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        IgfsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().igfs();
+        IgfsProcessorAdapter igfsProc = ((IgniteKernal)grid(0)).context().igfs();
 
-        Map<String, IgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
+        Map<String, IgfsContext> igfsMap = getField(igfsProc, "igfsCache");
 
-        IgfsServerManager srvMgr = F.first(ggfsMap.values()).server();
+        IgfsServerManager srvMgr = F.first(igfsMap.values()).server();
 
         Collection<IgfsServer> srvrs = getField(srvMgr, "srvrs");
 
-        IgfsServerHandler ggfsHnd = getField(F.first(srvrs), "hnd");
+        IgfsServerHandler igfsHnd = getField(F.first(srvrs), "hnd");
 
-        Field field = ggfsHnd.getClass().getDeclaredField("errWrite");
+        Field field = igfsHnd.getClass().getDeclaredField("errWrite");
 
         field.setAccessible(true);
 

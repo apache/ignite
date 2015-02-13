@@ -36,7 +36,7 @@ public class IgfsHadoopEndpoint {
     public static final String LOCALHOST = "127.0.0.1";
 
     /** IGFS name. */
-    private final String ggfsName;
+    private final String igfsName;
 
     /** Grid name. */
     private final String gridName;
@@ -63,8 +63,8 @@ public class IgfsHadoopEndpoint {
 
             StringBuilder sb = new StringBuilder();
 
-            if (endpoint.ggfs() != null)
-                sb.append(endpoint.ggfs());
+            if (endpoint.igfs() != null)
+                sb.append(endpoint.igfs());
 
             if (endpoint.grid() != null)
                 sb.append(":").append(endpoint.grid());
@@ -92,7 +92,7 @@ public class IgfsHadoopEndpoint {
         IgniteBiTuple<String, Integer> hostPort;
 
         if (tokens.length == 1) {
-            ggfsName = null;
+            igfsName = null;
             gridName = null;
 
             hostPort = hostPort(connStr, connStr);
@@ -102,12 +102,12 @@ public class IgfsHadoopEndpoint {
 
             if (authStr.isEmpty()) {
                 gridName = null;
-                ggfsName = null;
+                igfsName = null;
             }
             else {
                 String[] authTokens = authStr.split(":", -1);
 
-                ggfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
+                igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
                 if (authTokens.length == 1)
                     gridName = null;
@@ -171,8 +171,8 @@ public class IgfsHadoopEndpoint {
     /**
      * @return IGFS name.
      */
-    @Nullable public String ggfs() {
-        return ggfsName;
+    @Nullable public String igfs() {
+        return igfsName;
     }
 
     /**

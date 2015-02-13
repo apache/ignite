@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
  */
 public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -147,9 +147,9 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
      * @throws Exception If failed.
      */
     private void prepareTestFile(String filePath) throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(igfsName);
 
-        try (IgfsOutputStream out = ggfs.create(new IgfsPath(filePath), true)) {
+        try (IgfsOutputStream out = igfs.create(new IgfsPath(filePath), true)) {
             PrintWriter wr = new PrintWriter(new OutputStreamWriter(out));
 
             for (int i = 0; i < 1000; i++)

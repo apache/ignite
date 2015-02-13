@@ -37,10 +37,10 @@ import java.util.*;
  */
 public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
-    private IgfsEx ggfs;
+    private IgfsEx igfs;
 
     /** */
-    private static final String ggfsName = "igfs";
+    private static final String igfsName = "igfs";
 
     /** */
     private static File testWorkDir;
@@ -193,7 +193,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (IgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(ggfsName);
+        igfs = (IgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(igfsName);
     }
 
     /** {@inheritDoc} */
@@ -307,17 +307,17 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertEquals(0, executeHadoopCmd("fs", "-put", new File(testWorkDir, "test-data").getAbsolutePath(), "/input"));
 
-        assertTrue(ggfs.exists(new IgfsPath("/input/test-data")));
+        assertTrue(igfs.exists(new IgfsPath("/input/test-data")));
 
         assertEquals(0, executeHadoopCmd("jar", examplesJar.getAbsolutePath(), "wordcount", "/input", "/output"));
 
         IgfsPath path = new IgfsPath("/user/" + System.getProperty("user.name") + "/");
 
-        assertTrue(ggfs.exists(path));
+        assertTrue(igfs.exists(path));
 
         IgfsPath jobStatPath = null;
 
-        for (IgfsPath jobPath : ggfs.listPaths(path)) {
+        for (IgfsPath jobPath : igfs.listPaths(path)) {
             assertNull(jobStatPath);
 
             jobStatPath = jobPath;
@@ -331,9 +331,9 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertTrue(evtCnt >= 22); //It's the minimum amount of events for job with combiner.
 
-        assertTrue(ggfs.exists(new IgfsPath("/output")));
+        assertTrue(igfs.exists(new IgfsPath("/output")));
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(ggfs.open(new IgfsPath("/output/part-r-00000"))));
+        BufferedReader in = new BufferedReader(new InputStreamReader(igfs.open(new IgfsPath("/output/part-r-00000"))));
 
         List<String> res = new ArrayList<>();
 
@@ -364,7 +364,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
             "location '/result' as " + qry
         ));
 
-        IgfsInputStreamAdapter in = ggfs.open(new IgfsPath("/result/000000_0"));
+        IgfsInputStreamAdapter in = igfs.open(new IgfsPath("/result/000000_0"));
 
         byte[] buf = new byte[(int) in.length()];
 

@@ -333,13 +333,13 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
 
         // 2. Guess that we are in the same VM.
         if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false)) {
-            IgfsEx ggfs = null;
+            IgfsEx igfs = null;
 
             if (endpoint.grid() == null) {
                 try {
                     Ignite ignite = G.ignite();
 
-                    ggfs = (IgfsEx)ignite.fileSystem(endpoint.ggfs());
+                    igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
                 }
                 catch (Exception e) {
                     err = e;
@@ -348,7 +348,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
             else {
                 for (Ignite ignite : G.allGrids()) {
                     try {
-                        ggfs = (IgfsEx)ignite.fileSystem(endpoint.ggfs());
+                        igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
 
                         break;
                     }
@@ -358,11 +358,11 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                 }
             }
 
-            if (ggfs != null) {
+            if (igfs != null) {
                 IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new IgfsHadoopInProc(ggfs, log);
+                    hadoop = new IgfsHadoopInProc(igfs, log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
@@ -384,7 +384,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                 IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new IgfsHadoopOutProc(endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
+                    hadoop = new IgfsHadoopOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
@@ -408,7 +408,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
                 IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new IgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.ggfs(),
+                    hadoop = new IgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
                         log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -430,7 +430,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
             IgfsHadoopEx hadoop = null;
 
             try {
-                hadoop = new IgfsHadoopOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
+                hadoop = new IgfsHadoopOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(), log);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }

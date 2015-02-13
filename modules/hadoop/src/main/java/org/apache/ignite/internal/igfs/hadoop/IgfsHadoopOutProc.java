@@ -76,7 +76,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     private final String grid;
 
     /** IGFS name. */
-    private final String ggfs;
+    private final String igfs;
 
     /** Client log. */
     private final Log log;
@@ -93,12 +93,12 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      * @param host Host.
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs IGFS name.
+     * @param igfs IGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public IgfsHadoopOutProc(String host, int port, String grid, String ggfs, Log log) throws IOException {
-        this(host, port, grid, ggfs, false, log);
+    public IgfsHadoopOutProc(String host, int port, String grid, String igfs, Log log) throws IOException {
+        this(host, port, grid, igfs, false, log);
     }
 
     /**
@@ -106,12 +106,12 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      *
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs IGFS name.
+     * @param igfs IGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public IgfsHadoopOutProc(int port, String grid, String ggfs, Log log) throws IOException {
-        this(null, port, grid, ggfs, true, log);
+    public IgfsHadoopOutProc(int port, String grid, String igfs, Log log) throws IOException {
+        this(null, port, grid, igfs, true, log);
     }
 
     /**
@@ -120,12 +120,12 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
      * @param host Host.
      * @param port Port.
      * @param grid Grid name.
-     * @param ggfs IGFS name.
+     * @param igfs IGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    private IgfsHadoopOutProc(String host, int port, String grid, String ggfs, boolean shmem, Log log)
+    private IgfsHadoopOutProc(String host, int port, String grid, String igfs, boolean shmem, Log log)
         throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
@@ -133,7 +133,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
         String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
         this.grid = grid;
-        this.ggfs = ggfs;
+        this.igfs = igfs;
         this.log = log;
 
         io = IgfsHadoopIpcIo.get(log, endpoint);
@@ -146,7 +146,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
         final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
         req.gridName(grid);
-        req.igfsName(ggfs);
+        req.igfsName(igfs);
         req.logDirectory(logDir);
 
         return io.send(req).chain(HANDSHAKE_RES).get();

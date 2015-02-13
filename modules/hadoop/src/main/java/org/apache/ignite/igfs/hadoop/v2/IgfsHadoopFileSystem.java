@@ -466,13 +466,13 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                IgfsHadoopInputStream ggfsIn = new IgfsHadoopInputStream(stream, stream.length(),
+                IgfsHadoopInputStream igfsIn = new IgfsHadoopInputStream(stream, stream.length(),
                     bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened input stream [path=" + path + ", delegate=" + stream + ']');
 
-                return new FSDataInputStream(ggfsIn);
+                return new FSDataInputStream(igfsIn);
             }
         }
         finally {
@@ -565,12 +565,12 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
                 assert stream != null;
 
-                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG,
+                IgfsHadoopOutputStream igfsOut = new IgfsHadoopOutputStream(stream, LOG,
                     clientLog, logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);
 
-                out = new BufferedOutputStream(ggfsOut, bufSize);
+                out = new BufferedOutputStream(igfsOut, bufSize);
 
                 FSDataOutputStream res = new FSDataOutputStream(out, null, 0);
 
@@ -783,18 +783,18 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     @Override public BlockLocation[] getFileBlockLocations(Path path, long start, long len) throws IOException {
         A.notNull(path, "path");
 
-        IgfsPath ggfsPath = convert(path);
+        IgfsPath igfsPath = convert(path);
 
         enterBusy();
 
         try {
-            if (modeRslvr.resolveMode(ggfsPath) == PROXY)
+            if (modeRslvr.resolveMode(igfsPath) == PROXY)
                 return secondaryFs.getFileBlockLocations(path, start, len);
             else {
                 long now = System.currentTimeMillis();
 
                 List<IgfsBlockLocation> affinity = new ArrayList<>(
-                    rmtClient.affinity(ggfsPath, start, len));
+                    rmtClient.affinity(igfsPath, start, len));
 
                 BlockLocation[] arr = new BlockLocation[affinity.size()];
 

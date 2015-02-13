@@ -53,14 +53,14 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     public void testWholeMapReduceExecution() throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
         IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
         for (int i = 0; i < 8; i++) {
-            ggfs.delete(new IgfsPath(PATH_OUTPUT), true);
+            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
@@ -90,8 +90,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
@@ -184,11 +184,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ggfs.exists(statPath);
+                return igfs.exists(statPath);
             }
         }, 10000);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(statPath)));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(statPath)));
 
         assertEquals(apiEvtCnt, GridHadoopTestUtils.simpleCheckJobStatFile(reader));
     }

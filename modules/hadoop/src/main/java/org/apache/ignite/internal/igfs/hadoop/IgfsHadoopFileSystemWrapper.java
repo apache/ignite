@@ -101,13 +101,13 @@ public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
         boolean wrongVer = X.hasCause(e, RemoteException.class) ||
             (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
-        IgfsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
+        IgfsException igfsErr = !wrongVer ? cast(detailMsg, e) :
             new IgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                 "version.", e);
 
 
 
-        return ggfsErr;
+        return igfsErr;
     }
 
     /**

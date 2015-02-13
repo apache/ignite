@@ -72,8 +72,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
 
     /** {@inheritDoc} */
-    @Override public IgfsConfiguration ggfsConfiguration() {
-        IgfsConfiguration cfg = super.ggfsConfiguration();
+    @Override public IgfsConfiguration igfsConfiguration() {
+        IgfsConfiguration cfg = super.igfsConfiguration();
 
         cfg.setFragmentizerEnabled(false);
 
@@ -81,7 +81,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -101,7 +101,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).fileSystem(ggfsName).format();
+        grid(0).fileSystem(igfsName).format();
     }
 
     /** {@inheritDoc} */
@@ -246,9 +246,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void prepareFile(String fileName, int lineCnt) throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(igfsName);
 
-        try (OutputStream os = ggfs.create(new IgfsPath(fileName), true)) {
+        try (OutputStream os = igfs.create(new IgfsPath(fileName), true)) {
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));
 
             for (int i = 0; i < lineCnt; i++)

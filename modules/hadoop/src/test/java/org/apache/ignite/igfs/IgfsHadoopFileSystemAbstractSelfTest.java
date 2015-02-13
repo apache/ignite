@@ -65,7 +65,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     private static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
-    private static final String SECONDARY_AUTHORITY = "ggfs_secondary:grid_secondary@127.0.0.1:11500";
+    private static final String SECONDARY_AUTHORITY = "igfs_secondary:grid_secondary@127.0.0.1:11500";
 
     /** Secondary file systme URI. */
     private static final String SECONDARY_URI = "igfs://" + SECONDARY_AUTHORITY + "/";
@@ -172,14 +172,14 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary IGFS.
-            IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+            IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-            ggfsCfg.setDataCacheName("partitioned");
-            ggfsCfg.setMetaCacheName("replicated");
-            ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(SECONDARY_ENDPOINT_CFG);
-            ggfsCfg.setBlockSize(512 * 1024);
-            ggfsCfg.setPrefetchBlocks(1);
+            igfsCfg.setDataCacheName("partitioned");
+            igfsCfg.setMetaCacheName("replicated");
+            igfsCfg.setName("igfs_secondary");
+            igfsCfg.setIpcEndpointConfiguration(SECONDARY_ENDPOINT_CFG);
+            igfsCfg.setBlockSize(512 * 1024);
+            igfsCfg.setPrefetchBlocks(1);
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -210,7 +210,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
             cfg.setDiscoverySpi(discoSpi);
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-            cfg.setIgfsConfiguration(ggfsCfg);
+            cfg.setIgfsConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
             cfg.setCommunicationSpi(communicationSpi());
@@ -276,7 +276,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
-        cfg.setIgfsConfiguration(ggfsConfiguration(gridName));
+        cfg.setIgfsConfiguration(igfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setCommunicationSpi(communicationSpi());
 
@@ -318,7 +318,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      * @param gridName Grid name.
      * @return IGFS configuration.
      */
-    protected IgfsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
+    protected IgfsConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
         IgfsConfiguration cfg = new IgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -1306,10 +1306,10 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      * @throws Exception If failed.
      */
     public void testListStatus() throws Exception {
-        Path ggfsHome = new Path(PRIMARY_URI);
+        Path igfsHome = new Path(PRIMARY_URI);
 
         // Test listing of an empty directory.
-        Path dir = new Path(ggfsHome, "dir");
+        Path dir = new Path(igfsHome, "dir");
 
         assert fs.mkdirs(dir);
 
@@ -1483,9 +1483,9 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
     /** @throws Exception If failed. */
     public void testGetFileBlockLocations() throws Exception {
-        Path ggfsHome = new Path(PRIMARY_URI);
+        Path igfsHome = new Path(PRIMARY_URI);
 
-        Path file = new Path(ggfsHome, "someFile");
+        Path file = new Path(igfsHome, "someFile");
 
         try (OutputStream out = new BufferedOutputStream(fs.create(file, true, 1024 * 1024))) {
             byte[] data = new byte[128 * 1024];
@@ -1528,9 +1528,9 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
-            Path ggfsHome = new Path(PRIMARY_URI);
+            Path igfsHome = new Path(PRIMARY_URI);
 
-            Path file = new Path(ggfsHome, "someFile");
+            Path file = new Path(igfsHome, "someFile");
 
             try (FSDataOutputStream out = fs.create(file, (short)0)) {
                 out.write(new byte[1024 * 1024]);
@@ -2059,9 +2059,9 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      */
     private void checkConsistency(int createBufSize, int writeCntsInCreate, int openAfterCreateBufSize,
         int appendBufSize, int writeCntsInAppend, int openAfterAppendBufSize) throws Exception {
-        final Path ggfsHome = new Path(PRIMARY_URI);
+        final Path igfsHome = new Path(PRIMARY_URI);
 
-        Path file = new Path(ggfsHome, "/someDir/someInnerDir/someFile");
+        Path file = new Path(igfsHome, "/someDir/someInnerDir/someFile");
 
         FSDataOutputStream os = fs.create(file, true, createBufSize);
 

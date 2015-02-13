@@ -67,7 +67,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -111,7 +111,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName).format();
+        grid(0).fileSystem(GridHadoopAbstractSelfTest.igfsName).format();
 
         setupLockFile.delete();
         mapLockFile.delete();
@@ -150,11 +150,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testJobCounters() throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.igfsName);
 
-        ggfs.mkdirs(new IgfsPath(PATH_INPUT));
+        igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(igfs.create(
             new IgfsPath(PATH_INPUT + "/test.file"), true)))) {
 
             bw.write(
@@ -268,11 +268,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.igfsName);
 
-        ggfs.mkdirs(new IgfsPath(PATH_INPUT));
+        igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(igfs.create(
             new IgfsPath(PATH_INPUT + "/test.file"), true)))) {
 
             bw.write("word");
@@ -389,30 +389,30 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert jobStatus.getMapProgress() == 1.0f;
         assert jobStatus.getReduceProgress() == 1.0f;
 
-        dumpGgfs(ggfs, new IgfsPath(PATH_OUTPUT));
+        dumpIgfs(igfs, new IgfsPath(PATH_OUTPUT));
     }
 
     /**
      * Dump IGFS content.
      *
-     * @param ggfs IGFS.
+     * @param igfs IGFS.
      * @param path Path.
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static void dumpGgfs(IgniteFs ggfs, IgfsPath path) throws Exception {
-        IgfsFile file = ggfs.info(path);
+    private static void dumpIgfs(IgniteFs igfs, IgfsPath path) throws Exception {
+        IgfsFile file = igfs.info(path);
 
         assert file != null;
 
         System.out.println(file.path());
 
         if (file.isDirectory()) {
-            for (IgfsPath child : ggfs.listPaths(path))
-                dumpGgfs(ggfs, child);
+            for (IgfsPath child : igfs.listPaths(path))
+                dumpIgfs(igfs, child);
         }
         else {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(ggfs.open(path)))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(igfs.open(path)))) {
                 String line = br.readLine();
 
                 while (line != null) {

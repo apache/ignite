@@ -58,7 +58,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
         IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
@@ -68,7 +68,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         for (int i = 0; i < 2; i++) {
             boolean useNewAPI = i == 1;
 
-            ggfs.delete(new IgfsPath(PATH_OUTPUT), true);
+            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
             flags.put("serializationWasConfigured", false);
             flags.put("partitionerWasConfigured", false);
@@ -109,8 +109,8 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
             job.setNumReduceTasks(3);
 

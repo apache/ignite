@@ -39,19 +39,19 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     protected static final int REST_PORT = 11212;
 
     /** IGFS name. */
-    protected static final String ggfsName = null;
+    protected static final String igfsName = null;
 
     /** IGFS name. */
-    protected static final String ggfsMetaCacheName = "meta";
+    protected static final String igfsMetaCacheName = "meta";
 
     /** IGFS name. */
-    protected static final String ggfsDataCacheName = "data";
+    protected static final String igfsDataCacheName = "data";
 
     /** IGFS block size. */
-    protected static final int ggfsBlockSize = 1024;
+    protected static final int igfsBlockSize = 1024;
 
     /** IGFS block group size. */
-    protected static final int ggfsBlockGroupSize = 8;
+    protected static final int igfsBlockGroupSize = 8;
 
     /** Initial REST port. */
     private int restPort = REST_PORT;
@@ -94,10 +94,10 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setCommunicationSpi(commSpi);
 
-        if (ggfsEnabled()) {
+        if (igfsEnabled()) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
-            cfg.setIgfsConfiguration(ggfsConfiguration());
+            cfg.setIgfsConfiguration(igfsConfiguration());
         }
 
         if (restEnabled()) {
@@ -129,13 +129,13 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return IGFS configuration.
      */
-    public IgfsConfiguration ggfsConfiguration() {
+    public IgfsConfiguration igfsConfiguration() {
         IgfsConfiguration cfg = new IgfsConfiguration();
 
-        cfg.setName(ggfsName);
-        cfg.setBlockSize(ggfsBlockSize);
-        cfg.setDataCacheName(ggfsDataCacheName);
-        cfg.setMetaCacheName(ggfsMetaCacheName);
+        cfg.setName(igfsName);
+        cfg.setBlockSize(igfsBlockSize);
+        cfg.setDataCacheName(igfsDataCacheName);
+        cfg.setMetaCacheName(igfsMetaCacheName);
         cfg.setFragmentizerEnabled(false);
 
         return cfg;
@@ -147,7 +147,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     public CacheConfiguration metaCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 
-        cfg.setName(ggfsMetaCacheName);
+        cfg.setName(igfsMetaCacheName);
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -161,10 +161,10 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     private CacheConfiguration dataCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 
-        cfg.setName(ggfsDataCacheName);
+        cfg.setName(igfsDataCacheName);
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(ggfsBlockGroupSize));
+        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(igfsBlockGroupSize));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;
@@ -173,7 +173,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return {@code True} if IGFS is enabled on Hadoop nodes.
      */
-    protected boolean ggfsEnabled() {
+    protected boolean igfsEnabled() {
         return false;
     }
 
@@ -195,7 +195,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      * @param cfg Config.
      */
     protected void setupFileSystems(Configuration cfg) {
-        cfg.set("fs.defaultFS", ggfsScheme());
+        cfg.set("fs.defaultFS", igfsScheme());
         cfg.set("fs.igfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.igfs.impl", IgfsHadoopFileSystem.
             class.getName());
@@ -206,7 +206,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return IGFS scheme for test.
      */
-    protected String ggfsScheme() {
+    protected String igfsScheme() {
         return "igfs://:" + getTestGridName(0) + "@/";
     }
 }

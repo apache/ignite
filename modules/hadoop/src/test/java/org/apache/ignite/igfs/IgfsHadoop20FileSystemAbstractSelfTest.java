@@ -143,15 +143,15 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary IGFS.
-            IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+            IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-            ggfsCfg.setDataCacheName("partitioned");
-            ggfsCfg.setMetaCacheName("replicated");
-            ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
-            ggfsCfg.setManagementPort(-1);
-            ggfsCfg.setBlockSize(512 * 1024);
-            ggfsCfg.setPrefetchBlocks(1);
+            igfsCfg.setDataCacheName("partitioned");
+            igfsCfg.setMetaCacheName("replicated");
+            igfsCfg.setName("igfs_secondary");
+            igfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
+            igfsCfg.setManagementPort(-1);
+            igfsCfg.setBlockSize(512 * 1024);
+            igfsCfg.setPrefetchBlocks(1);
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -182,7 +182,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
             cfg.setDiscoverySpi(discoSpi);
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-            cfg.setIgfsConfiguration(ggfsCfg);
+            cfg.setIgfsConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
             cfg.setLocalHost(U.getLocalHost().getHostAddress());
             cfg.setCommunicationSpi(communicationSpi());
@@ -208,7 +208,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
-        cfg.setIgfsConfiguration(ggfsConfiguration(gridName));
+        cfg.setIgfsConfiguration(igfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
@@ -251,7 +251,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return IGFS configuration.
      */
-    protected IgfsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
+    protected IgfsConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
         IgfsConfiguration cfg = new IgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -327,9 +327,9 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         long used = 0, max = 0;
 
         for (int i = 0; i < 4; i++) {
-            IgniteFs ggfs = grid(i).fileSystem("igfs");
+            IgniteFs igfs = grid(i).fileSystem("igfs");
 
-            IgfsMetrics metrics = ggfs.metrics();
+            IgfsMetrics metrics = igfs.metrics();
 
             used += metrics.localSpaceSize();
             max += metrics.maxSpaceSize();
@@ -1132,10 +1132,10 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      * @throws Exception If failed.
      */
     public void testListStatus() throws Exception {
-        Path ggfsHome = new Path(primaryFsUri);
+        Path igfsHome = new Path(primaryFsUri);
 
         // Test listing of an empty directory.
-        Path dir = new Path(ggfsHome, "dir");
+        Path dir = new Path(igfsHome, "dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1249,9 +1249,9 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     public void testGetFileBlockLocations() throws Exception {
-        Path ggfsHome = new Path(primaryFsUri);
+        Path igfsHome = new Path(primaryFsUri);
 
-        Path file = new Path(ggfsHome, "someFile");
+        Path file = new Path(igfsHome, "someFile");
 
         try (OutputStream out = new BufferedOutputStream(fs.create(file, EnumSet.noneOf(CreateFlag.class),
             Options.CreateOpts.perms(FsPermission.getDefault())))) {
@@ -1289,9 +1289,9 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
-            Path ggfsHome = new Path(primaryFsUri);
+            Path igfsHome = new Path(primaryFsUri);
 
-            Path file = new Path(ggfsHome, "someFile");
+            Path file = new Path(igfsHome, "someFile");
 
             try (FSDataOutputStream out = fs.create(file, EnumSet.noneOf(CreateFlag.class),
                 Options.CreateOpts.perms(FsPermission.getDefault()), Options.CreateOpts.repFac((short)1))) {
@@ -1721,9 +1721,9 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      * @throws Exception If error occurs.
      */
     public void testClientReconnect() throws Exception {
-        final Path ggfsHome = new Path(primaryFsUri);
+        final Path igfsHome = new Path(primaryFsUri);
 
-        final Path filePath = new Path(ggfsHome, "someFile");
+        final Path filePath = new Path(igfsHome, "someFile");
 
         final FSDataOutputStream s = fs.create(filePath, EnumSet.noneOf(CreateFlag.class),
             Options.CreateOpts.perms(FsPermission.getDefault())); // Open stream before stopping IGFS.
@@ -1815,9 +1815,9 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      */
     private void checkConsistency(int createBufSize, int writeCntsInCreate, int openAfterCreateBufSize,
         int appendBufSize, int writeCntsInAppend, int openAfterAppendBufSize) throws Exception {
-        final Path ggfsHome = new Path(primaryFsUri);
+        final Path igfsHome = new Path(primaryFsUri);
 
-        Path file = new Path(ggfsHome, "/someDir/someInnerDir/someFile");
+        Path file = new Path(igfsHome, "/someDir/someInnerDir/someFile");
 
         if (createBufSize == -1)
             createBufSize = fs.getServerDefaults().getFileBufferSize();

@@ -77,14 +77,14 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class ShmemPrivate extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "shmem");
                 put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
             }});
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -94,14 +94,14 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class LoopbackPrivate extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "tcp");
                 put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
             }});
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -110,38 +110,38 @@ public class IgfsEventsTestSuite extends TestSuite {
      */
     public abstract static class PrimarySecondaryTest extends IgfsEventsAbstractSelfTest {
         /** Secondary file system. */
-        private static IgniteFs ggfsSec;
+        private static IgniteFs igfsSec;
 
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
+            igfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
                 "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
-            return ggfsCfg;
+            return igfsCfg;
         }
 
         /**
          * @return IGFS configuration for secondary file system.
          */
-        protected IgfsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+        protected IgfsConfiguration getSecondaryIgfsConfiguration() throws IgniteCheckedException {
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setName("igfs-secondary");
-            ggfsCfg.setDefaultMode(PRIMARY);
-            ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>(){{
+            igfsCfg.setName("igfs-secondary");
+            igfsCfg.setDefaultMode(PRIMARY);
+            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>(){{
                 put("type", "tcp");
                 put("port", "11500");
             }});
 
-            return ggfsCfg;
+            return igfsCfg;
         }
 
         /** {@inheritDoc} */
         @Override protected void beforeTestsStarted() throws Exception {
-            ggfsSec = startSecondary();
+            igfsSec = startSecondary();
 
             super.beforeTestsStarted();
         }
@@ -158,7 +158,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             super.afterTest();
 
             // Clean up secondary file system.
-            ggfsSec.format();
+            igfsSec.format();
         }
 
         /**
@@ -168,7 +168,7 @@ public class IgfsEventsTestSuite extends TestSuite {
          * @throws Exception If failed.
          */
         @Nullable private IgniteFs startSecondary() throws Exception {
-            IgniteConfiguration cfg = getConfiguration("grid-secondary", getSecondaryGgfsConfiguration());
+            IgniteConfiguration cfg = getConfiguration("grid-secondary", getSecondaryIgfsConfiguration());
 
             cfg.setLocalHost("127.0.0.1");
             cfg.setPeerClassLoadingEnabled(false);
@@ -185,11 +185,11 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class ShmemDualSync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setDefaultMode(DUAL_SYNC);
+            igfsCfg.setDefaultMode(DUAL_SYNC);
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -199,11 +199,11 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class ShmemDualAsync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setDefaultMode(DUAL_ASYNC);
+            igfsCfg.setDefaultMode(DUAL_ASYNC);
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -213,27 +213,27 @@ public class IgfsEventsTestSuite extends TestSuite {
     public abstract static class LoopbackPrimarySecondaryTest extends PrimarySecondaryTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
+            igfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
                 "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
-            return ggfsCfg;
+            return igfsCfg;
         }
 
         /** {@inheritDoc} */
-        @Override protected IgfsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getSecondaryGgfsConfiguration();
+        @Override protected IgfsConfiguration getSecondaryIgfsConfiguration() throws IgniteCheckedException {
+            IgfsConfiguration igfsCfg = super.getSecondaryIgfsConfiguration();
 
-            ggfsCfg.setName("igfs-secondary");
-            ggfsCfg.setDefaultMode(PRIMARY);
-            ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            igfsCfg.setName("igfs-secondary");
+            igfsCfg.setDefaultMode(PRIMARY);
+            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "tcp");
                 put("port", "11500");
             }});
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -243,11 +243,11 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class LoopbackDualSync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setDefaultMode(DUAL_SYNC);
+            igfsCfg.setDefaultMode(DUAL_SYNC);
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 
@@ -257,11 +257,11 @@ public class IgfsEventsTestSuite extends TestSuite {
     public static class LoopbackDualAsync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
         @Override protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
-            IgfsConfiguration ggfsCfg = super.getIgfsConfiguration();
+            IgfsConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            ggfsCfg.setDefaultMode(DUAL_ASYNC);
+            igfsCfg.setDefaultMode(DUAL_ASYNC);
 
-            return ggfsCfg;
+            return igfsCfg;
         }
     }
 }

@@ -141,7 +141,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     private boolean seqReadsBeforePrefetchOverride;
 
     /** IGFS group block size. */
-    private long ggfsGrpBlockSize;
+    private long igfsGrpBlockSize;
 
     /** Flag that controls whether file writes should be colocated. */
     private boolean colocateFileWrites;
@@ -247,7 +247,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             // Handshake.
             IgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
 
-            ggfsGrpBlockSize = handshake.blockSize();
+            igfsGrpBlockSize = handshake.blockSize();
 
             IgfsPaths paths = handshake.secondaryPaths();
 
@@ -527,13 +527,13 @@ public class IgfsHadoopFileSystem extends FileSystem {
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                IgfsHadoopInputStream ggfsIn = new IgfsHadoopInputStream(stream, stream.length(),
+                IgfsHadoopInputStream igfsIn = new IgfsHadoopInputStream(stream, stream.length(),
                     bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened input stream [path=" + path + ", delegate=" + stream + ']');
 
-                return new FSDataInputStream(ggfsIn);
+                return new FSDataInputStream(igfsIn);
             }
         }
         finally {
@@ -598,12 +598,12 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened output stream in create [path=" + path + ", delegate=" + stream + ']');
 
-                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
+                IgfsHadoopOutputStream igfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
                     logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);
 
-                out = new BufferedOutputStream(ggfsOut, bufSize);
+                out = new BufferedOutputStream(igfsOut, bufSize);
 
                 FSDataOutputStream res = new FSDataOutputStream(out, null, 0);
 
@@ -672,12 +672,12 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened output stream in append [path=" + path + ", delegate=" + stream + ']');
 
-                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
+                IgfsHadoopOutputStream igfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
                     logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);
 
-                BufferedOutputStream out = new BufferedOutputStream(ggfsOut, bufSize);
+                BufferedOutputStream out = new BufferedOutputStream(igfsOut, bufSize);
 
                 return new FSDataOutputStream(out, null, 0);
             }
@@ -1050,7 +1050,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public long getDefaultBlockSize() {
-        return ggfsGrpBlockSize;
+        return igfsGrpBlockSize;
     }
 
     /**

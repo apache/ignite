@@ -120,7 +120,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      *
      * @throws Exception If failed.
      */
-    public void testHandshakeDefaultGgfs() throws Exception {
+    public void testHandshakeDefaultIgfs() throws Exception {
         startUp(false, true);
 
         checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
@@ -145,7 +145,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      *
      * @throws Exception If failed.
      */
-    public void testHandshakeDefaultGridDefaultGgfs() throws Exception {
+    public void testHandshakeDefaultGridDefaultIgfs() throws Exception {
         startUp(true, true);
 
         checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
@@ -169,26 +169,26 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      * Perform startup.
      *
      * @param dfltGridName Default Grid name.
-     * @param dfltGgfsName Default IGFS name.
+     * @param dfltIgfsName Default IGFS name.
      * @throws Exception If failed.
      */
-    private void startUp(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
-        Ignite ignite = G.start(gridConfiguration(dfltGridName, dfltGgfsName));
+    private void startUp(boolean dfltGridName, boolean dfltIgfsName) throws Exception {
+        Ignite ignite = G.start(gridConfiguration(dfltGridName, dfltIgfsName));
 
-        IgniteFs ggfs = ignite.fileSystem(dfltGgfsName ? null : IGFS_NAME);
+        IgniteFs igfs = ignite.fileSystem(dfltIgfsName ? null : IGFS_NAME);
 
-        ggfs.mkdirs(PATH);
+        igfs.mkdirs(PATH);
     }
 
     /**
      * Create Grid configuration.
      *
      * @param dfltGridName Default Grid name.
-     * @param dfltGgfsName Default IGFS name.
+     * @param dfltIgfsName Default IGFS name.
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration gridConfiguration(boolean dfltGridName, boolean dfltGgfsName) throws Exception {
+    private IgniteConfiguration gridConfiguration(boolean dfltGridName, boolean dfltIgfsName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(dfltGridName ? null : GRID_NAME);
 
         cfg.setLocalHost("127.0.0.1");
@@ -227,22 +227,22 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName(dfltGgfsName ? null : IGFS_NAME);
-        ggfsCfg.setPrefetchBlocks(1);
-        ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setName(dfltIgfsName ? null : IGFS_NAME);
+        igfsCfg.setPrefetchBlocks(1);
+        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
             put("port", String.valueOf(DFLT_IPC_PORT));
         }});
 
-        ggfsCfg.setManagementPort(-1);
-        ggfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setManagementPort(-1);
+        igfsCfg.setBlockSize(512 * 1024);
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }
