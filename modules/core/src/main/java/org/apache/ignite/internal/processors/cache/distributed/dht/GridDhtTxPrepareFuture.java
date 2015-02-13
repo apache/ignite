@@ -641,6 +641,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             for (IgniteTxEntry<K, V> e : writes) {
                 IgniteTxEntry<K, V> txEntry = tx.entry(e.txKey());
 
+                GridCacheContext<K, V> cacheCtx = txEntry.context();
+
                 assert txEntry != null : "Missing tx entry for key [tx=" + tx + ", key=" + e.txKey() + ']';
 
                 while (true) {
@@ -670,6 +672,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     }
                     catch (GridCacheEntryRemovedException ignored) {
                         // Retry.
+                        txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
                     }
                 }
             }
@@ -680,6 +683,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             if (res.hasOwnedValue(ver.getKey()))
                 continue;
+
+            GridCacheContext<K, V> cacheCtx = txEntry.context();
 
             while (true) {
                 try {
@@ -709,6 +714,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
