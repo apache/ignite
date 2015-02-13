@@ -78,7 +78,7 @@ import static org.h2.result.SortOrder.*;
  * <p>
  * For each registered {@link GridQueryTypeDescriptor} this SPI will create respective SQL table with
  * {@code '_key'} and {@code '_val'} fields for key and value, and fields from
- * {@link GridQueryTypeDescriptor#keyFields()} and {@link GridQueryTypeDescriptor#valueFields()}.
+ * {@link GridQueryTypeDescriptor#fields()}.
  * For each table it will create indexes declared in {@link GridQueryTypeDescriptor#indexes()}.
  * <h1 class="header">Some important defaults.</h1>
  * <ul>
@@ -952,16 +952,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Do not register if value is not primitive and
         // there are no indexes or fields defined.
-        if (!type.valueTextIndex() && type.indexes().isEmpty() &&
-            type.keyFields().isEmpty() && type.valueFields().isEmpty())
+        if (!type.valueTextIndex() && type.indexes().isEmpty() && type.fields().isEmpty())
             return keyPrimitive && isIndexPrimitiveKey(spaceName) || valPrimitive && isIndexPrimitiveValue(spaceName);
 
         Collection<String> names = new HashSet<>();
 
-        names.addAll(type.keyFields().keySet());
-        names.addAll(type.valueFields().keySet());
+        names.addAll(type.fields().keySet());
 
-        if (names.size() < type.keyFields().size() + type.valueFields().size())
+        if (names.size() < type.fields().size())
             throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
@@ -1039,10 +1037,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
 
-        for (Map.Entry<String, Class<?>> e: tbl.type().keyFields().entrySet())
-            sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
-
-        for (Map.Entry<String, Class<?>> e: tbl.type().valueFields().entrySet())
+        for (Map.Entry<String, Class<?>> e: tbl.type().fields().entrySet())
             sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
 
         sql.a(')');
@@ -1951,9 +1946,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final Schema schema;
 
         /** */
-        private final int keyCols;
-
-        /** */
         private final GridUnsafeGuard guard = offheap == null ? null : new GridUnsafeGuard();
 
         /**
@@ -1968,12 +1960,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.type = type;
             this.schema = schema;
 
-            keyCols = type.keyFields().size();
-
             Map<String, Class<?>> allFields = new LinkedHashMap<>();
 
-            allFields.putAll(type.keyFields());
-            allFields.putAll(type.valueFields());
+            allFields.putAll(type.fields());
 
             fields = allFields.keySet().toArray(new String[allFields.size()]);
 
@@ -2063,23 +2052,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public Object columnValue(Object obj, int col) {
+        @Override public Object columnValue(Object key, Object val, int col) {
             try {
-                return type.value(obj, fields[col]);
+                return type.value(fields[col], key, val);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKeyColumn(int col) {
-            return keyCols > col;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean valueToString() {
-            return type.valueTextIndex();
         }
 
         /** {@inheritDoc} */

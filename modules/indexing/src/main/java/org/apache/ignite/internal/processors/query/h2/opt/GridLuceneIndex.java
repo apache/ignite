@@ -73,9 +73,6 @@ public class GridLuceneIndex implements Closeable {
     private final boolean storeVal;
 
     /** */
-    private final BitSet keyFields = new BitSet();
-
-    /** */
     private final AtomicLong updateCntr = new GridAtomicLong();
 
     /** */
@@ -124,9 +121,6 @@ public class GridLuceneIndex implements Closeable {
             idxdFields = new String[fields.size() + 1];
 
             fields.toArray(idxdFields);
-
-            for (int i = 0, len = fields.size() ; i < len; i++)
-                keyFields.set(i, type.keyFields().containsKey(idxdFields[i]));
         }
         else {
             assert type.valueTextIndex() || type.valueClass() == String.class;
@@ -158,7 +152,7 @@ public class GridLuceneIndex implements Closeable {
         }
 
         for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
-            Object fieldVal = type.value(keyFields.get(i) ? key : val, idxdFields[i]);
+            Object fieldVal = type.value(idxdFields[i], key, val);
 
             if (fieldVal != null) {
                 doc.add(new Field(idxdFields[i], fieldVal.toString(), Field.Store.YES, Field.Index.ANALYZED));

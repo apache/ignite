@@ -271,14 +271,13 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
         assert col >= 0;
 
-        Value v = getValue(desc.isKeyColumn(col) ? KEY_COL : VAL_COL);
+        Value key = getValue(KEY_COL);
+        Value val = getValue(VAL_COL);
 
-        if (v == null)
-            return null;
+        assert key != null;
+        assert val != null;
 
-        Object obj = v.getObject();
-
-        Object res = desc.columnValue(obj, col);
+        Object res = desc.columnValue(key.getObject(), val.getObject(), col);
 
         if (res == null)
             return ValueNull.INSTANCE;

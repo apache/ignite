@@ -518,21 +518,25 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Class<?>> valueFields() {
+        @Override public Map<String, Class<?>> fields() {
             return valFields;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Class<?>> keyFields() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T value(Object obj, String field) throws IgniteSpiException {
-            assert obj != null;
+        @Override public <T> T value(String field, Object key, Object val) throws IgniteSpiException {
             assert !F.isEmpty(field);
 
-            return (T)((Map<String, Object>) obj).get(field);
+            Map m = (Map)key;
+
+            if (m.containsKey(field))
+                return (T)m.get(field);
+
+            m = (Map)val;
+
+            if (m.containsKey(field))
+                return (T)m.get(field);
+
+            return null;
         }
 
         /** */
