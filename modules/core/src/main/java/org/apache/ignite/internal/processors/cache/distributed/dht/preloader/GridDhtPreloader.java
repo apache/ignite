@@ -466,13 +466,21 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param updateSeq Update sequence.
      */
     public void onPartitionEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
-        top.onEvicted(part, updateSeq);
+        if (!enterBusy())
+            return;
 
-        if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_UNLOADED))
-            cctx.events().addUnloadEvent(part.id());
+        try {
+            top.onEvicted(part, updateSeq);
 
-        if (updateSeq)
-            cctx.shared().exchange().scheduleResendPartitions();
+            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_UNLOADED))
+                cctx.events().addUnloadEvent(part.id());
+
+            if (updateSeq)
+                cctx.shared().exchange().scheduleResendPartitions();
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
