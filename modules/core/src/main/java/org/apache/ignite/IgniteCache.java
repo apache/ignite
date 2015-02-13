@@ -307,7 +307,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached on this nodes.
+     * Gets the number of all entries cached on this node.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size on this node.
