@@ -116,13 +116,13 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         if (jobResult.streamersEx() != null)
             taskResult.streamersEx().put(nid, jobResult.streamersEx());
 
-        if (!jobResult.ggfss().isEmpty())
-            taskResult.ggfss().put(nid, jobResult.ggfss());
+        if (!jobResult.igfss().isEmpty())
+            taskResult.igfss().put(nid, jobResult.igfss());
 
-        if (!jobResult.ggfsEndpoints().isEmpty())
-            taskResult.ggfsEndpoints().put(nid, jobResult.ggfsEndpoints());
+        if (!jobResult.igfsEndpoints().isEmpty())
+            taskResult.igfsEndpoints().put(nid, jobResult.igfsEndpoints());
 
-        if (jobResult.ggfssEx() != null)
-            taskResult.ggfssEx().put(nid, jobResult.ggfssEx());
+        if (jobResult.igfssEx() != null)
+            taskResult.igfssEx().put(nid, jobResult.igfssEx());
     }
 }

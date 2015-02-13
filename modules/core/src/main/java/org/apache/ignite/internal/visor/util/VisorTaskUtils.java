@@ -24,7 +24,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.event.*;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
@@ -85,12 +85,7 @@ public class VisorTaskUtils {
     /** Only non task event types that Visor should collect. */
     private static final int[] VISOR_NON_TASK_EVTS = {
         EVT_CLASS_DEPLOY_FAILED,
-        EVT_TASK_DEPLOY_FAILED,
-
-        EVT_AUTHORIZATION_FAILED,
-        EVT_AUTHENTICATION_FAILED,
-
-        EVT_SECURE_SESSION_VALIDATION_FAILED
+        EVT_TASK_DEPLOY_FAILED
     };
 
     /** Only non task event types that Visor should collect. */
@@ -419,24 +414,6 @@ public class VisorTaskUtils {
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
             }
-            else if (e instanceof AuthorizationEvent) {
-                AuthorizationEvent ae = (AuthorizationEvent)e;
-
-                res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
-                    ae.subject()));
-            }
-            else if (e instanceof AuthenticationEvent) {
-                AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                    ae.subjectId(), ae.login()));
-            }
-            else if (e instanceof SecureSessionEvent) {
-                SecureSessionEvent se = (SecureSessionEvent)e;
-
-                res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
-                    se.subjectId()));
-            }
         }
 
         return res;
@@ -597,23 +574,23 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Resolve GGFS profiler logs directory.
+     * Resolve IGFS profiler logs directory.
      *
-     * @param ggfs GGFS instance to resolve logs dir for.
+     * @param igfs IGFS instance to resolve logs dir for.
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
+    public static Path resolveIgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
         String logsDir;
 
-        if (ggfs instanceof GridGgfsEx)
-            logsDir = ((GridGgfsEx)ggfs).clientLogDirectory();
-        else if (ggfs == null)
-            throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
+        if (igfs instanceof IgfsEx)
+            logsDir = ((IgfsEx)igfs).clientLogDirectory();
+        else if (igfs == null)
+            throw new IgniteCheckedException("Failed to get profiler log folder (IGFS instance not found)");
         else
-            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected IGFS instance type)");
 
-        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
+        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_IGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }

@@ -74,8 +74,8 @@ public class VisorGridConfiguration implements Serializable {
     /** Caches. */
     private Iterable<VisorCacheConfiguration> caches;
 
-    /** Ggfss. */
-    private Iterable<VisorGgfsConfiguration> ggfss;
+    /** Igfss. */
+    private Iterable<VisorIgfsConfiguration> igfss;
 
     /** Streamers. */
     private Iterable<VisorStreamerConfiguration> streamers;
@@ -108,7 +108,7 @@ public class VisorGridConfiguration implements Serializable {
         rest(VisorRestConfiguration.from(c));
         userAttributes(c.getUserAttributes());
         caches(VisorCacheConfiguration.list(ignite, c.getCacheConfiguration()));
-        ggfss(VisorGgfsConfiguration.list(c.getGgfsConfiguration()));
+        igfss(VisorIgfsConfiguration.list(c.getIgfsConfiguration()));
         streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
         env(new HashMap<>(getenv()));
         systemProperties(getProperties());
@@ -299,17 +299,17 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @return Ggfss.
+     * @return Igfss.
      */
-    public Iterable<VisorGgfsConfiguration> ggfss() {
-        return ggfss;
+    public Iterable<VisorIgfsConfiguration> igfss() {
+        return igfss;
     }
 
     /**
-     * @param ggfss New ggfss.
+     * @param igfss New igfss.
      */
-    public void ggfss(Iterable<VisorGgfsConfiguration> ggfss) {
-        this.ggfss = ggfss;
+    public void igfss(Iterable<VisorIgfsConfiguration> igfss) {
+        this.igfss = igfss;
     }
 
     /**

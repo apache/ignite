@@ -147,8 +147,6 @@ public class VisorSpisConfiguration implements Serializable {
         cfg.communicationSpi(collectSpiInfo(c.getCommunicationSpi()));
         cfg.eventStorageSpi(collectSpiInfo(c.getEventStorageSpi()));
         cfg.collisionSpi(collectSpiInfo(c.getCollisionSpi()));
-        cfg.authenticationSpi(collectSpiInfo(c.getAuthenticationSpi()));
-        cfg.secureSessionSpi(collectSpiInfo(c.getSecureSessionSpi()));
         cfg.deploymentSpi(collectSpiInfo(c.getDeploymentSpi()));
         cfg.checkpointSpis(collectSpiInfo(c.getCheckpointSpi()));
         cfg.failoverSpis(collectSpiInfo(c.getFailoverSpi()));

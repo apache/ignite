@@ -26,8 +26,8 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.ignitefs.hadoop.v1.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.hadoop.v1.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -72,8 +72,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
 
     /** {@inheritDoc} */
-    @Override public IgniteFsConfiguration ggfsConfiguration() {
-        IgniteFsConfiguration cfg = super.ggfsConfiguration();
+    @Override public IgfsConfiguration igfsConfiguration() {
+        IgfsConfiguration cfg = super.igfsConfiguration();
 
         cfg.setFragmentizerEnabled(false);
 
@@ -81,7 +81,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -101,7 +101,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).fileSystem(ggfsName).format();
+        grid(0).fileSystem(igfsName).format();
     }
 
     /** {@inheritDoc} */
@@ -128,7 +128,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.igfs.impl", IgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -140,8 +140,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -169,7 +169,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.igfs.impl", IgfsHadoopFileSystem.class.getName());
         cfg.setBoolean(MAP_WRITE, true);
 
         Job job = Job.getInstance(cfg);
@@ -184,8 +184,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 
@@ -211,7 +211,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.igfs.impl", IgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -223,8 +223,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -246,9 +246,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void prepareFile(String fileName, int lineCnt) throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(igfsName);
 
-        try (OutputStream os = ggfs.create(new IgniteFsPath(fileName), true)) {
+        try (OutputStream os = igfs.create(new IgfsPath(fileName), true)) {
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));
 
             for (int i = 0; i < lineCnt; i++)
@@ -285,8 +285,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(InFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
 
         job.setJarByClass(getClass());
 

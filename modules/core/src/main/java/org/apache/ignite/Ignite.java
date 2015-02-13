@@ -189,26 +189,26 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets the cache instance for the given name, if one does not
      * exist {@link IllegalArgumentException} will be thrown.
-     * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}
+     * Note that in case named cache instance is used as IGFS data or meta cache, {@link IllegalStateException}
      * will be thrown.
      *
      * @param <K> Key type.
      * @param <V> Value type.
      * @param name Cache name.
      * @return Cache instance for given name.
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
      */
     public <K, V> GridCache<K, V> cache(@Nullable String name);
 
     /**
      * Gets all configured caches.
-     * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
+     * Caches that are used as IGFS meta and data caches will not be returned in resulting collection.
      *
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
     public Collection<GridCache<?, ?>> caches();
@@ -240,15 +240,15 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - Ignite In-Memory File System, if one is not
+     * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
-     * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
+     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
      * documentation on Hadoop integration shipped with Ignite.
      *
-     * @param name GGFS name.
-     * @return GGFS instance.
+     * @param name IGFS name.
+     * @return IGFS instance.
      */
     public IgniteFs fileSystem(String name);
 
