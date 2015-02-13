@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * No-op implementation for {@link GridSecureSessionProcessor}.
  */
-public class GridOsSecureSessionProcessor extends GridNoopProcessorAdapter implements GridSecureSessionProcessor {
+public class GridOsSecureSessionProcessor extends GridProcessorAdapter implements GridSecureSessionProcessor {
     /** Empty bytes. */
     private static final byte[] EMPTY_BYTES = new byte[0];
 

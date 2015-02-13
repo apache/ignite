@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * No-op implementation for {@link GridSecurityProcessor}.
  */
-public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements GridSecurityProcessor {
+public class GridOsSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /**
      * @param ctx Kernal context.
      */
