@@ -51,7 +51,7 @@ public class VisorCacheConfiguration implements Serializable {
     private CacheAtomicityMode atomicityMode;
 
     /** Cache atomic sequence reserve size */
-    private int atomicSequenceReserveSize;
+    private int atomicSeqReserveSize;
 
     /** Cache atomicity write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
@@ -69,10 +69,7 @@ public class VisorCacheConfiguration implements Serializable {
     private boolean swapEnabled;
 
     /** Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache. */
-    private boolean queryIndexEnabled;
-
-    /** Flag indicating whether to persist once on commit, or after every operation. */
-    private boolean batchUpdateOnCommit;
+    private boolean qryIdxEnabled;
 
     /** Invalidate. */
     private boolean invalidate;
@@ -80,29 +77,17 @@ public class VisorCacheConfiguration implements Serializable {
     /** Start size. */
     private int startSize;
 
-    /** Cloner. */
-    private String cloner;
-
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
-
-    /** Flag to enable/disable transaction serializable isolation level. */
-    private boolean txSerializableEnabled;
 
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
 
     /** Max query iterator count */
-    private int maxQueryIteratorCnt;
+    private int maxQryIterCnt;
 
     /** Max concurrent async operations */
     private int maxConcurrentAsyncOps;
-
-    /** Pessimistic tx logger size */
-    private int pessimisticTxLogSize;
-
-    /** Pessimistic tx logger linger. */
-    private int pessimisticTxLogLinger;
 
     /** Memory mode. */
     private CacheMemoryMode memoryMode;
@@ -149,8 +134,6 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Data transfer object for cache configuration properties.
      */
     public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
-        // TODO gg-9141 Update Visor.
-
         Collection<CacheTypeMetadata> cacheMetadata = ccfg.getTypeMetadata();
 
         if (cacheMetadata == null)
@@ -176,16 +159,12 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());
         cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
-//        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
         cfg.invalidate(ccfg.isInvalidate());
         cfg.startSize(ccfg.getStartSize());
         cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
-//        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
         cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
         cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
         cfg.maxConcurrentAsyncOperations(ccfg.getMaxConcurrentAsyncOperations());
-//        cfg.pessimisticTxLoggerSize(ccfg.getPessimisticTxLogSize());
-//        cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
         cfg.memoryMode(ccfg.getMemoryMode());
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));
@@ -280,14 +259,14 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Cache atomic sequence reserve size
      */
     public int atomicSequenceReserveSize() {
-        return atomicSequenceReserveSize;
+        return atomicSeqReserveSize;
     }
 
     /**
      * @param atomicSeqReserveSize New cache atomic sequence reserve size
      */
     public void atomicSequenceReserveSize(int atomicSeqReserveSize) {
-        atomicSequenceReserveSize = atomicSeqReserveSize;
+        this.atomicSeqReserveSize = atomicSeqReserveSize;
     }
 
     /**
@@ -364,7 +343,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache.
      */
     public boolean queryIndexEnabled() {
-        return queryIndexEnabled;
+        return qryIdxEnabled;
     }
 
     /**
@@ -372,21 +351,7 @@ public class VisorCacheConfiguration implements Serializable {
      * stored in cache.
      */
     public void queryIndexEnabled(boolean qryIdxEnabled) {
-        queryIndexEnabled = qryIdxEnabled;
-    }
-
-    /**
-     * @return Flag indicating whether to persist once on commit, or after every operation.
-     */
-    public boolean batchUpdateOnCommit() {
-        return batchUpdateOnCommit;
-    }
-
-    /**
-     * @param batchUpdateOnCommit New batch update on commit.
-     */
-    public void batchUpdateOnCommit(boolean batchUpdateOnCommit) {
-        this.batchUpdateOnCommit = batchUpdateOnCommit;
+        this.qryIdxEnabled = qryIdxEnabled;
     }
 
     /**
@@ -418,20 +383,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Cloner.
-     */
-    @Nullable public String cloner() {
-        return cloner;
-    }
-
-    /**
-     * @param cloner New cloner.
-     */
-    public void cloner(@Nullable String cloner) {
-        this.cloner = cloner;
-    }
-
-    /**
      * @return Name of class implementing GridCacheTmLookup.
      */
     @Nullable public String transactionManagerLookupClassName() {
@@ -443,20 +394,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void transactionManagerLookupClassName(@Nullable String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
-    }
-
-    /**
-     * @return Flag to enable/disable transaction serializable isolation level.
-     */
-    public boolean txSerializableEnabled() {
-        return txSerializableEnabled;
-    }
-
-    /**
-     * @param txSerEnabled New flag to enable/disable transaction serializable isolation level.
-     */
-    public void txSerializableEnabled(boolean txSerEnabled) {
-        txSerializableEnabled = txSerEnabled;
     }
 
     /**
@@ -477,14 +414,14 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Max query iterator count
      */
     public int maxQueryIteratorCount() {
-        return maxQueryIteratorCnt;
+        return maxQryIterCnt;
     }
 
     /**
      * @param maxQryIterCnt New max query iterator count
      */
     public void maxQueryIteratorCount(int maxQryIterCnt) {
-        maxQueryIteratorCnt = maxQryIterCnt;
+        this.maxQryIterCnt = maxQryIterCnt;
     }
 
     /**
@@ -499,34 +436,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void maxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-    }
-
-    /**
-     * @return Pessimistic tx logger size
-     */
-    public int pessimisticTxLoggerSize() {
-        return pessimisticTxLogSize;
-    }
-
-    /**
-     * @param pessimisticTxLogSize New pessimistic tx logger size
-     */
-    public void pessimisticTxLoggerSize(int pessimisticTxLogSize) {
-        this.pessimisticTxLogSize = pessimisticTxLogSize;
-    }
-
-    /**
-     * @return Pessimistic tx logger linger.
-     */
-    public int pessimisticTxLoggerLinger() {
-        return pessimisticTxLogLinger;
-    }
-
-    /**
-     * @param pessimisticTxLogLinger New pessimistic tx logger linger.
-     */
-    public void pessimisticTxLoggerLinger(int pessimisticTxLogLinger) {
-        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
     }
 
     /**
