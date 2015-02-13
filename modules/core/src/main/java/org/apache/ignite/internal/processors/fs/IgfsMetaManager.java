@@ -741,7 +741,7 @@ public class IgfsMetaManager extends IgfsManager {
             throw fsException(new IgfsFileNotFoundException("Failed to lock parent directory (not found): " + parentId));
 
         if (!parentInfo.isDirectory())
-            throw fsException(new IgniteFsInvalidPathException("Parent file is not a directory: " + parentInfo));
+            throw fsException(new IgfsInvalidPathException("Parent file is not a directory: " + parentInfo));
 
         Map<String, IgfsListingEntry> parentListing = parentInfo.listing();
 
@@ -842,7 +842,7 @@ public class IgfsMetaManager extends IgfsManager {
                 " [srcParentId=" + srcParentId + ']'));
 
         if (!srcInfo.isDirectory())
-            throw fsException(new IgniteFsInvalidPathException("Source is not a directory: " + srcInfo));
+            throw fsException(new IgfsInvalidPathException("Source is not a directory: " + srcInfo));
 
         IgfsFileInfo destInfo = infoMap.get(destParentId);
 
@@ -851,7 +851,7 @@ public class IgfsMetaManager extends IgfsManager {
                 " [destParentId=" + destParentId + ']'));
 
         if (!destInfo.isDirectory())
-            throw fsException(new IgniteFsInvalidPathException("Destination is not a directory: " + destInfo));
+            throw fsException(new IgfsInvalidPathException("Destination is not a directory: " + destInfo));
 
         IgfsFileInfo fileInfo = infoMap.get(fileId);
 
@@ -870,7 +870,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // If stored file already exist.
         if (destEntry != null)
-            throw fsException(new IgniteFsInvalidPathException("Failed to add file name into the destination directory " +
+            throw fsException(new IgfsInvalidPathException("Failed to add file name into the destination directory " +
                 "(file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
                 ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
 
@@ -1655,7 +1655,7 @@ public class IgfsMetaManager extends IgfsManager {
                             }
 
                             // Get created file info.
-                            IgniteFsFile status = fs.info(path);
+                            IgfsFile status = fs.info(path);
 
                             if (status == null)
                                 throw fsException("Failed to open output stream to the file created in " +
@@ -1845,7 +1845,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 if (info != null) {
                     if (!info.isFile())
-                        throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
+                        throw fsException(new IgfsInvalidPathException("Failed to open file (not a file): " + path));
 
                     return new IgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
                 }
@@ -1860,7 +1860,7 @@ public class IgfsMetaManager extends IgfsManager {
                             if (info == null)
                                 throw fsException(new IgfsFileNotFoundException("File not found: " + path));
                             if (!info.isFile())
-                                throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
+                                throw fsException(new IgfsInvalidPathException("Failed to open file (not a file): " + path));
 
                             return new IgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
                         }
@@ -2270,7 +2270,7 @@ public class IgfsMetaManager extends IgfsManager {
                 parentInfo = created.get(curPath);
             else {
                 // Get file status from the secondary file system.
-                IgniteFsFile status;
+                IgfsFile status;
 
                 try {
                     status = fs.info(curPath);
@@ -2451,7 +2451,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (changed != null) {
                     finished = true;
 
-                    throw fsException(new IgniteFsConcurrentModificationException(changed));
+                    throw fsException(new IgfsConcurrentModificationException(changed));
                 }
                 else {
                     boolean newParents = false;
@@ -2615,14 +2615,14 @@ public class IgfsMetaManager extends IgfsManager {
                     IgfsFileInfo parentInfo = infoMap.get(parentId);
 
                     if (parentInfo == null)
-                        throw fsException(new IgniteFsInvalidPathException("Failed to update times " +
+                        throw fsException(new IgfsInvalidPathException("Failed to update times " +
                                 "(parent was not found): " + fileName));
 
                     IgfsListingEntry entry = parentInfo.listing().get(fileName);
 
                     // Validate listing.
                     if (entry == null || !entry.fileId().equals(fileId))
-                        throw fsException(new IgniteFsInvalidPathException("Failed to update times " +
+                        throw fsException(new IgfsInvalidPathException("Failed to update times " +
                                 "(file concurrently modified): " + fileName));
 
                     assert parentInfo.isDirectory();
@@ -2656,14 +2656,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Checked exception.
      */
     private static IgniteCheckedException fsException(String msg) {
-        return new IgniteCheckedException(new IgniteFsException(msg));
+        return new IgniteCheckedException(new IgfsException(msg));
     }
 
     /**
      * @param msg Error message.
      * @return Checked exception.
      */
-    private static IgniteCheckedException fsException(IgniteFsException err) {
+    private static IgniteCheckedException fsException(IgfsException err) {
         return new IgniteCheckedException(err);
     }
 

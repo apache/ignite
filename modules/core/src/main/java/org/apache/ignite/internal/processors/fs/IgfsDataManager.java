@@ -168,8 +168,8 @@ public class IgfsDataManager extends IgfsManager {
         CacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
             .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
-        grpSize = mapper instanceof IgniteFsGroupDataBlocksKeyMapper ?
-            ((IgniteFsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+        grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
+            ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
 
         grpBlockSize = ggfsCtx.configuration().getBlockSize() * grpSize;
 
@@ -736,7 +736,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgfsFileInfo info, long start, long len)
+    public Collection<IgfsBlockLocation> affinity(IgfsFileInfo info, long start, long len)
         throws IgniteCheckedException {
         return affinity(info, start, len, 0);
     }
@@ -751,7 +751,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgfsFileInfo info, long start, long len, long maxLen)
+    public Collection<IgfsBlockLocation> affinity(IgfsFileInfo info, long start, long len, long maxLen)
         throws IgniteCheckedException {
         assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
@@ -777,7 +777,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // In case when affinity key is not null the whole file resides on one node.
         if (info.affinityKey() != null) {
-            Collection<IgniteFsBlockLocation> res = new LinkedList<>();
+            Collection<IgfsBlockLocation> res = new LinkedList<>();
 
             splitBlocks(start, len, maxLen, dataCache.affinity().mapKeyToPrimaryAndBackups(
                 new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 0)), res);
@@ -786,7 +786,7 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         // Need to merge ranges affinity with non-colocated affinity.
-        Deque<IgniteFsBlockLocation> res = new LinkedList<>();
+        Deque<IgfsBlockLocation> res = new LinkedList<>();
 
         if (info.fileMap().ranges().isEmpty()) {
             affinity0(info, start, len, maxLen, res);
@@ -810,7 +810,7 @@ public class IgfsDataManager extends IgfsManager {
                 pos = partEnd;
             }
 
-            IgniteFsBlockLocation last = res.peekLast();
+            IgfsBlockLocation last = res.peekLast();
 
             if (range.belongs(pos)) {
                 long partEnd = Math.min(range.endOffset() + 1, end);
@@ -861,13 +861,13 @@ public class IgfsDataManager extends IgfsManager {
      * @param res Result collection to add regions to.
      * @throws IgniteCheckedException If failed.
      */
-    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgniteFsBlockLocation> res)
+    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res)
         throws IgniteCheckedException {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 
         if (limitGrpIdx - firstGrpIdx > Integer.MAX_VALUE)
-            throw new IgniteFsException("Failed to get affinity (range is too wide)" +
+            throw new IgfsException("Failed to get affinity (range is too wide)" +
                 " [info=" + info + ", start=" + start + ", len=" + len + ']');
 
         if (log.isDebugEnabled())
@@ -904,7 +904,7 @@ public class IgfsDataManager extends IgfsManager {
                 log.debug("Mapped key to nodes [key=" + key + ", nodes=" + F.nodeIds(affNodes) +
                 ", blockStart=" + blockStart + ", blockLen=" + blockLen + ']');
 
-            IgniteFsBlockLocation last = res.peekLast();
+            IgfsBlockLocation last = res.peekLast();
 
             // Merge with previous affinity block location?
             if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, F.node2id()))) {
@@ -933,7 +933,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param res Where to put results.
      */
     private void splitBlocks(long start, long len, long maxLen,
-        Collection<ClusterNode> nodes, Collection<IgniteFsBlockLocation> res) {
+        Collection<ClusterNode> nodes, Collection<IgfsBlockLocation> res) {
         if (maxLen > 0) {
             long end = start + len;
 
@@ -1097,7 +1097,7 @@ public class IgfsDataManager extends IgfsManager {
                     return;
                 }
 
-                IgniteFsOutOfSpaceException e = new IgniteFsOutOfSpaceException("Failed to write data block " +
+                IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
                     "(GGFS maximum data size exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
                     ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
 
@@ -1258,7 +1258,7 @@ public class IgfsDataManager extends IgfsManager {
                 // Additional size check.
                 if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
                     return new GridFinishedFuture<Object>(ggfsCtx.kernalContext(),
-                        new IgniteFsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
+                        new IgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
@@ -1413,7 +1413,7 @@ public class IgfsDataManager extends IgfsManager {
             int len = remainderLen + srcLen;
 
             if (len > reservedLen)
-                throw new IgniteFsException("Not enough space reserved to store data [id=" + id +
+                throw new IgfsException("Not enough space reserved to store data [id=" + id +
                     ", reservedLen=" + reservedLen + ", remainderLen=" + remainderLen +
                     ", data.length=" + srcLen + ']');
 
@@ -1843,7 +1843,7 @@ public class IgfsDataManager extends IgfsManager {
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
-                if (e.hasCause(IgniteFsOutOfSpaceException.class))
+                if (e.hasCause(IgfsOutOfSpaceException.class))
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new IgniteCheckedException(

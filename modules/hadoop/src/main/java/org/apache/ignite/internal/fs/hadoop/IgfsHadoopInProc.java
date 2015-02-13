@@ -81,7 +81,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgfsPath path) throws IgniteCheckedException {
+    @Override public IgfsFile info(IgfsPath path) throws IgniteCheckedException {
         try {
             return ggfs.info(path);
         }
@@ -94,7 +94,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
+    @Override public IgfsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
             return ggfs.update(path, props);
         }
@@ -175,7 +175,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) throws IgniteCheckedException {
+    @Override public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteCheckedException {
         try {
             return ggfs.listFiles(path);
         }
@@ -218,7 +218,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len)
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
         throws IgniteCheckedException {
         try {
             return ggfs.affinity(path, start, len);
@@ -266,7 +266,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public IgfsHadoopStreamDelegate create(IgfsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
-            IgniteFsOutputStream stream = ggfs.create(path, bufSize, overwrite,
+            IgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
                 colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
 
             return new IgfsHadoopStreamDelegate(this, stream);
@@ -283,7 +283,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public IgfsHadoopStreamDelegate append(IgfsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
-            IgniteFsOutputStream stream = ggfs.append(path, bufSize, create, props);
+            IgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
 
             return new IgfsHadoopStreamDelegate(this, stream);
         }
@@ -339,7 +339,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     @Override public void writeData(IgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
         throws IOException {
         try {
-            IgniteFsOutputStream stream = delegate.target();
+            IgfsOutputStream stream = delegate.target();
 
             stream.write(data, off, len);
         }
@@ -359,7 +359,7 @@ public class IgfsHadoopInProc implements IgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public void flush(IgfsHadoopStreamDelegate delegate) throws IOException {
         try {
-            IgniteFsOutputStream stream = delegate.target();
+            IgfsOutputStream stream = delegate.target();
 
             stream.flush();
         }

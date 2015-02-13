@@ -129,7 +129,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws IgniteException In case of error.
      */
-    @Override public IgniteFsOutputStream create(IgfsPath path, boolean overwrite) throws IgniteException;
+    @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) throws IgniteException;
 
     /**
      * Creates a file and opens it for writing.
@@ -143,7 +143,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws IgniteException In case of error.
      */
-    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws IgniteException;
 
     /**
@@ -160,7 +160,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws IgniteException In case of error.
      */
-    public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
+    public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws IgniteException;
 
@@ -173,7 +173,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public IgniteFsOutputStream append(IgfsPath path, boolean create) throws IgniteException;
+    public IgfsOutputStream append(IgfsPath path, boolean create) throws IgniteException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -186,7 +186,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    @Override public IgniteFsOutputStream append(IgfsPath path, int bufSize, boolean create,
+    @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws IgniteException;
 
     /**
@@ -213,7 +213,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteException;
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteException;
 
     /**
      * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
@@ -228,7 +228,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
         throws IgniteException;
 
     /**
@@ -237,7 +237,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @return Metrics.
      * @throws IgniteException In case of error.
      */
-    public IgniteFsMetrics metrics() throws IgniteException;
+    public IgfsMetrics metrics() throws IgniteException;
 
     /**
      * Resets metrics for this file system.

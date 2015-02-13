@@ -42,7 +42,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Long> LONG_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgniteFsFile> FILE_RES = createClosure();
+    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsFile> FILE_RES = createClosure();
 
     /** Expected result is {@code GridGgfsHandshakeResponse} */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
@@ -58,7 +58,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
-        Collection<IgniteFsFile>> FILE_COL_RES = createClosure();
+        Collection<IgfsFile>> FILE_COL_RES = createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
@@ -70,7 +70,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
-        Collection<IgniteFsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
+        Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
     /** Grid name. */
     private final String grid;
@@ -165,7 +165,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgfsPath path) throws IgniteCheckedException {
+    @Override public IgfsFile info(IgfsPath path) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(INFO);
@@ -175,7 +175,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
+    @Override public IgfsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(UPDATE);
@@ -220,7 +220,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len)
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
         throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
@@ -254,7 +254,7 @@ public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) throws IgniteCheckedException {
+    @Override public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(LIST_FILES);

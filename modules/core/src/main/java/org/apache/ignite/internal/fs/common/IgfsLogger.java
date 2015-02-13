@@ -256,7 +256,7 @@ public final class IgfsLogger {
      * @param bufSize Buffer size.
      * @param dataLen Data length.
      */
-    public void logOpen(long streamId, IgfsPath path, IgniteFsMode mode, int bufSize, long dataLen) {
+    public void logOpen(long streamId, IgfsPath path, IgfsMode mode, int bufSize, long dataLen) {
         addEntry(new Entry(TYPE_OPEN_IN, path.toString(), mode, streamId, bufSize, dataLen, null, null, null, null,
             null, null, null, null, null, null, null, null, null, null));
     }
@@ -272,7 +272,7 @@ public final class IgfsLogger {
      * @param replication Replication factor.
      * @param blockSize Block size.
      */
-    public void logCreate(long streamId, IgfsPath path, IgniteFsMode mode, boolean overwrite, int bufSize,
+    public void logCreate(long streamId, IgfsPath path, IgfsMode mode, boolean overwrite, int bufSize,
         int replication, long blockSize) {
         addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, false, overwrite, replication,
             blockSize, null, null, null, null, null, null, null, null, null, null));
@@ -286,7 +286,7 @@ public final class IgfsLogger {
      * @param mode Mode.
      * @param bufSize Buffer size.
      */
-    public void logAppend(long streamId, IgfsPath path, IgniteFsMode mode, int bufSize) {
+    public void logAppend(long streamId, IgfsPath path, IgfsMode mode, int bufSize) {
         addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, true, null, null, null, null,
             null, null, null, null, null, null, null, null, null));
     }
@@ -378,7 +378,7 @@ public final class IgfsLogger {
      * @param path Path.
      * @param mode Mode.
      */
-    public void logMakeDirectory(IgfsPath path, IgniteFsMode mode) {
+    public void logMakeDirectory(IgfsPath path, IgfsMode mode) {
         addEntry(new Entry(TYPE_DIR_MAKE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null));
     }
@@ -390,7 +390,7 @@ public final class IgfsLogger {
      * @param mode Mode.
      * @param files Files.
      */
-    public void logListDirectory(IgfsPath path, IgniteFsMode mode, String[] files) {
+    public void logListDirectory(IgfsPath path, IgfsMode mode, String[] files) {
         addEntry(new Entry(TYPE_DIR_LIST, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, files));
     }
@@ -402,7 +402,7 @@ public final class IgfsLogger {
      * @param mode Mode.
      * @param destPath Destination path.
      */
-    public void logRename(IgfsPath path, IgniteFsMode mode, IgfsPath destPath) {
+    public void logRename(IgfsPath path, IgfsMode mode, IgfsPath destPath) {
         addEntry(new Entry(TYPE_RENAME, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, destPath.toString(), null, null));
     }
@@ -414,7 +414,7 @@ public final class IgfsLogger {
      * @param mode Mode.
      * @param recursive Recursive flag.
      */
-    public void logDelete(IgfsPath path, IgniteFsMode mode, boolean recursive) {
+    public void logDelete(IgfsPath path, IgfsMode mode, boolean recursive) {
         addEntry(new Entry(TYPE_DELETE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, recursive, null));
     }
@@ -499,7 +499,7 @@ public final class IgfsLogger {
         private final String path;
 
         /** Path mode. */
-        private IgniteFsMode mode;
+        private IgfsMode mode;
 
         /** Stream ID. */
         private final long streamId;
@@ -576,7 +576,7 @@ public final class IgfsLogger {
          * @param recursive Recursive flag.
          * @param list Listed directories.
          */
-        Entry(int type, String path, IgniteFsMode mode, Long streamId, Integer bufSize, Long dataLen, Boolean append,
+        Entry(int type, String path, IgfsMode mode, Long streamId, Integer bufSize, Long dataLen, Boolean append,
             Boolean overwrite, Integer replication, Long blockSize, Long pos, Integer readLen, Long skipCnt,
             Long readLimit, Long userTime, Long sysTime, Long total, String destPath, Boolean recursive,
             String[] list) {

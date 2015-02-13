@@ -99,7 +99,7 @@ public class IgniteFsMapReduceExample {
         System.out.println("Copying file to IgniteFs: " + file);
 
         try (
-            IgniteFsOutputStream os = fs.create(fsPath, true);
+            IgfsOutputStream os = fs.create(fsPath, true);
             FileInputStream fis = new FileInputStream(file)
         ) {
             byte[] buf = new byte[2048];

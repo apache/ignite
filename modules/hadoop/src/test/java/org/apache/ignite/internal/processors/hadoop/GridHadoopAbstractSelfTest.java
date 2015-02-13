@@ -164,7 +164,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         cfg.setName(ggfsDataCacheName);
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(ggfsBlockGroupSize));
+        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(ggfsBlockGroupSize));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;

@@ -99,7 +99,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         }
 
         cacheCfg.setQueryIndexEnabled(false);
@@ -424,7 +424,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             }
         }, IgniteCheckedException.class, msg);
 
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgniteFsException);
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
     }
 
     /**
@@ -448,7 +448,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             }
         }, IgniteCheckedException.class, msg);
 
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgniteFsException);
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
     }
 
     /**

@@ -168,7 +168,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Response.
      */
-    public void response(IgniteFsFile res) {
+    public void response(IgfsFile res) {
         resType = RES_TYPE_GGFS_FILE;
 
         this.res = res;
@@ -195,7 +195,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Response.
      */
-    public void files(Collection<IgniteFsFile> res) {
+    public void files(Collection<IgfsFile> res) {
         resType = RES_TYPE_COL_GGFS_FILE;
 
         this.res = res;
@@ -213,7 +213,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Response.
      */
-    public void locations(Collection<IgniteFsBlockLocation> res) {
+    public void locations(Collection<IgfsBlockLocation> res) {
         resType = RES_TYPE_COL_GGFS_BLOCK_LOCATION;
 
         this.res = res;
@@ -263,17 +263,17 @@ public class IgfsControlResponse extends IgfsMessage {
         if (errCode == ERR_FILE_NOT_FOUND)
             throw new IgfsFileNotFoundException(err);
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
-            throw new IgniteFsPathAlreadyExistsException(err);
+            throw new IgfsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
             throw new IgfsDirectoryNotEmptyException(err);
         else if (errCode == ERR_PARENT_NOT_DIRECTORY)
-            throw new IgniteFsParentNotDirectoryException(err);
+            throw new IgfsParentNotDirectoryException(err);
         else if (errCode == ERR_INVALID_HDFS_VERSION)
-            throw new IgniteFsInvalidHdfsVersionException(err);
+            throw new IgfsInvalidHdfsVersionException(err);
         else if (errCode == ERR_CORRUPTED_FILE)
-            throw new IgniteFsCorruptedFileException(err);
+            throw new IgfsCorruptedFileException(err);
         else if (errCode == ERR_GGFS_GENERIC)
-            throw new IgniteFsException(err);
+            throw new IgfsException(err);
 
         throw new IgniteCheckedException(err);
     }
@@ -334,18 +334,18 @@ public class IgfsControlResponse extends IgfsMessage {
     private int errorCode(IgniteCheckedException e, boolean checkIo) {
         if (X.hasCause(e, IgfsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
-        else if (e.hasCause(IgniteFsPathAlreadyExistsException.class))
+        else if (e.hasCause(IgfsPathAlreadyExistsException.class))
             return ERR_PATH_ALREADY_EXISTS;
         else if (e.hasCause(IgfsDirectoryNotEmptyException.class))
             return ERR_DIRECTORY_NOT_EMPTY;
-        else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
+        else if (e.hasCause(IgfsParentNotDirectoryException.class))
             return ERR_PARENT_NOT_DIRECTORY;
-        else if (e.hasCause(IgniteFsInvalidHdfsVersionException.class))
+        else if (e.hasCause(IgfsInvalidHdfsVersionException.class))
             return ERR_INVALID_HDFS_VERSION;
-        else if (e.hasCause(IgniteFsCorruptedFileException.class))
+        else if (e.hasCause(IgfsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
-        else if (e.hasCause(IgniteFsException.class))
+        else if (e.hasCause(IgfsException.class))
             return ERR_GGFS_GENERIC;
 
         return ERR_GENERIC;
@@ -556,7 +556,7 @@ public class IgfsControlResponse extends IgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_FILE: {
-                Collection<IgniteFsFile> files = null;
+                Collection<IgfsFile> files = null;
 
                 int size = in.readInt();
 
@@ -600,7 +600,7 @@ public class IgfsControlResponse extends IgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_BLOCK_LOCATION: {
-                Collection<IgniteFsBlockLocation> locations = null;
+                Collection<IgfsBlockLocation> locations = null;
 
                 int size = in.readInt();
 

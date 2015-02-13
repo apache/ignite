@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.ignitefs.IgniteFsMetrics}.
+ * Data transfer object for {@link org.apache.ignite.ignitefs.IgfsMetrics}.
  */
 public class VisorGgfsMetrics implements Serializable {
     /** */
@@ -75,7 +75,7 @@ public class VisorGgfsMetrics implements Serializable {
      * @param m GGFS metrics.
      * @return Data transfer object for given GGFS metrics.
      */
-    public static VisorGgfsMetrics from(IgniteFsMetrics m) {
+    public static VisorGgfsMetrics from(IgfsMetrics m) {
         assert m != null;
 
         VisorGgfsMetrics metrics = new VisorGgfsMetrics();

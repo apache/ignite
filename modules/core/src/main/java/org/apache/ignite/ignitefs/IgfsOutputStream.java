@@ -17,34 +17,19 @@
 
 package org.apache.ignite.ignitefs;
 
-import org.jetbrains.annotations.*;
+import java.io.*;
 
 /**
- * Exception thrown when target file's block is not found in data cache.
+ * {@code GGFS} output stream to write data into the file system.
  */
-public class IgniteFsCorruptedFileException extends IgniteFsException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public abstract class IgfsOutputStream extends OutputStream {
     /**
-     * @param msg Error message.
+     * Transfers specified amount of bytes from data input to this output stream.
+     * This method is optimized to avoid unnecessary temporal buffer creation and byte array copy.
+     *
+     * @param in Data input to copy bytes from.
+     * @param len Data length to copy.
+     * @throws IOException If write failed, read from input failed or there is no enough data in data input.
      */
-    public IgniteFsCorruptedFileException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * @param cause Error cause.
-     */
-    public IgniteFsCorruptedFileException(Throwable cause) {
-        super(cause);
-    }
-
-    /**
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public IgniteFsCorruptedFileException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
-    }
+    public abstract void transferFrom(DataInput in, int len) throws IOException;
 }

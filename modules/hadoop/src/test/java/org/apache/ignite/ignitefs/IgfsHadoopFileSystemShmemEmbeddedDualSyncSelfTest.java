@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ignitefs;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * GGFS Hadoop file system IPC shmem self test in DUAL_SYNC mode.

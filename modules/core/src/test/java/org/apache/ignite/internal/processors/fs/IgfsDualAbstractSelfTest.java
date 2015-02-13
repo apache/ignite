@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -40,7 +40,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @param mode GGFS mode.
      */
-    protected IgfsDualAbstractSelfTest(IgniteFsMode mode) {
+    protected IgfsDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
 
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
@@ -82,15 +82,15 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     public void testListFilesPathMissing() throws Exception {
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        Collection<IgniteFsFile> paths = ggfs.listFiles(SUBDIR);
+        Collection<IgfsFile> paths = ggfs.listFiles(SUBDIR);
 
         assert paths != null;
         assert paths.size() == 2;
 
-        Iterator<IgniteFsFile> iter = paths.iterator();
+        Iterator<IgfsFile> iter = paths.iterator();
 
-        IgniteFsFile path1 = iter.next();
-        IgniteFsFile path2 = iter.next();
+        IgfsFile path1 = iter.next();
+        IgfsFile path2 = iter.next();
 
         assert (SUBSUBDIR.equals(path1.path()) && FILE.equals(path2.path())) ||
             (FILE.equals(path1.path()) && SUBSUBDIR.equals(path2.path()));
@@ -105,7 +105,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(ggfsSecondary, paths(DIR), null);
         create(ggfs, null, null);
 
-        IgniteFsFile info = ggfs.info(DIR);
+        IgfsFile info = ggfs.info(DIR);
 
         assert info != null;
 
@@ -1136,7 +1136,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         // Write enough data to the secondary file system.
         final int blockSize = GGFS_BLOCK_SIZE;
 
-        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgfsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 
@@ -1215,7 +1215,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         // Write enough data to the secondary file system.
         final int blockSize = ggfs.info(FILE).blockSize();
 
-        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgfsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 

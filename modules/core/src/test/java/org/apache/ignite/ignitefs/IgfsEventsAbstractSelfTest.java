@@ -64,7 +64,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -782,7 +782,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         byte[] buf = new byte[dataSize];
 
         // Will generate GGFS_FILE_CREATED, GGFS_FILE_OPENED_WRITE, GGFS_FILE_CLOSED_WRITE.
-        try (IgniteFsOutputStream os = ggfs.create(file, false)) {
+        try (IgfsOutputStream os = ggfs.create(file, false)) {
             os.write(buf); // Will generate no events.
         }
 

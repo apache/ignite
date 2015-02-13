@@ -22,21 +22,21 @@ import org.jetbrains.annotations.*;
 /**
  * Exception thrown when target path supposed to be created already exists.
  */
-public class IgniteFsPathAlreadyExistsException extends IgniteFsInvalidPathException {
+public class IgfsPathAlreadyExistsException extends IgfsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public IgniteFsPathAlreadyExistsException(String msg) {
+    public IgfsPathAlreadyExistsException(String msg) {
         super(msg);
     }
 
     /**
      * @param cause Exception cause.
      */
-    public IgniteFsPathAlreadyExistsException(Throwable cause) {
+    public IgfsPathAlreadyExistsException(Throwable cause) {
         super(cause);
     }
 
@@ -44,7 +44,7 @@ public class IgniteFsPathAlreadyExistsException extends IgniteFsInvalidPathExcep
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public IgniteFsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
+    public IgfsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

@@ -97,12 +97,12 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
      * @param detailMsg Detailed error message.
      * @return Appropriate exception.
      */
-    private IgniteFsException handleSecondaryFsError(IOException e, String detailMsg) {
+    private IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
         boolean wrongVer = X.hasCause(e, RemoteException.class) ||
             (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
-        IgniteFsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
-            new IgniteFsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
+        IgfsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
+            new IgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                 "version.", e);
 
 
@@ -116,17 +116,17 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
      * @param e IO exception.
      * @return GGFS exception.
      */
-    public static IgniteFsException cast(String msg, IOException e) {
+    public static IgfsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
             return new IgfsFileNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
-            return new IgniteFsParentNotDirectoryException(msg, e);
+            return new IgfsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
             return new IgfsDirectoryNotEmptyException(e);
         else if (e instanceof PathExistsException)
-            return new IgniteFsPathAlreadyExistsException(msg, e);
+            return new IgfsPathAlreadyExistsException(msg, e);
         else
-            return new IgniteFsException(msg, e);
+            return new IgfsException(msg, e);
     }
 
     /**
@@ -156,7 +156,7 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
+    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
         IgfsHadoopFSProperties props0 = new IgfsHadoopFSProperties(props);
 
         try {
@@ -179,7 +179,7 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
-                throw new IgniteFsException("Failed to rename (secondary file system returned false) " +
+                throw new IgfsException("Failed to rename (secondary file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
@@ -243,14 +243,14 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) {
+    @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
                 throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
 
-            Collection<IgniteFsFile> res = new ArrayList<>(statuses.length);
+            Collection<IgfsFile> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses) {
                 IgfsFileInfo fsInfo = status.isDirectory() ? new IgfsFileInfo(true, properties(status)) :
@@ -314,7 +314,7 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(final IgfsPath path) {
+    @Override public IgfsFile info(final IgfsPath path) {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -323,7 +323,7 @@ public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
 
             final Map<String, String> props = properties(status);
 
-            return new IgniteFsFile() {
+            return new IgfsFile() {
                 @Override public IgfsPath path() {
                     return path;
                 }

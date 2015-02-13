@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgfsTask}.
@@ -113,7 +113,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(1));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 

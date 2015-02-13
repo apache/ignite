@@ -30,7 +30,7 @@ import java.io.*;
 import java.nio.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
@@ -72,7 +72,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private final IgniteInternalFuture<Boolean> writeCompletionFut;
 
     /** GGFS mode. */
-    private final IgniteFsMode mode;
+    private final IgfsMode mode;
 
     /** File worker batch. */
     private final IgfsFileWorkerBatch batch;
@@ -99,7 +99,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @throws IgniteCheckedException If stream creation failed.
      */
     IgfsOutputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
+        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
         throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
@@ -111,7 +111,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
         // File hasn't been locked.
         if (fileInfo.lockId() == null)
-            throw new IgniteFsException("Failed to acquire file lock (concurrently modified?): " + path);
+            throw new IgfsException("Failed to acquire file lock (concurrently modified?): " + path);
 
         this.ggfsCtx = ggfsCtx;
         meta = ggfsCtx.meta();

@@ -32,7 +32,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * GGFS modes self test.
@@ -48,10 +48,10 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private IgfsImpl ggfsSecondary;
 
     /** Default GGFS mode. */
-    private IgniteFsMode mode;
+    private IgfsMode mode;
 
     /** Modes map. */
-    private Map<String, IgniteFsMode> pathModes;
+    private Map<String, IgfsMode> pathModes;
 
     /** Whether to set "null" mode. */
     private boolean setNullMode;
@@ -105,7 +105,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -162,7 +162,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -199,12 +199,12 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @param modes Modes.
      */
     @SafeVarargs
-    final void pathModes(IgniteBiTuple<String, IgniteFsMode>... modes) {
+    final void pathModes(IgniteBiTuple<String, IgfsMode>... modes) {
         assert modes != null;
 
         pathModes = new LinkedHashMap<>(modes.length, 1.0f);
 
-        for (IgniteBiTuple<String, IgniteFsMode> mode : modes)
+        for (IgniteBiTuple<String, IgfsMode> mode : modes)
             pathModes.put(mode.getKey(), mode.getValue());
     }
 
@@ -487,14 +487,14 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @param expMode Expected mode.
      * @throws Exception If failed.
      */
-    private void checkMode(String pathStr, IgniteFsMode expMode) throws Exception {
+    private void checkMode(String pathStr, IgfsMode expMode) throws Exception {
         assert ggfs != null;
 
         IgfsPath path = new IgfsPath(pathStr);
 
         IgfsModeResolver rslvr = ggfs.modeResolver();
 
-        IgniteFsMode mode = rslvr.resolveMode(path);
+        IgfsMode mode = rslvr.resolveMode(path);
 
         assertEquals(expMode, mode);
     }
@@ -525,7 +525,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         ggfs.mkdirs(dir);
 
         // Create new file.
-        IgniteFsOutputStream os = ggfs.create(file, 1024, true, null, 0, 2048, null);
+        IgfsOutputStream os = ggfs.create(file, 1024, true, null, 0, 2048, null);
 
         os.write(testData1);
 

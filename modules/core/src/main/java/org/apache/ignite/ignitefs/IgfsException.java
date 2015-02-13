@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * {@code GGFS} exception thrown by file system components.
  */
-public class IgniteFsException extends IgniteException {
+public class IgfsException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class IgniteFsException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public IgniteFsException(String msg) {
+    public IgfsException(String msg) {
         super(msg);
     }
 
@@ -41,7 +41,7 @@ public class IgniteFsException extends IgniteException {
      *
      * @param cause Exception cause.
      */
-    public IgniteFsException(Throwable cause) {
+    public IgfsException(Throwable cause) {
         super(cause);
     }
 
@@ -51,7 +51,7 @@ public class IgniteFsException extends IgniteException {
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public IgniteFsException(String msg, @Nullable Throwable cause) {
+    public IgfsException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

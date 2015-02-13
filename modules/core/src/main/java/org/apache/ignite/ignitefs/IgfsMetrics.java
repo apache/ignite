@@ -21,7 +21,7 @@ package org.apache.ignite.ignitefs;
  * {@code GGFS} metrics snapshot for the file system. Note, that some metrics are global and
  * some are local (i.e. per each node).
  */
-public interface IgniteFsMetrics {
+public interface IgfsMetrics {
     /**
      * Gets local used space in bytes. This is the sum of all file chunks stored on local node.
      * <p>

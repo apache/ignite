@@ -136,7 +136,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
+            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
         }
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -201,15 +201,15 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             idx++;
         }
 
-        try (IgniteFsOutputStream out = fs.create(path, 1024, true, affKey, 0, 1024, null)) {
+        try (IgfsOutputStream out = fs.create(path, 1024, true, affKey, 0, 1024, null)) {
             // Write 5M, should be enough to test distribution.
             for (int i = 0; i < 15; i++)
                 out.write(new byte[1024 * 1024]);
         }
 
-        IgniteFsFile info = fs.info(path);
+        IgfsFile info = fs.info(path);
 
-        Collection<IgniteFsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
+        Collection<IgfsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
 
         assertEquals(1, affNodes.size());
         Collection<UUID> nodeIds = F.first(affNodes).nodeIds();
@@ -233,7 +233,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             IgniteFs fs1 = grid(1).fileSystem("ggfs");
             IgniteFs fs2 = grid(2).fileSystem("ggfs");
 
-            try (IgniteFsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
+            try (IgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
                 F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {
                 // 1.5 blocks
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
@@ -243,7 +243,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
                 out.write(data);
             }
 
-            try (IgniteFsOutputStream out = fs1.append(path, false)) {
+            try (IgfsOutputStream out = fs1.append(path, false)) {
                 // 1.5 blocks.
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
 
@@ -325,7 +325,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
                 IgfsPath f = new IgfsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
 
-                try (IgniteFsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
+                try (IgfsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
                     assertNotNull(out);
 
                     cleanUp.add(f); // Add all created into cleanup list.
@@ -371,7 +371,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         info("Get stored file info: " + path);
 
-        IgniteFsFile desc = fs.info(path);
+        IgfsFile desc = fs.info(path);
 
         info("Validate stored file info: " + desc);
 
@@ -380,7 +380,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         if (log.isDebugEnabled())
             log.debug("File descriptor: " + desc);
 
-        Collection<IgniteFsBlockLocation> aff = fs.affinity(path, 0, desc.length());
+        Collection<IgfsBlockLocation> aff = fs.affinity(path, 0, desc.length());
 
         assertFalse("Affinity: " + aff, desc.length() != 0 && aff.isEmpty());
 

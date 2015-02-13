@@ -46,7 +46,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.IgfsFileInfo.*;
@@ -137,7 +137,7 @@ public final class IgfsImpl implements IgfsEx {
         secondaryFs = cfg.getSecondaryFileSystem();
 
         /* Default GGFS mode. */
-        IgniteFsMode dfltMode;
+        IgfsMode dfltMode;
 
         if (secondaryFs == null) {
             if (cfg.getDefaultMode() == PROXY)
@@ -148,8 +148,8 @@ public final class IgfsImpl implements IgfsEx {
         else
             dfltMode = cfg.getDefaultMode();
 
-        Map<String, IgniteFsMode> cfgModes = new LinkedHashMap<>();
-        Map<String, IgniteFsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
+        Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
+        Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
         dfltModes.put("/ignite/primary", PRIMARY);
 
@@ -162,7 +162,7 @@ public final class IgfsImpl implements IgfsEx {
         cfgModes.putAll(dfltModes);
 
         if (ggfsCtx.configuration().getPathModes() != null) {
-            for (Map.Entry<String, IgniteFsMode> e : ggfsCtx.configuration().getPathModes().entrySet()) {
+            for (Map.Entry<String, IgfsMode> e : ggfsCtx.configuration().getPathModes().entrySet()) {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
@@ -171,13 +171,13 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        ArrayList<T2<IgfsPath, IgniteFsMode>> modes = null;
+        ArrayList<T2<IgfsPath, IgfsMode>> modes = null;
 
         if (!cfgModes.isEmpty()) {
             modes = new ArrayList<>(cfgModes.size());
 
-            for (Map.Entry<String, IgniteFsMode> mode : cfgModes.entrySet()) {
-                IgniteFsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
+            for (Map.Entry<String, IgfsMode> mode : cfgModes.entrySet()) {
+                IgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
                     modes.add(new T2<>(new IgfsPath(mode.getKey()), mode0));
@@ -476,7 +476,7 @@ public final class IgfsImpl implements IgfsEx {
             if (log.isDebugEnabled())
                 log.debug("Check file exists: " + path);
 
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY)
                 throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -510,7 +510,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgfsPath path) {
+    @Override public IgfsFile info(IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -518,7 +518,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Get file info: " + path);
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -573,7 +573,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
+    @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -583,7 +583,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Set file properties [path=" + path + ", props=" + props + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -641,8 +641,8 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(src);
-                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
+                IgfsMode mode = modeRslvr.resolveMode(src);
+                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + src);
@@ -652,15 +652,15 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Cannot rename root directory.
                 if (src.parent() == null)
-                    throw new IgniteFsInvalidPathException("Failed to rename root directory.");
+                    throw new IgfsInvalidPathException("Failed to rename root directory.");
 
                 // Cannot move directory of upper level to self sub-dir.
                 if (dest.isSubDirectoryOf(src))
-                    throw new IgniteFsInvalidPathException("Failed to rename directory (cannot move directory of " +
+                    throw new IgfsInvalidPathException("Failed to rename directory (cannot move directory of " +
                         "upper level to self sub-dir) [src=" + src + ", dest=" + dest + ']');
 
                 if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
-                    throw new IgniteFsInvalidPathException("Cannot move file to a path with different eviction " +
+                    throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
                 if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
@@ -714,7 +714,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Can move only into directory, but not into file.
                 if (destDesc.isFile)
-                    throw new IgniteFsParentNotDirectoryException("Failed to rename (destination is not a directory): "
+                    throw new IgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
                         + dest);
 
                 meta.move(srcDesc.fileId, srcFileName, srcDesc.parentId, destFileName, destDesc.fileId);
@@ -752,8 +752,8 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
-                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
+                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -859,7 +859,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (props == null)
                     props = DFLT_DIR_META;
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -911,10 +911,10 @@ public final class IgfsImpl implements IgfsEx {
                             IgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
 
                             if (stored == null)
-                                throw new IgniteFsException(e);
+                                throw new IgfsException(e);
 
                             if (!stored.isDirectory())
-                                throw new IgniteFsParentNotDirectoryException("Failed to create directory (parent " +
+                                throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
                                     "element is not a directory)");
 
                             fileId = stored.id(); // Update node ID.
@@ -946,12 +946,12 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory: " + path);
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
 
-                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 Collection<String> files = new HashSet<>();
 
@@ -992,7 +992,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(final IgfsPath path) {
+    @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1000,21 +1000,21 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
 
-                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                Collection<IgniteFsFile> files = new HashSet<>();
+                Collection<IgfsFile> files = new HashSet<>();
 
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<IgniteFsFile> children = secondaryFs.listFiles(path);
+                    Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
-                    for (IgniteFsFile child : children) {
+                    for (IgfsFile child : children) {
                         IgfsFileInfo fsInfo = new IgfsFileInfo(cfg.getBlockSize(), child.length(),
                             evictExclude(path, false), child.properties());
 
@@ -1031,7 +1031,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (info != null) {
                         if (info.isFile())
                             // If this is a file, return its description.
-                            return Collections.<IgniteFsFile>singleton(new IgfsFileImpl(path, info,
+                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
                                 data.groupBlockSize()));
 
                         // Perform the listing.
@@ -1095,7 +1095,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (bufSize == 0)
                     bufSize = cfg.getStreamBufferSize();
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1122,7 +1122,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 if (!info.isFile())
-                    throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, info,
@@ -1145,18 +1145,18 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, boolean overwrite) {
+    @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
         return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         return create0(path, bufSize, overwrite, null, replication, props, false);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
+    @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
         return create0(path, bufSize, overwrite, affKey, replication, props, false);
     }
@@ -1173,7 +1173,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
      * @return Output stream.
      */
-    private IgniteFsOutputStream create0(
+    private IgfsOutputStream create0(
         final IgfsPath path,
         final int bufSize,
         final boolean overwrite,
@@ -1191,7 +1191,7 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 IgfsFileWorkerBatch batch = null;
 
@@ -1229,7 +1229,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
 
                 if (parentId == null)
-                    throw new IgniteFsInvalidPathException("Failed to resolve parent directory: " + path);
+                    throw new IgfsInvalidPathException("Failed to resolve parent directory: " + path);
 
                 String fileName = path.name();
 
@@ -1245,13 +1245,13 @@ public final class IgfsImpl implements IgfsEx {
                         break;
 
                     if (!overwrite)
-                        throw new IgniteFsPathAlreadyExistsException("Failed to create file (file already exists): " +
+                        throw new IgfsPathAlreadyExistsException("Failed to create file (file already exists): " +
                             path);
 
                     IgfsFileInfo oldInfo = meta.info(oldId);
 
                     if (oldInfo.isDirectory())
-                        throw new IgniteFsPathAlreadyExistsException("Failed to create file (path points to a " +
+                        throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
                             "directory): " + path);
 
                     // Remove old file from the tree.
@@ -1287,12 +1287,12 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgfsPath path, boolean create) {
+    @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
         return append(path, cfg.getStreamBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(final IgfsPath path, final int bufSize, boolean create,
+    @Override public IgfsOutputStream append(final IgfsPath path, final int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         if (enterBusy()) {
             try {
@@ -1303,7 +1303,7 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
                         ", props=" + props + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 IgfsFileWorkerBatch batch = null;
 
@@ -1337,7 +1337,7 @@ public final class IgfsImpl implements IgfsEx {
                     }
 
                     if (parentId == null)
-                        throw new IgniteFsInvalidPathException("Failed to resolve parent directory: " + path);
+                        throw new IgfsInvalidPathException("Failed to resolve parent directory: " + path);
 
                     info = new IgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
                         mode == PRIMARY), props);
@@ -1352,7 +1352,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 if (!info.isFile())
-                    throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                 info = meta.lock(info.id());
 
@@ -1423,12 +1423,12 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) {
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
         return affinity(path, start, len, 0L);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1438,7 +1438,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
-                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1459,7 +1459,7 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsFileNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
-                    throw new IgniteFsInvalidPathException("Failed to get affinity info for file (not a file): " +
+                    throw new IgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
                         path);
 
                 return data.affinity(info, start, len, maxLen);
@@ -1476,7 +1476,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsMetrics metrics() {
+    @Override public IgfsMetrics metrics() {
         if (enterBusy()) {
             try {
                 IgfsPathSummary sum = new IgfsPathSummary();
@@ -1863,7 +1863,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgniteFsMode mode) throws IgniteCheckedException {
+    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1880,7 +1880,7 @@ public final class IgfsImpl implements IgfsEx {
                 info = meta.info(meta.fileId(path));
 
                 if (info == null) {
-                    IgniteFsFile status = secondaryFs.info(path);
+                    IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
                         info = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
@@ -1995,7 +1995,7 @@ public final class IgfsImpl implements IgfsEx {
          * @throws IgniteCheckedException In case of error.
          */
         IgfsEventAwareOutputStream(IgfsPath path, IgfsFileInfo fileInfo,
-            IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch)
+            IgniteUuid parentId, int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch)
             throws IgniteCheckedException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
@@ -2090,7 +2090,7 @@ public final class IgfsImpl implements IgfsEx {
                         if (ggfs == null)
                             return F.t(0L, 0L);
 
-                        IgniteFsMetrics metrics = ggfs.metrics();
+                        IgfsMetrics metrics = ggfs.metrics();
 
                         long loc = metrics.localSpaceSize();
 
@@ -2216,7 +2216,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public boolean isProxy(URI path) {
-        IgniteFsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
+        IgfsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
             modeRslvr.resolveMode(new IgfsPath(path));
 
         return mode == PROXY;

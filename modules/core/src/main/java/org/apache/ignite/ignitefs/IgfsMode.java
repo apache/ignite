@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
  * This mode is configured via {@link org.apache.ignite.configuration.IgniteFsConfiguration#getDefaultMode()}
  * configuration property.
  */
-public enum IgniteFsMode {
+public enum IgfsMode {
     /**
      * In this mode GGFS will not delegate to secondary Hadoop file system and will
      * cache all the files in memory only.
@@ -66,7 +66,7 @@ public enum IgniteFsMode {
     DUAL_ASYNC;
 
     /** Enumerated values. */
-    private static final IgniteFsMode[] VALS = values();
+    private static final IgfsMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -74,7 +74,7 @@ public enum IgniteFsMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static IgniteFsMode fromOrdinal(int ord) {
+    @Nullable public static IgfsMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

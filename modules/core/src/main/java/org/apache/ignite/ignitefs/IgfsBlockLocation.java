@@ -24,7 +24,7 @@ import java.util.*;
  * node affinity of a certain file block within the Grid by calling
  * {@link org.apache.ignite.IgniteFs#affinity(IgfsPath, long, long)} method.
  */
-public interface IgniteFsBlockLocation {
+public interface IgfsBlockLocation {
     /**
      * Start position in the file this block relates to.
      *

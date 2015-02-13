@@ -38,7 +38,7 @@ public class IgfsAttributes implements Externalizable {
     /** File's data block size (bytes). */
     private int blockSize;
 
-    /** Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}. */
+    /** Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}. */
     private int grpSize;
 
     /** Meta cache name. */
@@ -48,25 +48,25 @@ public class IgfsAttributes implements Externalizable {
     private String dataCacheName;
 
     /** Default mode. */
-    private IgniteFsMode dfltMode;
+    private IgfsMode dfltMode;
 
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled;
 
     /** Path modes. */
-    private Map<String, IgniteFsMode> pathModes;
+    private Map<String, IgfsMode> pathModes;
 
     /**
      * @param ggfsName GGFS name.
      * @param blockSize File's data block size (bytes).
-     * @param grpSize Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @param grpSize Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
      * @param dataCacheName Data cache name.
      * @param dfltMode Default mode.
      * @param pathModes Path modes.
      */
     public IgfsAttributes(String ggfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
-        IgniteFsMode dfltMode, Map<String, IgniteFsMode> pathModes, boolean fragmentizerEnabled) {
+        IgfsMode dfltMode, Map<String, IgfsMode> pathModes, boolean fragmentizerEnabled) {
         this.blockSize = blockSize;
         this.ggfsName = ggfsName;
         this.grpSize = grpSize;
@@ -99,7 +99,7 @@ public class IgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @return Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
      */
     public int groupSize() {
         return grpSize;
@@ -122,14 +122,14 @@ public class IgfsAttributes implements Externalizable {
     /**
      * @return Default mode.
      */
-    public IgniteFsMode defaultMode() {
+    public IgfsMode defaultMode() {
         return dfltMode;
     }
 
     /**
      * @return Path modes.
      */
-    public Map<String, IgniteFsMode> pathModes() {
+    public Map<String, IgfsMode> pathModes() {
         return pathModes != null ? Collections.unmodifiableMap(pathModes) : null;
     }
 
@@ -155,7 +155,7 @@ public class IgfsAttributes implements Externalizable {
 
             out.writeInt(pathModes.size());
 
-            for (Map.Entry<String, IgniteFsMode> pathMode : pathModes.entrySet()) {
+            for (Map.Entry<String, IgfsMode> pathMode : pathModes.entrySet()) {
                 U.writeString(out, pathMode.getKey());
                 U.writeEnum(out, pathMode.getValue());
             }
@@ -171,7 +171,7 @@ public class IgfsAttributes implements Externalizable {
         grpSize = in.readInt();
         metaCacheName = U.readString(in);
         dataCacheName = U.readString(in);
-        dfltMode = IgniteFsMode.fromOrdinal(in.readByte());
+        dfltMode = IgfsMode.fromOrdinal(in.readByte());
         fragmentizerEnabled = in.readBoolean();
 
         if (in.readBoolean()) {
@@ -180,7 +180,7 @@ public class IgfsAttributes implements Externalizable {
             pathModes = new HashMap<>(size, 1.0f);
 
             for (int i = 0; i < size; i++)
-                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(in.readByte()));
+                pathModes.put(U.readString(in), IgfsMode.fromOrdinal(in.readByte()));
         }
     }
 }

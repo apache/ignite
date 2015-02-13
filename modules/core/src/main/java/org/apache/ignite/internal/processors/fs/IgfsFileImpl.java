@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * File or directory information.
  */
-public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
+public final class IgfsFileImpl implements IgfsFile, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

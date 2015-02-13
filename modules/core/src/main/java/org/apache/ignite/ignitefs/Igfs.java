@@ -70,7 +70,7 @@ public interface Igfs {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    public IgniteFsFile update(IgfsPath path, Map<String, String> props) throws IgniteException;
+    public IgfsFile update(IgfsPath path, Map<String, String> props) throws IgniteException;
 
     /**
      * Renames/moves a file.
@@ -138,7 +138,7 @@ public interface Igfs {
      * @throws IgniteException In case of error.
      * @throws IgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsFile> listFiles(IgfsPath path) throws IgniteException;
+    public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteException;
 
     /**
      * Opens a file for reading.
@@ -197,7 +197,7 @@ public interface Igfs {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    public IgniteFsFile info(IgfsPath path) throws IgniteException;
+    public IgfsFile info(IgfsPath path) throws IgniteException;
 
     /**
      * Gets used space in bytes.

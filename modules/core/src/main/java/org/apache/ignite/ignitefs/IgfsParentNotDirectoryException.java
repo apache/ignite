@@ -20,39 +20,31 @@ package org.apache.ignite.ignitefs;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception that is thrown when it detected out-of-space condition.
- * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
- * its maximum value (that is configured per-node).
+ * Exception thrown when parent supposed to be a directory is a file.
  */
-public class IgniteFsOutOfSpaceException extends IgniteFsException {
+public class IgfsParentNotDirectoryException extends IgfsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with given error message.
-     *
      * @param msg Error message.
      */
-    public IgniteFsOutOfSpaceException(String msg) {
+    public IgfsParentNotDirectoryException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of exception with given exception cause.
-     *
      * @param cause Exception cause.
      */
-    public IgniteFsOutOfSpaceException(Throwable cause) {
+    public IgfsParentNotDirectoryException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates an instance of GGFS exception with given error message and given exception cause.
-     *
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public IgniteFsOutOfSpaceException(String msg, @Nullable Throwable cause) {
+    public IgfsParentNotDirectoryException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

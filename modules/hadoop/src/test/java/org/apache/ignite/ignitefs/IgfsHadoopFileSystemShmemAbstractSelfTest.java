@@ -37,7 +37,7 @@ public abstract class IgfsHadoopFileSystemShmemAbstractSelfTest extends IgfsHado
      * @param mode GGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
-    protected IgfsHadoopFileSystemShmemAbstractSelfTest(IgniteFsMode mode, boolean skipEmbed) {
+    protected IgfsHadoopFileSystemShmemAbstractSelfTest(IgfsMode mode, boolean skipEmbed) {
         super(mode, skipEmbed, false);
     }
 

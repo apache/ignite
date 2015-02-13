@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Tests for GGFS per-block LR eviction policy.
@@ -90,7 +90,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         ggfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
         ggfsCfg.setSecondaryFileSystem(secondaryFs);
 
-        Map<String, IgniteFsMode> pathModes = new HashMap<>();
+        Map<String, IgfsMode> pathModes = new HashMap<>();
 
         pathModes.put(FILE_RMT.toString(), DUAL_SYNC);
 
@@ -107,7 +107,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         evictPlc = new CacheIgniteFsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 
@@ -164,7 +164,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -323,7 +323,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
                 return null;
             }
-        }, IgniteFsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
+        }, IgfsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
             "(need to copy and remove)");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -332,7 +332,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
 
                 return null;
             }
-        }, IgniteFsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
+        }, IgfsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
             "(need to copy and remove)");
     }
 
@@ -442,7 +442,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @throws Exception If failed.
      */
     private void append(IgfsPath path, int len) throws Exception {
-        IgniteFsOutputStream os = ggfsPrimary.append(path, false);
+        IgfsOutputStream os = ggfsPrimary.append(path, false);
 
         os.write(new byte[len]);
 
@@ -459,7 +459,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     public void checkMetrics(final long blocksRead, final long blocksReadRmt) throws Exception {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                IgniteFsMetrics metrics = ggfsPrimary.metrics();
+                IgfsMetrics metrics = ggfsPrimary.metrics();
 
                 return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
             }

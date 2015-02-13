@@ -37,7 +37,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 
 /**
@@ -93,7 +93,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

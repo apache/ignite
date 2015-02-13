@@ -17,34 +17,26 @@
 
 package org.apache.ignite.ignitefs;
 
-import org.jetbrains.annotations.*;
-
 /**
- * Exception thrown when parent supposed to be a directory is a file.
+ * Exception thrown when Ignite detects that remote HDFS version differs from version of HDFS libraries
+ * in Ignite classpath.
  */
-public class IgniteFsParentNotDirectoryException extends IgniteFsInvalidPathException {
+public class IgfsInvalidHdfsVersionException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public IgniteFsParentNotDirectoryException(String msg) {
+    public IgfsInvalidHdfsVersionException(String msg) {
         super(msg);
     }
 
     /**
-     * @param cause Exception cause.
-     */
-    public IgniteFsParentNotDirectoryException(Throwable cause) {
-        super(cause);
-    }
-
-    /**
      * @param msg Error message.
-     * @param cause Exception cause.
+     * @param cause Error cause.
      */
-    public IgniteFsParentNotDirectoryException(String msg, @Nullable Throwable cause) {
+    public IgfsInvalidHdfsVersionException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

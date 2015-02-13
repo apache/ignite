@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
@@ -226,7 +226,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
-            if (!(affMapper instanceof IgniteFsGroupDataBlocksKeyMapper))
+            if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
@@ -234,7 +234,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             attrVals.add(new IgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
-                ((IgniteFsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
                 ggfsCfg.getMetaCacheName(),
                 ggfsCfg.getDataCacheName(),
                 ggfsCfg.getDefaultMode(),
@@ -287,9 +287,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
 
-            if (!(dataCache.configuration().getAffinityMapper() instanceof IgniteFsGroupDataBlocksKeyMapper))
+            if (!(dataCache.configuration().getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
                 throw new IgniteCheckedException("Invalid GGFS data cache configuration (key affinity mapper class should be " +
-                    IgniteFsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
+                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
             long maxSpaceSize = cfg.getMaxSpaceSize();
 
@@ -324,7 +324,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             boolean secondary = cfg.getDefaultMode() == PROXY;
 
             if (cfg.getPathModes() != null) {
-                for (Map.Entry<String, IgniteFsMode> mode : cfg.getPathModes().entrySet()) {
+                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
                     if (mode.getValue() == PROXY)
                         secondary = true;
                 }

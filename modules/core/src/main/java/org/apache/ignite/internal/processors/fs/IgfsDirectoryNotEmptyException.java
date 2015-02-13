@@ -22,7 +22,7 @@ import org.apache.ignite.ignitefs.*;
 /**
  * Exception indicating that directory can not be deleted because it is not empty.
  */
-public class IgfsDirectoryNotEmptyException extends IgniteFsException {
+public class IgfsDirectoryNotEmptyException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 

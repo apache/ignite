@@ -31,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Tests for node validation logic in {@link IgfsProcessor}.
@@ -482,7 +482,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @param grpSize Group size to use in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @param grpSize Group size to use in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */
@@ -498,7 +498,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
             CacheConfiguration dataCache = defaultCacheConfiguration();
 
             dataCache.setName(cacheNames[i]);
-            dataCache.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(grpSize));
+            dataCache.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(grpSize));
             dataCache.setAtomicityMode(TRANSACTIONAL);
             dataCache.setQueryIndexEnabled(false);
 

@@ -202,29 +202,29 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, boolean overwrite) {
+    @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
         return ggfs.create(path, overwrite);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         return ggfs.create(path, bufSize, overwrite, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
+    @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
         return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgfsPath path, boolean create) {
+    @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
         return ggfs.append(path, create);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgfsPath path, int bufSize, boolean create,
+    @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         return ggfs.append(path, bufSize, create, props);
     }
@@ -235,17 +235,17 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) {
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
         return ggfs.affinity(path, start, len);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
         return ggfs.affinity(path, start, len, maxLen);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsMetrics metrics() {
+    @Override public IgfsMetrics metrics() {
         return ggfs.metrics();
     }
 
@@ -265,7 +265,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
+    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
         return ggfs.update(path, props);
     }
 
@@ -295,12 +295,12 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) {
+    @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
         return ggfs.listFiles(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile info(IgfsPath path) {
+    @Nullable @Override public IgfsFile info(IgfsPath path) {
         return ggfs.info(path);
     }
 

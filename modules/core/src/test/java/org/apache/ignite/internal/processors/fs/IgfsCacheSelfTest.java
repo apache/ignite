@@ -80,7 +80,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         }
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

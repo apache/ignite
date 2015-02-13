@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  *
@@ -57,21 +57,21 @@ public class IgfsModeResolverSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testResolveChildren() throws Exception {
-        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_SYNC);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/1")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/b")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/b/c")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(PRIMARY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/b/c/2")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/b/c/d")));
-        assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
+        assertEquals(new HashSet<IgfsMode>(){{add(PROXY);}},
             resolver.resolveChildrenModes(new IgfsPath("/a/b/c/d/e")));
     }
 }

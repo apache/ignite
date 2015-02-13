@@ -108,7 +108,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GRP_SIZE));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

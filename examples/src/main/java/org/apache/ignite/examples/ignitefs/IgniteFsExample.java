@@ -120,7 +120,7 @@ public final class IgniteFsExample {
                 System.out.println();
                 System.out.println(">>> Deleted " + (isFile ? "file" : "directory") + ": " + path);
             }
-            catch (IgniteFsException e) {
+            catch (IgfsException e) {
                 System.out.println();
                 System.out.println(">>> Failed to delete " + (isFile ? "file" : "directory") + " [path=" + path +
                     ", msg=" + e.getMessage() + ']');
@@ -149,7 +149,7 @@ public final class IgniteFsExample {
             System.out.println();
             System.out.println(">>> Created directory: " + path);
         }
-        catch (IgniteFsException e) {
+        catch (IgfsException e) {
             System.out.println();
             System.out.println(">>> Failed to create a directory [path=" + path + ", msg=" + e.getMessage() + ']');
         }

@@ -56,7 +56,7 @@ public class VisorGgfsProfiler {
             long bytesWritten = 0;
             long writeTime = 0;
             long userWriteTime = 0;
-            IgniteFsMode mode = null;
+            IgfsMode mode = null;
             VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
 
             for (VisorGgfsProfilerEntry entry : entries) {

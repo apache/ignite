@@ -34,7 +34,7 @@ public class VisorGgfs implements Serializable {
     private final String name;
 
     /** GGFS instance working mode. */
-    private final IgniteFsMode mode;
+    private final IgfsMode mode;
 
     /** GGFS metrics. */
     private final VisorGgfsMetrics metrics;
@@ -52,7 +52,7 @@ public class VisorGgfs implements Serializable {
      */
     public VisorGgfs(
         String name,
-        IgniteFsMode mode,
+        IgfsMode mode,
         VisorGgfsMetrics metrics,
         boolean secondaryFsConfigured
     ) {
@@ -88,7 +88,7 @@ public class VisorGgfs implements Serializable {
     /**
      * @return GGFS instance working mode.
      */
-    public IgniteFsMode mode() {
+    public IgfsMode mode() {
         return mode;
     }
 

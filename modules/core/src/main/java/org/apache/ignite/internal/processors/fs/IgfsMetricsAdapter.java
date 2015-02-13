@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * GGFS metrics adapter.
  */
-public class IgfsMetricsAdapter implements IgniteFsMetrics, Externalizable {
+public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

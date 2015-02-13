@@ -31,7 +31,7 @@ import java.util.*;
  *     GridGgfsFile file = ggfs.info(filePath);
  * </pre>
  */
-public interface IgniteFsFile {
+public interface IgfsFile {
     /**
      * Gets path to file.
      *

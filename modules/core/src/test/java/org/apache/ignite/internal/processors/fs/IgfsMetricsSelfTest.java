@@ -31,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Test for GGFS metrics.
@@ -110,7 +110,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setSecondaryFileSystem(ggfsSecondary);
 
-        Map<String, IgniteFsMode> pathModes = new HashMap<>();
+        Map<String, IgfsMode> pathModes = new HashMap<>();
 
         pathModes.put("/fileRemote", DUAL_SYNC);
 
@@ -122,7 +122,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -174,7 +174,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -213,7 +213,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         assertNotNull(fs);
 
-        IgniteFsMetrics m = fs.metrics();
+        IgfsMetrics m = fs.metrics();
 
         assertNotNull(m);
         assertEquals(0, m.directoriesCount());
@@ -242,9 +242,9 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        IgniteFsOutputStream out1 = fs.create(new IgfsPath("/dir1/file1"), false);
-        IgniteFsOutputStream out2 = fs.create(new IgfsPath("/dir1/file2"), false);
-        IgniteFsOutputStream out3 = fs.create(new IgfsPath("/dir1/dir2/file"), false);
+        IgfsOutputStream out1 = fs.create(new IgfsPath("/dir1/file1"), false);
+        IgfsOutputStream out2 = fs.create(new IgfsPath("/dir1/file2"), false);
+        IgfsOutputStream out3 = fs.create(new IgfsPath("/dir1/dir2/file"), false);
 
         m = fs.metrics();
 
@@ -279,7 +279,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        IgniteFsOutputStream out = fs.append(new IgfsPath("/dir1/file1"), false);
+        IgfsOutputStream out = fs.append(new IgfsPath("/dir1/file1"), false);
 
         out.write(new byte[20]);
 
@@ -351,7 +351,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     public void testMultipleClose() throws Exception {
         IgniteFs fs = ggfsPrimary[0];
 
-        IgniteFsOutputStream out = fs.create(new IgfsPath("/file"), false);
+        IgfsOutputStream out = fs.create(new IgfsPath("/file"), false);
 
         out.close();
         out.close();
@@ -361,7 +361,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         in.close();
         in.close();
 
-        IgniteFsMetrics m = fs.metrics();
+        IgfsMetrics m = fs.metrics();
 
         assertEquals(0, m.filesOpenedForWrite());
         assertEquals(0, m.filesOpenedForRead());
@@ -380,7 +380,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         IgfsPath file2 = new IgfsPath("/file2");
 
         // Create remote file and write some data to it.
-        IgniteFsOutputStream out = ggfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);
+        IgfsOutputStream out = ggfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);
 
         int rmtBlockSize = ggfsSecondary.info(fileRemote).blockSize();
 
@@ -388,7 +388,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         out.close();
 
         // Start metrics measuring.
-        IgniteFsMetrics initMetrics = ggfs.metrics();
+        IgfsMetrics initMetrics = ggfs.metrics();
 
         // Create empty file.
         ggfs.create(file1, 256, true, null, 1, 256, null).close();
@@ -398,7 +398,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         checkBlockMetrics(initMetrics, ggfs.metrics(), 0, 0, 0, 0, 0, 0);
 
         // Write two blocks to the file.
-        IgniteFsOutputStream os = ggfs.append(file1, false);
+        IgfsOutputStream os = ggfs.append(file1, false);
         os.write(new byte[blockSize * 2]);
         os.close();
 
@@ -452,7 +452,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         checkBlockMetrics(initMetrics, ggfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 0, blockSize * 3);
 
-        IgniteFsMetrics metrics = ggfs.metrics();
+        IgfsMetrics metrics = ggfs.metrics();
 
         assert metrics.secondarySpaceSize() == rmtBlockSize;
 
@@ -520,7 +520,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @param bytesWrite Bytes write.
      * @throws Exception If failed.
      */
-    private void checkBlockMetrics(IgniteFsMetrics initMetrics, IgniteFsMetrics metrics, long blocksRead,
+    private void checkBlockMetrics(IgfsMetrics initMetrics, IgfsMetrics metrics, long blocksRead,
         long blocksReadRemote, long bytesRead, long blocksWrite, long blocksWriteRemote, long bytesWrite)
         throws Exception {
         assert metrics != null;

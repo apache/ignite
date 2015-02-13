@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Hadoop 2.x compliant file system.
@@ -69,7 +69,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
     private static AbstractFileSystem fs;
 
     /** Default GGFS mode. */
-    protected IgniteFsMode mode;
+    protected IgfsMode mode;
 
     /** Primary file system URI. */
     protected URI primaryFsUri;
@@ -82,7 +82,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @param mode Default GGFS mode.
      */
-    protected IgfsHadoop20FileSystemAbstractSelfTest(IgniteFsMode mode) {
+    protected IgfsHadoop20FileSystemAbstractSelfTest(IgfsMode mode) {
         this.mode = mode;
     }
 
@@ -158,7 +158,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
             cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GRP_SIZE));
+            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
             cacheCfg.setBackups(0);
             cacheCfg.setQueryIndexEnabled(false);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -228,7 +228,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GRP_SIZE));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -328,7 +328,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         for (int i = 0; i < 4; i++) {
             IgniteFs ggfs = grid(i).fileSystem("ggfs");
 
-            IgniteFsMetrics metrics = ggfs.metrics();
+            IgfsMetrics metrics = ggfs.metrics();
 
             used += metrics.localSpaceSize();
             max += metrics.maxSpaceSize();
@@ -1301,13 +1301,13 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
             IgfsPath filePath = new IgfsPath("/someFile");
 
-            IgniteFsFile fileInfo = igniteFs.info(filePath);
+            IgfsFile fileInfo = igniteFs.info(filePath);
 
-            Collection<IgniteFsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
+            Collection<IgfsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
 
             assertEquals(1, locations.size());
 
-            IgniteFsBlockLocation location = F.first(locations);
+            IgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
         }

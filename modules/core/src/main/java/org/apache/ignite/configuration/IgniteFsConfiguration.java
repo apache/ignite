@@ -67,7 +67,7 @@ public class IgniteFsConfiguration {
     public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
 
     /** Default GGFS mode. */
-    public static final IgniteFsMode DFLT_MODE = IgniteFsMode.DUAL_ASYNC;
+    public static final IgfsMode DFLT_MODE = IgfsMode.DUAL_ASYNC;
 
     /** Default file's data block size (bytes). */
     public static final int DFLT_BLOCK_SIZE = 1 << 16;
@@ -124,7 +124,7 @@ public class IgniteFsConfiguration {
     private Igfs secondaryFs;
 
     /** GGFS mode. */
-    private IgniteFsMode dfltMode = DFLT_MODE;
+    private IgfsMode dfltMode = DFLT_MODE;
 
     /** Fragmentizer throttling block length. */
     private long fragmentizerThrottlingBlockLen = DFLT_FRAGMENTIZER_THROTTLING_BLOCK_LENGTH;
@@ -142,7 +142,7 @@ public class IgniteFsConfiguration {
     private boolean fragmentizerEnabled = DFLT_FRAGMENTIZER_ENABLED;
 
     /** Path modes. */
-    private Map<String, IgniteFsMode> pathModes;
+    private Map<String, IgfsMode> pathModes;
 
     /** Maximum space. */
     private long maxSpace;
@@ -491,12 +491,12 @@ public class IgniteFsConfiguration {
      * Secondary Hadoop file system is provided for pass-through, write-through, and read-through
      * purposes.
      * <p>
-     * Default mode is {@link IgniteFsMode#DUAL_ASYNC}. If secondary Hadoop file system is
-     * not configured, this mode will work just like {@link IgniteFsMode#PRIMARY} mode.
+     * Default mode is {@link org.apache.ignite.ignitefs.IgfsMode#DUAL_ASYNC}. If secondary Hadoop file system is
+     * not configured, this mode will work just like {@link org.apache.ignite.ignitefs.IgfsMode#PRIMARY} mode.
      *
      * @return Mode to specify how GGFS interacts with secondary HDFS file system.
      */
-    public IgniteFsMode getDefaultMode() {
+    public IgfsMode getDefaultMode() {
         return dfltMode;
     }
 
@@ -507,7 +507,7 @@ public class IgniteFsConfiguration {
      *
      * @param dfltMode {@code GGFS} mode.
      */
-    public void setDefaultMode(IgniteFsMode dfltMode) {
+    public void setDefaultMode(IgfsMode dfltMode) {
         this.dfltMode = dfltMode;
     }
 
@@ -547,7 +547,7 @@ public class IgniteFsConfiguration {
      *
      * @return Map of paths to {@code GGFS} modes.
      */
-    @Nullable public Map<String, IgniteFsMode> getPathModes() {
+    @Nullable public Map<String, IgfsMode> getPathModes() {
         return pathModes;
     }
 
@@ -559,7 +559,7 @@ public class IgniteFsConfiguration {
      *
      * @param pathModes Map of paths to {@code GGFS} modes.
      */
-    public void setPathModes(Map<String, IgniteFsMode> pathModes) {
+    public void setPathModes(Map<String, IgfsMode> pathModes) {
         this.pathModes = pathModes;
     }
 

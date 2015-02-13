@@ -54,7 +54,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private final String path;
 
         /** File GGFS mode. */
-        private final IgniteFsMode mode;
+        private final IgfsMode mode;
 
         /** Stream ID. */
         private final long streamId;
@@ -84,7 +84,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             long ts,
             int entryType,
             String path,
-            IgniteFsMode mode,
+            IgfsMode mode,
             long streamId,
             long dataLen,
             boolean overwrite,
@@ -250,13 +250,13 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param ix Index of array item to parse.
          * @return Parsed GGFS mode or {@code null} if string is empty.
          */
-        private IgniteFsMode parseGgfsMode(String[] ss, int ix) {
+        private IgfsMode parseGgfsMode(String[] ss, int ix) {
             if (ss.length <= ix)
                 return null;
             else {
                 String s = ss[ix];
 
-                return s.isEmpty() ? null : IgniteFsMode.valueOf(s);
+                return s.isEmpty() ? null : IgfsMode.valueOf(s);
             }
         }
 
@@ -311,7 +311,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             long bytesWritten = 0;
             long writeTime = 0;
             long userWriteTime = 0;
-            IgniteFsMode mode = null;
+            IgfsMode mode = null;
 
             for (VisorGgfsProfilerParsedLine line : lines) {
                 if (!line.path.isEmpty())

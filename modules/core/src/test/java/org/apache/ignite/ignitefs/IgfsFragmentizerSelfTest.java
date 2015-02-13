@@ -39,7 +39,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
 
         IgfsPath path = new IgfsPath("/someFile");
 
-        try (IgniteFsOutputStream out = ggfs.create(path, true)) {
+        try (IgfsOutputStream out = ggfs.create(path, true)) {
             // Write 10 groups.
             for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++) {
                 byte[] data = new byte[GGFS_BLOCK_SIZE];
@@ -109,7 +109,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         while (written < fileSize) {
             IgniteFs ggfs = grid(ggfsIdx).fileSystem("ggfs");
 
-            try (IgniteFsOutputStream out = ggfs.append(path, true)) {
+            try (IgfsOutputStream out = ggfs.append(path, true)) {
                 byte[] data = new byte[chunkSize];
 
                 Arrays.fill(data, (byte)i);
@@ -184,7 +184,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         byte[] chunk = new byte[chunkSize];
 
         while (written < fileSize) {
-            try (IgniteFsOutputStream out = ggfs.append(path, true)) {
+            try (IgfsOutputStream out = ggfs.append(path, true)) {
                 for (int i = 0; i < 8; i++) {
                     Arrays.fill(chunk, (byte)cnt);
 
@@ -227,7 +227,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         for (int i = 0; i < 30; i++) {
             IgfsPath path = new IgfsPath("/someFile" + i);
 
-            try (IgniteFsOutputStream out = ggfs.create(path, true)) {
+            try (IgfsOutputStream out = ggfs.create(path, true)) {
                 for (int j = 0; j < 5 * GGFS_GROUP_SIZE; j++)
                     out.write(new byte[GGFS_BLOCK_SIZE]);
             }

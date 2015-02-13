@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Base class for all split resolvers
@@ -65,7 +65,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setDistributionMode(NEAR_PARTITIONED);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 
@@ -163,7 +163,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     protected void write(byte[]... chunks) throws Exception {
-        IgniteFsOutputStream os =  ggfs.create(FILE, true);
+        IgfsOutputStream os =  ggfs.create(FILE, true);
 
         if (chunks != null) {
             for (byte[] chunk : chunks)

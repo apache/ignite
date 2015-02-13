@@ -29,7 +29,7 @@ import java.nio.*;
  * Output stream to store data into grid cache with separate blocks.
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-abstract class IgfsOutputStreamAdapter extends IgniteFsOutputStream {
+abstract class IgfsOutputStreamAdapter extends IgfsOutputStream {
     /** Path to file. */
     protected final IgfsPath path;
 

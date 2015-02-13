@@ -52,7 +52,7 @@ public interface IgfsHadoop {
      * @return Future for info operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile info(IgfsPath path) throws IgniteCheckedException, IOException;
+    public IgfsFile info(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to update file properties.
@@ -62,7 +62,7 @@ public interface IgfsHadoop {
      * @return Future for update operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
+    public IgfsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Sets last access time and last modification time for a file.
@@ -104,7 +104,7 @@ public interface IgfsHadoop {
      * @return Future for affinity command.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteCheckedException,
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -132,7 +132,7 @@ public interface IgfsHadoop {
      * @return Future for listFiles operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsFile> listFiles(IgfsPath path) throws IgniteCheckedException, IOException;
+    public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get directory listing.

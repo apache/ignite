@@ -96,7 +96,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

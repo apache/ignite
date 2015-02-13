@@ -20,10 +20,11 @@ package org.apache.ignite.ignitefs;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception indicating that operation target is invalid
- * (e.g. not a file while expecting to be a file).
+ * {@code GGFS} exception that is thrown when it detected out-of-space condition.
+ * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
+ * its maximum value (that is configured per-node).
  */
-public class IgniteFsInvalidPathException extends IgniteFsException {
+public class IgfsOutOfSpaceException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,26 +33,26 @@ public class IgniteFsInvalidPathException extends IgniteFsException {
      *
      * @param msg Error message.
      */
-    public IgniteFsInvalidPathException(String msg) {
+    public IgfsOutOfSpaceException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates exception with given exception cause.
+     * Creates an instance of exception with given exception cause.
      *
      * @param cause Exception cause.
      */
-    public IgniteFsInvalidPathException(Throwable cause) {
+    public IgfsOutOfSpaceException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates exception with given error message and exception cause.
+     * Creates an instance of GGFS exception with given error message and given exception cause.
      *
      * @param msg Error message.
-     * @param cause Error cause.
+     * @param cause Exception cause.
      */
-    public IgniteFsInvalidPathException(String msg, @Nullable Throwable cause) {
+    public IgfsOutOfSpaceException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

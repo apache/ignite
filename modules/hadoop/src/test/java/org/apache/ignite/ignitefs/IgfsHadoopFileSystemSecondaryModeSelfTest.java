@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Ensures correct modes resolution for SECONDARY paths.
@@ -50,10 +50,10 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     private static final String PATTERN_NOT_MATCHES = "/files";
 
     /** Default GGFS mode. */
-    private IgniteFsMode mode;
+    private IgfsMode mode;
 
     /** Path modes. */
-    private Map<String, IgniteFsMode> pathModes;
+    private Map<String, IgfsMode> pathModes;
 
     /** File system. */
     private IgfsHadoopFileSystem fs;
@@ -106,7 +106,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -168,7 +168,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -296,12 +296,12 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
      * @param modes Modes.
      */
     @SafeVarargs
-    final void pathModes(IgniteBiTuple<String, IgniteFsMode>... modes) {
+    final void pathModes(IgniteBiTuple<String, IgfsMode>... modes) {
         assert modes != null;
 
         pathModes = new LinkedHashMap<>(modes.length, 1.0f);
 
-        for (IgniteBiTuple<String, IgniteFsMode> mode : modes)
+        for (IgniteBiTuple<String, IgfsMode> mode : modes)
             pathModes.put(mode.getKey(), mode.getValue());
     }
 

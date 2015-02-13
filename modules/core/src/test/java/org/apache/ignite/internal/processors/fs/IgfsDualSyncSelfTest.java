@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Tests for DUAL_SYNC mode.

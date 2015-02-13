@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.internal.fs.common.IgfsLogger.*;
 
 /**
@@ -227,7 +227,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      * @param path File path.
      * @return GGFS file instance.
      */
-    private IgniteFsFile file(String path) {
+    private IgfsFile file(String path) {
         return new IgfsFileImpl(new IgfsPath(path), new IgfsFileInfo(), 64 * 1024 * 1024);
     }
 

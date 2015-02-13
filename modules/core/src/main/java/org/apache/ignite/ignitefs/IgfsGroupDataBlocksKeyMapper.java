@@ -53,7 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * &lt;/bean&gt;
  * </pre>
  */
-public class IgniteFsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,7 +65,7 @@ public class IgniteFsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
      *
      * @param grpSize Size of the group in blocks.
      */
-    public IgniteFsGroupDataBlocksKeyMapper(int grpSize) {
+    public IgfsGroupDataBlocksKeyMapper(int grpSize) {
         A.ensure(grpSize >= 1, "grpSize >= 1");
 
         this.grpSize = grpSize;
@@ -96,6 +96,6 @@ public class IgniteFsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsGroupDataBlocksKeyMapper.class, this);
+        return S.toString(IgfsGroupDataBlocksKeyMapper.class, this);
     }
 }

@@ -23,7 +23,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * {@link IgfsAttributes} test case.
@@ -33,7 +33,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSerialization() throws Exception {
-        Map<String, IgniteFsMode> pathModes = new HashMap<>();
+        Map<String, IgfsMode> pathModes = new HashMap<>();
 
         pathModes.put("path1", PRIMARY);
         pathModes.put("path2", PROXY);

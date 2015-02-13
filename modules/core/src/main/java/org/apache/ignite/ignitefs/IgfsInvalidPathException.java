@@ -17,19 +17,22 @@
 
 package org.apache.ignite.ignitefs;
 
+import org.jetbrains.annotations.*;
+
 /**
- * {@code GGFS} exception indicating that target resource is not found.
+ * {@code GGFS} exception indicating that operation target is invalid
+ * (e.g. not a file while expecting to be a file).
  */
-public class IgfsFileNotFoundException extends IgfsInvalidPathException {
+public class IgfsInvalidPathException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with error message specified.
+     * Creates exception with given error message.
      *
      * @param msg Error message.
      */
-    public IgfsFileNotFoundException(String msg) {
+    public IgfsInvalidPathException(String msg) {
         super(msg);
     }
 
@@ -38,7 +41,17 @@ public class IgfsFileNotFoundException extends IgfsInvalidPathException {
      *
      * @param cause Exception cause.
      */
-    public IgfsFileNotFoundException(Throwable cause) {
+    public IgfsInvalidPathException(Throwable cause) {
         super(cause);
+    }
+
+    /**
+     * Creates exception with given error message and exception cause.
+     *
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public IgfsInvalidPathException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

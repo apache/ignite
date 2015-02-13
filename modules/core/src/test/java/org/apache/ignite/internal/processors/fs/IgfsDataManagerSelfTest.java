@@ -121,7 +121,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
-            cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
+            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
         }
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -398,17 +398,17 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
-            assertEquals("Expects no affinity for zero length.", Collections.<IgniteFsBlockLocation>emptyList(),
+            assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
                 mgr.affinity(info, pos, 0));
 
             // Expects grouped data blocks are interpreted as a single block location.
             // And no guaranties for blocks out of the group.
             for (int len = 1, maxLen = grpSize - pos % grpSize; len < maxLen; len++) {
-                Collection<IgniteFsBlockLocation> aff = mgr.affinity(info, pos, len);
+                Collection<IgfsBlockLocation> aff = mgr.affinity(info, pos, len);
 
                 assertEquals("Unexpected affinity: " + aff, 1, aff.size());
 
-                IgniteFsBlockLocation loc = F.first(aff);
+                IgfsBlockLocation loc = F.first(aff);
 
                 assertEquals("Unexpected block location: " + loc, pos, loc.start());
                 assertEquals("Unexpected block location: " + loc, len, loc.length());
@@ -416,11 +416,11 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             // Validate ranges.
             for (int len = grpSize * 4 + 1, maxLen = 5 * grpSize - pos % grpSize; len < maxLen; len++) {
-                Collection<IgniteFsBlockLocation> aff = mgr.affinity(info, pos, len);
+                Collection<IgfsBlockLocation> aff = mgr.affinity(info, pos, len);
 
                 assertTrue("Unexpected affinity [aff=" + aff + ", pos=" + pos + ", len=" + len + ']', aff.size() <= 5);
 
-                IgniteFsBlockLocation first = F.first(aff);
+                IgfsBlockLocation first = F.first(aff);
 
                 assertEquals("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     pos, first.start());
@@ -428,7 +428,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 assertTrue("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     first.length() >= grpSize - pos % grpSize);
 
-                IgniteFsBlockLocation last = F.last(aff);
+                IgfsBlockLocation last = F.last(aff);
 
                 assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     last.start() <= (pos / grpSize + 4) * grpSize);
@@ -445,9 +445,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
-        Collection<IgniteFsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
+        Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
-        for (IgniteFsBlockLocation loc : affinity) {
+        for (IgfsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);
@@ -485,7 +485,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         info.fileMap(map);
 
-        Collection<IgniteFsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
+        Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
         checkAffinity(blockSize, info, affinity);
 
@@ -517,10 +517,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param info File info.
      * @param affinity Affinity block locations to check.
      */
-    private void checkAffinity(int blockSize, IgfsFileInfo info, Iterable<IgniteFsBlockLocation> affinity) {
+    private void checkAffinity(int blockSize, IgfsFileInfo info, Iterable<IgfsBlockLocation> affinity) {
         GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
-        for (IgniteFsBlockLocation loc : affinity) {
+        for (IgfsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);
@@ -560,7 +560,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsException.class, msg);
+        }, IgfsException.class, msg);
     }
 
     /**
@@ -576,7 +576,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsException.class, msg);
+        }, IgfsException.class, msg);
     }
 
     /**
@@ -595,6 +595,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsException.class, msg);
+        }, IgfsException.class, msg);
     }
 }

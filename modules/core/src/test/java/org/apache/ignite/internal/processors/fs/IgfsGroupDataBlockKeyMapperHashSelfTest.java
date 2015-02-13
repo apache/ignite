@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.concurrent.*;
 
 /**
- * Tests for {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper} hash.
+ * Tests for {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper} hash.
  */
 public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractTest {
     /**
@@ -54,7 +54,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
      * @param partCnt Total partitions count.
      * @return Partition index.
      */
-    private int partition(IgniteFsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
+    private int partition(IgfsGroupDataBlocksKeyMapper mapper, IgniteUuid fileId, long blockId, int partCnt) {
         return U.safeAbs((Integer) mapper.affinityKey(new IgfsBlockKey(fileId, null, false, blockId)) % partCnt);
     }
 
@@ -66,7 +66,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     public void checkDistribution(int grpSize, int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 
-        IgniteFsGroupDataBlocksKeyMapper mapper = new IgniteFsGroupDataBlocksKeyMapper(grpSize);
+        IgfsGroupDataBlocksKeyMapper mapper = new IgfsGroupDataBlocksKeyMapper(grpSize);
 
         int lastPart = 0;
 
@@ -106,7 +106,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     public void checkIntOverflowDistribution(int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 
-        IgniteFsGroupDataBlocksKeyMapper mapper = new IgniteFsGroupDataBlocksKeyMapper(1);
+        IgfsGroupDataBlocksKeyMapper mapper = new IgfsGroupDataBlocksKeyMapper(1);
 
         int part1 = partition(mapper, fileId, Integer.MAX_VALUE - 1, partCnt);
         int part2 = partition(mapper, fileId, Integer.MAX_VALUE, partCnt);

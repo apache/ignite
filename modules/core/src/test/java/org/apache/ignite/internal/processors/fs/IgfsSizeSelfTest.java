@@ -134,7 +134,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         dataCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCfg.setPreloadMode(SYNC);
-        dataCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        dataCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -430,7 +430,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         final IgfsPath path = new IgfsPath("/file");
 
         // This write is expected to be successful.
-        IgniteFsOutputStream os = ggfs(0).create(path, false);
+        IgfsOutputStream os = ggfs(0).create(path, false);
         os.write(chunk(BLOCK_SIZE - 1));
         os.close();
 
@@ -442,7 +442,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         // This write must fail w/ exception.
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream osErr = ggfs(0).append(path, false);
+                IgfsOutputStream osErr = ggfs(0).append(path, false);
 
                 try {
                     osErr.write(chunk(BLOCK_SIZE));
@@ -462,7 +462,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                     U.closeQuiet(osErr);
                 }
             }
-        }, IgniteFsOutOfSpaceException.class, "Failed to write data block (GGFS maximum data size exceeded) [used=" +
+        }, IgfsOutOfSpaceException.class, "Failed to write data block (GGFS maximum data size exceeded) [used=" +
             ggfsMaxData + ", allowed=" + ggfsMaxData + ']');
     }
 
@@ -485,7 +485,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         final IgfsPath otherPath = new IgfsPath("/fileOther");
 
         // Fill cache with data up to it's limit.
-        IgniteFsOutputStream os = ggfs.create(path, false);
+        IgfsOutputStream os = ggfs.create(path, false);
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
@@ -789,7 +789,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             // Actual write.
             for (IgfsBlock block : blocks) {
-                IgniteFsOutputStream os = ggfs(0).append(path, false);
+                IgfsOutputStream os = ggfs(0).append(path, false);
 
                 os.write(chunk(block.length()));
 

@@ -96,7 +96,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
         for (IgfsPath path : args.paths()) {
-            IgniteFsFile file = fs.info(path);
+            IgfsFile file = fs.info(path);
 
             if (file == null) {
                 if (args.skipNonExistentFiles())
@@ -105,11 +105,11 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
                     throw new IgniteException("Failed to process IgniteFs file because it doesn't exist: " + path);
             }
 
-            Collection<IgniteFsBlockLocation> aff = fs.affinity(path, 0, file.length(), args.maxRangeLength());
+            Collection<IgfsBlockLocation> aff = fs.affinity(path, 0, file.length(), args.maxRangeLength());
 
             long totalLen = 0;
 
-            for (IgniteFsBlockLocation loc : aff) {
+            for (IgfsBlockLocation loc : aff) {
                 ClusterNode node = null;
 
                 for (UUID nodeId : loc.nodeIds()) {

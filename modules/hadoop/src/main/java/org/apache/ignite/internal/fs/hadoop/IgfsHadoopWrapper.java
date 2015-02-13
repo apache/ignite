@@ -95,9 +95,9 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
-            @Override public IgniteFsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+    @Override public IgfsFile info(final IgfsPath path) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgfsFile>() {
+            @Override public IgfsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.info(path);
             }
@@ -105,9 +105,9 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(final IgfsPath path, final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
-            @Override public IgniteFsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+    @Override public IgfsFile update(final IgfsPath path, final Map<String, String> props) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgfsFile>() {
+            @Override public IgfsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.update(path, props);
             }
@@ -146,10 +146,10 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(final IgfsPath path, final long start,
+    @Override public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start,
         final long len) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsBlockLocation>>() {
-            @Override public Collection<IgniteFsBlockLocation> apply(IgfsHadoopEx hadoop,
+        return withReconnectHandling(new FileSystemClosure<Collection<IgfsBlockLocation>>() {
+            @Override public Collection<IgfsBlockLocation> apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.affinity(path, start, len);
             }
@@ -177,9 +177,9 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsFile>>() {
-            @Override public Collection<IgniteFsFile> apply(IgfsHadoopEx hadoop,
+    @Override public Collection<IgfsFile> listFiles(final IgfsPath path) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<Collection<IgfsFile>>() {
+            @Override public Collection<IgfsFile> apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.listFiles(path);
             }

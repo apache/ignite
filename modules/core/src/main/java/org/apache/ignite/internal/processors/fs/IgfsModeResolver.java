@@ -32,33 +32,33 @@ public class IgfsModeResolver {
     private static final int MAX_PATH_CACHE = 1000;
 
     /** Default mode. */
-    private final IgniteFsMode dfltMode;
+    private final IgfsMode dfltMode;
 
     /** Modes for particular paths. Ordered from longest to shortest. */
-    private ArrayList<T2<IgfsPath, IgniteFsMode>> modes;
+    private ArrayList<T2<IgfsPath, IgfsMode>> modes;
 
     /** Cached modes per path. */
-    private Map<IgfsPath, IgniteFsMode> modesCache;
+    private Map<IgfsPath, IgfsMode> modesCache;
 
     /** Cached children modes per path. */
-    private Map<IgfsPath, Set<IgniteFsMode>> childrenModesCache;
+    private Map<IgfsPath, Set<IgfsMode>> childrenModesCache;
 
     /**
      * @param dfltMode Default GGFS mode.
      * @param modes List of configured modes.
      */
-    public IgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgfsPath, IgniteFsMode>> modes) {
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
 
         if (modes != null) {
-            ArrayList<T2<IgfsPath, IgniteFsMode>> modes0 = new ArrayList<>(modes);
+            ArrayList<T2<IgfsPath, IgfsMode>> modes0 = new ArrayList<>(modes);
 
             // Sort paths, longest first.
-            Collections.sort(modes0, new Comparator<Map.Entry<IgfsPath, IgniteFsMode>>() {
-                @Override public int compare(Map.Entry<IgfsPath, IgniteFsMode> o1,
-                    Map.Entry<IgfsPath, IgniteFsMode> o2) {
+            Collections.sort(modes0, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
+                @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1,
+                    Map.Entry<IgfsPath, IgfsMode> o2) {
                     return o2.getKey().components().size() - o1.getKey().components().size();
                 }
             });
@@ -76,16 +76,16 @@ public class IgfsModeResolver {
      * @param path GGFS path.
      * @return GGFS mode.
      */
-    public IgniteFsMode resolveMode(IgfsPath path) {
+    public IgfsMode resolveMode(IgfsPath path) {
         assert path != null;
 
         if (modes == null)
             return dfltMode;
         else {
-            IgniteFsMode mode = modesCache.get(path);
+            IgfsMode mode = modesCache.get(path);
 
             if (mode == null) {
-                for (T2<IgfsPath, IgniteFsMode> entry : modes) {
+                for (T2<IgfsPath, IgfsMode> entry : modes) {
                     if (startsWith(path, entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
@@ -108,20 +108,20 @@ public class IgfsModeResolver {
      * @param path Path.
      * @return Set of all modes that children paths could have.
      */
-    public Set<IgniteFsMode> resolveChildrenModes(IgfsPath path) {
+    public Set<IgfsMode> resolveChildrenModes(IgfsPath path) {
         assert path != null;
 
         if (modes == null)
             return Collections.singleton(dfltMode);
         else {
-            Set<IgniteFsMode> children = childrenModesCache.get(path);
+            Set<IgfsMode> children = childrenModesCache.get(path);
 
             if (children == null) {
-                children = new HashSet<>(IgniteFsMode.values().length, 1.0f);
+                children = new HashSet<>(IgfsMode.values().length, 1.0f);
 
-                IgniteFsMode pathDefault = dfltMode;
+                IgfsMode pathDefault = dfltMode;
 
-                for (T2<IgfsPath, IgniteFsMode> child : modes) {
+                for (T2<IgfsPath, IgfsMode> child : modes) {
                     if (startsWith(path, child.getKey())) {
                         pathDefault = child.getValue();
 
@@ -144,7 +144,7 @@ public class IgfsModeResolver {
      * @return Unmodifiable copy of properly ordered modes prefixes
      *  or {@code null} if no modes set.
      */
-    @Nullable public List<T2<IgfsPath, IgniteFsMode>> modesOrdered() {
+    @Nullable public List<T2<IgfsPath, IgfsMode>> modesOrdered() {
         return modes != null ? Collections.unmodifiableList(modes) : null;
     }
 

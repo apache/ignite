@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
 
@@ -266,8 +266,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null) {
-                for (T2<IgfsPath, IgniteFsMode> pathMode : paths.pathModes()) {
-                    IgniteFsMode mode = pathMode.getValue();
+                for (T2<IgfsPath, IgfsMode> pathMode : paths.pathModes()) {
+                    IgfsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
                 }
@@ -430,7 +430,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
         try {
             IgfsPath path = convert(f);
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 FSDataInputStream is = secondaryFs.open(toSecondary(f), bufSize);
@@ -505,7 +505,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
         try {
             IgfsPath path = convert(f);
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in create [thread=" + Thread.currentThread().getName() + "path=" +
@@ -604,7 +604,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         try {
             IgfsPath srcPath = convert(src);
             IgfsPath dstPath = convert(dst);
-            Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
+            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
             if (childrenModes.contains(PROXY)) {
                 if (clientLog.isLogEnabled())
@@ -631,8 +631,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
         try {
             IgfsPath path = convert(f);
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
-            Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
+            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
             if (childrenModes.contains(PROXY)) {
                 if (clientLog.isLogEnabled())
@@ -676,7 +676,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
         try {
             IgfsPath path = convert(f);
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
@@ -699,12 +699,12 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
                 return arr;
             }
             else {
-                Collection<IgniteFsFile> list = rmtClient.listFiles(path);
+                Collection<IgfsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
                     throw new FileNotFoundException("File " + f + " does not exist.");
 
-                List<IgniteFsFile> files = new ArrayList<>(list);
+                List<IgfsFile> files = new ArrayList<>(list);
 
                 FileStatus[] arr = new FileStatus[files.size()];
 
@@ -736,7 +736,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
         try {
             IgfsPath path = convert(f);
-            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 if (clientLog.isLogEnabled())
@@ -766,7 +766,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             if (mode(f) == PROXY)
                 return toPrimary(secondaryFs.getFileStatus(toSecondary(f)));
             else {
-                IgniteFsFile info = rmtClient.info(convert(f));
+                IgfsFile info = rmtClient.info(convert(f));
 
                 if (info == null)
                     throw new FileNotFoundException("File not found: " + f);
@@ -793,7 +793,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             else {
                 long now = System.currentTimeMillis();
 
-                List<IgniteFsBlockLocation> affinity = new ArrayList<>(
+                List<IgfsBlockLocation> affinity = new ArrayList<>(
                     rmtClient.affinity(ggfsPath, start, len));
 
                 BlockLocation[] arr = new BlockLocation[affinity.size()];
@@ -819,7 +819,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param path HDFS path.
      * @return Path mode.
      */
-    public IgniteFsMode mode(Path path) {
+    public IgfsMode mode(Path path) {
         return modeRslvr.resolveMode(convert(path));
     }
 
@@ -914,7 +914,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param block GGFS affinity block location.
      * @return Hadoop affinity block location.
      */
-    private BlockLocation convert(IgniteFsBlockLocation block) {
+    private BlockLocation convert(IgfsBlockLocation block) {
         Collection<String> names = block.names();
         Collection<String> hosts = block.hosts();
 
@@ -941,7 +941,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param file GGFS file information.
      * @return Hadoop file status.
      */
-    private FileStatus convert(IgniteFsFile file) {
+    private FileStatus convert(IgfsFile file) {
         return new FileStatus(
             file.length(),
             file.isDirectory(),
@@ -986,7 +986,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param file File info.
      * @return Hadoop permission.
      */
-    private FsPermission permission(IgniteFsFile file) {
+    private FsPermission permission(IgfsFile file) {
         String perm = file.property(PROP_PERMISSION, null);
 
         if (perm == null)

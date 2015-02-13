@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.fs.IgfsAbstractSelfTest.*;
 
@@ -98,14 +98,14 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static IgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
-    protected final IgniteFsMode mode;
+    protected final IgfsMode mode;
 
     /**
      * Constructor.
      *
      * @param mode GGFS mode.
      */
-    protected IgfsHadoopDualAbstractSelfTest(IgniteFsMode mode) {
+    protected IgfsHadoopDualAbstractSelfTest(IgfsMode mode) {
         this.mode = mode;
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
@@ -121,7 +121,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
+    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgfsMode mode,
         @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
@@ -141,7 +141,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(2));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -222,7 +222,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         // Write enough data to the secondary file system.
         final int blockSize = GGFS_BLOCK_SIZE;
 
-        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgfsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 

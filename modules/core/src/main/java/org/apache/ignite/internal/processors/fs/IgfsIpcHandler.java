@@ -420,7 +420,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 }
                 catch (IOException e) {
                     // Unwrap OutOfSpaceException, if has one.
-                    IgniteFsOutOfSpaceException space = X.cause(e, IgniteFsOutOfSpaceException.class);
+                    IgfsOutOfSpaceException space = X.cause(e, IgfsOutOfSpaceException.class);
 
                     if (space != null)
                         throw space;
@@ -476,7 +476,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
             case WRITE_BLOCK: {
                 assert rsrcId != null : "Missing stream ID";
 
-                IgniteFsOutputStream out = (IgniteFsOutputStream)resource(ses, rsrcId);
+                IgfsOutputStream out = (IgfsOutputStream)resource(ses, rsrcId);
 
                 if (out == null)
                     throw new IgniteCheckedException("Output stream not found (already closed?): " + rsrcId);

@@ -385,7 +385,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
             try {
                 return block(blockIdx);
             }
-            catch (IgniteFsCorruptedFileException e) {
+            catch (IgfsCorruptedFileException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to fetch file block [path=" + path + ", fileInfo=" + fileInfo +
                         ", blockIdx=" + blockIdx + ", errMsg=" + e.getMessage() + ']');
@@ -459,7 +459,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
         byte[] bytes = bytesFut.get();
 
         if (bytes == null)
-            throw new IgniteFsCorruptedFileException("Failed to retrieve file's data block (corrupted file?) " +
+            throw new IgfsCorruptedFileException("Failed to retrieve file's data block (corrupted file?) " +
                 "[path=" + path + ", blockIdx=" + blockIdx + ']');
 
         int blockSize = fileInfo.blockSize();

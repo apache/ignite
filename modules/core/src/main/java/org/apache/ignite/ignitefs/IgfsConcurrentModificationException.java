@@ -18,25 +18,19 @@
 package org.apache.ignite.ignitefs;
 
 /**
- * Exception thrown when Ignite detects that remote HDFS version differs from version of HDFS libraries
- * in Ignite classpath.
+ * {@code GGFS} exception indicating that file system structure was modified concurrently. This error
+ * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
  */
-public class IgniteFsInvalidHdfsVersionException extends IgniteFsException {
+public class IgfsConcurrentModificationException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Error message.
+     * Creates new exception.
+     *
+     * @param path Affected path.
      */
-    public IgniteFsInvalidHdfsVersionException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public IgniteFsInvalidHdfsVersionException(String msg, Throwable cause) {
-        super(msg, cause);
+    public IgfsConcurrentModificationException(IgfsPath path) {
+        super("File system entry has been modified concurrently: " + path, null);
     }
 }

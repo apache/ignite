@@ -129,7 +129,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         cc.setName("partitioned");
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
+        cc.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cc.setBackups(0);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setQueryIndexEnabled(false);

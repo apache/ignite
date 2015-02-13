@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgfsMode.*;
 
 /**
  * Test fo regular GGFs operations.
@@ -117,7 +117,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static IgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
-    protected final IgniteFsMode mode;
+    protected final IgfsMode mode;
 
     /** Dual mode flag. */
     protected final boolean dual;
@@ -130,11 +130,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @param mode GGFS mode.
      */
-    protected IgfsAbstractSelfTest(IgniteFsMode mode) {
+    protected IgfsAbstractSelfTest(IgfsMode mode) {
         this(mode, ONHEAP_TIERED);
     }
 
-    protected IgfsAbstractSelfTest(IgniteFsMode mode, CacheMemoryMode memoryMode) {
+    protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
 
         this.mode = mode;
@@ -180,7 +180,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
+    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgfsMode mode,
         @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
@@ -200,7 +200,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(2));
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -284,15 +284,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testListFiles() throws Exception {
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        Collection<IgniteFsFile> paths = ggfs.listFiles(SUBDIR);
+        Collection<IgfsFile> paths = ggfs.listFiles(SUBDIR);
 
         assert paths != null;
         assert paths.size() == 2;
 
-        Iterator<IgniteFsFile> iter = paths.iterator();
+        Iterator<IgfsFile> iter = paths.iterator();
 
-        IgniteFsFile path1 = iter.next();
-        IgniteFsFile path2 = iter.next();
+        IgfsFile path1 = iter.next();
+        IgfsFile path2 = iter.next();
 
         assert (SUBSUBDIR.equals(path1.path()) && FILE.equals(path2.path())) ||
             (FILE.equals(path1.path()) && SUBSUBDIR.equals(path2.path()));
@@ -304,7 +304,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListFilesPathDoesNotExist() throws Exception {
-        Collection<IgniteFsFile> paths = null;
+        Collection<IgfsFile> paths = null;
 
         try {
             paths = ggfs.listFiles(SUBDIR);
@@ -324,7 +324,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testInfo() throws Exception {
         create(ggfs, paths(DIR), null);
 
-        IgniteFsFile info = ggfs.info(DIR);
+        IgfsFile info = ggfs.info(DIR);
 
         assert info != null;
 
@@ -337,7 +337,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInfoPathDoesNotExist() throws Exception {
-        IgniteFsFile info = null;
+        IgfsFile info = null;
 
         try {
             info = ggfs.info(DIR);
@@ -611,7 +611,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsException.class, null);
+        }, IgfsException.class, null);
 
         checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
     }
@@ -779,7 +779,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
-        try (IgniteFsOutputStream os = ggfs.append(FILE, false)) {
+        try (IgfsOutputStream os = ggfs.append(FILE, false)) {
             os.write(new byte[10 * 1024 * 1024]);
         }
 
@@ -916,8 +916,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os1 = null;
-                IgniteFsOutputStream os2 = null;
+                IgfsOutputStream os1 = null;
+                IgfsOutputStream os2 = null;
 
                 try {
                     os1 = ggfs.create(FILE, true);
@@ -930,7 +930,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsException.class, null);
+        }, IgfsException.class, null);
     }
 
     /**
@@ -941,7 +941,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateRenameNoClose() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -963,7 +963,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateRenameParentNoClose() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -987,7 +987,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os = null;
+                IgfsOutputStream os = null;
 
                 try {
                     os = ggfs.create(FILE, true);
@@ -1017,7 +1017,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os = null;
+                IgfsOutputStream os = null;
 
                 try {
                     os = ggfs.create(FILE, true);
@@ -1050,7 +1050,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -1083,7 +1083,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
-                        IgniteFsOutputStream os = ggfs.create(path, 128, true, null, 0, 256, null);
+                        IgfsOutputStream os = ggfs.create(path, 128, true, null, 0, 256, null);
 
                         os.write(chunk);
 
@@ -1124,7 +1124,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    IgniteFsOutputStream os = null;
+                    IgfsOutputStream os = null;
 
                     try {
                         os = ggfs.create(FILE, true);
@@ -1216,8 +1216,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os1 = null;
-                IgniteFsOutputStream os2 = null;
+                IgfsOutputStream os1 = null;
+                IgfsOutputStream os2 = null;
 
                 try {
                     os1 = ggfs.append(FILE, false);
@@ -1243,7 +1243,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(ggfs, FILE, false);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1267,7 +1267,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(ggfs, FILE, false);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1293,7 +1293,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os = null;
+                IgfsOutputStream os = null;
 
                 try {
                     os = ggfs.append(FILE, false);
@@ -1325,7 +1325,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsOutputStream os = null;
+                IgfsOutputStream os = null;
 
                 try {
                     IgniteUuid id = ggfs.context().meta().fileId(FILE);
@@ -1362,7 +1362,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(ggfs, FILE, false);
 
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1402,7 +1402,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     for (int i = 0; i < REPEAT_CNT; i++) {
                         chunks[i] = chunk;
 
-                        IgniteFsOutputStream os = ggfs.append(path, false);
+                        IgfsOutputStream os = ggfs.append(path, false);
 
                         os.write(chunk);
 
@@ -1443,7 +1443,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    IgniteFsOutputStream os = null;
+                    IgfsOutputStream os = null;
 
                     try {
                         os = ggfs.append(FILE, false);
@@ -1503,7 +1503,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testStop() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        IgniteFsOutputStream os = ggfs.create(FILE, true);
+        IgfsOutputStream os = ggfs.create(FILE, true);
 
         os.write(chunk);
 
@@ -2090,7 +2090,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        IgniteFsOutputStream os = null;
+                        IgfsOutputStream os = null;
 
                         try {
                             os = ggfs.create(path, true);
@@ -2191,7 +2191,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected void createFile(IgniteFs ggfs, IgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.create(file, 256, overwrite, null, 0, blockSize, null);
@@ -2215,7 +2215,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected void appendFile(IgniteFs ggfs, IgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
-        IgniteFsOutputStream os = null;
+        IgfsOutputStream os = null;
 
         try {
             os = ggfs.append(file, false);

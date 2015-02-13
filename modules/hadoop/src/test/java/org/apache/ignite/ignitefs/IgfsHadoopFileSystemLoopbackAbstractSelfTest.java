@@ -32,7 +32,7 @@ public abstract class IgfsHadoopFileSystemLoopbackAbstractSelfTest extends
      * @param mode GGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
-    protected IgfsHadoopFileSystemLoopbackAbstractSelfTest(IgniteFsMode mode, boolean skipEmbed) {
+    protected IgfsHadoopFileSystemLoopbackAbstractSelfTest(IgfsMode mode, boolean skipEmbed) {
         super(mode, skipEmbed, true);
     }
 

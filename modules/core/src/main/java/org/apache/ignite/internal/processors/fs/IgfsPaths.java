@@ -36,10 +36,10 @@ public class IgfsPaths implements Externalizable {
     private Map<String, String> props;
 
     /** Default GGFS mode. */
-    private IgniteFsMode dfltMode;
+    private IgfsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<IgfsPath, IgniteFsMode>> pathModes;
+    private List<T2<IgfsPath, IgfsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -55,8 +55,8 @@ public class IgfsPaths implements Externalizable {
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgfsPath,
-        IgniteFsMode>> pathModes) {
+    public IgfsPaths(Map<String, String> props, IgfsMode dfltMode, @Nullable List<T2<IgfsPath,
+        IgfsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -72,14 +72,14 @@ public class IgfsPaths implements Externalizable {
     /**
      * @return Default GGFS mode.
      */
-    public IgniteFsMode defaultMode() {
+    public IgfsMode defaultMode() {
         return dfltMode;
     }
 
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<IgfsPath, IgniteFsMode>> pathModes() {
+    @Nullable public List<T2<IgfsPath, IgfsMode>> pathModes() {
         return pathModes;
     }
 
@@ -92,7 +92,7 @@ public class IgfsPaths implements Externalizable {
             out.writeBoolean(true);
             out.writeInt(pathModes.size());
 
-            for (T2<IgfsPath, IgniteFsMode> pathMode : pathModes) {
+            for (T2<IgfsPath, IgfsMode> pathMode : pathModes) {
                 pathMode.getKey().writeExternal(out);
                 U.writeEnum(out, pathMode.getValue());
             }
@@ -104,7 +104,7 @@ public class IgfsPaths implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         props = U.readStringMap(in);
-        dfltMode = IgniteFsMode.fromOrdinal(in.readByte());
+        dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -115,7 +115,7 @@ public class IgfsPaths implements Externalizable {
                 IgfsPath path = new IgfsPath();
                 path.readExternal(in);
 
-                T2<IgfsPath, IgniteFsMode> entry = new T2<>(path, IgniteFsMode.fromOrdinal(in.readByte()));
+                T2<IgfsPath, IgfsMode> entry = new T2<>(path, IgfsMode.fromOrdinal(in.readByte()));
 
                 pathModes.add(entry);
             }

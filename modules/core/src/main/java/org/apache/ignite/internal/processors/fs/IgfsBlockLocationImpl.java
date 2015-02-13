@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * File block location in the grid.
  */
-public class IgfsBlockLocationImpl implements IgniteFsBlockLocation, Externalizable {
+public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,7 +62,7 @@ public class IgfsBlockLocationImpl implements IgniteFsBlockLocation, Externaliza
      * @param location HDFS block location.
      * @param len New length.
      */
-    public IgfsBlockLocationImpl(IgniteFsBlockLocation location, long len) {
+    public IgfsBlockLocationImpl(IgfsBlockLocation location, long len) {
         assert location != null;
 
         start = location.start();

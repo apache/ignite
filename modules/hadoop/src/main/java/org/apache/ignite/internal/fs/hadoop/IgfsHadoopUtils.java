@@ -112,11 +112,11 @@ public class IgfsHadoopUtils {
             return e.getCause(IOException.class);
         else if (e.hasCause(IgfsFileNotFoundException.class))
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
-        else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
+        else if (e.hasCause(IgfsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);
         else if (path != null && e.hasCause(IgfsDirectoryNotEmptyException.class))
             return new PathIsNotEmptyDirectoryException(path);
-        else if (path != null && e.hasCause(IgniteFsPathAlreadyExistsException.class))
+        else if (path != null && e.hasCause(IgfsPathAlreadyExistsException.class))
             return new PathExistsException(path);
         else
             return new IOException(e);
