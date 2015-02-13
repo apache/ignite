@@ -39,7 +39,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
 
 /**

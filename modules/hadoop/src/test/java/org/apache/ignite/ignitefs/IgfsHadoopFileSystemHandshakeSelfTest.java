@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.hadoop.v2.IgfsHadoopFileSystem;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -296,9 +297,9 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
         Configuration cfg = new Configuration();
 
         cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl",
-            org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+            IgfsHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 

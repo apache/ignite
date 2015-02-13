@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
-import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
 
 /**
@@ -80,9 +80,9 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * For sample client and data node configuration refer to {@code config/hadoop/default-config-client.xml}
  * and {@code config/hadoop/default-config.xml} configuration files in Ignite installation.
  */
-public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
+public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
     /** Logger. */
-    private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
+    private static final Log LOG = LogFactory.getLog(IgfsHadoopFileSystem.class);
 
     /** Ensures that close routine is invoked at most once. */
     private final AtomicBoolean closeGuard = new AtomicBoolean();
@@ -135,7 +135,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws URISyntaxException if name has invalid syntax.
      * @throws IOException If initialization failed.
      */
-    public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
+    public IgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
         super(GridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, false, -1);
 
         uri = name;
@@ -1002,6 +1002,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsHadoopFileSystem.class, this);
+        return S.toString(IgfsHadoopFileSystem.class, this);
     }
 }

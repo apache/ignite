@@ -128,7 +128,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.ggfs.impl", IgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -169,7 +169,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.ggfs.impl", IgfsHadoopFileSystem.class.getName());
         cfg.setBoolean(MAP_WRITE, true);
 
         Job job = Job.getInstance(cfg);
@@ -211,7 +211,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setStrings("fs.ggfs.impl", IgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);

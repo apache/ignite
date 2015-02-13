@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.hadoop.v1.*;
+import org.apache.ignite.ignitefs.hadoop.v1.IgfsHadoopFileSystem;
 import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.*;
@@ -351,7 +351,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     public void testGetUriIfFSIsNotInitialized() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return new GridGgfsHadoopFileSystem().getUri();
+                return new IgfsHadoopFileSystem().getUri();
             }
         }, IllegalStateException.class, "URI is null (was GridGgfsHadoopFileSystem properly initialized?).");
     }
@@ -361,7 +361,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     public void testInitializeCheckParametersNameIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridGgfsHadoopFileSystem().initialize(null, new Configuration());
+                new IgfsHadoopFileSystem().initialize(null, new Configuration());
 
                 return null;
             }
@@ -373,7 +373,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     public void testInitializeCheckParametersCfgIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridGgfsHadoopFileSystem().initialize(new URI(""), null);
+                new IgfsHadoopFileSystem().initialize(new URI(""), null);
 
                 return null;
             }
@@ -382,7 +382,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
     /** @throws Exception If failed. */
     public void testInitialize() throws Exception {
-        final GridGgfsHadoopFileSystem fs = new GridGgfsHadoopFileSystem();
+        final IgfsHadoopFileSystem fs = new IgfsHadoopFileSystem();
 
         fs.initialize(primaryFsUri, primaryFsCfg);
 
@@ -473,7 +473,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
     /** @throws Exception If failed. */
     public void testCloseIfNotInitialized() throws Exception {
-        final FileSystem fs = new GridGgfsHadoopFileSystem();
+        final FileSystem fs = new IgfsHadoopFileSystem();
 
         // Check close makes nothing harmful.
         fs.close();
@@ -2348,9 +2348,9 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
         Configuration cfg = new Configuration();
 
         cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", IgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl",
-            org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+            org.apache.ignite.ignitefs.hadoop.v2.IgfsHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 

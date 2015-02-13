@@ -38,7 +38,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
-import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 
 /**
  * Ensures that sampling is really turned on/off.
@@ -292,7 +292,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
      * @return New file system.
      * @throws Exception If failed.
      */
-    private GridGgfsHadoopFileSystem fileSystem() throws Exception {
+    private IgfsHadoopFileSystem fileSystem() throws Exception {
         Configuration fsCfg = new Configuration();
 
         fsCfg.addResource(U.resolveIgniteUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
@@ -304,7 +304,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getIgniteHome());
 
-        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
+        return (IgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }
 
     /**

@@ -57,7 +57,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
     private Map<String, IgniteFsMode> pathModes;
 
     /** File system. */
-    private GridGgfsHadoopFileSystem fs;
+    private IgfsHadoopFileSystem fs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -142,7 +142,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
-        fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
+        fs = (IgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }
 
     /**

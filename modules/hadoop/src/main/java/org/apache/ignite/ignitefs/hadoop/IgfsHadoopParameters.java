@@ -72,7 +72,7 @@ package org.apache.ignite.ignitefs.hadoop;
  * If you want to use these parameters in code, then you have to substitute you file system name in it. The easiest
  * way to do that is {@code String.format(PARAM_GGFS_COLOCATED_WRITES, [name])}.
  */
-public class GridGgfsHadoopParameters {
+public class IgfsHadoopParameters {
     /** Parameter name for control over file colocation write mode. */
     public static final String PARAM_GGFS_COLOCATED_WRITES = "fs.ggfs.%s.colocated.writes";
 

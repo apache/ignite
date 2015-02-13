@@ -36,8 +36,8 @@ public class GridHadoopFileSystemsUtils {
      * @param userName User name.
      */
     public static void setUser(FileSystem fs, String userName) {
-        if (fs instanceof GridGgfsHadoopFileSystem)
-            ((GridGgfsHadoopFileSystem)fs).setUser(userName);
+        if (fs instanceof IgfsHadoopFileSystem)
+            ((IgfsHadoopFileSystem)fs).setUser(userName);
         else if (fs instanceof GridHadoopDistributedFileSystem)
             ((GridHadoopDistributedFileSystem)fs).setUser(userName);
     }

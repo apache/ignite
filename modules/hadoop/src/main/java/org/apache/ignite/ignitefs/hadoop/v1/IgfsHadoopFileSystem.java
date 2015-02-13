@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
-import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
 
 /**
@@ -80,7 +80,7 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * For sample client and data node configuration refer to {@code config/hadoop/default-config-client.xml}
  * and {@code config/hadoop/default-config.xml} configuration files in Ignite installation.
  */
-public class GridGgfsHadoopFileSystem extends FileSystem {
+public class IgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */
     public static final String GGFS_MANAGEMENT = "fs.ggfs.management.connection";
 
@@ -1248,6 +1248,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsHadoopFileSystem.class, this);
+        return S.toString(IgfsHadoopFileSystem.class, this);
     }
 }
