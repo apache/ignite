@@ -82,7 +82,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        globalLdr = new CacheClassLoader();
+        globalLdr = new CacheClassLoader(cctx.gridConfig().getClassLoader());
 
         nodeFilter = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -761,7 +761,17 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * Sets context class loader as parent.
          */
         private CacheClassLoader() {
-            super(U.detectClassLoader(GridCacheDeploymentManager.class));
+            this(U.detectClassLoader(GridCacheDeploymentManager.class));
+        }
+
+        /**
+         * Sets context class loader.
+         * If user's class loader is null then will be used default class loader.
+         *
+         * @param classLdr User's class loader.
+         */
+        private CacheClassLoader(ClassLoader classLdr) {
+            super(classLdr != null ? classLdr : U.detectClassLoader(GridCacheDeploymentManager.class));
 
             p2pExclude = cctx.gridConfig().getPeerClassLoadingLocalClassPathExclude();
         }

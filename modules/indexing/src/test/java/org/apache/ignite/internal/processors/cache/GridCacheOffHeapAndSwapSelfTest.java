@@ -32,7 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -213,12 +212,11 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             assert val != null;
             assert val == i;
 
-            Cache.Entry<Long, Long> entry = cache.entry(i);
+            GridCacheEntryEx entry = dht(cache).peekEx(i);
 
             assert entry != null;
 
-            assert false : "ignite-96";
-            // versions.put(i, entry.version());
+            versions.put(i, entry.version());
         }
 
         assertEquals(0, offheapedCnt.get());
@@ -264,19 +262,20 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @throws Exception In case of error.
      */
-    private void checkEntries(CacheProjection<Long, Long> cache) throws Exception {
+    private void checkEntries(GridCache<Long, Long> cache) throws Exception {
         for (long i = from; i < to; i++) {
-            Cache.Entry<Long, Long> entry = cache.entry(i);
+            cache.promote(i);
+
+            GridCacheEntryEx<Long, Long> entry = dht(cache).entryEx(i);
 
             assert entry != null;
-            assert entry.getKey() != null;
+            assert entry.key() != null;
 
-            Long val = entry.getValue();
+            Long val = entry.rawGet();
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.getKey(), val);
-            assert false : "ignite-96";
-//            assertEquals(entry.version(), versions.get(i));
+            assertEquals(entry.key(), val);
+            assertEquals(entry.version(), versions.get(i));
         }
 
         assertEquals(0, swappedCnt.get());
@@ -482,7 +481,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link org.apache.ignite.cache.CacheProjection#peek(Object)} behavior on offheaped entries.
+     * Tests {@link GridCache#peek(Object)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */

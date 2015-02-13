@@ -130,9 +130,6 @@ public class GridCacheAttributes implements Externalizable {
     /** */
     private int affPartsCnt;
 
-    /** Cloner class name. */
-    private String clonerClsName;
-
     /** Eviction filter class name. */
     private String evictFilterClsName;
 
@@ -208,7 +205,6 @@ public class GridCacheAttributes implements Externalizable {
             affClsName = className(aff);
         }
 
-        clonerClsName = className(cfg.getCloner());
         evictFilterClsName = className(cfg.getEvictionFilter());
         evictPlcClsName = className(cfg.getEvictionPolicy());
         nearEvictPlcClsName = className(cfg.getNearEvictionPolicy());
@@ -325,13 +321,6 @@ public class GridCacheAttributes implements Externalizable {
      */
     public String affinityHashIdResolverClassName() {
         return affHashIdRslvrClsName;
-    }
-
-    /**
-     * @return Cloner class name.
-     */
-    public String clonerClassName() {
-        return clonerClsName;
     }
 
     /**
@@ -554,7 +543,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeString(out, affReplicaCntAttrName);
         U.writeString(out, affHashIdRslvrClsName);
 
-        U.writeString(out, clonerClsName);
         U.writeString(out, evictFilterClsName);
         U.writeString(out, evictPlcClsName);
         U.writeString(out, nearEvictPlcClsName);
@@ -599,7 +587,6 @@ public class GridCacheAttributes implements Externalizable {
         affReplicaCntAttrName = U.readString(in);
         affHashIdRslvrClsName = U.readString(in);
 
-        clonerClsName = U.readString(in);
         evictFilterClsName = U.readString(in);
         evictPlcClsName = U.readString(in);
         nearEvictPlcClsName = U.readString(in);

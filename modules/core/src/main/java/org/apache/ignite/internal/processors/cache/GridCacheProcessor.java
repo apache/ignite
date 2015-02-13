@@ -381,7 +381,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "for cache: " + cc.getName());
 
         if (cc.isWriteThrough() && cfgStore == null)
-            throw new IgniteCheckedException("Cannot enable read-through (writer or store is not provided) " +
+            throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + cc.getName());
 
         long delay = cc.getPreloadPartitionedDelay();
@@ -484,7 +484,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
-        prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
 
@@ -519,7 +518,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.jta().tmLookup(), false);
-        cleanup(cfg, cfg.getCloner(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
         cctx.cleanup();
@@ -1112,9 +1110,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "Load previous value enabled", locAttr.loadPreviousValue(),
                                 locAttr.loadPreviousValue(), true);
                         }
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cloner", "Cache cloner",
-                            locAttr.clonerClassName(), rmtAttr.clonerClassName(), false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                             "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
@@ -1823,7 +1818,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ret.add(ccfg.getAffinity());
         ret.add(ccfg.getAffinityMapper());
-        ret.add(ccfg.getCloner());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
         ret.add(ccfg.getNearEvictionPolicy());

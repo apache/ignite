@@ -63,6 +63,12 @@ public interface IgniteCacheExpiryPolicy {
     public void reset();
 
     /**
+     * @param cnt Entries count.
+     * @return {@code True} if number of entries or readers is greater than given number.
+     */
+    public boolean readyToFlush(int cnt);
+
+    /**
      * @return Entries with TTL updated on access.
      */
     @Nullable public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries();

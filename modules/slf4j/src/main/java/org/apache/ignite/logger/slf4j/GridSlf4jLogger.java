@@ -37,9 +37,6 @@ import org.slf4j.*;
  * injection.
  */
 public class GridSlf4jLogger implements IgniteLogger {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** SLF4J implementation proxy. */
     private final Logger impl;
 

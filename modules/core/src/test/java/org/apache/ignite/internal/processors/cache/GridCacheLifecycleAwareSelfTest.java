@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
@@ -194,21 +192,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestCloner extends TestLifecycleAware implements CacheCloner {
-        /**
-         */
-        TestCloner() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T cloneValue(T val) throws IgniteCheckedException {
-            return val;
-        }
-    }
-
-    /**
-     */
     private static class TestAffinityKeyMapper extends TestLifecycleAware implements CacheAffinityKeyMapper {
         /**
          */
@@ -313,12 +296,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setEvictionFilter(evictionFilter);
 
         lifecycleAwares.add(evictionFilter);
-
-        TestCloner cloner = new TestCloner();
-
-        ccfg.setCloner(cloner);
-
-        lifecycleAwares.add(cloner);
 
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 

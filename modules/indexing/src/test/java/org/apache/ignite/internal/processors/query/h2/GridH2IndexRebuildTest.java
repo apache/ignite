@@ -51,7 +51,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         private volatile boolean sleepInRebuild;
 
         /** */
-        private volatile boolean interrupted;
+        private volatile CountDownLatch interrupted;
 
         /**
          * Constructor.
@@ -67,7 +67,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                     U.sleep(Long.MAX_VALUE);
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
-                    interrupted = true;
+                    interrupted.countDown();
                 }
             }
 
@@ -225,6 +225,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void checkCancel(final IgniteInternalFuture<?> fut) throws Exception {
+        spi.interrupted = new CountDownLatch(1);
+
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -235,9 +237,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
             }
         }, IgniteFutureCancelledCheckedException.class, null);
 
-        assertTrue(spi.interrupted);
-
-        spi.interrupted = false;
+        assertTrue(spi.interrupted.await(5, TimeUnit.SECONDS));
     }
 
     /**

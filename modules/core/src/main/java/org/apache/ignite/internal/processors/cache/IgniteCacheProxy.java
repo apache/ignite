@@ -507,7 +507,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.localPeek(key, peekModes);
+            return delegate.localPeek(key, peekModes, null);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

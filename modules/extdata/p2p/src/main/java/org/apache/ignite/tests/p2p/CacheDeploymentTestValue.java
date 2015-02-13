@@ -20,7 +20,7 @@ package org.apache.ignite.tests.p2p;
 import java.io.*;
 
 /**
- * Value object for {@code GridCacheDeploymentSelfTest}.
+ * Value object for {@code GridCacheDeploymentSelfTest}, {@code IgniteCacheAbstractExecutionContextTest}.
  */
 public class CacheDeploymentTestValue implements Serializable {
     // No-op.
