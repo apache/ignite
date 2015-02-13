@@ -500,7 +500,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class.
      * @return Type name.
      */
-    public String typeName(Class<?> cls) {
+    public static String typeName(Class<?> cls) {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
