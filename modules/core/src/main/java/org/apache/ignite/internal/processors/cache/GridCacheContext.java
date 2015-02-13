@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -1110,15 +1109,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
-        if (obj == null)
-            return obj;
-
-        CacheCloner c = cacheCfg.getCloner();
-
-        if (c != null)
-            return c.cloneValue(obj);
-
-        return X.cloneObject(obj, false, true);
+        return obj == null ? null : X.cloneObject(obj, false, true);
     }
 
     /**

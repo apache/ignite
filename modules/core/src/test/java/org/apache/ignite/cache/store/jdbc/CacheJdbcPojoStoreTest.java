@@ -51,7 +51,7 @@ import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStor
  * Class for {@code PojoCacheStore} tests.
  */
 public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
-    /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
+    /** DB connection URL. */
     private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Default config with mapping. */
@@ -143,7 +143,8 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
             Map<Object, CacheAbstractJdbcStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
 
             for (CacheTypeMetadata type : typeMeta)
-                entryMappings.put(store.keyTypeId(type.getKeyType()), new CacheAbstractJdbcStore.EntryMapping(dialect, type));
+                entryMappings.put(store.keyTypeId(type.getKeyType()),
+                    new CacheAbstractJdbcStore.EntryMapping(null, dialect, type));
 
             store.prepareBuilders(null, typeMeta);
 
@@ -183,7 +184,8 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
 
-        cacheMappings.get(null).put(OrganizationKey.class, new CacheAbstractJdbcStore.EntryMapping(dialect, typeMeta));
+        cacheMappings.get(null).put(OrganizationKey.class,
+            new CacheAbstractJdbcStore.EntryMapping(null, dialect, typeMeta));
 
         Connection conn = store.openConnection(false);
 

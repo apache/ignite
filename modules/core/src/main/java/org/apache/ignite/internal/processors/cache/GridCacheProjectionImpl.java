@@ -708,18 +708,18 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
-        return cache.isGgfsDataCache();
+    @Override public boolean isIgfsDataCache() {
+        return cache.isIgfsDataCache();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
-        return cache.ggfsDataSpaceUsed();
+    @Override public long igfsDataSpaceUsed() {
+        return cache.igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
-        return cache.ggfsDataSpaceMax();
+    @Override public long igfsDataSpaceMax() {
+        return cache.igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */
@@ -1011,8 +1011,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return cache.localPeek(key, peekModes);
+    @Nullable @Override public V localPeek(K key,
+        CachePeekMode[] peekModes,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws IgniteCheckedException
+    {
+        return cache.localPeek(key, peekModes, plc);
     }
 
     /** {@inheritDoc} */

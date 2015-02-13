@@ -122,12 +122,12 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
 
     /**
-     * Get GGFS instance returning null if it doesn't exist.
+     * Get IGFS instance returning null if it doesn't exist.
      *
-     * @param name GGFS name.
-     * @return GGFS.
+     * @param name IGFS name.
+     * @return IGFS.
      */
-    @Nullable public IgniteFs ggfsx(@Nullable String name);
+    @Nullable public IgniteFs igfsx(@Nullable String name);
 
     /**
      * Get Hadoop facade.

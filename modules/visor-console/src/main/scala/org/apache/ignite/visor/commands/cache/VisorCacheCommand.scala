@@ -359,7 +359,7 @@ class VisorCacheCommand {
 
                         ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
 
-                        sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) => {
+                        sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
                             val nm = ignite.node(nid).metrics()
 
                             ciT += (
@@ -377,7 +377,7 @@ class VisorCacheCommand {
                                     "Wr: " + cm.writes()
                                 )
                             )
-                        }}
+                        }
 
                         csT.render()
 
@@ -761,7 +761,7 @@ object VisorCacheCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromCinfo2Visor(vs: VisorTag) = cmd
+    implicit def fromCinfo2Visor(vs: VisorTag): VisorCacheCommand = cmd
 
     /**
      * Show table of cache configuration information.
@@ -795,11 +795,8 @@ object VisorCacheCommand {
         cacheT += ("Swap Enabled", cfg.swapEnabled())
         cacheT += ("Invalidate", cfg.invalidate())
         cacheT += ("Start Size", cfg.startSize())
-        cacheT += ("Cloner", cfg.cloner())
-        cacheT += ("Batch Update", cfg.batchUpdateOnCommit())
 
         cacheT += ("Transaction Manager Lookup", cfg.transactionManagerLookupClassName())
-        cacheT += ("Transaction Serializable", cfg.txSerializableEnabled)
 
         cacheT += ("Affinity Function", affinityCfg.function())
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
@@ -859,8 +856,6 @@ object VisorCacheCommand {
         cacheT += ("Write-Behind Flush Threads Count", writeBehind.flushThreadCount())
         cacheT += ("Write-Behind Batch Size", writeBehind.batchSize())
 
-        cacheT += ("Pessimistic Tx Log Size", cfg.pessimisticTxLoggerSize())
-        cacheT += ("Pessimistic Tx Log Linger", cfg.pessimisticTxLoggerLinger())
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
 

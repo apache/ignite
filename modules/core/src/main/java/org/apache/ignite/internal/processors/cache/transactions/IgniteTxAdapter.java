@@ -1453,9 +1453,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * Transaction shadow class to be used for deserialization.
      */
     private static class TxShadow implements IgniteInternalTx {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Xid. */
         private final IgniteUuid xid;
 

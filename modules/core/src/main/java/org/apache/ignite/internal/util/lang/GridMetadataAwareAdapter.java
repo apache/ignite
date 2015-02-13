@@ -34,9 +34,6 @@ import java.util.concurrent.*;
  */
 @SuppressWarnings( {"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Attributes. */
     @GridToStringInclude
     private GridLeanMap<String, Object> data;

@@ -167,7 +167,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        ctx.ggfsHelper().preProcessCacheConfiguration(cfg);
+        ctx.igfsHelper().preProcessCacheConfiguration(cfg);
 
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
@@ -381,7 +381,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "for cache: " + cc.getName());
 
         if (cc.isWriteThrough() && cfgStore == null)
-            throw new IgniteCheckedException("Cannot enable read-through (writer or store is not provided) " +
+            throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + cc.getName());
 
         long delay = cc.getPreloadPartitionedDelay();
@@ -405,7 +405,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.ggfsHelper().validateCacheConfiguration(cc);
+        ctx.igfsHelper().validateCacheConfiguration(cc);
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
@@ -440,10 +440,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+        boolean igfsCache = CU.isIgfsCache(c, cc.getName());
         boolean utilityCache = CU.isUtilityCache(cc.getName());
 
-        if (!ggfsCache && !utilityCache && !cc.isQueryIndexEnabled())
+        if (!igfsCache && !utilityCache && !cc.isQueryIndexEnabled())
             U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
@@ -484,7 +484,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
-        prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
 
@@ -519,7 +518,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.jta().tmLookup(), false);
-        cleanup(cfg, cfg.getCloner(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
         cctx.cleanup();
@@ -561,12 +559,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        IgniteFsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+        IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
-                sysCaches.add(ggfsCfg.getMetaCacheName());
-                sysCaches.add(ggfsCfg.getDataCacheName());
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                sysCaches.add(igfsCfg.getMetaCacheName());
+                sysCaches.add(igfsCfg.getDataCacheName());
             }
         }
 
@@ -1112,9 +1110,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "Load previous value enabled", locAttr.loadPreviousValue(),
                                 locAttr.loadPreviousValue(), true);
                         }
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cloner", "Cache cloner",
-                            locAttr.clonerClassName(), rmtAttr.clonerClassName(), false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                             "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
@@ -1823,7 +1818,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ret.add(ccfg.getAffinity());
         ret.add(ccfg.getAffinityMapper());
-        ret.add(ccfg.getCloner());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
         ret.add(ccfg.getNearEvictionPolicy());

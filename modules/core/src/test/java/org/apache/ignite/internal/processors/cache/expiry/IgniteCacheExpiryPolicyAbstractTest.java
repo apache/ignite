@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
@@ -307,6 +308,25 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 txGetAll(txMode);
             }
         }
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        Collection<Integer> putKeys = keys();
+
+        for (final Integer key : putKeys)
+            cache.put(key, key);
+
+        Iterator<Cache.Entry<Integer, Integer>> it = cache.iterator();
+
+        List<Integer> itKeys = new ArrayList<>();
+
+        while (it.hasNext())
+            itKeys.add(it.next().getKey());
+
+        assertTrue(itKeys.size() >= putKeys.size());
+
+        for (Integer key : itKeys)
+            checkTtl(key, 62_000L, true);
     }
 
     /**

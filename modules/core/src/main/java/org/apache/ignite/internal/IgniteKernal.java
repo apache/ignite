@@ -32,8 +32,6 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.failover.*;
 import org.apache.ignite.internal.managers.indexing.*;
 import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.managers.securesession.*;
-import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -54,6 +52,8 @@ import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
+import org.apache.ignite.internal.processors.securesession.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
@@ -73,9 +73,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.authentication.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -361,20 +359,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public String getAuthenticationSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getAuthenticationSpi().toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getSecureSessionSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getSecureSessionSpi().toString();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getOsInformation() {
         return U.osString();
     }
@@ -527,13 +511,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      *@param sysExecSvc
      * @param p2pExecSvc
      * @param mgmtExecSvc
-     * @param ggfsExecSvc
+     * @param igfsExecSvc
      * @param errHnd Error handler to use for notification about startup problems.  @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, final ExecutorService execSvc,
         final ExecutorService sysExecSvc, ExecutorService p2pExecSvc, ExecutorService mgmtExecSvc,
-        ExecutorService ggfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
+        ExecutorService igfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -644,7 +628,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             GridKernalContextImpl ctx =
                 new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, execSvc, sysExecSvc, p2pExecSvc,
-                    mgmtExecSvc, ggfsExecSvc, restExecSvc);
+                    mgmtExecSvc, igfsExecSvc, restExecSvc);
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
@@ -675,7 +659,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
+            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
 
             startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
@@ -695,10 +679,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // as managers may depend on it.
             startProcessor(ctx, new GridTimeoutProcessor(ctx), attrs);
 
+            // Start security processors.
+            startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx), attrs);
+            startProcessor(ctx, createComponent(GridSecureSessionProcessor.class, ctx), attrs);
+
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, createComponent(GridSecurityManager.class, ctx), attrs);
-            startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
             startManager(ctx, new GridCheckpointManager(ctx), attrs);
 
@@ -727,7 +713,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
+            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -1040,8 +1026,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
         A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
-        A.notNull(cfg.getAuthenticationSpi(), "cfg.getAuthenticationSpi()");
-        A.notNull(cfg.getSecureSessionSpi(), "cfg.getSecureSessionSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
         A.notNull(cfg.getFailoverSpi(), "cfg.getFailoverSpi()");
         A.notNull(cfg.getLoadBalancingSpi(), "cfg.getLoadBalancingSpi()");
@@ -1245,30 +1229,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (cfg.getConnectorConfiguration() != null)
             add(attrs, ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
-        try {
-            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
-
-            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), IgniteSpiNoop.class);
-
-            GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
-
-            if (provider != null) {
-                GridSecurityCredentials cred = provider.credentials();
-
-                if (cred != null)
-                    add(attrs, ATTR_SECURITY_CREDENTIALS, cred);
-                else if (securityEnabled)
-                    throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
-                        "by security credentials provider returned null).");
-            }
-            else if (securityEnabled)
-                throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
-                    "but security credentials provider is not set. Fix the configuration and restart the node).");
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Failed to create node security credentials", e);
-        }
-
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());
         addAttributes(attrs, cfg.getSwapSpaceSpi());
@@ -1278,8 +1238,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         addAttributes(attrs, cfg.getEventStorageSpi());
         addAttributes(attrs, cfg.getCheckpointSpi());
         addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getAuthenticationSpi());
-        addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
 
         // Set user attributes for this node.
@@ -2129,8 +2087,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-            log.debug("Grid authentication SPI : " + cfg.getAuthenticationSpi());
-            log.debug("Grid secure session SPI : " + cfg.getSecureSessionSpi());
             log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
         }
     }
@@ -2896,10 +2852,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try{
-            IgniteFs fs = ctx.ggfs().ggfs(name);
+            IgniteFs fs = ctx.igfs().igfs(name);
 
             if (fs == null)
-                throw new IllegalArgumentException("IgniteFs is not configured: " + name);
+                throw new IllegalArgumentException("IGFS is not configured: " + name);
 
             return fs;
         }
@@ -2909,11 +2865,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs ggfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
         guard();
 
         try {
-            return ctx.ggfs().ggfs(name);
+            return ctx.igfs().igfs(name);
         }
         finally {
             unguard();
@@ -2925,7 +2881,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try {
-            return ctx.ggfs().ggfss();
+            return ctx.igfs().igfss();
         }
         finally {
             unguard();
