@@ -1050,7 +1050,7 @@ public class IgniteConfiguration {
      * @param poolSize Executor service to use for outgoing GGFS messages.
      * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
-    public void setGgfsThreadPoolSize(int poolSize) {
+    public void setIgfsThreadPoolSize(int poolSize) {
         this.igfsPoolSize = poolSize;
     }
 

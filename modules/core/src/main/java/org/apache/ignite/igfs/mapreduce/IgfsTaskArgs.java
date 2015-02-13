@@ -42,7 +42,7 @@ public interface IgfsTaskArgs<T> {
      *
      * @return GGFS name.
      */
-    public String ggfsName();
+    public String igfsName();
 
     /**
      * Gets file paths to process.

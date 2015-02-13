@@ -84,32 +84,32 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return GGFS configuration for this test.
      */
-    protected IgfsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+    protected IgfsConfiguration getIgfsConfiguration() throws IgniteCheckedException {
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setDataCacheName("dataCache");
-        ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName("igfs");
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName("igfs");
 
-        ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
+        igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
-        return ggfsCfg;
+        return igfsCfg;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration(gridName, getGgfsConfiguration());
+        return getConfiguration(gridName, getIgfsConfiguration());
     }
 
     /**
      * The same as getConfiguration(String gridName) but it sets custom GGFS configuration
      *
      * @param gridName Grid name.
-     * @param ggfsCfg GGFS configuration.
+     * @param igfsCfg GGFS configuration.
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(String gridName, IgfsConfiguration ggfsCfg) throws Exception {
+    protected IgniteConfiguration getConfiguration(String gridName, IgfsConfiguration igfsCfg) throws Exception {
         IgniteConfiguration cfg = IgnitionEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
@@ -118,7 +118,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setIncludeEventTypes(concat(EVTS_IGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
 

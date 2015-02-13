@@ -33,7 +33,7 @@ public class IgfsAttributes implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** GGFS name. */
-    private String ggfsName;
+    private String igfsName;
 
     /** File's data block size (bytes). */
     private int blockSize;
@@ -57,7 +57,7 @@ public class IgfsAttributes implements Externalizable {
     private Map<String, IgfsMode> pathModes;
 
     /**
-     * @param ggfsName GGFS name.
+     * @param igfsName GGFS name.
      * @param blockSize File's data block size (bytes).
      * @param grpSize Size of the group figured in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
@@ -65,10 +65,10 @@ public class IgfsAttributes implements Externalizable {
      * @param dfltMode Default mode.
      * @param pathModes Path modes.
      */
-    public IgfsAttributes(String ggfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
+    public IgfsAttributes(String igfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
         IgfsMode dfltMode, Map<String, IgfsMode> pathModes, boolean fragmentizerEnabled) {
         this.blockSize = blockSize;
-        this.ggfsName = ggfsName;
+        this.igfsName = igfsName;
         this.grpSize = grpSize;
         this.metaCacheName = metaCacheName;
         this.dataCacheName = dataCacheName;
@@ -87,8 +87,8 @@ public class IgfsAttributes implements Externalizable {
     /**
      * @return GGFS name.
      */
-    public String ggfsName() {
-        return ggfsName;
+    public String igfsName() {
+        return igfsName;
     }
 
     /**
@@ -142,7 +142,7 @@ public class IgfsAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ggfsName);
+        U.writeString(out, igfsName);
         out.writeInt(blockSize);
         out.writeInt(grpSize);
         U.writeString(out, metaCacheName);
@@ -166,7 +166,7 @@ public class IgfsAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ggfsName = U.readString(in);
+        igfsName = U.readString(in);
         blockSize = in.readInt();
         grpSize = in.readInt();
         metaCacheName = U.readString(in);

@@ -269,7 +269,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, IgfsFileRange range, IgfsInputStream in)
+        @Override public Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in)
             throws IOException {
             assert ignite != null;
             assert ses != null;

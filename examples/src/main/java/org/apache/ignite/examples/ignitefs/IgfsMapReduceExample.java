@@ -173,7 +173,7 @@ public class IgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs igniteFs, IgfsRangeInputStream in) throws IgniteException, IOException {
+        @Override public Object execute(IgniteFs igfs, IgfsRangeInputStream in) throws IgniteException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

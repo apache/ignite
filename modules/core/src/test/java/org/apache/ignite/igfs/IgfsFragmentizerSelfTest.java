@@ -36,14 +36,14 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testReadFragmentizing() throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem("igfs");
+        IgniteFs igfs = grid(0).fileSystem("igfs");
 
         IgfsPath path = new IgfsPath("/someFile");
 
-        try (IgfsOutputStream out = ggfs.create(path, true)) {
+        try (IgfsOutputStream out = igfs.create(path, true)) {
             // Write 10 groups.
-            for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++) {
-                byte[] data = new byte[GGFS_BLOCK_SIZE];
+            for (int i = 0; i < 10 * IGFS_GROUP_SIZE; i++) {
+                byte[] data = new byte[IGFS_BLOCK_SIZE];
 
                 Arrays.fill(data, (byte)i);
 
@@ -54,9 +54,9 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         long start = System.currentTimeMillis();
 
         do {
-            try (IgfsInputStream in = ggfs.open(path)) {
-                for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++) {
-                    for (int j = 0; j < GGFS_BLOCK_SIZE; j++)
+            try (IgfsInputStream in = igfs.open(path)) {
+                for (int i = 0; i < 10 * IGFS_GROUP_SIZE; i++) {
+                    for (int j = 0; j < IGFS_BLOCK_SIZE; j++)
                         assertEquals(i & 0xFF, in.read());
                 }
 
@@ -70,28 +70,28 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendFragmentizing() throws Exception {
-        checkAppendFragmentizing(GGFS_BLOCK_SIZE / 4, false);
+        checkAppendFragmentizing(IGFS_BLOCK_SIZE / 4, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAppendFragmentizingAligned() throws Exception {
-        checkAppendFragmentizing(GGFS_BLOCK_SIZE, false);
+        checkAppendFragmentizing(IGFS_BLOCK_SIZE, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAppendFragmentizingDifferentNodes() throws Exception {
-        checkAppendFragmentizing(GGFS_BLOCK_SIZE / 4, true);
+        checkAppendFragmentizing(IGFS_BLOCK_SIZE / 4, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAppendFragmentizingAlignedDifferentNodes() throws Exception {
-        checkAppendFragmentizing(GGFS_BLOCK_SIZE, true);
+        checkAppendFragmentizing(IGFS_BLOCK_SIZE, true);
     }
 
     /**
@@ -103,14 +103,14 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         long written = 0;
 
         int i = 0;
-        int ggfsIdx = 0;
+        int igfsIdx = 0;
 
-        int fileSize = 30 * GGFS_GROUP_SIZE * GGFS_BLOCK_SIZE;
+        int fileSize = 30 * IGFS_GROUP_SIZE * IGFS_BLOCK_SIZE;
 
         while (written < fileSize) {
-            IgniteFs ggfs = grid(ggfsIdx).fileSystem("igfs");
+            IgniteFs igfs = grid(igfsIdx).fileSystem("igfs");
 
-            try (IgfsOutputStream out = ggfs.append(path, true)) {
+            try (IgfsOutputStream out = igfs.append(path, true)) {
                 byte[] data = new byte[chunkSize];
 
                 Arrays.fill(data, (byte)i);
@@ -124,16 +124,16 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             i++;
 
             if (rotate && i % 5 == 0) {
-                ggfsIdx++;
+                igfsIdx++;
 
-                if (ggfsIdx >= NODE_CNT)
-                    ggfsIdx = 0;
+                if (igfsIdx >= NODE_CNT)
+                    igfsIdx = 0;
             }
         }
 
-        IgniteFs ggfs = grid(0).fileSystem("igfs");
+        IgniteFs igfs = grid(0).fileSystem("igfs");
 
-        try (IgfsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = igfs.open(path)) {
             i = 0;
 
             int read = 0;
@@ -158,14 +158,14 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testFlushFragmentizing() throws Exception {
-        checkFlushFragmentizing(GGFS_BLOCK_SIZE / 4);
+        checkFlushFragmentizing(IGFS_BLOCK_SIZE / 4);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testFlushFragmentizingAligned() throws Exception {
-        checkFlushFragmentizing(GGFS_BLOCK_SIZE);
+        checkFlushFragmentizing(IGFS_BLOCK_SIZE);
     }
 
     /**
@@ -178,14 +178,14 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         long written = 0;
         int cnt = 0;
 
-        int fileSize = 50 * GGFS_GROUP_SIZE * GGFS_BLOCK_SIZE;
+        int fileSize = 50 * IGFS_GROUP_SIZE * IGFS_BLOCK_SIZE;
 
-        IgniteFs ggfs = grid(0).fileSystem("igfs");
+        IgniteFs igfs = grid(0).fileSystem("igfs");
 
         byte[] chunk = new byte[chunkSize];
 
         while (written < fileSize) {
-            try (IgfsOutputStream out = ggfs.append(path, true)) {
+            try (IgfsOutputStream out = igfs.append(path, true)) {
                 for (int i = 0; i < 8; i++) {
                     Arrays.fill(chunk, (byte)cnt);
 
@@ -200,7 +200,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             }
         }
 
-        try (IgfsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = igfs.open(path)) {
             cnt = 0;
 
             int read = 0;
@@ -223,22 +223,22 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testDeleteFragmentizing() throws Exception {
-        IgfsImpl ggfs = (IgfsImpl)grid(0).fileSystem("igfs");
+        IgfsImpl igfs = (IgfsImpl)grid(0).fileSystem("igfs");
 
         for (int i = 0; i < 30; i++) {
             IgfsPath path = new IgfsPath("/someFile" + i);
 
-            try (IgfsOutputStream out = ggfs.create(path, true)) {
-                for (int j = 0; j < 5 * GGFS_GROUP_SIZE; j++)
-                    out.write(new byte[GGFS_BLOCK_SIZE]);
+            try (IgfsOutputStream out = igfs.create(path, true)) {
+                for (int j = 0; j < 5 * IGFS_GROUP_SIZE; j++)
+                    out.write(new byte[IGFS_BLOCK_SIZE]);
             }
 
             U.sleep(200);
         }
 
-        ggfs.delete(new IgfsPath("/"), true);
+        igfs.delete(new IgfsPath("/"), true);
 
-        ggfs.awaitDeletesAsync().get();
+        igfs.awaitDeletesAsync().get();
 
         GridTestUtils.retryAssert(log, 50, 100, new CA() {
             @Override public void apply() {

@@ -180,11 +180,11 @@ public class IgfsContext {
     public boolean igfsNode(ClusterNode node) {
         assert node != null;
 
-        IgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);
+        IgfsAttributes[] igfs = node.attribute(ATTR_GGFS);
 
-        if (ggfs != null)
-            for (IgfsAttributes attrs : ggfs)
-                if (F.eq(cfg.getName(), attrs.ggfsName()))
+        if (igfs != null)
+            for (IgfsAttributes attrs : igfs)
+                if (F.eq(cfg.getName(), attrs.igfsName()))
                     return true;
 
         return false;

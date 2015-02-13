@@ -394,7 +394,7 @@ public class IgfsServer {
                     IpcEndpoint client = srvEndpoint.accept();
 
                     if (log.isDebugEnabled())
-                        log.debug("GGFS client connected [ggfsName=" + ggfsCtx.kernalContext().gridName() +
+                        log.debug("GGFS client connected [igfsName=" + ggfsCtx.kernalContext().gridName() +
                             ", client=" + client + ']');
 
                     ClientWorker worker = new ClientWorker(client, acceptCnt++);

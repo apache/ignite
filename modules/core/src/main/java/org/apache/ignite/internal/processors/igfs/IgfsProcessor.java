@@ -358,7 +358,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (IgfsAttributes rmtAttr : rmtAttrs)
             for (IgfsAttributes locAttr : locAttrs) {
                 // Checking the use of different caches on the different GGFSes.
-                if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
+                if (!F.eq(rmtAttr.igfsName(), locAttr.igfsName())) {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new IgniteCheckedException("Meta cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
@@ -366,8 +366,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
-                            ", locGgfsName=" + locAttr.ggfsName() +
-                            ", rmtGgfsName=" + rmtAttr.ggfsName() + ']');
+                            ", locGgfsName=" + locAttr.igfsName() +
+                            ", rmtGgfsName=" + rmtAttr.igfsName() + ']');
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new IgniteCheckedException("Data cache names should be different for different GGFS instances " +
@@ -376,33 +376,33 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
-                            ", locGgfsName=" + locAttr.ggfsName() +
-                            ", rmtGgfsName=" + rmtAttr.ggfsName() + ']');
+                            ", locGgfsName=" + locAttr.igfsName() +
+                            ", rmtGgfsName=" + rmtAttr.igfsName() + ']');
 
                     continue;
                 }
 
                 // Compare other attributes only for GGFSes with same name.
                 checkSame("Data block size", "BlockSize", rmtNode.id(), rmtAttr.blockSize(),
-                    locAttr.blockSize(), rmtAttr.ggfsName());
+                    locAttr.blockSize(), rmtAttr.igfsName());
 
                 checkSame("Affinity mapper group size", "GrpSize", rmtNode.id(), rmtAttr.groupSize(),
-                    locAttr.groupSize(), rmtAttr.ggfsName());
+                    locAttr.groupSize(), rmtAttr.igfsName());
 
                 checkSame("Meta cache name", "MetaCacheName", rmtNode.id(), rmtAttr.metaCacheName(),
-                    locAttr.metaCacheName(), rmtAttr.ggfsName());
+                    locAttr.metaCacheName(), rmtAttr.igfsName());
 
                 checkSame("Data cache name", "DataCacheName", rmtNode.id(), rmtAttr.dataCacheName(),
-                    locAttr.dataCacheName(), rmtAttr.ggfsName());
+                    locAttr.dataCacheName(), rmtAttr.igfsName());
 
                 checkSame("Default mode", "DefaultMode", rmtNode.id(), rmtAttr.defaultMode(),
-                    locAttr.defaultMode(), rmtAttr.ggfsName());
+                    locAttr.defaultMode(), rmtAttr.igfsName());
 
                 checkSame("Path modes", "PathModes", rmtNode.id(), rmtAttr.pathModes(),
-                    locAttr.pathModes(), rmtAttr.ggfsName());
+                    locAttr.pathModes(), rmtAttr.igfsName());
 
                 checkSame("Fragmentizer enabled", "FragmentizerEnabled", rmtNode.id(), rmtAttr.fragmentizerEnabled(),
-                    locAttr.fragmentizerEnabled(), rmtAttr.ggfsName());
+                    locAttr.fragmentizerEnabled(), rmtAttr.igfsName());
             }
     }
 

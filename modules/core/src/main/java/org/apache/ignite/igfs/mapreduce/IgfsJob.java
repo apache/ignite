@@ -44,7 +44,7 @@ public interface IgfsJob {
     /**
      * Executes this job.
      *
-     * @param ggfs GGFS instance.
+     * @param igfs GGFS instance.
      * @param range File range aligned to record boundaries.
      * @param in Input stream for split file. This input stream is not aligned to range and points to file start
      *     by default.
@@ -52,7 +52,7 @@ public interface IgfsJob {
      * @throws IgniteException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(IgniteFs ggfs, IgfsFileRange range, IgfsInputStream in) throws IgniteException,
+    public Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in) throws IgniteException,
         IOException;
 
     /**

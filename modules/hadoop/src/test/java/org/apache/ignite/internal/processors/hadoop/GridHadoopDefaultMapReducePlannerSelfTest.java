@@ -925,7 +925,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
         /** {@inheritDoc} */
-        @Override public IgniteFs ggfsx(String name) {
+        @Override public IgniteFs igfsx(String name) {
             assert F.eq("igfs", name);
 
             return GGFS;

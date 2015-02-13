@@ -246,7 +246,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         IgfsPathControlRequest req = (IgfsPathControlRequest)msg;
 
         if (log.isDebugEnabled())
-            log.debug("Processing path control request [ggfsName=" + ggfs.name() + ", req=" + req + ']');
+            log.debug("Processing path control request [igfsName=" + ggfs.name() + ", req=" + req + ']');
 
         IgfsControlResponse res = new IgfsControlResponse();
 
@@ -320,7 +320,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     long streamId = registerResource(ses, ggfsIn);
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS input stream for file read [ggfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS input stream for file read [igfsName=" + ggfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     IgfsFileInfo info = new IgfsFileInfo(ggfsIn.fileInfo(), null,
@@ -343,7 +343,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file create [ggfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS output stream for file create [igfsName=" + ggfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -360,7 +360,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                     ));
 
                     if (log.isDebugEnabled())
-                        log.debug("Opened GGFS output stream for file append [ggfsName=" + ggfs.name() + ", path=" +
+                        log.debug("Opened GGFS output stream for file append [igfsName=" + ggfs.name() + ", path=" +
                             req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
                     res.response(streamId);
@@ -379,7 +379,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Finished processing path control request [ggfsName=" + ggfs.name() + ", req=" + req +
+            log.debug("Finished processing path control request [igfsName=" + ggfs.name() + ", req=" + req +
                 ", res=" + res + ']');
 
         return res;
@@ -409,7 +409,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 Closeable res = resource(ses, rsrcId);
 
                 if (log.isDebugEnabled())
-                    log.debug("Requested to close resource [ggfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
+                    log.debug("Requested to close resource [igfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
                         ", res=" + res + ']');
 
                 if (res == null)
@@ -430,11 +430,11 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
                 boolean success = ses.unregisterResource(rsrcId, res);
 
-                assert success : "Failed to unregister resource [ggfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
+                assert success : "Failed to unregister resource [igfsName=" + ggfs.name() + ", rsrcId=" + rsrcId +
                     ", res=" + res + ']';
 
                 if (log.isDebugEnabled())
-                    log.debug("Closed GGFS stream [ggfsName=" + ggfs.name() + ", streamId=" + rsrcId +
+                    log.debug("Closed GGFS stream [igfsName=" + ggfs.name() + ", streamId=" + rsrcId +
                         ", ses=" + ses + ']');
 
                 resp.response(true);
@@ -517,7 +517,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         // Do not generate affinity key for replicated or near-only cache.
         if (!req.colocate()) {
             if (log.isDebugEnabled())
-                log.debug("Will not generate affinity key for path control request [ggfsName=" + ggfs.name() +
+                log.debug("Will not generate affinity key for path control request [igfsName=" + ggfs.name() +
                     ", req=" + req + ']');
 
             return null;
@@ -526,7 +526,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         IgniteUuid key = ggfs.nextAffinityKey();
 
         if (log.isDebugEnabled())
-            log.debug("Generated affinity key for path control request [ggfsName=" + ggfs.name() +
+            log.debug("Generated affinity key for path control request [igfsName=" + ggfs.name() +
                 ", req=" + req + ", key=" + key + ']');
 
         return key;

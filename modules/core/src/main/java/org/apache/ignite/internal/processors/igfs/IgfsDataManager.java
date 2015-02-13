@@ -1030,12 +1030,11 @@ public class IgfsDataManager extends IgfsManager {
         if (!node.isLocal()) {
             final IgfsBlocksMessage msg = new IgfsBlocksMessage(fileId, batchId, blocks);
 
-            callGgfsLocalSafe(new GridPlainCallable<Object>() {
+            callIgfsLocalSafe(new GridPlainCallable<Object>() {
                 @Override @Nullable public Object call() throws Exception {
                     try {
                         igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
+                    } catch (IgniteCheckedException e) {
                         completionFut.onError(nodeId, e);
                     }
 
@@ -1044,16 +1043,18 @@ public class IgfsDataManager extends IgfsManager {
             });
         }
         else {
-            callGgfsLocalSafe(new GridPlainCallable<Object>() {
-                @Override @Nullable public Object call() throws Exception {
+            callIgfsLocalSafe(new GridPlainCallable<Object>() {
+                @Override
+                @Nullable
+                public Object call() throws Exception {
                     storeBlocksAsync(blocks).listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                        @Override
+                        public void apply(IgniteInternalFuture<?> fut) {
                             try {
                                 fut.get();
 
                                 completionFut.onWriteAck(nodeId, batchId);
-                            }
-                            catch (IgniteCheckedException e) {
+                            } catch (IgniteCheckedException e) {
                                 completionFut.onError(nodeId, e);
                             }
                         }
@@ -1161,7 +1162,7 @@ public class IgfsDataManager extends IgfsManager {
      *
      * @param c Callable to execute.
      */
-    private <T> void callGgfsLocalSafe(Callable<T> c) {
+    private <T> void callIgfsLocalSafe(Callable<T> c) {
         try {
             ggfsSvc.submit(c);
         }

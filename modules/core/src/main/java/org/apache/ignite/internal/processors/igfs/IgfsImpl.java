@@ -1720,7 +1720,7 @@ public final class IgfsImpl implements IgfsEx {
             String ggfsName = name();
 
             for (IgfsAttributes attr : attrs) {
-                if (F.eq(ggfsName, attr.ggfsName()))
+                if (F.eq(ggfsName, attr.igfsName()))
                     return true;
             }
         }

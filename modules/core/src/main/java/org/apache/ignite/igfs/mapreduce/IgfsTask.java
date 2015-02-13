@@ -88,8 +88,8 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
         assert ignite != null;
         assert args != null;
 
-        IgniteFs fs = ignite.fileSystem(args.ggfsName());
-        IgfsProcessorAdapter ggfsProc = ((IgniteKernal) ignite).context().ggfs();
+        IgniteFs fs = ignite.fileSystem(args.igfsName());
+        IgfsProcessorAdapter igfsProc = ((IgniteKernal) ignite).context().ggfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
 
@@ -126,7 +126,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
                 IgfsJob job = createJob(path, new IgfsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
-                    ComputeJob jobImpl = ggfsProc.createJob(job, fs.name(), file.path(), loc.start(),
+                    ComputeJob jobImpl = igfsProc.createJob(job, fs.name(), file.path(), loc.start(),
                         loc.length(), args.recordResolver());
 
                     splitMap.put(jobImpl, node);

@@ -89,7 +89,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
 
                 if (split == null) {
                     log.warning("No data found for split on local node after resolver is applied " +
-                        "[ggfsName=" + igfsName + ", path=" + path + ", start=" + start + ", len=" + len + ']');
+                        "[igfsName=" + igfsName + ", path=" + path + ", start=" + start + ", len=" + len + ']');
 
                     return null;
                 }
@@ -100,7 +100,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
             return job.execute(fs, new IgfsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
-            throw new IgniteException("Failed to execute GGFS job for file split [ggfsName=" + igfsName +
+            throw new IgniteException("Failed to execute GGFS job for file split [igfsName=" + igfsName +
                 ", path=" + path + ", start=" + start + ", len=" + len + ']', e);
         }
     }

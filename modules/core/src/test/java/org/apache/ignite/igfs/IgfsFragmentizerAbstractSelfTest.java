@@ -40,10 +40,10 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final int NODE_CNT = 4;
 
     /** GGFS block size. */
-    protected static final int GGFS_BLOCK_SIZE = 1024;
+    protected static final int IGFS_BLOCK_SIZE = 1024;
 
     /** GGFS group size. */
-    protected static final int GGFS_GROUP_SIZE = 32;
+    protected static final int IGFS_GROUP_SIZE = 32;
 
     /** Metadata cache name. */
     private static final String META_CACHE_NAME = "meta";
@@ -63,20 +63,20 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheConfiguration(metaConfiguration(), dataConfiguration());
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setName("igfs");
-        ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
+        igfsCfg.setName("igfs");
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
 
         // Need to set this to avoid thread starvation.
-        ggfsCfg.setPerNodeParallelBatchCount(8);
+        igfsCfg.setPerNodeParallelBatchCount(8);
 
-        ggfsCfg.setFragmentizerThrottlingBlockLength(16 * GGFS_BLOCK_SIZE);
-        ggfsCfg.setFragmentizerThrottlingDelay(10);
+        igfsCfg.setFragmentizerThrottlingBlockLength(16 * IGFS_BLOCK_SIZE);
+        igfsCfg.setFragmentizerThrottlingDelay(10);
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -111,7 +111,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
-        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GGFS_GROUP_SIZE));
+        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(IGFS_GROUP_SIZE));
         cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setQueryIndexEnabled(false);
@@ -126,9 +126,9 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void awaitFileFragmenting(int gridIdx, IgfsPath path) throws Exception {
-        IgfsEx ggfs = (IgfsEx)grid(gridIdx).fileSystem("igfs");
+        IgfsEx igfs = (IgfsEx)grid(gridIdx).fileSystem("igfs");
 
-        IgfsMetaManager meta = ggfs.context().meta();
+        IgfsMetaManager meta = igfs.context().meta();
 
         IgniteUuid fileId = meta.fileId(path);
 

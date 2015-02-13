@@ -47,7 +47,7 @@ public class IgfsDeleteWorker extends IgfsThread {
     private static final int MAX_DELETE_BATCH = 100;
 
     /** GGFS context. */
-    private final IgfsContext ggfsCtx;
+    private final IgfsContext igfsCtx;
 
     /** Metadata manager. */
     private final IgfsMetaManager meta;
@@ -79,26 +79,26 @@ public class IgfsDeleteWorker extends IgfsThread {
     /**
      * Constructor.
      *
-     * @param ggfsCtx GGFS context.
+     * @param igfsCtx GGFS context.
      */
-    IgfsDeleteWorker(IgfsContext ggfsCtx) {
-        super("igfs-delete-worker%" + ggfsCtx.igfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
+    IgfsDeleteWorker(IgfsContext igfsCtx) {
+        super("igfs-delete-worker%" + igfsCtx.igfs().name() + "%" + igfsCtx.kernalContext().localNodeId() + "%");
 
-        this.ggfsCtx = ggfsCtx;
+        this.igfsCtx = igfsCtx;
 
-        meta = ggfsCtx.meta();
-        data = ggfsCtx.data();
+        meta = igfsCtx.meta();
+        data = igfsCtx.data();
 
-        evts = ggfsCtx.kernalContext().event();
+        evts = igfsCtx.kernalContext().event();
 
-        String ggfsName = ggfsCtx.igfs().name();
+        String ggfsName = igfsCtx.igfs().name();
 
         topic = F.isEmpty(ggfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(ggfsName);
 
         assert meta != null;
         assert data != null;
 
-        log = ggfsCtx.kernalContext().log(IgfsDeleteWorker.class);
+        log = igfsCtx.kernalContext().log(IgfsDeleteWorker.class);
     }
 
     /** {@inheritDoc} */
@@ -225,7 +225,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     if (evts.isRecordable(EVT_IGFS_FILE_PURGED)) {
                         if (info.path() != null)
                             evts.record(new IgfsEvent(info.path(),
-                                ggfsCtx.kernalContext().discovery().localNode(), EVT_IGFS_FILE_PURGED));
+                                igfsCtx.kernalContext().discovery().localNode(), EVT_IGFS_FILE_PURGED));
                         else
                             LT.warn(log, null, "Removing file without path info: " + info);
                     }
@@ -277,7 +277,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     }
                 }
 
-                GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>(ggfsCtx.kernalContext());
+                GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>(igfsCtx.kernalContext());
 
                 // Delegate to child folders.
                 for (IgfsListingEntry entry : delListing.values()) {
@@ -334,7 +334,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         for (ClusterNode node : nodes) {
             try {
-                ggfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
+                igfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +

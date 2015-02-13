@@ -77,7 +77,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public String ggfsName() {
+    @Override public String igfsName() {
         return ggfsName;
     }
 

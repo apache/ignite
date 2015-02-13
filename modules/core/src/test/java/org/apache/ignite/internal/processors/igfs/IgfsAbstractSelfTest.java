@@ -111,7 +111,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static byte[] chunk;
 
     /** Primary GGFS. */
-    protected static IgfsImpl ggfs;
+    protected static IgfsImpl igfs;
 
     /** Secondary GGFS. */
     protected static IgfsImpl ggfsSecondary;
@@ -156,12 +156,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         Ignite ignite = startGridWithGgfs("ignite", "igfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
-        ggfs = (IgfsImpl) ignite.fileSystem("igfs");
+        igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        clear(ggfs, ggfsSecondary);
+        clear(igfs, ggfsSecondary);
     }
 
     /** {@inheritDoc} */
@@ -262,9 +262,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExists() throws Exception {
-        create(ggfs, paths(DIR), null);
+        create(igfs, paths(DIR), null);
 
-        checkExist(ggfs, ggfsSecondary, DIR);
+        checkExist(igfs, ggfsSecondary, DIR);
     }
 
     /**
@@ -273,7 +273,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExistsPathDoesNotExist() throws Exception {
-        assert !ggfs.exists(DIR);
+        assert !igfs.exists(DIR);
     }
 
     /**
@@ -282,9 +282,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListFiles() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        Collection<IgfsFile> paths = ggfs.listFiles(SUBDIR);
+        Collection<IgfsFile> paths = igfs.listFiles(SUBDIR);
 
         assert paths != null;
         assert paths.size() == 2;
@@ -307,7 +307,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         Collection<IgfsFile> paths = null;
 
         try {
-            paths = ggfs.listFiles(SUBDIR);
+            paths = igfs.listFiles(SUBDIR);
         }
         catch (IgniteException ignore) {
             // No-op.
@@ -322,9 +322,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInfo() throws Exception {
-        create(ggfs, paths(DIR), null);
+        create(igfs, paths(DIR), null);
 
-        IgfsFile info = ggfs.info(DIR);
+        IgfsFile info = igfs.info(DIR);
 
         assert info != null;
 
@@ -340,7 +340,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsFile info = null;
 
         try {
-            info = ggfs.info(DIR);
+            info = igfs.info(DIR);
         }
         catch (IgniteException ignore) {
             // No-op.
@@ -356,12 +356,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRenameFile() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.rename(FILE, FILE2);
+        igfs.rename(FILE, FILE2);
 
-        checkExist(ggfs, ggfsSecondary, FILE2);
-        checkNotExist(ggfs, ggfsSecondary, FILE);
+        checkExist(igfs, ggfsSecondary, FILE2);
+        checkNotExist(igfs, ggfsSecondary, FILE);
     }
 
     /**
@@ -373,12 +373,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
 
-        create(ggfs, null, paths(file1));
+        create(igfs, null, paths(file1));
 
-        ggfs.rename(file1, file2);
+        igfs.rename(file1, file2);
 
-        checkExist(ggfs, ggfsSecondary, file2);
-        checkNotExist(ggfs, ggfsSecondary, file1);
+        checkExist(igfs, ggfsSecondary, file2);
+        checkNotExist(igfs, ggfsSecondary, file1);
     }
 
     /**
@@ -388,12 +388,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRenameDirectory() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        ggfs.rename(SUBDIR, SUBDIR2);
+        igfs.rename(SUBDIR, SUBDIR2);
 
-        checkExist(ggfs, ggfsSecondary, SUBDIR2);
-        checkNotExist(ggfs, ggfsSecondary, SUBDIR);
+        checkExist(igfs, ggfsSecondary, SUBDIR2);
+        checkNotExist(igfs, ggfsSecondary, SUBDIR);
     }
 
     /**
@@ -405,12 +405,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsPath dir1 = new IgfsPath("/dir1");
         IgfsPath dir2 = new IgfsPath("/dir2");
 
-        create(ggfs, paths(dir1), null);
+        create(igfs, paths(dir1), null);
 
-        ggfs.rename(dir1, dir2);
+        igfs.rename(dir1, dir2);
 
-        checkExist(ggfs, ggfsSecondary, dir2);
-        checkNotExist(ggfs, ggfsSecondary, dir1);
+        checkExist(igfs, ggfsSecondary, dir2);
+        checkNotExist(igfs, ggfsSecondary, dir1);
     }
 
     /**
@@ -420,12 +420,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveFile() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
 
-        ggfs.rename(FILE, SUBDIR_NEW);
+        igfs.rename(FILE, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
-        checkNotExist(ggfs, ggfsSecondary, FILE);
+        checkExist(igfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
+        checkNotExist(igfs, ggfsSecondary, FILE);
     }
 
     /**
@@ -434,12 +434,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveFileDestinationRoot() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, new IgfsPath());
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath("/" + FILE.name()));
-        checkNotExist(ggfs, ggfsSecondary, FILE);
+        checkExist(igfs, ggfsSecondary, new IgfsPath("/" + FILE.name()));
+        checkNotExist(igfs, ggfsSecondary, FILE);
     }
 
     /**
@@ -450,12 +450,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveFileSourceParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
+        create(igfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
-        ggfs.rename(file, SUBDIR_NEW);
+        igfs.rename(file, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
-        checkNotExist(ggfs, ggfsSecondary, file);
+        checkExist(igfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
+        checkNotExist(igfs, ggfsSecondary, file);
     }
 
     /**
@@ -465,12 +465,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameFile() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
 
-        ggfs.rename(FILE, FILE_NEW);
+        igfs.rename(FILE, FILE_NEW);
 
-        checkExist(ggfs, ggfsSecondary, FILE_NEW);
-        checkNotExist(ggfs, ggfsSecondary, FILE);
+        checkExist(igfs, ggfsSecondary, FILE_NEW);
+        checkNotExist(igfs, ggfsSecondary, FILE);
     }
 
     /**
@@ -481,12 +481,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveRenameFileDestinationRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        create(ggfs, paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.rename(FILE, file);
+        igfs.rename(FILE, file);
 
-        checkExist(ggfs, ggfsSecondary, file);
-        checkNotExist(ggfs, ggfsSecondary, FILE);
+        checkExist(igfs, ggfsSecondary, file);
+        checkNotExist(igfs, ggfsSecondary, FILE);
     }
 
     /**
@@ -497,12 +497,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveRenameFileSourceParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
-        create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
+        create(igfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
-        ggfs.rename(file, FILE_NEW);
+        igfs.rename(file, FILE_NEW);
 
-        checkExist(ggfs, ggfsSecondary, FILE_NEW);
-        checkNotExist(ggfs, ggfsSecondary, file);
+        checkExist(igfs, ggfsSecondary, FILE_NEW);
+        checkNotExist(igfs, ggfsSecondary, file);
     }
 
     /**
@@ -512,12 +512,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveDirectory() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
 
-        ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
+        igfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
-        checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
+        checkExist(igfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkNotExist(igfs, ggfsSecondary, SUBSUBDIR);
     }
 
     /**
@@ -526,12 +526,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveDirectoryDestinationRoot() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        ggfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, new IgfsPath());
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
-        checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
+        checkExist(igfs, ggfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
+        checkNotExist(igfs, ggfsSecondary, SUBSUBDIR);
     }
 
     /**
@@ -542,12 +542,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveDirectorySourceParentRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
-        create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
+        create(igfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
-        ggfs.rename(dir, SUBDIR_NEW);
+        igfs.rename(dir, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
-        checkNotExist(ggfs, ggfsSecondary, dir);
+        checkExist(igfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkNotExist(igfs, ggfsSecondary, dir);
     }
 
     /**
@@ -557,12 +557,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectory() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
 
-        ggfs.rename(SUBSUBDIR, SUBSUBDIR_NEW);
+        igfs.rename(SUBSUBDIR, SUBSUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, SUBSUBDIR_NEW);
-        checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
+        checkExist(igfs, ggfsSecondary, SUBSUBDIR_NEW);
+        checkNotExist(igfs, ggfsSecondary, SUBSUBDIR);
     }
 
     /**
@@ -573,12 +573,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveRenameDirectoryDestinationRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        ggfs.rename(SUBSUBDIR, dir);
+        igfs.rename(SUBSUBDIR, dir);
 
-        checkExist(ggfs, ggfsSecondary, dir);
-        checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
+        checkExist(igfs, ggfsSecondary, dir);
+        checkNotExist(igfs, ggfsSecondary, SUBSUBDIR);
     }
 
     /**
@@ -589,12 +589,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveRenameDirectorySourceParentRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
-        create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
+        create(igfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
-        ggfs.rename(dir, SUBSUBDIR_NEW);
+        igfs.rename(dir, SUBSUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, SUBSUBDIR_NEW);
-        checkNotExist(ggfs, ggfsSecondary, dir);
+        checkExist(igfs, ggfsSecondary, SUBSUBDIR_NEW);
+        checkNotExist(igfs, ggfsSecondary, dir);
     }
 
     /**
@@ -603,17 +603,17 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameSourceDoesNotExist() throws Exception {
-        create(ggfs, paths(DIR, DIR_NEW), null);
+        create(igfs, paths(DIR, DIR_NEW), null);
 
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ggfs.rename(SUBDIR, SUBDIR_NEW);
+                igfs.rename(SUBDIR, SUBDIR_NEW);
 
                 return null;
             }
         }, IgfsException.class, null);
 
-        checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
+        checkNotExist(igfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
     }
 
     /**
@@ -624,18 +624,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMkdirs() throws Exception {
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        ggfs.mkdirs(SUBSUBDIR, props);
+        igfs.mkdirs(SUBSUBDIR, props);
 
         // Ensure that directory was created and properties are propagated.
-        checkExist(ggfs, ggfsSecondary, SUBSUBDIR);
+        checkExist(igfs, ggfsSecondary, SUBSUBDIR);
 
         if (dual)
             assertEquals(props, ggfsSecondary.info(SUBSUBDIR).properties());
 
         // We check only permission because GGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), ggfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
     }
 
     /**
@@ -646,15 +646,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMkdirsParentRoot() throws Exception {
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
-        ggfs.mkdirs(DIR, props);
+        igfs.mkdirs(DIR, props);
 
-        checkExist(ggfs, ggfsSecondary, DIR);
+        checkExist(igfs, ggfsSecondary, DIR);
 
         if (dual)
             assertEquals(props, ggfsSecondary.info(DIR).properties());
 
         // We check only permission because GGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), ggfs.info(DIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(PROP_PERMISSION), igfs.info(DIR).properties().get(PROP_PERMISSION));
     }
 
     /**
@@ -663,11 +663,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDelete() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        ggfs.delete(SUBDIR, true);
+        igfs.delete(SUBDIR, true);
 
-        checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBSUBDIR, FILE);
+        checkNotExist(igfs, ggfsSecondary, SUBDIR, SUBSUBDIR, FILE);
     }
 
     /**
@@ -676,11 +676,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeleteParentRoot() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        ggfs.delete(DIR, true);
+        igfs.delete(DIR, true);
 
-        checkNotExist(ggfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR, FILE);
+        checkNotExist(igfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR, FILE);
     }
 
     /**
@@ -689,13 +689,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeleteDirectoryNotEmpty() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
         // We have different results for dual and non-dual modes.
         if (dual)
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ggfs.delete(SUBDIR, false);
+                    igfs.delete(SUBDIR, false);
 
                     return null;
                 }
@@ -703,7 +703,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         else {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ggfs.delete(SUBDIR, false);
+                    igfs.delete(SUBDIR, false);
 
                     return null;
                 }
@@ -711,7 +711,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                    "recursive flag is not set)");
         }
 
-        checkExist(ggfs, ggfsSecondary, SUBDIR, SUBSUBDIR, FILE);
+        checkExist(igfs, ggfsSecondary, SUBDIR, SUBSUBDIR, FILE);
     }
 
     /**
@@ -722,14 +722,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testUpdate() throws Exception {
         Map<String, String> props = properties("owner", "group", "0555");
 
-        create(ggfs, paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.update(FILE, props);
+        igfs.update(FILE, props);
 
         if (dual)
             assertEquals(props, ggfsSecondary.info(FILE).properties());
 
-        assertEquals(props, ggfs.info(FILE).properties());
+        assertEquals(props, igfs.info(FILE).properties());
     }
 
     /**
@@ -740,14 +740,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testUpdateParentRoot() throws Exception {
         Map<String, String> props = properties("owner", "group", "0555");
 
-        create(ggfs, paths(DIR), null);
+        create(igfs, paths(DIR), null);
 
-        ggfs.update(DIR, props);
+        igfs.update(DIR, props);
 
         if (dual)
             assertEquals(props, ggfsSecondary.info(DIR).properties());
 
-        assertEquals(props, ggfs.info(DIR).properties());
+        assertEquals(props, igfs.info(DIR).properties());
     }
 
     /**
@@ -758,9 +758,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testUpdatePathDoesNotExist() throws Exception {
         final Map<String, String> props = properties("owner", "group", "0555");
 
-        assert ggfs.update(SUBDIR, props) == null;
+        assert igfs.update(SUBDIR, props) == null;
 
-        checkNotExist(ggfs, ggfsSecondary, SUBDIR);
+        checkNotExist(igfs, ggfsSecondary, SUBDIR);
     }
 
     /**
@@ -777,18 +777,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         if (dual)
             create(ggfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));
 
-        create(ggfs, paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        try (IgfsOutputStream os = ggfs.append(FILE, false)) {
+        try (IgfsOutputStream os = igfs.append(FILE, false)) {
             os.write(new byte[10 * 1024 * 1024]);
         }
 
         if (dual)
             checkExist(ggfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
-        checkExist(ggfs, DIR, SUBDIR, FILE);
+        checkExist(igfs, DIR, SUBDIR, FILE);
 
-        assert ggfs.info(FILE).length() == 10 * 1024 * 1024;
+        assert igfs.info(FILE).length() == 10 * 1024 * 1024;
 
         int size = cache.size();
         int primarySize = cache.primarySize();
@@ -808,7 +808,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         assert primarySize == primaryKeySetSize;
         assert primarySize == primaryPartSize;
 
-        ggfs.format();
+        igfs.format();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
@@ -818,7 +818,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Ensure entries deletion in the primary file system.
-        checkNotExist(ggfs, DIR, SUBDIR, FILE);
+        checkNotExist(igfs, DIR, SUBDIR, FILE);
 
         int sizeNew = cache.size();
         int primarySizeNew = cache.primarySize();
@@ -849,11 +849,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOpen() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
-        checkFileContent(ggfs, FILE, chunk);
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
@@ -869,7 +869,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 IgfsInputStream is = null;
 
                 try {
-                    is = ggfs.open(FILE);
+                    is = igfs.open(FILE);
                 }
                 finally {
                     U.closeQuiet(is);
@@ -886,11 +886,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreate() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
-        checkFile(ggfs, ggfsSecondary, FILE, chunk);
+        checkFile(igfs, ggfsSecondary, FILE, chunk);
     }
 
     /**
@@ -901,9 +901,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(ggfs, file, true, chunk);
+        createFile(igfs, file, true, chunk);
 
-        checkFile(ggfs, ggfsSecondary, file, chunk);
+        checkFile(igfs, ggfsSecondary, file, chunk);
     }
 
     /**
@@ -912,7 +912,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -920,8 +920,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 IgfsOutputStream os2 = null;
 
                 try {
-                    os1 = ggfs.create(FILE, true);
-                    os2 = ggfs.create(FILE, true);
+                    os1 = igfs.create(FILE, true);
+                    os2 = igfs.create(FILE, true);
                 }
                 finally {
                     U.closeQuiet(os1);
@@ -939,14 +939,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.create(FILE, true);
+            os = igfs.create(FILE, true);
 
-            ggfs.rename(FILE, FILE2);
+            igfs.rename(FILE, FILE2);
 
             os.close();
         }
@@ -961,14 +961,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameParentNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.create(FILE, true);
+            os = igfs.create(FILE, true);
 
-            ggfs.rename(SUBDIR, SUBDIR2);
+            igfs.rename(SUBDIR, SUBDIR2);
 
             os.close();
         }
@@ -983,16 +983,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
-                    os = ggfs.create(FILE, true);
+                    os = igfs.create(FILE, true);
 
-                    ggfs.format();
+                    igfs.format();
 
                     os.write(chunk);
 
@@ -1013,20 +1013,20 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
-                    os = ggfs.create(FILE, true);
+                    os = igfs.create(FILE, true);
 
-                    IgniteUuid id = ggfs.context().meta().fileId(FILE);
+                    IgniteUuid id = igfs.context().meta().fileId(FILE);
 
-                    ggfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
+                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
 
-                    while (ggfs.context().meta().exists(id))
+                    while (igfs.context().meta().exists(id))
                         U.sleep(100);
 
                     os.close();
@@ -1048,14 +1048,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateUpdateNoClose() throws Exception {
         Map<String, String> props = properties("owner", "group", "0555");
 
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.create(FILE, true);
+            os = igfs.create(FILE, true);
 
-            ggfs.update(FILE, props);
+            igfs.update(FILE, props);
 
             os.close();
         }
@@ -1083,18 +1083,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
-                        IgfsOutputStream os = ggfs.create(path, 128, true, null, 0, 256, null);
+                        IgfsOutputStream os = igfs.create(path, 128, true, null, 0, 256, null);
 
                         os.write(chunk);
 
                         os.close();
 
-                        assert ggfs.exists(path);
+                        assert igfs.exists(path);
                     }
 
-                    awaitFileClose(ggfs, path);
+                    awaitFileClose(igfs, path);
 
-                    checkFileContent(ggfs, path, chunk);
+                    checkFileContent(igfs, path, chunk);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     err.compareAndSet(null, e); // Log the very first error.
@@ -1117,7 +1117,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        ggfs.create(FILE, false).close();
+        igfs.create(FILE, false).close();
 
         int threadCnt = 5;
 
@@ -1127,7 +1127,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     IgfsOutputStream os = null;
 
                     try {
-                        os = ggfs.create(FILE, true);
+                        os = igfs.create(FILE, true);
 
                         os.write(chunk);
 
@@ -1166,12 +1166,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         fut.get();
 
-        awaitFileClose(ggfs, FILE);
+        awaitFileClose(igfs, FILE);
 
         if (err.get() != null)
             throw err.get();
 
-        checkFileContent(ggfs, FILE, chunk);
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
@@ -1180,13 +1180,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppend() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, true, BLOCK_SIZE, chunk);
+        createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
 
-        appendFile(ggfs, FILE, chunk);
+        appendFile(igfs, FILE, chunk);
 
-        checkFile(ggfs, ggfsSecondary, FILE, chunk, chunk);
+        checkFile(igfs, ggfsSecondary, FILE, chunk, chunk);
     }
 
     /**
@@ -1197,11 +1197,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testAppendParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(ggfs, file, true, BLOCK_SIZE, chunk);
+        createFile(igfs, file, true, BLOCK_SIZE, chunk);
 
-        appendFile(ggfs, file, chunk);
+        appendFile(igfs, file, chunk);
 
-        checkFile(ggfs, ggfsSecondary, file, chunk, chunk);
+        checkFile(igfs, ggfsSecondary, file, chunk, chunk);
     }
 
     /**
@@ -1210,9 +1210,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1220,8 +1220,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 IgfsOutputStream os2 = null;
 
                 try {
-                    os1 = ggfs.append(FILE, false);
-                    os2 = ggfs.append(FILE, false);
+                    os1 = igfs.append(FILE, false);
+                    os2 = igfs.append(FILE, false);
                 }
                 finally {
                     U.closeQuiet(os1);
@@ -1239,16 +1239,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.append(FILE, false);
+            os = igfs.append(FILE, false);
 
-            ggfs.rename(FILE, FILE2);
+            igfs.rename(FILE, FILE2);
 
             os.close();
         }
@@ -1263,16 +1263,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameParentNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.append(FILE, false);
+            os = igfs.append(FILE, false);
 
-            ggfs.rename(SUBDIR, SUBDIR2);
+            igfs.rename(SUBDIR, SUBDIR2);
 
             os.close();
         }
@@ -1287,18 +1287,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
-                    os = ggfs.append(FILE, false);
+                    os = igfs.append(FILE, false);
 
-                    ggfs.format();
+                    igfs.format();
 
                     os.write(chunk);
 
@@ -1319,22 +1319,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
-                    IgniteUuid id = ggfs.context().meta().fileId(FILE);
+                    IgniteUuid id = igfs.context().meta().fileId(FILE);
 
-                    os = ggfs.append(FILE, false);
+                    os = igfs.append(FILE, false);
 
-                    ggfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
+                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
 
-                    for (int i = 0; i < 100 && ggfs.context().meta().exists(id); i++)
+                    for (int i = 0; i < 100 && igfs.context().meta().exists(id); i++)
                         U.sleep(100);
 
                     os.write(chunk);
@@ -1358,16 +1358,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testAppendUpdateNoClose() throws Exception {
         Map<String, String> props = properties("owner", "group", "0555");
 
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(ggfs, FILE, false);
+        createFile(igfs, FILE, false);
 
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.append(FILE, false);
+            os = igfs.append(FILE, false);
 
-            ggfs.update(FILE, props);
+            igfs.update(FILE, props);
 
             os.close();
         }
@@ -1388,7 +1388,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int threadCnt = 10;
 
         for (int i = 0; i < threadCnt; i++)
-            createFile(ggfs, new IgfsPath("/file" + i), false);
+            createFile(igfs, new IgfsPath("/file" + i), false);
 
         multithreaded(new Runnable() {
             @Override public void run() {
@@ -1402,18 +1402,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     for (int i = 0; i < REPEAT_CNT; i++) {
                         chunks[i] = chunk;
 
-                        IgfsOutputStream os = ggfs.append(path, false);
+                        IgfsOutputStream os = igfs.append(path, false);
 
                         os.write(chunk);
 
                         os.close();
 
-                        assert ggfs.exists(path);
+                        assert igfs.exists(path);
                     }
 
-                    awaitFileClose(ggfs, path);
+                    awaitFileClose(igfs, path);
 
-                    checkFileContent(ggfs, path, chunks);
+                    checkFileContent(igfs, path, chunks);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     err.compareAndSet(null, e); // Log the very first error.
@@ -1436,7 +1436,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        ggfs.create(FILE, false).close();
+        igfs.create(FILE, false).close();
 
         int threadCnt = 5;
 
@@ -1446,7 +1446,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     IgfsOutputStream os = null;
 
                     try {
-                        os = ggfs.append(FILE, false);
+                        os = igfs.append(FILE, false);
 
                         os.write(chunk);
 
@@ -1483,7 +1483,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         fut.get();
 
-        awaitFileClose(ggfs, FILE);
+        awaitFileClose(igfs, FILE);
 
         if (err.get() != null)
             throw err.get();
@@ -1492,7 +1492,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         Arrays.fill(data, chunk);
 
-        checkFileContent(ggfs, FILE, data);
+        checkFileContent(igfs, FILE, data);
     }
 
     /**
@@ -1501,13 +1501,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStop() throws Exception {
-        create(ggfs, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
-        IgfsOutputStream os = ggfs.create(FILE, true);
+        IgfsOutputStream os = igfs.create(FILE, true);
 
         os.write(chunk);
 
-        ggfs.stop();
+        igfs.stop();
 
         // Reset test state.
         afterTestsStopped();
@@ -1529,7 +1529,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.mkdirs(SUBSUBDIR);
+                        igfs.mkdirs(SUBSUBDIR);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1544,7 +1544,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        return ggfs.delete(DIR, true);
+                        return igfs.delete(DIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1555,11 +1555,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             assert res1.get(); // MKDIRS must succeed anyway.
 
             if (res2.get())
-                checkNotExist(ggfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR);
+                checkNotExist(igfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR);
             else
-                checkExist(ggfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR);
+                checkExist(igfs, ggfsSecondary, DIR, SUBDIR, SUBSUBDIR);
 
-            clear(ggfs, ggfsSecondary);
+            clear(igfs, ggfsSecondary);
         }
     }
 
@@ -1572,14 +1572,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
-            create(ggfs, paths(DIR, SUBDIR, DIR_NEW), paths());
+            create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
             GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.rename(SUBDIR, SUBDIR_NEW);
+                        igfs.rename(SUBDIR, SUBDIR_NEW);
 
                         return true;
                     }
@@ -1594,7 +1594,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        return ggfs.delete(SUBDIR, true);
+                        return igfs.delete(SUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1608,21 +1608,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             if (res1.get()) {
                 assert !res2.get(); // Rename succeeded, so delete must fail.
 
-                checkExist(ggfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR);
+                checkExist(igfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR);
             }
             else {
                 assert res2.get(); // Rename failed because delete succeeded.
 
-                checkExist(ggfs, DIR); // DIR_NEW should not be synchronized with he primary GGFS.
+                checkExist(igfs, DIR); // DIR_NEW should not be synchronized with he primary GGFS.
 
                 if (dual)
                     checkExist(ggfsSecondary, DIR, DIR_NEW);
 
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
             }
 
-            clear(ggfs, ggfsSecondary);
+            clear(igfs, ggfsSecondary);
         }
     }
 
@@ -1636,14 +1636,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
-            create(ggfs, paths(DIR, SUBDIR, DIR_NEW), paths());
+            create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
             GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.rename(SUBDIR, SUBDIR_NEW);
+                        igfs.rename(SUBDIR, SUBDIR_NEW);
 
                         return true;
                     }
@@ -1658,7 +1658,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        return ggfs.delete(SUBDIR_NEW, true);
+                        return igfs.delete(SUBDIR_NEW, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1670,16 +1670,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             if (res2.get()) {
                 // Delete after rename.
-                checkExist(ggfs, ggfsSecondary, DIR, DIR_NEW);
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
+                checkExist(igfs, ggfsSecondary, DIR, DIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
             }
             else {
                 // Delete before rename.
-                checkExist(ggfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR);
+                checkExist(igfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR);
             }
 
-            clear(ggfs, ggfsSecondary);
+            clear(igfs, ggfsSecondary);
         }
     }
 
@@ -1692,14 +1692,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
-            create(ggfs, paths(DIR, SUBDIR, DIR_NEW), paths());
+            create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
             GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.rename(SUBDIR, SUBDIR_NEW);
+                        igfs.rename(SUBDIR, SUBDIR_NEW);
 
                         return true;
                     }
@@ -1714,7 +1714,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.rename(SUBDIR_NEW, SUBDIR);
+                        igfs.rename(SUBDIR_NEW, SUBDIR);
 
                         return true;
                     }
@@ -1730,15 +1730,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             assert res1.get(); // First rename must be successful anyway.
 
             if (res2.get()) {
-                checkExist(ggfs, ggfsSecondary, DIR, SUBDIR, DIR_NEW);
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR_NEW);
+                checkExist(igfs, ggfsSecondary, DIR, SUBDIR, DIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR_NEW);
             }
             else {
-                checkExist(ggfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
-                checkNotExist(ggfs, ggfsSecondary, SUBDIR);
+                checkExist(igfs, ggfsSecondary, DIR, DIR_NEW, SUBDIR_NEW);
+                checkNotExist(igfs, ggfsSecondary, SUBDIR);
             }
 
-            clear(ggfs, ggfsSecondary);
+            clear(igfs, ggfsSecondary);
         }
     }
 
@@ -1752,14 +1752,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
-            create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), paths());
+            create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths());
 
             GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.delete(SUBDIR, true);
+                        igfs.delete(SUBDIR, true);
 
                         return true;
                     }
@@ -1774,7 +1774,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        ggfs.delete(SUBSUBDIR, true);
+                        igfs.delete(SUBSUBDIR, true);
 
                         return true;
                     }
@@ -1787,10 +1787,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             assert res1.get(); // Delete on the parent must succeed anyway.
             res2.get();
 
-            checkExist(ggfs, ggfsSecondary, DIR);
-            checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBSUBDIR);
+            checkExist(igfs, ggfsSecondary, DIR);
+            checkNotExist(igfs, ggfsSecondary, SUBDIR, SUBSUBDIR);
 
-            clear(ggfs, ggfsSecondary);
+            clear(igfs, ggfsSecondary);
         }
     }
 
@@ -1807,7 +1807,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             finally {
                 info(">>>>>> Start deadlock test");
 
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
 
                 info(">>>>>> End deadlock test");
             }
@@ -1825,7 +1825,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 checkDeadlocks(5, 2, 2, 2, 0, OPS_CNT, 0, 0, 0);
             }
             finally {
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
             }
         }
     }
@@ -1841,7 +1841,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, OPS_CNT, 0, 0);
             }
             finally {
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
             }
         }
     }
@@ -1857,7 +1857,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, 0, OPS_CNT, 0);
             }
             finally {
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
             }
         }
     }
@@ -1873,7 +1873,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, 0, 0, OPS_CNT);
             }
             finally {
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
             }
         }
     }
@@ -1889,7 +1889,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
             }
             finally {
-                clear(ggfs, ggfsSecondary);
+                clear(igfs, ggfsSecondary);
             }
         }
     }
@@ -1989,7 +1989,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        ggfs.rename(fromPath, toPath);
+                        igfs.rename(fromPath, toPath);
                     }
                     catch (IgniteException ignore) {
                         // No-op.
@@ -2013,7 +2013,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        ggfs.delete(path, true);
+                        igfs.delete(path, true);
                     }
                     catch (IgniteException ignore) {
                         // No-op.
@@ -2037,7 +2037,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        ggfs.update(path, properties("owner", "group", null));
+                        igfs.update(path, properties("owner", "group", null));
                     }
                     catch (IgniteException ignore) {
                         // No-op.
@@ -2063,7 +2063,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        ggfs.mkdirs(path);
+                        igfs.mkdirs(path);
 
                     }
                     catch (IgniteException ignore) {
@@ -2093,7 +2093,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         IgfsOutputStream os = null;
 
                         try {
-                            os = ggfs.create(path, true);
+                            os = igfs.create(path, true);
 
                             os.write(chunk);
                         }
@@ -2114,7 +2114,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < lvlCnt; i++) {
             int lvl = i + 1;
 
-            IgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? ggfs : ggfsSecondary : ggfs;
+            IgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? igfs : ggfsSecondary : igfs;
 
             IgfsPath[] dirs = dirPaths.get(lvl).toArray(new IgfsPath[dirPaths.get(lvl).size()]);
             IgfsPath[] files = filePaths.get(lvl).toArray(new IgfsPath[filePaths.get(lvl).size()]);
@@ -2208,24 +2208,24 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Append to the file in the given GGFS provided data chunks.
      *
-     * @param ggfs GGFS.
+     * @param igfs GGFS.
      * @param file File.
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(IgniteFs ggfs, IgfsPath file, @Nullable byte[]... chunks)
+    protected void appendFile(IgniteFs igfs, IgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
         IgfsOutputStream os = null;
 
         try {
-            os = ggfs.append(file, false);
+            os = igfs.append(file, false);
 
             writeFileChunks(os, chunks);
         }
         finally {
             U.closeQuiet(os);
 
-            awaitFileClose(ggfs, file);
+            awaitFileClose(igfs, file);
         }
     }
 
