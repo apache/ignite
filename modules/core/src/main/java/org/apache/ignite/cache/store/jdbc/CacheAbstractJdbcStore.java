@@ -1034,12 +1034,12 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
             int fromIdx = 0, prepared = 0;
 
-            String cachName = session().cacheName();
+            String cacheName = session().cacheName();
 
             for (Object key : keys) {
                 Object keyTypeId = keyTypeId(key);
 
-                em = entryMapping(cachName, keyTypeId, key);
+                em = entryMapping(cacheName, keyTypeId, key);
 
                 if (delStmt == null) {
                     delStmt = conn.prepareStatement(em.remQry);
