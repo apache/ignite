@@ -1043,9 +1043,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      *
      */
     private class SharedDeployment extends GridDeployment {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Flag indicating whether this deployment was removed from cache. */
         private boolean rmv;
 
