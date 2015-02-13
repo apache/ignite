@@ -56,6 +56,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
 
+        suite.addTestSuite(IgniteClientAffinityAssignmentSelfTest.class);
+
         suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderInvokeTest.class);
