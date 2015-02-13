@@ -511,13 +511,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      *@param sysExecSvc
      * @param p2pExecSvc
      * @param mgmtExecSvc
-     * @param ggfsExecSvc
+     * @param igfsExecSvc
      * @param errHnd Error handler to use for notification about startup problems.  @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, final ExecutorService execSvc,
         final ExecutorService sysExecSvc, ExecutorService p2pExecSvc, ExecutorService mgmtExecSvc,
-        ExecutorService ggfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
+        ExecutorService igfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -628,7 +628,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             GridKernalContextImpl ctx =
                 new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, execSvc, sysExecSvc, p2pExecSvc,
-                    mgmtExecSvc, ggfsExecSvc, restExecSvc);
+                    mgmtExecSvc, igfsExecSvc, restExecSvc);
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
@@ -659,7 +659,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
+            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
 
             startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
@@ -713,7 +713,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
+            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -2852,10 +2852,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try{
-            IgniteFs fs = ctx.ggfs().ggfs(name);
+            IgniteFs fs = ctx.igfs().igfs(name);
 
             if (fs == null)
-                throw new IllegalArgumentException("IgniteFs is not configured: " + name);
+                throw new IllegalArgumentException("IGFS is not configured: " + name);
 
             return fs;
         }
@@ -2865,11 +2865,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs ggfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
         guard();
 
         try {
-            return ctx.ggfs().ggfs(name);
+            return ctx.igfs().igfs(name);
         }
         finally {
             unguard();
@@ -2881,7 +2881,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try {
-            return ctx.ggfs().ggfss();
+            return ctx.igfs().igfss();
         }
         finally {
             unguard();

@@ -25,7 +25,7 @@ import org.apache.hadoop.mapreduce.*;
 import java.io.*;
 import java.net.*;
 
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * Wrapper of HDFS for support of separated working directory.

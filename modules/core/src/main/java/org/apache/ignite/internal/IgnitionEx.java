@@ -1162,8 +1162,8 @@ public class IgnitionEx {
         /** P2P executor service. */
         private ExecutorService p2pExecSvc;
 
-        /** GGFS executor service. */
-        private ExecutorService ggfsExecSvc;
+        /** IGFS executor service. */
+        private ExecutorService igfsExecSvc;
 
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
@@ -1494,11 +1494,11 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
-            // Note that we do not pre-start threads here as ggfs pool may not be needed.
-            ggfsExecSvc = new IgniteThreadPoolExecutor(
-                "ggfs-" + cfg.getGridName(),
-                cfg.getGgfsThreadPoolSize(),
-                cfg.getGgfsThreadPoolSize(),
+            // Note that we do not pre-start threads here as igfs pool may not be needed.
+            igfsExecSvc = new IgniteThreadPoolExecutor(
+                "igfs-" + cfg.getGridName(),
+                cfg.getIgfsThreadPoolSize(),
+                cfg.getIgfsThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
@@ -1554,15 +1554,15 @@ public class IgnitionEx {
             myCfg.setMarshalLocalJobs(cfg.isMarshalLocalJobs());
             myCfg.setNodeId(nodeId);
 
-            IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+            IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
 
-            if (ggfsCfgs != null) {
-                IgniteFsConfiguration[] clone = ggfsCfgs.clone();
+            if (igfsCfgs != null) {
+                IgfsConfiguration[] clone = igfsCfgs.clone();
 
-                for (int i = 0; i < ggfsCfgs.length; i++)
-                    clone[i] = new IgniteFsConfiguration(ggfsCfgs[i]);
+                for (int i = 0; i < igfsCfgs.length; i++)
+                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
 
-                myCfg.setGgfsConfiguration(clone);
+                myCfg.setIgfsConfiguration(clone);
             }
 
             StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
@@ -1828,7 +1828,7 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, ggfsExecSvc,
+                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, igfsExecSvc,
                     restExecSvc,
                     new CA() {
                         @Override public void apply() {
@@ -2128,9 +2128,9 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
-            U.shutdownNow(getClass(), ggfsExecSvc, log);
+            U.shutdownNow(getClass(), igfsExecSvc, log);
 
-            ggfsExecSvc = null;
+            igfsExecSvc = null;
 
             if (restExecSvc != null)
                 U.shutdownNow(getClass(), restExecSvc, log);

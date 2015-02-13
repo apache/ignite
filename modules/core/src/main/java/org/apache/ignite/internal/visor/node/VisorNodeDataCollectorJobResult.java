@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
@@ -53,14 +53,14 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node caches. */
     private Throwable cachesEx;
 
-    /** Node GGFSs. */
-    private final Collection<VisorGgfs> ggfss = new ArrayList<>();
+    /** Node IGFSs. */
+    private final Collection<VisorIgfs> igfss = new ArrayList<>();
 
-    /** All GGFS endpoints collected from nodes. */
-    private final Collection<VisorGgfsEndpoint> ggfsEndpoints = new ArrayList<>();
+    /** All IGFS endpoints collected from nodes. */
+    private final Collection<VisorIgfsEndpoint> igfsEndpoints = new ArrayList<>();
 
-    /** Exception while collecting node GGFSs. */
-    private Throwable ggfssEx;
+    /** Exception while collecting node IGFSs. */
+    private Throwable igfssEx;
 
     /** Node streamers. */
     private final Collection<VisorStreamer> streamers = new ArrayList<>();
@@ -128,20 +128,20 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
         this.cachesEx = cachesEx;
     }
 
-    public Collection<VisorGgfs> ggfss() {
-        return ggfss;
+    public Collection<VisorIgfs> igfss() {
+        return igfss;
     }
 
-    public Collection<VisorGgfsEndpoint> ggfsEndpoints() {
-        return ggfsEndpoints;
+    public Collection<VisorIgfsEndpoint> igfsEndpoints() {
+        return igfsEndpoints;
     }
 
-    public Throwable ggfssEx() {
-        return ggfssEx;
+    public Throwable igfssEx() {
+        return igfssEx;
     }
 
-    public void ggfssEx(Throwable ggfssEx) {
-        this.ggfssEx = ggfssEx;
+    public void igfssEx(Throwable igfssEx) {
+        this.igfssEx = igfssEx;
     }
 
     public Collection<VisorStreamer> streamers() {

@@ -167,7 +167,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        ctx.ggfsHelper().preProcessCacheConfiguration(cfg);
+        ctx.igfsHelper().preProcessCacheConfiguration(cfg);
 
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
@@ -405,7 +405,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.ggfsHelper().validateCacheConfiguration(cc);
+        ctx.igfsHelper().validateCacheConfiguration(cc);
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
@@ -440,10 +440,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+        boolean igfsCache = CU.isIgfsCache(c, cc.getName());
         boolean utilityCache = CU.isUtilityCache(cc.getName());
 
-        if (!ggfsCache && !utilityCache && !cc.isQueryIndexEnabled())
+        if (!igfsCache && !utilityCache && !cc.isQueryIndexEnabled())
             U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
@@ -559,12 +559,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        IgniteFsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+        IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
-                sysCaches.add(ggfsCfg.getMetaCacheName());
-                sysCaches.add(ggfsCfg.getDataCacheName());
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                sysCaches.add(igfsCfg.getMetaCacheName());
+                sysCaches.add(igfsCfg.getDataCacheName());
             }
         }
 

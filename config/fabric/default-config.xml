@@ -29,9 +29,9 @@
         If you need to add streaming functionality, add your streamers
         configuration in 'streamerConfiguration' property below.
 
-        If you need to enable GGFS, use separate configuration files located in 'config/hadoop'
-        folder. To start a GGFS data node use 'config/hadoop/default-config.xml' file. To start
-        a GGFS client node use 'config/hadoop/default-config-client.xml' file.
+        If you need to enable IGFS, use separate configuration files located in 'config/hadoop'
+        folder. To start a IGFS data node use 'config/hadoop/default-config.xml' file. To start
+        a IGFS client node use 'config/hadoop/default-config-client.xml' file.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Cache configurations. -->
