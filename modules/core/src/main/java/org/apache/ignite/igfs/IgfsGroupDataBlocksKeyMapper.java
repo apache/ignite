@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**

@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

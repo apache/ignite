@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.eviction.ignitefs;
 
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 
 import javax.cache.*;
 

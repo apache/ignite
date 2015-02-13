@@ -19,8 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.internal.processors.fs.split.*;
+import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.processors.igfs.split.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

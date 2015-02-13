@@ -21,7 +21,7 @@ import com.google.common.base.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 
 import java.io.*;
 import java.util.*;
