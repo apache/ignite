@@ -150,9 +150,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "ignitefs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        igfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
+        igfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("igfs-secondary");
 
         Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondary, PRIMARY_REST_CFG);
 

@@ -21,10 +21,10 @@
     Ignite Spring configuration file to startup ignite cache.
 
     When starting a standalone node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/filesystem/example-ignitefs.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/filesystem/example-igfs.xml
 
     When starting Ignite from Java IDE, pass path to this file into Ignition:
-    Ignition.start("examples/config/filesystem/example-ignitefs.xml");
+    Ignition.start("examples/config/filesystem/example-igfs.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -66,9 +66,9 @@
         <property name="igfsConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.IgfsConfiguration">
-                    <property name="name" value="ignitefs"/>
-                    <property name="metaCacheName" value="ignitefs-meta"/>
-                    <property name="dataCacheName" value="ignitefs-data"/>
+                    <property name="name" value="igfs"/>
+                    <property name="metaCacheName" value="igfs-meta"/>
+                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Must correlate with cache affinity mapper. -->
                     <property name="blockSize" value="#{128 * 1024}"/>
@@ -114,7 +114,7 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="ignitefs-data"/>
+                    <property name="name" value="igfs-data"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>
@@ -130,7 +130,7 @@
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="ignitefs-meta"/>
+                    <property name="name" value="igfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>

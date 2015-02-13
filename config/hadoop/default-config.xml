@@ -52,7 +52,7 @@
     <!--
         Abstract IGFS file system configuration to be used as a template.
     -->
-    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
+    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.IgfsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -70,7 +70,7 @@
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="0"/>
         <property name="affinityMapper">
-            <bean class="org.apache.ignite.igfs.IgniteFsGroupDataBlocksKeyMapper">
+            <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
                 <!-- How many sequential blocks will be stored on the same node. -->
                 <constructor-arg value="512"/>
             </bean>
@@ -114,7 +114,7 @@
         -->
         <property name="igfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="igfsCfgBase">
+                <bean class="org.apache.ignite.configuration.IgfsConfiguration" parent="igfsCfgBase">
                     <property name="name" value="igfs"/>
 
                     <!-- Caches with these names must be configured. -->

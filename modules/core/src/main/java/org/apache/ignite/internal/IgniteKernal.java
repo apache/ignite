@@ -2899,7 +2899,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             IgniteFs fs = ctx.igfs().igfs(name);
 
             if (fs == null)
-                throw new IllegalArgumentException("IgniteFs is not configured: " + name);
+                throw new IllegalArgumentException("IGFS is not configured: " + name);
 
             return fs;
         }

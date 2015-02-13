@@ -17,25 +17,25 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.ignitefs.*;
+import org.apache.ignite.examples.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * IgniteFs examples self test.
+ * IGFS examples self test.
  */
 public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
-    /** IgniteFs config with shared memory IPC. */
-    private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/igfs-shmem.xml";
+    /** IGFS config with shared memory IPC. */
+    private static final String IGFS_SHMEM_CFG = "modules/core/src/test/config/igfs-shmem.xml";
 
-    /** IgniteFs config with loopback IPC. */
-    private static final String IGNITEFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
+    /** IGFS config with loopback IPC. */
+    private static final String IGFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
 
     /**
      * @throws Exception If failed.
      */
     public void testIgniteFsApiExample() throws Exception {
-        String configPath = U.isWindows() ? IGNITEFS_LOOPBACK_CFG : IGNITEFS_SHMEM_CFG;
+        String configPath = U.isWindows() ? IGFS_LOOPBACK_CFG : IGFS_SHMEM_CFG;
 
         try {
             startGrid("test1", configPath);

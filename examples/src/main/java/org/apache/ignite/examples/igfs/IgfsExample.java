@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ignitefs;
+package org.apache.ignite.examples.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
@@ -30,10 +30,10 @@ import java.util.*;
  * files, create, list and delete directories).
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * IgniteFs: {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
+ * IGFS: {@code 'ignite.sh examples/config/filesystem/example-igfs.xml'}.
  * <p>
  * Alternatively you can run {@link IgfsNodeStartup} in another JVM which will start
- * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
+ * node with {@code examples/config/filesystem/example-igfs.xml} configuration.
  */
 public final class IgfsExample {
     /**
@@ -43,14 +43,14 @@ public final class IgfsExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml");
+        Ignite ignite = Ignition.start("examples/config/filesystem/example-igfs.xml");
 
         System.out.println();
-        System.out.println(">>> IgniteFs example started.");
+        System.out.println(">>> IGFS example started.");
 
         try {
             // Get an instance of Ignite File System.
-            IgniteFs fs = ignite.fileSystem("ignitefs");
+            IgniteFs fs = ignite.fileSystem("igfs");
 
             // Working directory path.
             IgfsPath workDir = new IgfsPath("/examples/fs");
@@ -103,7 +103,7 @@ public final class IgfsExample {
      * Deletes file or directory. If directory
      * is not empty, it's deleted recursively.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
@@ -135,7 +135,7 @@ public final class IgfsExample {
     /**
      * Creates directories.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
@@ -160,7 +160,7 @@ public final class IgfsExample {
     /**
      * Creates file and writes provided data to it.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path File path.
      * @param data Data.
      * @throws IgniteException If file can't be created.
@@ -189,7 +189,7 @@ public final class IgfsExample {
     /**
      * Opens file and appends provided data to it.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path File path.
      * @param data Data.
      * @throws IgniteException If file can't be created.
@@ -238,7 +238,7 @@ public final class IgfsExample {
     /**
      * Lists files in directory.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
@@ -267,7 +267,7 @@ public final class IgfsExample {
     /**
      * Prints information for file or directory.
      *
-     * @param fs IgniteFs.
+     * @param fs IGFS.
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */

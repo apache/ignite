@@ -44,7 +44,7 @@ public interface IgfsRecordResolver extends Serializable {
     /**
      * Adjusts record start offset and length.
      *
-     * @param fs IgniteFs instance to use.
+     * @param fs IGFS instance to use.
      * @param stream Input stream for split file.
      * @param suggestedRecord Suggested file system record.
      * @return New adjusted record. If this method returns {@code null}, original record is ignored.

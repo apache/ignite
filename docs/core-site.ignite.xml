@@ -20,13 +20,13 @@
 
 <!--
     This template file contains settings needed to run Apache Hadoop jobs
-    with Apache Ignite's distributed in-memory file system IgniteFS.
+    with Apache Ignite's distributed in-memory file system IGFS.
 
     You can replace '$HADOOP_HOME/etc/hadoop/core-site.xml' file with this one
-    to work with IgniteFS nodes running on localhost (these local nodes can be
+    to work with IGFS nodes running on localhost (these local nodes can be
     a part of distributed cluster though). To work with file system on remote
     hosts you need to change the host of file system URI to any host running
-    IgniteFS node.
+    IGFS node.
 
     Note that Ignite jars must be in Apache Hadoop client classpath to work
     with this configuration.
@@ -36,7 +36,7 @@
 
 <configuration>
     <!--
-        Set default file system to IgniteFS instance named "igfs" configured in Ignite.
+        Set default file system to IGFS instance named "igfs" configured in Ignite.
     -->
     <property>
         <name>fs.default.name</name>
@@ -44,7 +44,7 @@
     </property>
 
     <!--
-        Set Hadoop 1.* file system implementation class for IgniteFS.
+        Set Hadoop 1.* file system implementation class for IGFS.
     -->
     <property>
         <name>fs.igfs.impl</name>
@@ -52,7 +52,7 @@
     </property>
 
     <!--
-        Set Hadoop 2.* file system implementation class for IgniteFS.
+        Set Hadoop 2.* file system implementation class for IGFS.
     -->
     <property>
         <name>fs.AbstractFileSystem.igfs.impl</name>
@@ -60,7 +60,7 @@
     </property>
 
     <!--
-        Disallow data node replacement since it does not make sense for IgniteFS nodes.
+        Disallow data node replacement since it does not make sense for IGFS nodes.
     -->
     <property>
         <name>dfs.client.block.write.replace-datanode-on-failure.policy</name>
@@ -68,7 +68,7 @@
     </property>
 
     <!--
-        Allow to write the job statistics into IgniteFS.
+        Allow to write the job statistics into IGFS.
     -->
     <!--
     <property>

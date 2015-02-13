@@ -64,9 +64,9 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
     public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
 
     /**
-     * Gets IgniteFS name.
+     * Gets IGFS name.
      *
-     * @return IgniteFS name, or {@code null} for default file system.
+     * @return IGFS name, or {@code null} for default file system.
      */
     public String name();
 

@@ -1298,13 +1298,13 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
                 out.write(new byte[1024 * 1024]);
             }
 
-            IgniteFs igniteFs = grid(0).fileSystem("igfs");
+            IgniteFs igfs = grid(0).fileSystem("igfs");
 
             IgfsPath filePath = new IgfsPath("/someFile");
 
-            IgfsFile fileInfo = igniteFs.info(filePath);
+            IgfsFile fileInfo = igfs.info(filePath);
 
-            Collection<IgfsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
+            Collection<IgfsBlockLocation> locations = igfs.affinity(filePath, 0, fileInfo.length());
 
             assertEquals(1, locations.size());
 

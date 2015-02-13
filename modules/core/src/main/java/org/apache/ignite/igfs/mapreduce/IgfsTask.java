@@ -36,7 +36,7 @@ import java.util.*;
  * {@link IgfsTask#createJob(org.apache.ignite.igfs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Each file participating in IGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
- * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
+ * consequent bytes located on a single node (see {@code IgfssGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code IgniteFs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
@@ -102,7 +102,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
                 if (args.skipNonExistentFiles())
                     continue;
                 else
-                    throw new IgniteException("Failed to process IgniteFs file because it doesn't exist: " + path);
+                    throw new IgniteException("Failed to process IGFS file because it doesn't exist: " + path);
             }
 
             Collection<IgfsBlockLocation> aff = fs.affinity(path, 0, file.length(), args.maxRangeLength());

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ignitefs;
+package org.apache.ignite.examples.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
@@ -31,10 +31,10 @@ import java.util.*;
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * IgniteFs: {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
+ * IGFS: {@code 'ignite.sh examples/config/filesystem/example-igfs.xml'}.
  * <p>
  * Alternatively you can run {@link IgfsNodeStartup} in another JVM which will start
- * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
+ * node with {@code examples/config/filesystem/example-igfs.xml} configuration.
  */
 public class IgfsMapReduceExample {
     /**
@@ -49,9 +49,9 @@ public class IgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml")) {
+            try (Ignite ignite = Ignition.start("examples/config/filesystem/example-igfs.xml")) {
                 System.out.println();
-                System.out.println(">>> IgniteFs map reduce example started.");
+                System.out.println(">>> IGFS map reduce example started.");
 
                 // Prepare arguments.
                 String fileName = args[0];
@@ -61,7 +61,7 @@ public class IgfsMapReduceExample {
                 String regexStr = args[1];
 
                 // Get an instance of Ignite File System.
-                IgniteFs fs = ignite.fileSystem("ignitefs");
+                IgniteFs fs = ignite.fileSystem("igfs");
 
                 // Working directory path.
                 IgfsPath workDir = new IgfsPath("/examples/fs");
@@ -96,7 +96,7 @@ public class IgfsMapReduceExample {
      */
     private static void writeFile(IgniteFs fs, IgfsPath fsPath, File file) throws Exception {
         System.out.println();
-        System.out.println("Copying file to IgniteFs: " + file);
+        System.out.println("Copying file to IGFS: " + file);
 
         try (
             IgfsOutputStream os = fs.create(fsPath, true);

@@ -56,7 +56,7 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
                 ignite.fileSystem(igfsName).format();
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to format IgniteFs: " + igfsName, iae);
+                throw new IgniteException("Failed to format IGFS: " + igfsName, iae);
             }
 
             return null;

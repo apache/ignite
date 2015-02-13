@@ -59,7 +59,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setIgfsConfiguration(
-            igniteFsConfiguration("tcp", DFLT_IPC_PORT, null)
+            igfsConfiguration("tcp", DFLT_IPC_PORT, null)
         );
 
         G.start(cfg);
@@ -78,8 +78,8 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setIgfsConfiguration(
-            igniteFsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
-            igniteFsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
+            igfsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
+            igfsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
 
         G.start(cfg);
 
@@ -147,14 +147,14 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     }
 
     /**
-     * Creates test-purposed IgniteFsConfiguration.
+     * Creates test-purposed IgfsConfiguration.
      *
      * @param endPntType End point type.
      * @param endPntPort End point port.
      * @param endPntHost End point host.
-     * @return test-purposed IgniteFsConfiguration.
+     * @return test-purposed IgfsConfiguration.
      */
-    protected IgfsConfiguration igniteFsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
+    protected IgfsConfiguration igfsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
         @Nullable String endPntHost) throws IgniteCheckedException {
         HashMap<String, String> endPntCfg = null;
 
