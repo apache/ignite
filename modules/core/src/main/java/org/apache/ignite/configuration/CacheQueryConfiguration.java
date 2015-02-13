@@ -18,8 +18,10 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Configuration for embedded indexing facilities.
@@ -45,6 +47,9 @@ public class CacheQueryConfiguration implements Serializable {
 
     /** */
     private int pageSize = 1000;
+
+    /** */
+    private Collection<IgniteBiTuple<Class<?>, Class<?>>> annotatedEntryTypes;
 
     /**
      * Default constructor.
@@ -199,5 +204,23 @@ public class CacheQueryConfiguration implements Serializable {
      */
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    /**
+     * Gets annotates types for cache entries to be indexed as SQL table for this cache.
+     *
+     * @return Annotates types.
+     */
+    public Collection<IgniteBiTuple<Class<?>,Class<?>>> getAnnotatedEntryTypes() {
+        return annotatedEntryTypes;
+    }
+
+    /**
+     * Gets annotates types for cache entries to be indexed as SQL table for this cache.
+     *
+     * @param annotatedEntryTypes Annotates types.
+     */
+    public void setAnnotatedEntryTypes(Collection<IgniteBiTuple<Class<?>,Class<?>>> annotatedEntryTypes) {
+        this.annotatedEntryTypes = annotatedEntryTypes;
     }
 }

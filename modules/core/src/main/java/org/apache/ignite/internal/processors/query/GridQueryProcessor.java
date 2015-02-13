@@ -123,8 +123,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
                         types.put(new TypeId(ccfg.getName(), valTypeId), desc);
                     }
+                }
 
-//                    processKeyAndValue(ccfg.getName())
+                if (qryCfg != null && !F.isEmpty(qryCfg.getAnnotatedEntryTypes())) {
+                    for (IgniteBiTuple<Class<?>,Class<?>> types : qryCfg.getAnnotatedEntryTypes()) {
+                        TypeDescriptor desc = processKeyAndValue(ccfg.getName(), types.getKey(), types.getValue(),
+                            declaredTypes);
+
+                        desc.registered(idx.registerType(ccfg.getName(), desc));
+
+                        typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
+                    }
                 }
             }
 
