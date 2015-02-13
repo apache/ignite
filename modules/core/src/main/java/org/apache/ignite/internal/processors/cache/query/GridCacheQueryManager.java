@@ -765,7 +765,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt = new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> next;
 
-            private IgniteCacheExpiryPolicy expiryPlc = cctx.cache().accessExpiryPolicy(plc);
+            private IgniteCacheExpiryPolicy expiryPlc = cctx.cache().expiryPolicy(plc);
 
             private Iterator<K> iter = qry.includeBackups() || cctx.isReplicated() ?
                 prj.keySet().iterator() : prj.primaryKeySet().iterator();
@@ -812,7 +812,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
                         dht.sendTtlUpdateRequest(expiryPlc);
 
-                        expiryPlc = cctx.cache().accessExpiryPolicy(plc);
+                        expiryPlc = cctx.cache().expiryPolicy(plc);
                     }
 
                     if (val != null) {
