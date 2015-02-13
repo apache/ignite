@@ -91,33 +91,33 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  * public class Organization {
  *     // Indexed field.
- *     &#64;CacheQuerySqlField(index = true)
+ *     &#64;QuerySqlField(index = true)
  *     private long id;
  *
  *     // Indexed field.
- *     &#64;CacheQuerySqlField(index = true)
+ *     &#64;QuerySqlField(index = true)
  *     private String name;
  *     ...
  * }
  *
  * public class Person {
  *     // Indexed field.
- *     &#64;CacheQuerySqlField(index = true)
+ *     &#64;QuerySqlField(index = true)
  *     private long id;
  *
  *     // Indexed field (Organization ID, used as a foreign key).
- *     &#64;CacheQuerySqlField(index = true)
+ *     &#64;QuerySqlField(index = true)
  *     private long orgId;
  *
  *     // Without SQL field annotation, this field cannot be used in queries.
  *     private String name;
  *
  *     // Not indexed field.
- *     &#64;CacheQuerySqlField
+ *     &#64;QuerySqlField
  *     private double salary;
  *
  *     // Index for text search.
- *     &#64;CacheQueryTextField
+ *     &#64;QueryTextField
  *     private String resume;
  *     ...
  * }
@@ -154,11 +154,11 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
  *     // Geospatial index.
- *     &#64;CacheQuerySqlField(index = true)
+ *     &#64;QuerySqlField(index = true)
  *     private com.vividsolutions.jts.geom.Point location;
  *
  *     // Not indexed field.
- *     &#64;CacheQuerySqlField
+ *     &#64;QuerySqlField
  *     private String name;
  *
  *     public MapPoint(com.vividsolutions.jts.geom.Point location, String name) {

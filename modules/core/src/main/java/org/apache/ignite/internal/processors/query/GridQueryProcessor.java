@@ -781,7 +781,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
-                        throw new IgniteCheckedException("Getter with CacheQuerySqlField " +
+                        throw new IgniteCheckedException("Getter with QuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
                     ClassProperty prop = new ClassProperty(mtd);

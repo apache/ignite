@@ -27,7 +27,7 @@ import java.lang.annotation.*;
  * Example usage:
  * <pre name="code" class="java">
  *     public class MyFunctions {
- *         &#64;CacheQuerySqlFunction
+ *         &#64;QuerySqlFunction
  *         public static int sqr(int x) {
  *             return x * x;
  *         }

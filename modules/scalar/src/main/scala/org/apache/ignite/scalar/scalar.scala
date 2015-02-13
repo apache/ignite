@@ -128,10 +128,10 @@ import scala.annotation.meta.field
  * </pre>
  */
 object scalar extends ScalarConversions {
-    /** Type alias for `CacheQuerySqlField`. */
+    /** Type alias for `QuerySqlField`. */
     type ScalarCacheQuerySqlField = QuerySqlField @field
 
-    /** Type alias for `CacheQueryTextField`. */
+    /** Type alias for `QueryTextField`. */
     type ScalarCacheQueryTextField = QueryTextField @field
 
     /**
