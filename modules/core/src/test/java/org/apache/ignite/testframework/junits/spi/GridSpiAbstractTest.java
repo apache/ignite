@@ -99,63 +99,15 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Allow all permission security set.
      */
-    private GridSecurityPermissionSet getAllPermissionSet() {
-        return new GridSecurityPermissionSet() {
-            /** Serial version uid. */
-            private static final long serialVersionUID = 0L;
-
-            /** {@inheritDoc} */
-            @Override public boolean defaultAllowAll() {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-                return Collections.emptyMap();
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-                return Collections.emptyMap();
-            }
-
-            /** {@inheritDoc} */
-            @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
-                return null;
-            }
-        };
+    private static GridSecurityPermissionSet getAllPermissionSet() {
+        return new GridSecurityPermissionSetImpl();
     }
 
     /**
      * @return Grid allow all security subject.
      */
     protected GridSecuritySubject getGridSecuritySubject(final GridSecuritySubjectType type, final UUID id) {
-        return new GridSecuritySubject() {
-            /** {@inheritDoc} */
-            @Override public UUID id() {
-                return id;
-            }
-
-            /** {@inheritDoc} */
-            @Override public GridSecuritySubjectType type() {
-                return type;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Object login() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public InetSocketAddress address() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public GridSecurityPermissionSet permissions() {
-                return getAllPermissionSet();
-            }
-        };
+        return new GridSecuritySubjectImpl(id, type);
     }
 
     /**
@@ -747,6 +699,77 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                 " [spi=" + spi +
                 ", discoSpi=" + discoSpi +
                 ", allAttrs=" + allAttrs + ']';
+        }
+    }
+
+    private static class GridSecurityPermissionSetImpl implements GridSecurityPermissionSet {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+            return null;
+        }
+    };
+
+    private static class GridSecuritySubjectImpl implements GridSecuritySubject {
+        /** Node Id. */
+        private UUID id;
+
+        /** Grid security type. */
+        private GridSecuritySubjectType type;
+
+        private GridSecurityPermissionSet permission;
+
+        public GridSecuritySubjectImpl() {
+        }
+
+        public GridSecuritySubjectImpl(UUID id, GridSecuritySubjectType type) {
+            this.id = id;
+
+            this.type = type;
+
+            permission = getAllPermissionSet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridSecuritySubjectType type() {
+            return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object login() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetSocketAddress address() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridSecurityPermissionSet permissions() {
+            return permission;
         }
     }
 }
