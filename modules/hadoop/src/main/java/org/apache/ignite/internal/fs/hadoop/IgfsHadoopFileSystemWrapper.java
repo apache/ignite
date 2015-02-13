@@ -36,7 +36,7 @@ import java.util.*;
 /**
  * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.ignitefs.Igfs}.
  */
-public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
+public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 

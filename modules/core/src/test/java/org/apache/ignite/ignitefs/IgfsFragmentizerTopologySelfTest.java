@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ignitefs;
 
+import org.apache.ignite.*;
+
 /**
  * Tests coordinator transfer from one node to other.
  */
