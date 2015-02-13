@@ -23,32 +23,88 @@ import java.util.*;
 /**
  * Authentication context.
  */
-public interface AuthenticationContext {
+public class AuthenticationContext {
+    /** Subject type. */
+    private GridSecuritySubjectType subjType;
+
+    /** Subject ID.w */
+    private UUID subjId;
+
+    /** Credentials. */
+    private GridSecurityCredentials credentials;
+
+    /** Subject address. */
+    private InetSocketAddress addr;
+
     /**
      * Gets subject type.
      *
      * @return Subject type.
      */
-    public GridSecuritySubjectType subjectType();
+    public GridSecuritySubjectType subjectType() {
+        return subjType;
+    }
+
+    /**
+     * Sets subject type.
+     *
+     * @param subjType Subject type.
+     */
+    public void subjectType(GridSecuritySubjectType subjType) {
+        this.subjType = subjType;
+    }
 
     /**
      * Gets subject ID.
      *
      * @return Subject ID.
      */
-    public UUID subjectId();
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * Sets subject ID.
+     *
+     * @param subjId Subject ID.
+     */
+    public void subjectId(UUID subjId) {
+        this.subjId = subjId;
+    }
 
     /**
      * Gets security credentials.
      *
      * @return Security credentials.
      */
-    public GridSecurityCredentials credentials();
+    public GridSecurityCredentials credentials() {
+        return credentials;
+    }
+
+    /**
+     * Sets security credentials.
+     *
+     * @param credentials Security credentials.
+     */
+    public void credentials(GridSecurityCredentials credentials) {
+        this.credentials = credentials;
+    }
 
     /**
      * Gets subject network address.
      *
      * @return Subject network address.
      */
-    public InetSocketAddress address();
+    public InetSocketAddress address() {
+        return addr;
+    }
+
+    /**
+     * Sets subject network address.
+     *
+     * @param addr Subject network address.
+     */
+    public void address(InetSocketAddress addr) {
+        this.addr = addr;
+    }
 }
