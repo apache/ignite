@@ -289,7 +289,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         IgniteTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (IgniteTxLocalEx<K, V>)tx : null;
 
-        final GetExpiryPolicy expiry = accessExpiryPolicy(expiryPlc);
+        final IgniteCacheExpiryPolicy expiry = expiryPolicy(expiryPlc);
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,

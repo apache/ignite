@@ -33,9 +33,6 @@ import static org.apache.ignite.events.EventType.*;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Remote candidates snapshot. */
     private volatile List<GridCacheMvccCandidate<K>> rmts = Collections.emptyList();
 

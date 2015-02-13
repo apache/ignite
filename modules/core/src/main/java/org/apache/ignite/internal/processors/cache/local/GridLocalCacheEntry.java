@@ -29,9 +29,6 @@ import static org.apache.ignite.events.EventType.*;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
