@@ -28,7 +28,7 @@ import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.*;
  * Test suite for Hadoop file system over Ignite cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
-public class IgfsLinuxAndMacOSTestSuite extends TestSuite {
+public class IgniteIgfsLinuxAndMacOSTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
