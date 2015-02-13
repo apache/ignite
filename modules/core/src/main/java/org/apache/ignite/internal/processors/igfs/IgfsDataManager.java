@@ -175,7 +175,7 @@ public class IgfsDataManager extends IgfsManager {
 
         String ggfsName = igfsCtx.configuration().getName();
 
-        topic = F.isEmpty(ggfsName) ? TOPIC_GGFS : TOPIC_GGFS.topic(ggfsName);
+        topic = F.isEmpty(ggfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(ggfsName);
 
         igfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -259,7 +259,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Maximum number of bytes for GGFS data cache.
      */
     public long maxSpaceSize() {
-        return dataCachePrj.ggfsDataSpaceMax();
+        return dataCachePrj.igfsDataSpaceMax();
     }
 
     /**
@@ -1077,7 +1077,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
             try {
                 igfs.awaitDeletesAsync().get(trashPurgeTimeout);
             }
@@ -1086,7 +1086,7 @@ public class IgfsDataManager extends IgfsManager {
             }
 
             // Additional size check.
-            if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+            if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
                 final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
 
                 if (completionFut == null) {
@@ -1099,7 +1099,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
                     "(GGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                    ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
+                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
 
                 completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
                     igfsCtx.kernalContext().localNodeId(), e));
@@ -1246,7 +1246,7 @@ public class IgfsDataManager extends IgfsManager {
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
 
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
             try {
                 try {
                     igfs.awaitDeletesAsync().get(trashPurgeTimeout);
@@ -1256,11 +1256,11 @@ public class IgfsDataManager extends IgfsManager {
                 }
 
                 // Additional size check.
-                if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
+                if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
                     return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
                         new IgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                            ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
+                            ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
 
             }
             catch (IgniteCheckedException e) {
@@ -1363,7 +1363,7 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         // Check if we have enough free space to do colocated writes.
-        if (dataCachePrj.igfsDataSpaceUsed() > dataCachePrj.ggfsDataSpaceMax() *
+        if (dataCachePrj.igfsDataSpaceUsed() > dataCachePrj.igfsDataSpaceMax() *
             igfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
             // Forbid further co-location.
             locRange.markDone();

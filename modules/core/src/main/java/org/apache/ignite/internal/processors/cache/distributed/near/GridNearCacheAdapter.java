@@ -628,8 +628,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
-        return dht().isGgfsDataCache();
+    @Override public boolean isIgfsDataCache() {
+        return dht().isIgfsDataCache();
     }
 
     /** {@inheritDoc} */
@@ -638,13 +638,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
-        return dht().ggfsDataSpaceMax();
+    @Override public long igfsDataSpaceMax() {
+        return dht().igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */
-    @Override public void onGgfsDataSizeChanged(long delta) {
-        dht().onGgfsDataSizeChanged(delta);
+    @Override public void onIgfsDataSizeChanged(long delta) {
+        dht().onIgfsDataSizeChanged(delta);
     }
 
     /** {@inheritDoc} */

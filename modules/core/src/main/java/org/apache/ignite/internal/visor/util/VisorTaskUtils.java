@@ -603,7 +603,7 @@ public class VisorTaskUtils {
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
+    public static Path resolveIgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
         String logsDir;
 
         if (igfs instanceof IgfsEx)

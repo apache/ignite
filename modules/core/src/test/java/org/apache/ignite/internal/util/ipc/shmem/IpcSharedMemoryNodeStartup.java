@@ -41,7 +41,7 @@ public class IpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception{
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -54,13 +54,13 @@ public class IpcSharedMemoryNodeStartup {
         endpointCfg.put("type", "shmem");
         endpointCfg.put("port", "10500");
 
-        ggfsCfg.setIpcEndpointConfiguration(endpointCfg);
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        ggfsCfg.setDataCacheName("partitioned");
-        ggfsCfg.setMetaCacheName("partitioned");
-        ggfsCfg.setName("igfs");
+        igfsCfg.setDataCacheName("partitioned");
+        igfsCfg.setMetaCacheName("partitioned");
+        igfsCfg.setName("igfs");
 
-        cfg.setIgfsConfiguration(ggfsCfg);
+        cfg.setIgfsConfiguration(igfsCfg);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 

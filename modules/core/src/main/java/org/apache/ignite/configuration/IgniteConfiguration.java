@@ -206,7 +206,7 @@ public class IgniteConfiguration {
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
     /** GGFS pool size. */
-    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -474,7 +474,7 @@ public class IgniteConfiguration {
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         igfsCfg = cfg.getIgfsConfiguration();
-        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -1000,8 +1000,8 @@ public class IgniteConfiguration {
      *
      * @return Thread pool size to be used for GGFS outgoing message sending.
      */
-    public int getGgfsThreadPoolSize() {
-        return ggfsPoolSize;
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
     }
 
     /**
@@ -1048,10 +1048,10 @@ public class IgniteConfiguration {
      * Set thread pool size that will be used to process outgoing GGFS messages.
      *
      * @param poolSize Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsThreadPoolSize()
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
     public void setGgfsThreadPoolSize(int poolSize) {
-        this.ggfsPoolSize = poolSize;
+        this.igfsPoolSize = poolSize;
     }
 
     /**

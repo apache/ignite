@@ -1504,8 +1504,8 @@ public class IgnitionEx {
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             ggfsExecSvc = new IgniteThreadPoolExecutor(
                 "igfs-" + cfg.getGridName(),
-                cfg.getGgfsThreadPoolSize(),
-                cfg.getGgfsThreadPoolSize(),
+                cfg.getIgfsThreadPoolSize(),
+                cfg.getIgfsThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 

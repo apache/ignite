@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.ignitefs;
+package org.apache.ignite.cache.eviction.igfs;
 
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.igfs.*;

@@ -4745,7 +4745,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
+    @Override public boolean isIgfsDataCache() {
         return ggfsDataCache;
     }
 
@@ -4757,7 +4757,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
+    @Override public long igfsDataSpaceMax() {
         return ggfsDataSpaceMax;
     }
 
@@ -4776,7 +4776,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @param delta Size delta.
      */
-    public void onGgfsDataSizeChanged(long delta) {
+    public void onIgfsDataSizeChanged(long delta) {
         assert ggfsDataCache;
 
         ggfsDataCacheSize.add(delta);

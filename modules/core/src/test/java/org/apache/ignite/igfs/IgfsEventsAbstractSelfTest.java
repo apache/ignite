@@ -44,7 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
  */
 public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest {
     /** GGFS. */
-    private static IgfsImpl ggfs;
+    private static IgfsImpl igfs;
 
     /** Event listener. */
     private IgnitePredicate<Event> lsnr;
@@ -158,7 +158,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite ignite = startGrid(1);
 
-        ggfs = (IgfsImpl) ignite.fileSystems().iterator().next();
+        igfs = (IgfsImpl) ignite.fileSystems().iterator().next();
     }
 
     /** {@inheritDoc} */
@@ -170,7 +170,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         // Clean up file system.
-        ggfs.format();
+        igfs.format();
     }
 
     /** {@inheritDoc} */
@@ -208,14 +208,14 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         // Will generate 3 EVT_GGFS_DIR_CREATED + EVT_GGFS_FILE_CREATED + EVT_GGFS_FILE_OPENED_WRITE +
         // EVT_GGFS_FILE_CLOSED and a number of EVT_GGFS_META_UPDATED.
-        ggfs.create(file, true).close();
+        igfs.create(file, true).close();
 
         IgfsPath mvFile = new IgfsPath(dir, "mvFile1");
 
-        ggfs.rename(file, mvFile); // Will generate EVT_GGFS_FILE_RENAMED.
+        igfs.rename(file, mvFile); // Will generate EVT_GGFS_FILE_RENAMED.
 
         // Will generate EVT_GGFS_DIR_DELETED event.
-        assertTrue(ggfs.delete(dir.parent(), true));
+        assertTrue(igfs.delete(dir.parent(), true));
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -290,14 +290,14 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         // Will generate EVT_GGFS_DIR_CREATED + EVT_GGFS_FILE_CREATED + EVT_GGFS_FILE_OPENED_WRITE +
         // EVT_GGFS_FILE_CLOSED_WRITE.
-        ggfs.create(file1, true).close();
+        igfs.create(file1, true).close();
 
         // Will generate EVT_GGFS_FILE_CREATED + EVT_GGFS_FILE_OPENED_WRITE +
         // EVT_GGFS_FILE_CLOSED.
-        ggfs.create(file2, true).close();
+        igfs.create(file2, true).close();
 
         // Will generate EVT_GGFS_DIR_DELETED event.
-        assertTrue(ggfs.delete(dir, true));
+        assertTrue(igfs.delete(dir, true));
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -366,15 +366,15 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         IgfsPath dir = new IgfsPath("/dir1");
 
-        ggfs.mkdirs(dir); // Will generate EVT_GGFS_DIR_CREATED.
+        igfs.mkdirs(dir); // Will generate EVT_GGFS_DIR_CREATED.
 
         IgfsPath mvDir = new IgfsPath("/mvDir1");
 
-        ggfs.rename(dir, mvDir); // Will generate EVT_GGFS_DIR_RENAMED.
+        igfs.rename(dir, mvDir); // Will generate EVT_GGFS_DIR_RENAMED.
 
-        assertFalse(ggfs.delete(dir, true)); // Will generate no event.
+        assertFalse(igfs.delete(dir, true)); // Will generate no event.
 
-        assertTrue(ggfs.delete(mvDir, true)); // Will generate EVT_GGFS_DIR_DELETED events.
+        assertTrue(igfs.delete(mvDir, true)); // Will generate EVT_GGFS_DIR_DELETED events.
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -426,18 +426,18 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         IgfsPath file1 = new IgfsPath(dir, "file1");
 
         // Will generate EVT_GGFS_FILE_CREATED event + EVT_GGFS_DIR_CREATED event + OPEN + CLOSE.
-        ggfs.create(file1, true).close();
+        igfs.create(file1, true).close();
 
         IgfsPath file2 = new IgfsPath(dir, "file2");
 
-        ggfs.create(file2, true).close(); // Will generate 1 EVT_GGFS_FILE_CREATED event + OPEN + CLOSE.
+        igfs.create(file2, true).close(); // Will generate 1 EVT_GGFS_FILE_CREATED event + OPEN + CLOSE.
 
-        assertTrue(ggfs.exists(dir));
-        assertTrue(ggfs.exists(file1));
-        assertTrue(ggfs.exists(file2));
+        assertTrue(igfs.exists(dir));
+        assertTrue(igfs.exists(file1));
+        assertTrue(igfs.exists(file2));
 
-        assertTrue(ggfs.delete(file1, false)); // Will generate 1 EVT_GGFS_FILE_DELETED and 1 EVT_GGFS_FILE_PURGED.
-        assertTrue(ggfs.delete(file2, false)); // Same.
+        assertTrue(igfs.delete(file1, false)); // Will generate 1 EVT_GGFS_FILE_DELETED and 1 EVT_GGFS_FILE_PURGED.
+        assertTrue(igfs.delete(file2, false)); // Same.
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -510,16 +510,16 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         IgfsPath dir = new IgfsPath("/dir1/dir2");
 
-        ggfs.mkdirs(dir); // Will generate 2 EVT_GGFS_DIR_CREATED events.
+        igfs.mkdirs(dir); // Will generate 2 EVT_GGFS_DIR_CREATED events.
 
         try {
-            ggfs.delete(dir.parent(), false); // Will generate no events.
+            igfs.delete(dir.parent(), false); // Will generate no events.
         }
         catch (IgniteException ignore) {
             // No-op.
         }
 
-        assertTrue(ggfs.delete(dir, false)); // Will generate 1 EVT_GGFS_DIR_DELETED event.
+        assertTrue(igfs.delete(dir, false)); // Will generate 1 EVT_GGFS_DIR_DELETED event.
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -567,11 +567,11 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         IgfsPath file = new IgfsPath(dir, "file1");
 
         // Will generate 2 EVT_GGFS_DIR_CREATED events + EVT_GGFS_FILE_CREATED_EVENT + OPEN + CLOSE.
-        ggfs.create(file, true).close();
+        igfs.create(file, true).close();
 
-        ggfs.rename(file, dir.parent()); // Will generate 1 EVT_GGFS_FILE_RENAMED.
+        igfs.rename(file, dir.parent()); // Will generate 1 EVT_GGFS_FILE_RENAMED.
 
-        assertTrue(ggfs.exists(new IgfsPath(dir.parent(), file.name())));
+        assertTrue(igfs.exists(new IgfsPath(dir.parent(), file.name())));
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -631,11 +631,11 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         IgfsPath dir = new IgfsPath("/dir1/dir2");
 
-        assertFalse(ggfs.exists(dir.parent()));
+        assertFalse(igfs.exists(dir.parent()));
 
-        ggfs.mkdirs(dir); // Will generate 2 EVT_GGFS_DIR_RENAMED events.
+        igfs.mkdirs(dir); // Will generate 2 EVT_GGFS_DIR_RENAMED events.
 
-        assertTrue(ggfs.delete(dir.parent(), true)); // Will generate EVT_GGFS_DIR_DELETED event.
+        assertTrue(igfs.delete(dir.parent(), true)); // Will generate EVT_GGFS_DIR_DELETED event.
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -681,12 +681,12 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         final IgfsPath file = new IgfsPath("/file1");
 
-        ggfs.create(file, false).close(); // Will generate create, open and close events.
+        igfs.create(file, false).close(); // Will generate create, open and close events.
 
-        ggfs.create(file, true).close(); // Will generate same event set + delete and purge events.
+        igfs.create(file, true).close(); // Will generate same event set + delete and purge events.
 
         try {
-            ggfs.create(file, false).close(); // Won't generate any event.
+            igfs.create(file, false).close(); // Won't generate any event.
         }
         catch (Exception ignore) {
             // No-op.
@@ -782,12 +782,12 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         byte[] buf = new byte[dataSize];
 
         // Will generate GGFS_FILE_CREATED, GGFS_FILE_OPENED_WRITE, GGFS_FILE_CLOSED_WRITE.
-        try (IgfsOutputStream os = ggfs.create(file, false)) {
+        try (IgfsOutputStream os = igfs.create(file, false)) {
             os.write(buf); // Will generate no events.
         }
 
         // Will generate EVT_GGFS_FILE_OPENED_READ, GGFS_FILE_CLOSED_READ.
-        try (IgfsInputStream is = ggfs.open(file, 256)) {
+        try (IgfsInputStream is = igfs.open(file, 256)) {
             is.readFully(0, buf); // Will generate no events.
         }
 

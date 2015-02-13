@@ -162,7 +162,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** {@inheritDoc} */
         @Override protected Collection<VisorIgfsProfilerEntry> run(String arg) {
             try {
-                Path logsDir = resolveGgfsProfilerLogsDir(ignite.fileSystem(arg));
+                Path logsDir = resolveIgfsProfilerLogsDir(ignite.fileSystem(arg));
 
                 if (logsDir != null)
                     return parse(logsDir, arg);

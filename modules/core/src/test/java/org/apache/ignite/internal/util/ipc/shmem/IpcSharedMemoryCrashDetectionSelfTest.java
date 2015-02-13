@@ -48,7 +48,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsServerClientInteractionsUponClientKilling() throws Exception {
+    public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
         U.setWorkDirectory(null, U.getIgniteHome());
 
         // Run server endpoint.
@@ -92,7 +92,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsClientServerInteractionsUponServerKilling() throws Exception {
+    public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);

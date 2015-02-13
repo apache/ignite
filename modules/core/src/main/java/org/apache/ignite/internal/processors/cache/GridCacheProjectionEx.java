@@ -337,7 +337,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *
      * @return {@code True} in case this cache is GGFS data cache.
      */
-    public boolean isGgfsDataCache();
+    public boolean isIgfsDataCache();
 
     /**
      * Get current amount of used GGFS space in bytes.
@@ -351,7 +351,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *
      * @return Amount of space available for GGFS in bytes.
      */
-    public long ggfsDataSpaceMax();
+    public long igfsDataSpaceMax();
 
     /**
      * Checks whether this cache is Mongo data cache.

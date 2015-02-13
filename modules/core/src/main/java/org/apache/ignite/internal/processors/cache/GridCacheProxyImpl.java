@@ -553,11 +553,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
+    @Override public boolean isIgfsDataCache() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isGgfsDataCache();
+            return delegate.isIgfsDataCache();
         }
         finally {
             gate.leave(prev);
@@ -577,11 +577,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
+    @Override public long igfsDataSpaceMax() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.ggfsDataSpaceMax();
+            return delegate.igfsDataSpaceMax();
         }
         finally {
             gate.leave(prev);

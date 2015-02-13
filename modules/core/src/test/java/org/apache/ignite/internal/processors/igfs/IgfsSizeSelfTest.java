@@ -311,7 +311,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             GridCacheProjectionEx cache = (GridCacheProjectionEx)g.cachex(DATA_CACHE_NAME).cache();
 
-            assert cache.isGgfsDataCache();
+            assert cache.isIgfsDataCache();
         }
 
         // Perform writes.
