@@ -607,7 +607,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             /*fail-fast*/false,
                             /*unmarshal*/true,
                             /**update-metrics*/true,
-                            /**event*/true,
+                            /**event*/!skipVals,
                             /**temporary*/false,
                             subjId,
                             null,

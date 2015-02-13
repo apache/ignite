@@ -914,7 +914,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
                                 /**update-metrics*/false,
-                                /*event*/true,
+                                /*event*/!skipVals,
                                 /*temporary*/false,
                                 subjId,
                                 null,
