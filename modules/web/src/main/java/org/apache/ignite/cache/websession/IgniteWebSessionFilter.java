@@ -50,13 +50,13 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;!-- You can also specify a custom URL pattern. --&gt;
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;GridWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;IgniteWebSessionsFilter&lt;/filter-name&gt;
  *     &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
@@ -64,12 +64,12 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * be used in this case:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
  *     &lt;servlet-name&gt;YourServletName&lt;/servlet-name&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
@@ -107,8 +107,8 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * servlet context parameters. You can specify filter init parameters as follows:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;IgniteWebSessionsGridName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebGrid&lt;/param-value&gt;
@@ -138,7 +138,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * cache concurrent requests can get equal value, but {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL}
  * cache will always process such updates one after another.
  */
-public class GridWebSessionFilter implements Filter {
+public class IgniteWebSessionFilter implements Filter {
     /** Web sessions caching grid name parameter name. */
     public static final String WEB_SES_NAME_PARAM = "IgniteWebSessionsGridName";
 
@@ -152,13 +152,13 @@ public class GridWebSessionFilter implements Filter {
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
 
     /** Cache. */
-    private IgniteCache<String, GridWebSession> cache;
+    private IgniteCache<String, IgniteWebSession> cache;
 
     /** Transactions. */
     private IgniteTransactions txs;
 
     /** Listener. */
-    private GridWebSessionListener lsnr;
+    private IgniteWebSessionListener lsnr;
 
     /** Logger. */
     private IgniteLogger log;
@@ -239,7 +239,7 @@ public class GridWebSessionFilter implements Filter {
 
         txEnabled = cacheCfg.getAtomicityMode() == TRANSACTIONAL;
 
-        lsnr = new GridWebSessionListener(webSesIgnite, cache, retries);
+        lsnr = new IgniteWebSessionListener(webSesIgnite, cache, retries);
 
         String srvInfo = ctx.getServerInfo();
 
@@ -315,7 +315,7 @@ public class GridWebSessionFilter implements Filter {
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
         ServletException, CacheException {
-        GridWebSession cached;
+        IgniteWebSession cached;
 
         String sesId = httpReq.getRequestedSessionId();
 
@@ -327,7 +327,7 @@ public class GridWebSessionFilter implements Filter {
                     log.debug("Using cached session for ID: " + sesId);
 
                 if (cached.isNew())
-                    cached = new GridWebSession(cached, false);
+                    cached = new IgniteWebSession(cached, false);
             }
             else {
                 if (log.isDebugEnabled())
@@ -365,8 +365,8 @@ public class GridWebSessionFilter implements Filter {
 
         HttpSession ses = httpReq.getSession(false);
 
-        if (ses != null && ses instanceof GridWebSession) {
-            Collection<T2<String, Object>> updates = ((GridWebSession)ses).updates();
+        if (ses != null && ses instanceof IgniteWebSession) {
+            Collection<T2<String, Object>> updates = ((IgniteWebSession)ses).updates();
 
             if (updates != null)
                 lsnr.updateAttributes(ses.getId(), updates, ses.getMaxInactiveInterval());
@@ -380,7 +380,7 @@ public class GridWebSessionFilter implements Filter {
      * @return Cached session.
      */
     @SuppressWarnings("unchecked")
-    private GridWebSession createSession(HttpServletRequest httpReq) {
+    private IgniteWebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
         String sesId = sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId();
@@ -388,12 +388,12 @@ public class GridWebSessionFilter implements Filter {
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
 
-        GridWebSession cached = new GridWebSession(ses, true);
+        IgniteWebSession cached = new IgniteWebSession(ses, true);
 
         try {
             while (true) {
                 try {
-                    IgniteCache<String, GridWebSession> cache0;
+                    IgniteCache<String, IgniteWebSession> cache0;
 
                     if (cached.getMaxInactiveInterval() > 0) {
                         long ttl = cached.getMaxInactiveInterval() * 1000;
@@ -405,13 +405,13 @@ public class GridWebSessionFilter implements Filter {
                     else
                         cache0 = cache;
 
-                    GridWebSession old = cache0.getAndPutIfAbsent(sesId, cached);
+                    IgniteWebSession old = cache0.getAndPutIfAbsent(sesId, cached);
 
                     if (old != null) {
                         cached = old;
 
                         if (cached.isNew())
-                            cached = new GridWebSession(cached, false);
+                            cached = new IgniteWebSession(cached, false);
                     }
 
                     break;
@@ -431,7 +431,7 @@ public class GridWebSessionFilter implements Filter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridWebSessionFilter.class, this);
+        return S.toString(IgniteWebSessionFilter.class, this);
     }
 
     /**
@@ -439,13 +439,13 @@ public class GridWebSessionFilter implements Filter {
      */
     private static class RequestWrapper extends HttpServletRequestWrapper {
         /** Session. */
-        private final GridWebSession ses;
+        private final IgniteWebSession ses;
 
         /**
          * @param req Request.
          * @param ses Session.
          */
-        private RequestWrapper(HttpServletRequest req, GridWebSession ses) {
+        private RequestWrapper(HttpServletRequest req, IgniteWebSession ses) {
             super(req);
 
             assert ses != null;
