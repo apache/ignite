@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
@@ -35,6 +36,8 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Map query executor.
@@ -153,6 +156,22 @@ public class GridMapQueryExecutor {
 
                 qr.results[i] = res;
                 qr.resultSets[i] = rs;
+
+                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    ctx.event().record(new CacheQueryExecutedEvent<>(
+                        node,
+                        "SQL query executed.",
+                        EVT_CACHE_QUERY_EXECUTED,
+                        CacheQueryType.SQL,
+                        null,
+                        null,
+                        qry.query(),
+                        null,
+                        null,
+                        qry.parameters(),
+                        null,
+                        null));
+                }
 
                 // Send the first page.
                 sendNextPage(node, qr, i, req.pageSize(), res.getRowCount());

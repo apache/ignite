@@ -131,11 +131,13 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
-        cache.withAsync().loadCache(null, 0);
+        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
 
-        cache.future().get();
+        asyncCache.loadCache(null, 0);
+
+        asyncCache.future().get();
 
         assert cache.size() == PUT_CNT;
 
@@ -175,15 +177,18 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheAsyncFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
-        cache.withAsync().loadCache(new P2<Integer, ValueObject>() {
-            @Override public boolean apply(Integer key, ValueObject val) {
+        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
+
+        asyncCache.loadCache(new P2<Integer, ValueObject>() {
+            @Override
+            public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
         }, 0);
 
-        cache.future().get();
+        asyncCache.future().get();
 
-        assert cache.size() == PUT_CNT - 5;
+        assert cache.localSize() == PUT_CNT - 5;
 
         Collection<Cache.Entry<Integer, ValueObject>> res =
             cache.query(new SqlQuery(ValueObject.class, "val >= 0")).getAll();

@@ -18,40 +18,73 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.CacheAtomicityMode._
+import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.query.annotations.QuerySqlField
-import org.apache.ignite.visor.visor
-import org.scalatest._
+import org.apache.ignite.configuration._
+import org.apache.ignite.spi.discovery.tcp._
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm._
 
+import org.jetbrains.annotations._
+
+import org.apache.ignite.visor._
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 
 /**
  * Unit test for 'events' command.
  */
-class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
-    /**
-     * Open Visor.
-     */
-    override def beforeAll() {
-        val g = Ignition.start("examples/config/example-cache.xml")
-
-        assert(g.caches().size() > 0)
-
-        visor.open("-d")
-    }
-
-    /**
-     * Close Visor.
-     */
-    override def afterAll() {
-        visor.close()
-
-        Ignition.stop(false)
-    }
-
+class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'cache' visor command"
 
+    /** IP finder. */
+    val ipFinder = new TcpDiscoveryVmIpFinder(true)
+
+    /**
+     * @param name Cache name.
+     * @return Cache Configuration.
+     */
+    def cacheConfig(@Nullable name: String): CacheConfiguration = {
+        val cfg = new CacheConfiguration
+
+        cfg.setCacheMode(REPLICATED)
+        cfg.setAtomicityMode(TRANSACTIONAL)
+        cfg.setName(name)
+        cfg.setQueryIndexEnabled(true)
+
+        val qc = new CacheQueryConfiguration()
+
+        qc.setIndexPrimitiveKey(true)
+        qc.setIndexFixedTyping(true)
+
+        cfg.setQueryConfiguration(qc)
+
+        cfg
+    }
+
+    /**
+     * Creates grid configuration for provided grid host.
+     *
+     * @param name Grid name.
+     * @return Grid configuration.
+     */
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
+
+        cfg.setGridName(name)
+        cfg.setLocalHost("127.0.0.1")
+        cfg.setCacheConfiguration(cacheConfig("replicated"))
+
+        val discoSpi = new TcpDiscoverySpi()
+
+        discoSpi.setIpFinder(ipFinder)
+
+        cfg.setDiscoverySpi(discoSpi)
+
+        cfg
+    }
+
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.ignite.jcache[String, String]("partitioned")
+        val c = Ignition.ignite("node-1").jcache[String, String]("replicated")
 
         for (i <- 0 to 3) {
             val kv = "" + i
@@ -65,7 +98,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     }
 
     it should "run query and display information about caches" in {
-        val g = Ignition.ignite
+        val g = Ignition.ignite("node-1")
 
         val c = g.cache[Int, Foo]("replicated")
 

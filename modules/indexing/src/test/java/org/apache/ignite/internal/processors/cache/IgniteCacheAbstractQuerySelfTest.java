@@ -69,9 +69,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final UUID subjId = UUID.fromString("8EB3B06D-0885-4B4A-9A54-02C93EF09B65");
-
-    /** */
     protected Ignite ignite;
 
     /**
@@ -257,7 +254,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<List<?>> res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         List<?> row = res.iterator().next();
 
@@ -269,7 +269,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         row = res.iterator().next();
 
@@ -309,6 +312,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         assertEquals(1, res.getValue().intValue());
 
         U.sleep(1020);
+
+        qry = cache.query(sql(Integer.class, "1=1")).getAll();
 
         res = F.first(qry);
 
@@ -1040,57 +1045,24 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testSqlQueryEvents() throws Exception {
-        testSqlQueryEvents(false);
+        checkSqlQueryEvents();
     }
 
     /**
-     * @param customSubjId Use custom subject ID.
      * @throws Exception If failed.
      */
-    private void testSqlQueryEvents(final boolean customSubjId) throws Exception {
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(10);
+    private void checkSqlQueryEvents() throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    assert evt instanceof CacheQueryReadEvent;
-
-                    CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
-
-                    assertEquals(SQL, qe.queryType());
-                    assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
-                    assertEquals("Integer", qe.className());
-                    assertEquals("_key >= ?", qe.clause());
-                    assertNull(qe.scanQueryFilter());
-                    assertNull(qe.continuousQueryFilter());
-                    assertArrayEquals(new Integer[] { 10 }, qe.arguments());
-
-                    map.put(qe.key(), qe.value());
-
-                    latch.countDown();
-
-                    return true;
-                }
-            }, EVT_CACHE_QUERY_OBJECT_READ);
-
             grid(i).events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(SQL, qe.queryType());
                     assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
-                    assertEquals("Integer", qe.className());
-                    assertEquals("_key >= ?", qe.clause());
+                    assertNotNull(qe.clause());
                     assertNull(qe.scanQueryFilter());
                     assertNull(qe.continuousQueryFilter());
                     assertArrayEquals(new Integer[] { 10 }, qe.arguments());
@@ -1110,32 +1082,22 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         QueryCursor<Cache.Entry<Integer, Integer>> q =
             cache.query(sql(Integer.class, "_key >= ?").setArgs(10));
 
-        if (customSubjId)
-            ((GridCacheQueryAdapter)q).subjectId(subjId);
-
         q.getAll();
 
-        assert latch.await(1000, MILLISECONDS);
         assert execLatch.await(1000, MILLISECONDS);
-
-        assertEquals(10, map.size());
-
-        for (int i = 10; i < 20; i++)
-            assertEquals(i, map.get(i).intValue());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testScanQueryEvents() throws Exception {
-        testScanQueryEvents(false);
+        checkScanQueryEvents();
     }
 
     /**
-     * @param customSubjId Use custom subject ID.
      * @throws Exception If failed.
      */
-    private void testScanQueryEvents(final boolean customSubjId) throws Exception {
+    private void checkScanQueryEvents() throws Exception {
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
@@ -1149,8 +1111,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
 
                     assertNull(qe.className());
                     assertNull(null, qe.clause());
@@ -1174,8 +1134,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
 
                     assertNull(qe.className());
                     assertNull(null, qe.clause());
@@ -1200,9 +1158,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 return k >= 10;
             }
         }));
-
-        if (customSubjId)
-            ((GridCacheQueryAdapter)q).subjectId(subjId);
 
         q.getAll();
 
@@ -1240,8 +1195,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
 
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
                     assertEquals("Person", qe.className());
                     assertEquals("White", qe.clause());
                     assertNull(qe.scanQueryFilter());
@@ -1265,8 +1218,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
 
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
                     assertEquals("Person", qe.className());
                     assertEquals("White", qe.clause());
                     assertNull(qe.scanQueryFilter());
@@ -1289,9 +1240,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         QueryCursor<Cache.Entry<Integer, Person>> q = cache.query(new TextQuery(Person.class, "White"));
 
-        if (customSubjId)
-            ((GridCacheQueryAdapter)q).subjectId(subjId);
-
         q.getAll();
 
         assert latch.await(1000, MILLISECONDS);
@@ -1307,61 +1255,27 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testFieldsQueryEvents() throws Exception {
-        testFieldsQueryEvents(false);
+        checkFieldsQueryEvents();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void testFieldsQueryEvents(final boolean customSubjId) throws Exception {
-        final Map<Integer, String> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(10);
+    private void checkFieldsQueryEvents() throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    assert evt instanceof CacheQueryReadEvent;
-
-                    CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
-
-                    assertEquals(SQL_FIELDS, qe.queryType());
-                    assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
-                    assertNull(qe.className());
-                    assertEquals("select _key, name from Person where salary > ?", qe.clause());
-                    assertNull(qe.scanQueryFilter());
-                    assertNull(qe.continuousQueryFilter());
-                    assertArrayEquals(new Integer[] { 10 }, qe.arguments());
-
-                    List<?> row = (List<?>)qe.row();
-
-                    map.put((Integer)row.get(0), (String)row.get(1));
-
-                    latch.countDown();
-
-                    return true;
-                }
-            }, EVT_CACHE_QUERY_OBJECT_READ);
-
             grid(i).events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(SQL_FIELDS, qe.queryType());
                     assertNull(qe.cacheName());
-
-                    assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
-
-                    assertNull(qe.className());
-                    assertEquals("select _key, name from Person where salary > ?", qe.clause());
+                    assertNotNull(qe.clause());
                     assertNull(qe.scanQueryFilter());
                     assertNull(qe.continuousQueryFilter());
-                    assertArrayEquals(new Integer[] { 10 }, qe.arguments());
+                    assertArrayEquals(new Integer[]{10}, qe.arguments());
 
                     execLatch.countDown();
 
@@ -1378,18 +1292,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         QueryCursor<List<?>> q = cache
             .queryFields(sql("select _key, name from Person where salary > ?").setArgs(10));
 
-        if (customSubjId)
-            ((GridCacheQueryAdapter)q).subjectId(subjId);
-
         q.getAll();
 
-        assert latch.await(1000, MILLISECONDS);
         assert execLatch.await(1000, MILLISECONDS);
-
-        assertEquals(10, map.size());
-
-        for (int i = 11; i <= 20; i++)
-            assertEquals("Person " + i, map.get(i));
     }
 
     /**

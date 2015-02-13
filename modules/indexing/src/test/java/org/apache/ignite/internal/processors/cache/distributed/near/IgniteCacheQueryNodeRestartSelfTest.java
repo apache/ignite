@@ -111,7 +111,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(KEY_CNT, cache.size());
+        assertEquals(KEY_CNT, cache.localSize());
 
         final AtomicInteger qryCnt = new AtomicInteger();
 
