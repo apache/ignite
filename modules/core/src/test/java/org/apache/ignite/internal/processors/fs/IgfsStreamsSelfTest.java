@@ -253,7 +253,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             }
 
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
-            IgniteFsFileImpl fileImpl = (IgniteFsFileImpl)fs.info(path);
+            IgfsFileImpl fileImpl = (IgfsFileImpl)fs.info(path);
 
             GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
 

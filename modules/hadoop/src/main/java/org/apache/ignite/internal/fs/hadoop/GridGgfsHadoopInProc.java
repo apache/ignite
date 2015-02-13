@@ -151,7 +151,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus fsStatus() throws IgniteCheckedException {
+    @Override public IgfsStatus fsStatus() throws IgniteCheckedException {
         try {
             return ggfs.globalSpace();
         }

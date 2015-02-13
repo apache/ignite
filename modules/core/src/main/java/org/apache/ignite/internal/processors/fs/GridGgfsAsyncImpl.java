@@ -111,7 +111,7 @@ public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsPaths proxyPaths() {
+    @Override public IgfsPaths proxyPaths() {
         return ggfs.proxyPaths();
     }
 
@@ -132,7 +132,7 @@ public class GridGgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
+    @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
         return ggfs.globalSpace();
     }
 

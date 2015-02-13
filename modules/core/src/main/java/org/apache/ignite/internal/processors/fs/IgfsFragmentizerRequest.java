@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -26,67 +28,60 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * GGFS write blocks message.
+ * Fragmentizer request. Sent from coordinator to other GGFS nodes when colocated part of file
+ * should be fragmented.
  */
-public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
+public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** File id. */
     private IgniteUuid fileId;
 
-    /** Batch id */
-    private long id;
-
-    /** Blocks to store. */
-    @GridDirectMap(keyType = GridGgfsBlockKey.class, valueType = byte[].class)
-    private Map<GridGgfsBlockKey, byte[]> blocks;
+    /** Ranges to fragment. */
+    @GridToStringInclude
+    @GridDirectCollection(GridGgfsFileAffinityRange.class)
+    private Collection<GridGgfsFileAffinityRange> fragmentRanges;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsBlocksMessage() {
+    public IgfsFragmentizerRequest() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param fileId File ID.
-     * @param id Message id.
-     * @param blocks Blocks to put in cache.
+     * @param fileId File id to fragment.
+     * @param fragmentRanges Ranges to fragment.
      */
-    public GridGgfsBlocksMessage(IgniteUuid fileId, long id, Map<GridGgfsBlockKey, byte[]> blocks) {
+    public IgfsFragmentizerRequest(IgniteUuid fileId, Collection<GridGgfsFileAffinityRange> fragmentRanges) {
         this.fileId = fileId;
-        this.id = id;
-        this.blocks = blocks;
+        this.fragmentRanges = fragmentRanges;
     }
 
     /**
-     * @return File id.
+     * @return File ID.
      */
     public IgniteUuid fileId() {
         return fileId;
     }
 
     /**
-     * @return Batch id.
+     * @return Fragment ranges.
      */
-    public long id() {
-        return id;
+    public Collection<GridGgfsFileAffinityRange> fragmentRanges() {
+        return fragmentRanges;
     }
 
-    /**
-     * @return Map of blocks to put in cache.
-     */
-    public Map<GridGgfsBlockKey, byte[]> blocks() {
-        return blocks;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsFragmentizerRequest.class, this);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsBlocksMessage _clone = new GridGgfsBlocksMessage();
+        IgfsFragmentizerRequest _clone = new IgfsFragmentizerRequest();
 
         clone0(_clone);
 
@@ -97,11 +92,10 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridGgfsBlocksMessage _clone = (GridGgfsBlocksMessage)_msg;
+        IgfsFragmentizerRequest _clone = (IgfsFragmentizerRequest)_msg;
 
         _clone.fileId = fileId;
-        _clone.id = id;
-        _clone.blocks = blocks;
+        _clone.fragmentRanges = fragmentRanges;
     }
 
     /** {@inheritDoc} */
@@ -121,19 +115,13 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                if (!writer.writeMap("blocks", blocks, GridGgfsBlockKey.class, byte[].class))
-                    return false;
-
-                state++;
-
-            case 1:
                 if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
                 state++;
 
-            case 2:
-                if (!writer.writeLong("id", id))
+            case 1:
+                if (!writer.writeCollection("fragmentRanges", fragmentRanges, GridGgfsFileAffinityRange.class))
                     return false;
 
                 state++;
@@ -153,14 +141,6 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 1:
                 fileId = reader.readIgniteUuid("fileId");
 
                 if (!reader.isLastRead())
@@ -168,8 +148,8 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                 state++;
 
-            case 2:
-                id = reader.readLong("id");
+            case 1:
+                fragmentRanges = reader.readCollection("fragmentRanges", GridGgfsFileAffinityRange.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,6 +163,6 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 66;
+        return 69;
     }
 }

@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * GGFS response for status request.
  */
-public class GridGgfsStatus implements Externalizable {
+public class IgfsStatus implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class GridGgfsStatus implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsStatus() {
+    public IgfsStatus() {
         // No-op.
     }
 
@@ -43,7 +43,7 @@ public class GridGgfsStatus implements Externalizable {
      * @param spaceUsed Used space in GGFS.
      * @param spaceTotal Total space available in GGFS.
      */
-    public GridGgfsStatus(long spaceUsed, long spaceTotal) {
+    public IgfsStatus(long spaceUsed, long spaceTotal) {
         this.spaceUsed = spaceUsed;
         this.spaceTotal = spaceTotal;
     }

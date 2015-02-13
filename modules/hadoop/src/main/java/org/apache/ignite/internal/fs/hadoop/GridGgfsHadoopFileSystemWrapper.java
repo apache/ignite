@@ -257,7 +257,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
                     new GridGgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
                     properties(status));
 
-                res.add(new IgniteFsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
+                res.add(new IgfsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
             }
 
             return res;

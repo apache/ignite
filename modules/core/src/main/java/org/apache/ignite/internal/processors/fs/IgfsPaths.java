@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Description of path modes.
  */
-public class GridGgfsPaths implements Externalizable {
+public class IgfsPaths implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class GridGgfsPaths implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsPaths() {
+    public IgfsPaths() {
         // No-op.
     }
 
@@ -55,7 +55,7 @@ public class GridGgfsPaths implements Externalizable {
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath,
+    public IgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath,
         IgniteFsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;

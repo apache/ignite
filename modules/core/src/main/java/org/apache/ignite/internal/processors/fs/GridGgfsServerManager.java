@@ -39,7 +39,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     private static final long REBIND_INTERVAL = 3000;
 
     /** Collection of servers to maintain. */
-    private Collection<GridGgfsServer> srvrs;
+    private Collection<IgfsServer> srvrs;
 
     /** Server port binders. */
     private BindWorker bindWorker;
@@ -88,7 +88,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
-        GridGgfsServer ipcSrv = new GridGgfsServer(ggfsCtx, endpointCfg, mgmt);
+        IgfsServer ipcSrv = new IgfsServer(ggfsCtx, endpointCfg, mgmt);
 
         try {
             ipcSrv.start();
@@ -115,8 +115,8 @@ public class GridGgfsServerManager extends GridGgfsManager {
      * @return Collection of active endpoints.
      */
     public Collection<IpcServerEndpoint> endpoints() {
-        return F.viewReadOnly(srvrs, new C1<GridGgfsServer, IpcServerEndpoint>() {
-            @Override public IpcServerEndpoint apply(GridGgfsServer e) {
+        return F.viewReadOnly(srvrs, new C1<IgfsServer, IpcServerEndpoint>() {
+            @Override public IpcServerEndpoint apply(IgfsServer e) {
                 return e.getIpcServerEndpoint();
             }
         });
@@ -125,7 +125,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (!F.isEmpty(srvrs)) {
-            for (GridGgfsServer srv : srvrs)
+            for (IgfsServer srv : srvrs)
                 srv.onKernalStart();
         }
 
@@ -144,7 +144,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
         }
 
         if (!F.isEmpty(srvrs)) {
-            for (GridGgfsServer srv : srvrs)
+            for (IgfsServer srv : srvrs)
                 srv.stop(cancel);
         }
     }
@@ -186,7 +186,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
                 while (it.hasNext()) {
                     IgniteBiTuple<Map<String, String>, Boolean> cfg = it.next();
 
-                    GridGgfsServer ipcSrv = new GridGgfsServer(ggfsCtx, cfg.get1(), cfg.get2());
+                    IgfsServer ipcSrv = new IgfsServer(ggfsCtx, cfg.get1(), cfg.get2());
 
                     try {
                         ipcSrv.start();

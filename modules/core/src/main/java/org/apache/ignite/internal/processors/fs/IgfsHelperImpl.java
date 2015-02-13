@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.*;
 /**
  * GGFS utils processor.
  */
-public class IgniteFsHelperImpl implements IgniteFsHelper {
+public class IgfsHelperImpl implements IgfsHelper {
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         CacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();

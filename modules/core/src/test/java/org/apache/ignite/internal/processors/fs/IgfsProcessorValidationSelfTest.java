@@ -34,12 +34,12 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
- * Tests for node validation logic in {@link IgniteFsProcessor}.
+ * Tests for node validation logic in {@link IgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link IgniteFsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.configuration.IgniteFsConfiguration[])}.
+ * {@link IgfsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.configuration.IgniteFsConfiguration[])}.
  * <p>
- * Tests starting with "testRemote" are checking {@link IgniteFsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
+ * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
 public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */

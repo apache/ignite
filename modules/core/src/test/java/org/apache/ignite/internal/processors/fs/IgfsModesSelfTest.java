@@ -492,7 +492,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         IgniteFsPath path = new IgniteFsPath(pathStr);
 
-        GridGgfsModeResolver rslvr = ggfs.modeResolver();
+        IgfsModeResolver rslvr = ggfs.modeResolver();
 
         IgniteFsMode mode = rslvr.resolveMode(path);
 

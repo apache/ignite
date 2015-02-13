@@ -30,11 +30,11 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
  */
 public class IgfsModeResolverSelfTest extends TestCase {
     /** */
-    private GridGgfsModeResolver resolver;
+    private IgfsModeResolver resolver;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        resolver = new GridGgfsModeResolver(DUAL_SYNC, Arrays.asList(
+        resolver = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
             new T2<>(new IgniteFsPath("/a/b/"), PRIMARY),
             new T2<>(new IgniteFsPath("/a/b/c/d"), PROXY)));
     }

@@ -17,46 +17,34 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
- * Fragmentizer request. Sent from coordinator to other GGFS nodes when colocated part of file
- * should be fragmented.
+ * Fragmentizer response.
  */
-public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
+public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File id. */
+    /** File ID. */
     private IgniteUuid fileId;
 
-    /** Ranges to fragment. */
-    @GridToStringInclude
-    @GridDirectCollection(GridGgfsFileAffinityRange.class)
-    private Collection<GridGgfsFileAffinityRange> fragmentRanges;
-
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required for {@link Externalizable}.
      */
-    public GridGgfsFragmentizerRequest() {
+    public IgfsFragmentizerResponse() {
         // No-op.
     }
 
     /**
-     * @param fileId File id to fragment.
-     * @param fragmentRanges Ranges to fragment.
+     * @param fileId File ID.
      */
-    public GridGgfsFragmentizerRequest(IgniteUuid fileId, Collection<GridGgfsFileAffinityRange> fragmentRanges) {
+    public IgfsFragmentizerResponse(IgniteUuid fileId) {
         this.fileId = fileId;
-        this.fragmentRanges = fragmentRanges;
     }
 
     /**
@@ -66,22 +54,10 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
         return fileId;
     }
 
-    /**
-     * @return Fragment ranges.
-     */
-    public Collection<GridGgfsFileAffinityRange> fragmentRanges() {
-        return fragmentRanges;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridGgfsFragmentizerRequest.class, this);
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsFragmentizerRequest _clone = new GridGgfsFragmentizerRequest();
+        IgfsFragmentizerResponse _clone = new IgfsFragmentizerResponse();
 
         clone0(_clone);
 
@@ -92,10 +68,9 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridGgfsFragmentizerRequest _clone = (GridGgfsFragmentizerRequest)_msg;
+        IgfsFragmentizerResponse _clone = (IgfsFragmentizerResponse)_msg;
 
         _clone.fileId = fileId;
-        _clone.fragmentRanges = fragmentRanges;
     }
 
     /** {@inheritDoc} */
@@ -116,12 +91,6 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
         switch (state) {
             case 0:
                 if (!writer.writeIgniteUuid("fileId", fileId))
-                    return false;
-
-                state++;
-
-            case 1:
-                if (!writer.writeCollection("fragmentRanges", fragmentRanges, GridGgfsFileAffinityRange.class))
                     return false;
 
                 state++;
@@ -148,14 +117,6 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
                 state++;
 
-            case 1:
-                fragmentRanges = reader.readCollection("fragmentRanges", GridGgfsFileAffinityRange.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
         }
 
         return true;
@@ -163,6 +124,6 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 69;
+        return 70;
     }
 }

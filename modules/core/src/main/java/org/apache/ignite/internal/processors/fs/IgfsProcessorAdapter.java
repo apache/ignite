@@ -31,13 +31,13 @@ import java.util.*;
 /**
  * Ignite file system processor adapter.
  */
-public abstract class IgniteFsProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    protected IgniteFsProcessorAdapter(GridKernalContext ctx) {
+    protected IgfsProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

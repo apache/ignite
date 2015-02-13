@@ -112,7 +112,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private URI secondaryUri;
 
     /** Mode resolver. */
-    private GridGgfsModeResolver modeRslvr;
+    private IgfsModeResolver modeRslvr;
 
     /** Secondary file system instance. */
     private AbstractFileSystem secondaryFs;
@@ -245,7 +245,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             grpBlockSize = handshake.blockSize();
 
-            GridGgfsPaths paths = handshake.secondaryPaths();
+            IgfsPaths paths = handshake.secondaryPaths();
 
             Boolean logEnabled = parameter(cfg, PARAM_GGFS_LOG_ENABLED, uriAuthority, false);
 
@@ -261,7 +261,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             else
                 clientLog = GridGgfsLogger.disabledLogger();
 
-            modeRslvr = new GridGgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 
@@ -377,7 +377,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
     /** {@inheritDoc} */
     @Override public FsStatus getFsStatus() throws IOException {
-        GridGgfsStatus status = rmtClient.fsStatus();
+        IgfsStatus status = rmtClient.fsStatus();
 
         return new FsStatus(status.spaceTotal(), status.spaceUsed(), status.spaceTotal() - status.spaceUsed());
     }

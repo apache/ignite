@@ -23,7 +23,7 @@ import java.util.concurrent.locks.*;
 /**
  * GGFS file worker for DUAL modes.
  */
-public class GridGgfsFileWorker extends GridGgfsThread {
+public class IgfsFileWorker extends IgfsThread {
     /** Time during which thread remains alive since it's last batch is finished. */
     private static final long THREAD_REUSE_WAIT_TIME = 5000;
 
@@ -47,7 +47,7 @@ public class GridGgfsFileWorker extends GridGgfsThread {
      *
      * @param name Worker name.
      */
-    GridGgfsFileWorker(String name) {
+    IgfsFileWorker(String name) {
         super(name);
     }
 

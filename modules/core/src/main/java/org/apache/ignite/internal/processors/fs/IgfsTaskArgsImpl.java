@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * GGFS task arguments implementation.
  */
-public class IgniteFsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable {
+public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class IgniteFsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externaliz
     /**
      * {@link Externalizable} support.
      */
-    public IgniteFsTaskArgsImpl() {
+    public IgfsTaskArgsImpl() {
         // No-op.
     }
 
@@ -66,8 +66,8 @@ public class IgniteFsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externaliz
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public IgniteFsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
-                                boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
+    public IgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
+        boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
         this.recRslvr = recRslvr;
@@ -108,7 +108,7 @@ public class IgniteFsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externaliz
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsTaskArgsImpl.class, this);
+        return S.toString(IgfsTaskArgsImpl.class, this);
     }
 
     /** {@inheritDoc} */

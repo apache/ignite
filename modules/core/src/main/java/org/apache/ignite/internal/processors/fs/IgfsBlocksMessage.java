@@ -17,64 +17,76 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
- * Basic sync message.
+ * GGFS write blocks message.
  */
-public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
+public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Coordinator node order. */
-    private long order;
+    /** File id. */
+    private IgniteUuid fileId;
 
-    /** Response flag. */
-    private boolean res;
+    /** Batch id */
+    private long id;
+
+    /** Blocks to store. */
+    @GridDirectMap(keyType = GridGgfsBlockKey.class, valueType = byte[].class)
+    private Map<GridGgfsBlockKey, byte[]> blocks;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link Externalizable}
      */
-    public GridGgfsSyncMessage() {
+    public IgfsBlocksMessage() {
         // No-op.
     }
 
     /**
-     * @param order Node order.
-     * @param res Response flag.
+     * Constructor.
+     *
+     * @param fileId File ID.
+     * @param id Message id.
+     * @param blocks Blocks to put in cache.
      */
-    public GridGgfsSyncMessage(long order, boolean res) {
-        this.order = order;
-        this.res = res;
+    public IgfsBlocksMessage(IgniteUuid fileId, long id, Map<GridGgfsBlockKey, byte[]> blocks) {
+        this.fileId = fileId;
+        this.id = id;
+        this.blocks = blocks;
     }
 
     /**
-     * @return Coordinator node order.
+     * @return File id.
      */
-    public long order() {
-        return order;
+    public IgniteUuid fileId() {
+        return fileId;
     }
 
     /**
-     * @return {@code True} if response message.
+     * @return Batch id.
      */
-    public boolean response() {
-        return res;
+    public long id() {
+        return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridGgfsSyncMessage.class, this);
+    /**
+     * @return Map of blocks to put in cache.
+     */
+    public Map<GridGgfsBlockKey, byte[]> blocks() {
+        return blocks;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsSyncMessage _clone = new GridGgfsSyncMessage();
+        IgfsBlocksMessage _clone = new IgfsBlocksMessage();
 
         clone0(_clone);
 
@@ -85,10 +97,11 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridGgfsSyncMessage _clone = (GridGgfsSyncMessage)_msg;
+        IgfsBlocksMessage _clone = (IgfsBlocksMessage)_msg;
 
-        _clone.order = order;
-        _clone.res = res;
+        _clone.fileId = fileId;
+        _clone.id = id;
+        _clone.blocks = blocks;
     }
 
     /** {@inheritDoc} */
@@ -108,13 +121,19 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                if (!writer.writeLong("order", order))
+                if (!writer.writeMap("blocks", blocks, GridGgfsBlockKey.class, byte[].class))
                     return false;
 
                 state++;
 
             case 1:
-                if (!writer.writeBoolean("res", res))
+                if (!writer.writeIgniteUuid("fileId", fileId))
+                    return false;
+
+                state++;
+
+            case 2:
+                if (!writer.writeLong("id", id))
                     return false;
 
                 state++;
@@ -134,7 +153,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                order = reader.readLong("order");
+                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -142,7 +161,15 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
                 state++;
 
             case 1:
-                res = reader.readBoolean("res");
+                fileId = reader.readIgniteUuid("fileId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 2:
+                id = reader.readLong("id");
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,6 +183,6 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 71;
+        return 66;
     }
 }

@@ -31,13 +31,13 @@ import java.util.*;
 /**
  * Nop Ignite file system processor implementation.
  */
-public class IgniteFsNoopProcessor extends IgniteFsProcessorAdapter {
+public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    public IgniteFsNoopProcessor(GridKernalContext ctx) {
+    public IgfsNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

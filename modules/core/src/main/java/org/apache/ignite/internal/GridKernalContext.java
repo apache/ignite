@@ -261,14 +261,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return File system processor.
      */
-    public IgniteFsProcessorAdapter ggfs();
+    public IgfsProcessorAdapter ggfs();
 
     /**
      * Gets GGFS utils processor.
      *
      * @return GGFS utils processor.
      */
-    public IgniteFsHelper ggfsHelper();
+    public IgfsHelper ggfsHelper();
 
     /**
      * Gets stream processor.

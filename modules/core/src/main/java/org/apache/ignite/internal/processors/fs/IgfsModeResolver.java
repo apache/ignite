@@ -27,7 +27,7 @@ import java.util.*;
 /**
  *
  */
-public class GridGgfsModeResolver {
+public class IgfsModeResolver {
     /** Maximum size of map with cached path modes. */
     private static final int MAX_PATH_CACHE = 1000;
 
@@ -47,7 +47,7 @@ public class GridGgfsModeResolver {
      * @param dfltMode Default GGFS mode.
      * @param modes List of configured modes.
      */
-    public GridGgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath, IgniteFsMode>> modes) {
+    public IgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath, IgniteFsMode>> modes) {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;

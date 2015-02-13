@@ -17,47 +17,64 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
 
 /**
- * Fragmentizer response.
+ * Basic sync message.
  */
-public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
+public class IgfsSyncMessage extends IgfsCommunicationMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File ID. */
-    private IgniteUuid fileId;
+    /** Coordinator node order. */
+    private long order;
+
+    /** Response flag. */
+    private boolean res;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsFragmentizerResponse() {
+    public IgfsSyncMessage() {
         // No-op.
     }
 
     /**
-     * @param fileId File ID.
+     * @param order Node order.
+     * @param res Response flag.
      */
-    public GridGgfsFragmentizerResponse(IgniteUuid fileId) {
-        this.fileId = fileId;
+    public IgfsSyncMessage(long order, boolean res) {
+        this.order = order;
+        this.res = res;
     }
 
     /**
-     * @return File ID.
+     * @return Coordinator node order.
      */
-    public IgniteUuid fileId() {
-        return fileId;
+    public long order() {
+        return order;
+    }
+
+    /**
+     * @return {@code True} if response message.
+     */
+    public boolean response() {
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsSyncMessage.class, this);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsFragmentizerResponse _clone = new GridGgfsFragmentizerResponse();
+        IgfsSyncMessage _clone = new IgfsSyncMessage();
 
         clone0(_clone);
 
@@ -68,9 +85,10 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridGgfsFragmentizerResponse _clone = (GridGgfsFragmentizerResponse)_msg;
+        IgfsSyncMessage _clone = (IgfsSyncMessage)_msg;
 
-        _clone.fileId = fileId;
+        _clone.order = order;
+        _clone.res = res;
     }
 
     /** {@inheritDoc} */
@@ -90,7 +108,13 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                if (!writer.writeIgniteUuid("fileId", fileId))
+                if (!writer.writeLong("order", order))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeBoolean("res", res))
                     return false;
 
                 state++;
@@ -110,7 +134,15 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                fileId = reader.readIgniteUuid("fileId");
+                order = reader.readLong("order");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                res = reader.readBoolean("res");
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,6 +156,6 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 70;
+        return 71;
     }
 }

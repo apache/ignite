@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
- * Tests for {@link GridGgfsServer} that checks all IPC endpoint registration types
+ * Tests for {@link IgfsServer} that checks all IPC endpoint registration types
  * permitted for Linux and Mac OS.
  */
 public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest

@@ -223,7 +223,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @throws IgniteCheckedException If failed.
      */
     private GridGgfsMessage processStatusRequest() throws IgniteCheckedException {
-        GridGgfsStatus status = ggfs.globalSpace();
+        IgfsStatus status = ggfs.globalSpace();
 
         GridGgfsControlResponse res = new GridGgfsControlResponse();
 

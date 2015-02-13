@@ -149,7 +149,7 @@ public interface GridGgfsHadoop {
      * @return Status response.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsStatus fsStatus() throws IgniteCheckedException, IOException;
+    public IgfsStatus fsStatus() throws IgniteCheckedException, IOException;
 
     /**
      * Command to open file for reading.

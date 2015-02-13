@@ -62,7 +62,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
-    private final GridGgfsPaths secondaryPaths;
+    private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
     private GridGgfsMetaManager meta;
@@ -86,7 +86,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private IgniteLogger log;
 
     /** Mode resolver. */
-    private final GridGgfsModeResolver modeRslvr;
+    private final IgfsModeResolver modeRslvr;
 
     /** Connection to the secondary file system. */
     private IgniteFsFileSystem secondaryFs;
@@ -95,7 +95,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<IgniteFsPath, GridGgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<IgniteFsPath, IgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
 
     /** Delete futures. */
     private final ConcurrentHashMap8<IgniteUuid, GridFutureAdapter<Object>> delFuts = new ConcurrentHashMap8<>();
@@ -188,9 +188,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
             }
         }
 
-        modeRslvr = new GridGgfsModeResolver(dfltMode, modes);
+        modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        secondaryPaths = new GridGgfsPaths(secondaryFs == null ? null : secondaryFs.properties(), dfltMode,
+        secondaryPaths = new IgfsPaths(secondaryFs == null ? null : secondaryFs.properties(), dfltMode,
             modeRslvr.modesOrdered());
 
         // Check whether GGFS LRU eviction policy is set on data cache.
@@ -231,11 +231,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
         boolean interrupted = Thread.interrupted();
 
         // Force all workers to finish their batches.
-        for (GridGgfsFileWorker w : workerMap.values())
+        for (IgfsFileWorker w : workerMap.values())
             w.cancel();
 
         // Wait for all writers to finish their execution.
-        for (GridGgfsFileWorker w : workerMap.values()) {
+        for (IgfsFileWorker w : workerMap.values()) {
             try {
                 w.join();
             }
@@ -273,7 +273,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
 
                 while (true) {
-                    GridGgfsFileWorker worker = workerMap.get(path);
+                    IgfsFileWorker worker = workerMap.get(path);
 
                     if (worker != null) {
                         if (worker.addBatch(batch)) // Added batch to active worker.
@@ -282,7 +282,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                             workerMap.remove(path, worker); // Worker is stopping. Remove it from map.
                     }
                     else {
-                        worker = new GridGgfsFileWorker("ggfs-file-worker-" + path) {
+                        worker = new IgfsFileWorker("ggfs-file-worker-" + path) {
                             @Override protected void onFinish() {
                                 workerMap.remove(path, this);
                             }
@@ -330,7 +330,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     void await(IgniteFsPath... paths) {
         assert paths != null;
 
-        for (Map.Entry<IgniteFsPath, GridGgfsFileWorker> workerEntry : workerMap.entrySet()) {
+        for (Map.Entry<IgniteFsPath, IgfsFileWorker> workerEntry : workerMap.entrySet()) {
             IgniteFsPath workerPath = workerEntry.getKey();
 
             boolean await = false;
@@ -366,7 +366,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /**
      * @return Mode resolver.
      */
-    GridGgfsModeResolver modeResolver() {
+    IgfsModeResolver modeResolver() {
         return modeRslvr;
     }
 
@@ -381,7 +381,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsPaths proxyPaths() {
+    @Override public IgfsPaths proxyPaths() {
         return secondaryPaths;
     }
 
@@ -397,13 +397,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
+    @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 IgniteBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
                     new GgfsGlobalSpaceTask(name()), null);
 
-                return new GridGgfsStatus(space.get1(), space.get2());
+                return new IgfsStatus(space.get1(), space.get2());
             }
             finally {
                 busyLock.leaveBusy();
@@ -528,7 +528,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (info == null)
                     return null;
 
-                return new IgniteFsFileImpl(path, info, data.groupBlockSize());
+                return new IgfsFileImpl(path, info, data.groupBlockSize());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -597,7 +597,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (info == null)
                         return null;
 
-                    return new IgniteFsFileImpl(path, info, data.groupBlockSize());
+                    return new IgfsFileImpl(path, info, data.groupBlockSize());
                 }
 
                 List<IgniteUuid> fileIds = meta.fileIds(path);
@@ -615,7 +615,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (evts.isRecordable(EVT_GGFS_META_UPDATED))
                         evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
 
-                    return new IgniteFsFileImpl(path, info, data.groupBlockSize());
+                    return new IgfsFileImpl(path, info, data.groupBlockSize());
                 }
                 else
                     return null;
@@ -1018,7 +1018,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         GridGgfsFileInfo fsInfo = new GridGgfsFileInfo(cfg.getBlockSize(), child.length(),
                             evictExclude(path, false), child.properties());
 
-                        files.add(new IgniteFsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
+                        files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
                 }
 
@@ -1031,14 +1031,14 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     if (info != null) {
                         if (info.isFile())
                             // If this is a file, return its description.
-                            return Collections.<IgniteFsFile>singleton(new IgniteFsFileImpl(path, info,
+                            return Collections.<IgniteFsFile>singleton(new IgfsFileImpl(path, info,
                                 data.groupBlockSize()));
 
                         // Perform the listing.
                         for (Map.Entry<String, GridGgfsListingEntry> e : info.listing().entrySet()) {
                             IgniteFsPath p = new IgniteFsPath(path, e.getKey());
 
-                            files.add(new IgniteFsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
                         }
                     }
                 }
@@ -1102,7 +1102,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-                    GridGgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
+                    IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
                     GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
@@ -1202,7 +1202,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     await(path);
 
-                    GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
+                    IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
                         props, overwrite, bufSize, (short)replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
@@ -1314,7 +1314,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     await(path);
 
-                    GridGgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize);
+                    IgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize);
 
                     batch = newBatch(path, desc.out());
 
@@ -1496,7 +1496,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     }
                 }
 
-                return new IgniteFsMetricsAdapter(
+                return new IgfsMetricsAdapter(
                     ggfsCtx.data().spaceSize(),
                     ggfsCtx.data().maxSpaceSize(),
                     secondarySpaceSize,
@@ -1802,7 +1802,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     <T, R> IgniteInternalFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
-        return ggfsCtx.kernalContext().task().execute(task, new IgniteFsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
+        return ggfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -1837,7 +1837,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<IgniteFsTask<T, R>>)taskCls,
-            new IgniteFsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
+            new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
@@ -1979,7 +1979,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /**
      * GGFS output stream extension that fires events.
      */
-    private class GgfsEventAwareOutputStream extends IgniteFsOutputStreamImpl {
+    private class GgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
         /** Close guard. */
         private final AtomicBoolean closeGuard = new AtomicBoolean(false);
 
@@ -2132,12 +2132,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private class FormatMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (msg instanceof GridGgfsDeleteMessage) {
+            if (msg instanceof IgfsDeleteMessage) {
                 ClusterNode node = ggfsCtx.kernalContext().discovery().node(nodeId);
 
                 if (node != null) {
                     if (sameGgfs((GridGgfsAttributes[])node.attribute(ATTR_GGFS))) {
-                        GridGgfsDeleteMessage msg0 = (GridGgfsDeleteMessage)msg;
+                        IgfsDeleteMessage msg0 = (IgfsDeleteMessage)msg;
 
                         try {
                             msg0.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);

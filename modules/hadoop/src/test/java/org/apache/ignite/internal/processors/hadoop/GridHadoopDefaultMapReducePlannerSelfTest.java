@@ -686,7 +686,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsPaths proxyPaths() {
+        @Override public IgfsPaths proxyPaths() {
             return null;
         }
 
@@ -706,7 +706,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
+        @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
             return null;
         }
 

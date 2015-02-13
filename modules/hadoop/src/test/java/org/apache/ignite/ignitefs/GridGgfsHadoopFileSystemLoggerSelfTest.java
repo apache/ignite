@@ -228,7 +228,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTe
      * @return GGFS file instance.
      */
     private IgniteFsFile file(String path) {
-        return new IgniteFsFileImpl(new IgniteFsPath(path), new GridGgfsFileInfo(), 64 * 1024 * 1024);
+        return new IgfsFileImpl(new IgniteFsPath(path), new GridGgfsFileInfo(), 64 * 1024 * 1024);
     }
 
     /**

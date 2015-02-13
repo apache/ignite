@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 /**
  * Fully operational Ignite file system processor.
  */
-public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
+public class IgfsProcessor extends IgfsProcessorAdapter {
     /** Null GGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
@@ -64,7 +64,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public IgniteFsProcessor(GridKernalContext ctx) {
+    public IgfsProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

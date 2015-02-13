@@ -148,7 +148,7 @@ public class GridGgfsContext {
      * @param plc Policy.
      * @throws IgniteCheckedException In case of error.
      */
-    public void send(UUID nodeId, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
+    public void send(UUID nodeId, Object topic, IgfsCommunicationMessage msg, GridIoPolicy plc)
         throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
@@ -163,7 +163,7 @@ public class GridGgfsContext {
      * @param plc Policy.
      * @throws IgniteCheckedException In case of error.
      */
-    public void send(ClusterNode node, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
+    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, GridIoPolicy plc)
         throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(node.id()))
             msg.prepareMarshal(kernalContext().config().getMarshaller());

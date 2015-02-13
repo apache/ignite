@@ -32,7 +32,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
     private String ggfsName;
 
     /** SECONDARY paths. */
-    private GridGgfsPaths paths;
+    private IgfsPaths paths;
 
     /** Server block size. */
     private long blockSize;
@@ -53,7 +53,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
      * @param paths Secondary paths.
      * @param blockSize Server default block size.
      */
-    public GridGgfsHandshakeResponse(String ggfsName, GridGgfsPaths paths, long blockSize, Boolean sampling) {
+    public GridGgfsHandshakeResponse(String ggfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
         assert paths != null;
 
         this.ggfsName = ggfsName;
@@ -72,7 +72,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
     /**
      * @return SECONDARY paths configured on server.
      */
-    public GridGgfsPaths secondaryPaths() {
+    public IgfsPaths secondaryPaths() {
         return paths;
     }
 
@@ -110,7 +110,7 @@ public class GridGgfsHandshakeResponse implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ggfsName = U.readString(in);
 
-        paths = new GridGgfsPaths();
+        paths = new IgfsPaths();
 
         paths.readExternal(in);
 

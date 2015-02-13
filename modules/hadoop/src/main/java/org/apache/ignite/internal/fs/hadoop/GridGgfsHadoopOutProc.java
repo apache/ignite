@@ -49,7 +49,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
         GridGgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
 
     /** Expected result is {@code GridGgfsStatus} */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, GridGgfsStatus> STATUS_RES =
+    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgfsStatus> STATUS_RES =
         createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
@@ -274,7 +274,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus fsStatus() throws IgniteCheckedException {
+    @Override public IgfsStatus fsStatus() throws IgniteCheckedException {
         return io.send(new GridGgfsStatusRequest()).chain(STATUS_RES).get();
     }
 

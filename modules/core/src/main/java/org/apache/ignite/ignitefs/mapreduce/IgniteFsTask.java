@@ -89,7 +89,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
         assert args != null;
 
         IgniteFs fs = ignite.fileSystem(args.ggfsName());
-        IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal) ignite).context().ggfs();
+        IgfsProcessorAdapter ggfsProc = ((IgniteKernal) ignite).context().ggfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
 

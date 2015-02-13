@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.*;
 /**
  * No-op utils processor adapter.
  */
-public class IgniteFsNoopHelper implements IgniteFsHelper {
+public class IgfsNoopHelper implements IgfsHelper {
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         // No-op.

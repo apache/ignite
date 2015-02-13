@@ -2438,10 +2438,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgniteFsPath, GridGgfsFileWorker> workerMap =
-            (Map<IgniteFsPath, GridGgfsFileWorker>)workerMapFld.get(ggfs);
+        Map<IgniteFsPath, IgfsFileWorker> workerMap =
+            (Map<IgniteFsPath, IgfsFileWorker>)workerMapFld.get(ggfs);
 
-        for (Map.Entry<IgniteFsPath, GridGgfsFileWorker> entry : workerMap.entrySet()) {
+        for (Map.Entry<IgniteFsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
 
             U.join(entry.getValue());

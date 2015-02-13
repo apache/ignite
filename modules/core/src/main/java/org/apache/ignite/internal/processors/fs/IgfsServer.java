@@ -38,7 +38,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
 /**
  * GGFS server. Handles requests passed from GGFS clients.
  */
-public class GridGgfsServer {
+public class IgfsServer {
     /** GGFS context. */
     private final GridGgfsContext ggfsCtx;
 
@@ -72,7 +72,7 @@ public class GridGgfsServer {
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public GridGgfsServer(GridGgfsContext ggfsCtx, Map<String,String> endpointCfg, boolean mgmt) {
+    public IgfsServer(GridGgfsContext ggfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
         assert ggfsCtx != null;
         assert endpointCfg != null;
 
@@ -80,7 +80,7 @@ public class GridGgfsServer {
         this.ggfsCtx = ggfsCtx;
         this.mgmt = mgmt;
 
-        log = ggfsCtx.kernalContext().log(GridGgfsServer.class);
+        log = ggfsCtx.kernalContext().log(IgfsServer.class);
 
         marsh = new GridGgfsMarshaller();
     }

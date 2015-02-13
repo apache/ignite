@@ -26,7 +26,7 @@ import java.io.*;
 /**
  * Internal key used to track if sampling enabled or disabled for particular GGFS instance.
  */
-class GridGgfsSamplingKey implements GridCacheInternal, Externalizable {
+class IgfsSamplingKey implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,14 +38,14 @@ class GridGgfsSamplingKey implements GridCacheInternal, Externalizable {
      *
      * @param name - GGFS name.
      */
-    GridGgfsSamplingKey(String name) {
+    IgfsSamplingKey(String name) {
         this.name = name;
     }
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridGgfsSamplingKey() {
+    public IgfsSamplingKey() {
         // No-op.
     }
 
@@ -63,7 +63,7 @@ class GridGgfsSamplingKey implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return this == obj || (obj instanceof GridGgfsSamplingKey && F.eq(name, ((GridGgfsSamplingKey)obj).name));
+        return this == obj || (obj instanceof IgfsSamplingKey && F.eq(name, ((IgfsSamplingKey)obj).name));
     }
 
     /** {@inheritDoc} */
@@ -78,6 +78,6 @@ class GridGgfsSamplingKey implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsSamplingKey.class, this);
+        return S.toString(IgfsSamplingKey.class, this);
     }
 }

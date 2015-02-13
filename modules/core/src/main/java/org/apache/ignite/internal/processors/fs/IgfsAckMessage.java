@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -29,16 +28,19 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * Indicates that entry scheduled for delete was actually deleted.
+ * Block write request acknowledgement message.
  */
-public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
+public class IgfsAckMessage extends IgfsCommunicationMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Deleted entry ID. */
-    private IgniteUuid id;
+    /** File id. */
+    private IgniteUuid fileId;
 
-    /** Optional error. */
+    /** Request ID to ack. */
+    private long id;
+
+    /** Write exception. */
     @GridDirectTransient
     private IgniteCheckedException err;
 
@@ -46,45 +48,39 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     private byte[] errBytes;
 
     /**
-     * {@link Externalizable} support.
+     * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsDeleteMessage() {
+    public IgfsAckMessage() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param id Deleted entry ID.
-     */
-    public GridGgfsDeleteMessage(IgniteUuid id) {
-        assert id != null;
-
-        this.id = id;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param id Entry ID.
+     * @param fileId File ID.
+     * @param id Request ID.
      * @param err Error.
      */
-    public GridGgfsDeleteMessage(IgniteUuid id, IgniteCheckedException err) {
-        assert err != null;
-
+    public IgfsAckMessage(IgniteUuid fileId, long id, @Nullable IgniteCheckedException err) {
+        this.fileId = fileId;
         this.id = id;
         this.err = err;
     }
 
     /**
-     * @return Deleted entry ID.
+     * @return File ID.
      */
-    public IgniteUuid id() {
+    public IgniteUuid fileId() {
+        return fileId;
+    }
+
+    /**
+     * @return Batch ID.
+     */
+    public long id() {
         return id;
     }
 
     /**
-     * @return Error.
+     * @return Error occurred when writing this batch, if any.
      */
     public IgniteCheckedException error() {
         return err;
@@ -109,7 +105,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridGgfsDeleteMessage _clone = new GridGgfsDeleteMessage();
+        IgfsAckMessage _clone = new IgfsAckMessage();
 
         clone0(_clone);
 
@@ -120,8 +116,9 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridGgfsDeleteMessage _clone = (GridGgfsDeleteMessage)_msg;
+        IgfsAckMessage _clone = (IgfsAckMessage)_msg;
 
+        _clone.fileId = fileId;
         _clone.id = id;
         _clone.err = err;
         _clone.errBytes = errBytes;
@@ -150,7 +147,13 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
                 state++;
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeIgniteUuid("fileId", fileId))
+                    return false;
+
+                state++;
+
+            case 2:
+                if (!writer.writeLong("id", id))
                     return false;
 
                 state++;
@@ -178,7 +181,15 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
                 state++;
 
             case 1:
-                id = reader.readIgniteUuid("id");
+                fileId = reader.readIgniteUuid("fileId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 2:
+                id = reader.readLong("id");
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,11 +203,6 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 67;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridGgfsDeleteMessage.class, this);
+        return 64;
     }
 }

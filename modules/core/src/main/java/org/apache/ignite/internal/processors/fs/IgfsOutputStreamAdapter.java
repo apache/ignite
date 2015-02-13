@@ -29,7 +29,7 @@ import java.nio.*;
  * Output stream to store data into grid cache with separate blocks.
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
+abstract class IgfsOutputStreamAdapter extends IgniteFsOutputStream {
     /** Path to file. */
     protected final IgniteFsPath path;
 
@@ -55,7 +55,7 @@ abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
      * @param path Path to stored file.
      * @param bufSize The size of the buffer to be used.
      */
-    IgniteFsOutputStreamAdapter(IgniteFsPath path, int bufSize) {
+    IgfsOutputStreamAdapter(IgniteFsPath path, int bufSize) {
         assert path != null;
         assert bufSize > 0;
 
@@ -258,6 +258,6 @@ abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsOutputStreamAdapter.class, this);
+        return S.toString(IgfsOutputStreamAdapter.class, this);
     }
 }

@@ -17,33 +17,43 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
 
 /**
- * GGFS utility processor adapter.
+ * Descriptor of an input stream opened to the secondary file system.
  */
-public interface IgniteFsHelper {
-    /**
-     * Pre-process cache configuration.
-     *
-     * @param cfg Cache configuration.
-     */
-    public abstract void preProcessCacheConfiguration(CacheConfiguration cfg);
+public class IgfsSecondaryInputStreamDescriptor {
+    /** File info in the primary file system. */
+    private final GridGgfsFileInfo info;
+
+    /** Secondary file system input stream wrapper. */
+    private final IgniteFsReader secReader;
 
     /**
-     * Validate cache configuration for GGFS.
+     * Constructor.
      *
-     * @param cfg Cache configuration.
-     * @throws IgniteCheckedException If validation failed.
+     * @param info File info in the primary file system.
+     * @param secReader Secondary file system reader.
      */
-    public abstract void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException;
+    IgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, IgniteFsReader secReader) {
+        assert info != null;
+        assert secReader != null;
+
+        this.info = info;
+        this.secReader = secReader;
+    }
 
     /**
-     * Check whether object is of type {@code GridGgfsBlockKey}
-     *
-     * @param key Key.
-     * @return {@code True} if GGFS block key.
+     * @return File info in the primary file system.
      */
-    public abstract boolean isGgfsBlockKey(Object key);
+    GridGgfsFileInfo info() {
+        return info;
+    }
+
+    /**
+     * @return Secondary file system reader.
+     */
+    IgniteFsReader reader() {
+        return secReader;
+    }
 }

@@ -22,11 +22,11 @@ import org.apache.ignite.internal.util.typedef.*;
 /**
  * GGFS ad-hoc thread.
  */
-public abstract class GridGgfsThread extends Thread {
+public abstract class IgfsThread extends Thread {
     /**
      * Creates {@code GGFS} add-hoc thread.
      */
-    protected GridGgfsThread() {
+    protected IgfsThread() {
         super("ggfs-worker");
     }
 
@@ -35,7 +35,7 @@ public abstract class GridGgfsThread extends Thread {
      *
      * @param name Thread name.
      */
-    protected GridGgfsThread(String name) {
+    protected IgfsThread(String name) {
         super(name);
     }
 

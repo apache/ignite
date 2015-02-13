@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 /**
  * GGFS worker for removal from the trash directory.
  */
-public class GridGgfsDeleteWorker extends GridGgfsThread {
+public class IgfsDeleteWorker extends IgfsThread {
     /** Awake frequency, */
     private static final long FREQUENCY = 1000;
 
@@ -81,7 +81,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      *
      * @param ggfsCtx GGFS context.
      */
-    GridGgfsDeleteWorker(GridGgfsContext ggfsCtx) {
+    IgfsDeleteWorker(GridGgfsContext ggfsCtx) {
         super("ggfs-delete-worker%" + ggfsCtx.ggfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
 
         this.ggfsCtx = ggfsCtx;
@@ -98,7 +98,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
         assert meta != null;
         assert data != null;
 
-        log = ggfsCtx.kernalContext().log(GridGgfsDeleteWorker.class);
+        log = ggfsCtx.kernalContext().log(IgfsDeleteWorker.class);
     }
 
     /** {@inheritDoc} */
@@ -173,7 +173,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                                 log.debug("Sending delete confirmation message [name=" + entry.getKey() +
                                     ", fileId=" + fileId + ']');
 
-                            sendDeleteMessage(new GridGgfsDeleteMessage(fileId));
+                            sendDeleteMessage(new IgfsDeleteMessage(fileId));
                         }
                     }
                     else
@@ -185,7 +185,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete entry from the trash directory: " + entry.getKey(), e);
 
-                    sendDeleteMessage(new GridGgfsDeleteMessage(fileId, e));
+                    sendDeleteMessage(new IgfsDeleteMessage(fileId, e));
                 }
             }
         }
@@ -327,7 +327,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      *
      * @param msg Message to send.
      */
-    private void sendDeleteMessage(GridGgfsDeleteMessage msg) {
+    private void sendDeleteMessage(IgfsDeleteMessage msg) {
         assert msg != null;
 
         Collection<ClusterNode> nodes = meta.metaCacheNodes();

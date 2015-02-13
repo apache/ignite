@@ -35,7 +35,7 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 /**
  * Output stream to store data into grid cache with separate blocks.
  */
-class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
+class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Maximum number of blocks in buffer. */
     private static final int MAX_BLOCKS_CNT = 16;
 
@@ -98,8 +98,8 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws IgniteCheckedException If stream creation failed.
      */
-    IgniteFsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
-                             int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
+    IgfsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
+        int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
         throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
@@ -432,7 +432,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsOutputStreamImpl.class, this);
+        return S.toString(IgfsOutputStreamImpl.class, this);
     }
 
     /**

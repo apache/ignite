@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
- * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
+ * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
  */
 public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */

@@ -231,7 +231,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Status response.
      */
-    public void status(GridGgfsStatus res) {
+    public void status(IgfsStatus res) {
         resType = RES_TYPE_STATUS;
 
         this.res = res;
@@ -503,7 +503,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    IgniteFsFileImpl file = new IgniteFsFileImpl();
+                    IgfsFileImpl file = new IgfsFileImpl();
 
                     file.readExternal(in);
 
@@ -545,7 +545,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsStatus msg = new GridGgfsStatus();
+                    IgfsStatus msg = new IgfsStatus();
 
                     msg.readExternal(in);
 
@@ -564,7 +564,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                     files = new ArrayList<>(size);
 
                     for (int i = 0; i < size; i++) {
-                        IgniteFsFileImpl file = new IgniteFsFileImpl();
+                        IgfsFileImpl file = new IgfsFileImpl();
 
                         file.readExternal(in);
 

@@ -214,11 +214,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgniteFsProcessorAdapter ggfsProc;
+    private IgfsProcessorAdapter ggfsProc;
 
     /** */
     @GridToStringInclude
-    private IgniteFsHelper ggfsHelper;
+    private IgfsHelper ggfsHelper;
 
     /** */
     @GridToStringInclude
@@ -451,8 +451,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof IgniteFsProcessorAdapter)
-            ggfsProc = (IgniteFsProcessorAdapter)comp;
+        else if (comp instanceof IgfsProcessorAdapter)
+            ggfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridStreamProcessor)
@@ -481,8 +481,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     public void addHelper(Object helper) {
         assert helper != null;
 
-        if (helper instanceof IgniteFsHelper)
-            ggfsHelper = (IgniteFsHelper)helper;
+        if (helper instanceof IgfsHelper)
+            ggfsHelper = (IgfsHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -676,12 +676,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsProcessorAdapter ggfs() {
+    @Override public IgfsProcessorAdapter ggfs() {
         return ggfsProc;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsHelper ggfsHelper() {
+    @Override public IgfsHelper ggfsHelper() {
         return ggfsHelper;
     }
 

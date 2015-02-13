@@ -123,7 +123,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect GGFS. */
     private void ggfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().ggfs();
+            IgfsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().ggfs();
 
             for (IgniteFs ggfs : ggfsProc.ggfss()) {
                 long start0 = U.currentTimeMillis();

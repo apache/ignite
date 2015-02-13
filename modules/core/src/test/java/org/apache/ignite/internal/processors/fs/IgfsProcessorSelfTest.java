@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for {@link IgniteFsProcessor}.
+ * Tests for {@link IgfsProcessor}.
  */
 public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
@@ -206,7 +206,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         try (IgniteFsOutputStream os = ggfs.create(path, false)) {
             assert os != null;
 
-            IgniteFsFileImpl info = (IgniteFsFileImpl)ggfs.info(path);
+            IgfsFileImpl info = (IgfsFileImpl)ggfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
                 GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());

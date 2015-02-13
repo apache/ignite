@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * File or directory information.
  */
-public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
+public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,7 +59,7 @@ public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public IgniteFsFileImpl() {
+    public IgfsFileImpl() {
         // No-op.
     }
 
@@ -68,7 +68,7 @@ public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
      *
      * @param path Path.
      */
-    public IgniteFsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
+    public IgfsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -98,7 +98,7 @@ public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
      * @param path Path.
      * @param entry Listing entry.
      */
-    public IgniteFsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
+    public IgfsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
         A.notNull(path, "path");
         A.notNull(entry, "entry");
 
@@ -233,13 +233,13 @@ public final class IgniteFsFileImpl implements IgniteFsFile, Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IgniteFsFileImpl that = (IgniteFsFileImpl)o;
+        IgfsFileImpl that = (IgfsFileImpl)o;
 
         return path.equals(that.path);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsFileImpl.class, this);
+        return S.toString(IgfsFileImpl.class, this);
     }
 }

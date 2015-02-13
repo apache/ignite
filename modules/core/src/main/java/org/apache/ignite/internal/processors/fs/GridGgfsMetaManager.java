@@ -69,7 +69,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private IgniteLogger log;
 
     /** Delete worker. */
-    private volatile GridGgfsDeleteWorker delWorker;
+    private volatile IgfsDeleteWorker delWorker;
 
     /** Events manager. */
     private GridEventStorageManager evts;
@@ -108,7 +108,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         evts = ggfsCtx.kernalContext().event();
 
-        sampling = new GridGgfsSamplingKey(cfg.getName());
+        sampling = new IgfsSamplingKey(cfg.getName());
 
         assert metaCache != null;
 
@@ -122,14 +122,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         locNode = ggfsCtx.kernalContext().discovery().localNode();
 
         // Start background delete worker.
-        delWorker = new GridGgfsDeleteWorker(ggfsCtx);
+        delWorker = new IgfsDeleteWorker(ggfsCtx);
 
         delWorker.start();
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        GridGgfsDeleteWorker delWorker0 = delWorker;
+        IgfsDeleteWorker delWorker0 = delWorker;
 
         if (delWorker0 != null)
             delWorker0.cancel();
@@ -1588,7 +1588,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If file creation failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs,
+    public IgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs,
         final IgniteFsPath path,
         final boolean simpleCreate,
         @Nullable final Map<String, String> props,
@@ -1607,12 +1607,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 // Events to fire (can be done outside of a transaction).
                 final Deque<IgniteFsEvent> pendingEvts = new LinkedList<>();
 
-                SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
-                    new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
+                SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
                         /** Output stream to the secondary file system. */
                         private OutputStream out;
 
-                        @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgniteFsPath,
+                        @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgniteFsPath,
                             GridGgfsFileInfo> infos) throws Exception {
                             assert !infos.isEmpty();
 
@@ -1711,10 +1711,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
                                 pendingEvts.add(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
 
-                            return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
+                            return new IgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
                         }
 
-                        @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
+                        @Override public IgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
                             throws IgniteCheckedException {
                             U.closeQuiet(out);
 
@@ -1752,19 +1752,19 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If output stream open for append has failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor appendDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
+    public IgfsSecondaryOutputStreamDescriptor appendDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final int bufSize) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
                 assert path != null;
 
-                SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
-                    new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
+                SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
                         /** Output stream to the secondary file system. */
                         private OutputStream out;
 
-                        @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgniteFsPath,
+                        @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgniteFsPath,
                             GridGgfsFileInfo> infos) throws Exception {
                             GridGgfsFileInfo info = infos.get(path);
 
@@ -1798,10 +1798,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                             metaCache.putx(info.id(), info);
 
-                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
+                            return new IgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
                         }
 
-                        @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
+                        @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
                             U.closeQuiet(out);
 
@@ -1832,7 +1832,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Input stream descriptor.
      * @throws IgniteCheckedException If input stream open has failed.
      */
-    public GridGgfsSecondaryInputStreamDescriptor openDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
+    public IgfsSecondaryInputStreamDescriptor openDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final int bufSize)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
@@ -1847,13 +1847,13 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     if (!info.isFile())
                         throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
 
-                    return new GridGgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
+                    return new IgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
                 }
 
                 // If failed, try synchronize.
-                SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor> task =
-                    new SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor>() {
-                        @Override public GridGgfsSecondaryInputStreamDescriptor onSuccess(
+                SynchronizationTask<IgfsSecondaryInputStreamDescriptor> task =
+                    new SynchronizationTask<IgfsSecondaryInputStreamDescriptor>() {
+                        @Override public IgfsSecondaryInputStreamDescriptor onSuccess(
                             Map<IgniteFsPath, GridGgfsFileInfo> infos) throws Exception {
                             GridGgfsFileInfo info = infos.get(path);
 
@@ -1862,10 +1862,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (!info.isFile())
                                 throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
 
-                            return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
+                            return new IgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
                         }
 
-                        @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
+                        @Override public IgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
                             U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);

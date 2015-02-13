@@ -163,13 +163,13 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTe
      */
     @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().ggfs();
+        IgfsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().ggfs();
 
         Map<String, GridGgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
 
         GridGgfsServerManager srvMgr = F.first(ggfsMap.values()).server();
 
-        Collection<GridGgfsServer> srvrs = getField(srvMgr, "srvrs");
+        Collection<IgfsServer> srvrs = getField(srvMgr, "srvrs");
 
         GridGgfsServerHandler ggfsHnd = getField(F.first(srvrs), "hnd");
 

@@ -129,7 +129,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     private URI secondaryUri;
 
     /** GGFS mode resolver. */
-    private GridGgfsModeResolver modeRslvr;
+    private IgfsModeResolver modeRslvr;
 
     /** Secondary file system instance. */
     private FileSystem secondaryFs;
@@ -249,7 +249,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             ggfsGrpBlockSize = handshake.blockSize();
 
-            GridGgfsPaths paths = handshake.secondaryPaths();
+            IgfsPaths paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_GGFS_LOG_ENABLED, uriAuthority, false);
@@ -266,7 +266,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             else
                 clientLog = GridGgfsLogger.disabledLogger();
 
-            modeRslvr = new GridGgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 

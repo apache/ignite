@@ -404,7 +404,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 64:
-                msg = new GridGgfsAckMessage();
+                msg = new IgfsAckMessage();
 
                 break;
 
@@ -414,12 +414,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 66:
-                msg = new GridGgfsBlocksMessage();
+                msg = new IgfsBlocksMessage();
 
                 break;
 
             case 67:
-                msg = new GridGgfsDeleteMessage();
+                msg = new IgfsDeleteMessage();
 
                 break;
 
@@ -429,17 +429,17 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 69:
-                msg = new GridGgfsFragmentizerRequest();
+                msg = new IgfsFragmentizerRequest();
 
                 break;
 
             case 70:
-                msg = new GridGgfsFragmentizerResponse();
+                msg = new IgfsFragmentizerResponse();
 
                 break;
 
             case 71:
-                msg = new GridGgfsSyncMessage();
+                msg = new IgfsSyncMessage();
 
                 break;
 

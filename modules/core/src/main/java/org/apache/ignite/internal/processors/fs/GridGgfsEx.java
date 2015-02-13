@@ -44,7 +44,7 @@ public interface GridGgfsEx extends IgniteFs {
      *
      * @return Handshake message.
      */
-    public GridGgfsPaths proxyPaths();
+    public IgfsPaths proxyPaths();
 
     /** {@inheritDoc} */
     @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
@@ -63,7 +63,7 @@ public interface GridGgfsEx extends IgniteFs {
      *      second is available space on all nodes.
      * @throws IgniteCheckedException If task execution failed.
      */
-    public GridGgfsStatus globalSpace() throws IgniteCheckedException;
+    public IgfsStatus globalSpace() throws IgniteCheckedException;
 
     /**
      * Enables, disables or clears sampling flag.

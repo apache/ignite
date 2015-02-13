@@ -179,10 +179,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         ggfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof GridGgfsBlocksMessage)
-                    processBlocksMessage(nodeId, (GridGgfsBlocksMessage)msg);
-                else if (msg instanceof GridGgfsAckMessage)
-                    processAckMessage(nodeId, (GridGgfsAckMessage)msg);
+                if (msg instanceof IgfsBlocksMessage)
+                    processBlocksMessage(nodeId, (IgfsBlocksMessage)msg);
+                else if (msg instanceof IgfsAckMessage)
+                    processAckMessage(nodeId, (IgfsAckMessage)msg);
             }
         });
 
@@ -1028,7 +1028,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         final UUID nodeId = node.id();
 
         if (!node.isLocal()) {
-            final GridGgfsBlocksMessage msg = new GridGgfsBlocksMessage(fileId, batchId, blocks);
+            final IgfsBlocksMessage msg = new IgfsBlocksMessage(fileId, batchId, blocks);
 
             callGgfsLocalSafe(new GridPlainCallable<Object>() {
                 @Override @Nullable public Object call() throws Exception {
@@ -1276,7 +1276,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param nodeId Node ID.
      * @param blocksMsg Write request message.
      */
-    private void processBlocksMessage(final UUID nodeId, final GridGgfsBlocksMessage blocksMsg) {
+    private void processBlocksMessage(final UUID nodeId, final IgfsBlocksMessage blocksMsg) {
         storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 IgniteCheckedException err = null;
@@ -1290,7 +1290,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                 try {
                     // Send reply back to node.
-                    ggfsCtx.send(nodeId, topic, new GridGgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
+                    ggfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
@@ -1305,7 +1305,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param nodeId Node ID.
      * @param ackMsg Write acknowledgement message.
      */
-    private void processAckMessage(UUID nodeId, GridGgfsAckMessage ackMsg) {
+    private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
             ackMsg.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
         }

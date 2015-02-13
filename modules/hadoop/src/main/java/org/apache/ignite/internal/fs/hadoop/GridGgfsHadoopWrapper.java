@@ -197,9 +197,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus fsStatus() throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsStatus>() {
-            @Override public GridGgfsStatus apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+    @Override public IgfsStatus fsStatus() throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgfsStatus>() {
+            @Override public IgfsStatus apply(GridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.fsStatus();
             }

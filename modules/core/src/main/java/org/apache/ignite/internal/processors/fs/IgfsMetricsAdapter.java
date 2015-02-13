@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * GGFS metrics adapter.
  */
-public class IgniteFsMetricsAdapter implements IgniteFsMetrics, Externalizable {
+public class IgfsMetricsAdapter implements IgniteFsMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -77,7 +77,7 @@ public class IgniteFsMetricsAdapter implements IgniteFsMetrics, Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public IgniteFsMetricsAdapter() {
+    public IgfsMetricsAdapter() {
         // No-op.
     }
 
@@ -98,10 +98,10 @@ public class IgniteFsMetricsAdapter implements IgniteFsMetrics, Externalizable {
      * @param bytesWritten Total bytes written.
      * @param bytesWriteTime Total bytes write time.
      */
-    public IgniteFsMetricsAdapter(long locSpaceSize, long maxSpaceSize, long secondarySpaceSize, int dirsCnt,
-                                  int filesCnt, int filesOpenedForRead, int filesOpenedForWrite, long blocksReadTotal, long blocksReadRmt,
-                                  long blocksWrittenTotal, long blocksWrittenRmt, long bytesRead, long bytesReadTime, long bytesWritten,
-                                  long bytesWriteTime) {
+    public IgfsMetricsAdapter(long locSpaceSize, long maxSpaceSize, long secondarySpaceSize, int dirsCnt,
+        int filesCnt, int filesOpenedForRead, int filesOpenedForWrite, long blocksReadTotal, long blocksReadRmt,
+        long blocksWrittenTotal, long blocksWrittenRmt, long bytesRead, long bytesReadTime, long bytesWritten,
+        long bytesWriteTime) {
         this.locSpaceSize = locSpaceSize;
         this.maxSpaceSize = maxSpaceSize;
         this.secondarySpaceSize = secondarySpaceSize;
@@ -234,6 +234,6 @@ public class IgniteFsMetricsAdapter implements IgniteFsMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsMetricsAdapter.class, this);
+        return S.toString(IgfsMetricsAdapter.class, this);
     }
 }

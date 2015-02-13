@@ -17,30 +17,45 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.lang.*;
+
+import java.io.*;
 
 /**
- * Descriptor of an input stream opened to the secondary file system.
+ * Descriptor of an output stream opened to the secondary file system.
  */
-public class GridGgfsSecondaryInputStreamDescriptor {
+public class IgfsSecondaryOutputStreamDescriptor {
+    /** Parent ID in the primary file system. */
+    private final IgniteUuid parentId;
+
     /** File info in the primary file system. */
     private final GridGgfsFileInfo info;
 
-    /** Secondary file system input stream wrapper. */
-    private final IgniteFsReader secReader;
+    /** Output stream to the secondary file system. */
+    private final OutputStream out;
 
     /**
      * Constructor.
      *
+     * @param parentId Parent ID in the primary file system.
      * @param info File info in the primary file system.
-     * @param secReader Secondary file system reader.
+     * @param out Output stream to the secondary file system.
      */
-    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, IgniteFsReader secReader) {
+    IgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, GridGgfsFileInfo info, OutputStream out) {
+        assert parentId != null;
         assert info != null;
-        assert secReader != null;
+        assert out != null;
 
+        this.parentId = parentId;
         this.info = info;
-        this.secReader = secReader;
+        this.out = out;
+    }
+
+    /**
+     * @return Parent ID in the primary file system.
+     */
+    IgniteUuid parentId() {
+        return parentId;
     }
 
     /**
@@ -51,9 +66,9 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     }
 
     /**
-     * @return Secondary file system reader.
+     * @return Output stream to the secondary file system.
      */
-    IgniteFsReader reader() {
-        return secReader;
+    OutputStream out() {
+        return out;
     }
 }

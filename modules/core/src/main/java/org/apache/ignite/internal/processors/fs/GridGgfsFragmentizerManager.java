@@ -161,7 +161,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
      */
-    private void sendWithRetries(UUID nodeId, GridGgfsCommunicationMessage msg) throws IgniteCheckedException {
+    private void sendWithRetries(UUID nodeId, IgfsCommunicationMessage msg) throws IgniteCheckedException {
         for (int i = 0; i < MESSAGE_SEND_RETRY_COUNT; i++) {
             try {
                 ggfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
@@ -240,7 +240,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("fallthrough")
-    private void processFragmentizerRequest(GridGgfsFragmentizerRequest req) throws IgniteCheckedException {
+    private void processFragmentizerRequest(IgfsFragmentizerRequest req) throws IgniteCheckedException {
         req.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
 
         Collection<GridGgfsFileAffinityRange> ranges = req.fragmentRanges();
@@ -484,8 +484,8 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (msg instanceof GridGgfsFragmentizerResponse) {
-                GridGgfsFragmentizerResponse res = (GridGgfsFragmentizerResponse)msg;
+            if (msg instanceof IgfsFragmentizerResponse) {
+                IgfsFragmentizerResponse res = (IgfsFragmentizerResponse)msg;
 
                 IgniteUuid fileId = res.fileId();
 
@@ -507,8 +507,8 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     log.warning("Received fragmentizer response for file ID which was not requested (will ignore) " +
                         "[nodeId=" + nodeId + ", fileId=" + res.fileId() + ']');
             }
-            else if (msg instanceof GridGgfsSyncMessage) {
-                GridGgfsSyncMessage sync = (GridGgfsSyncMessage)msg;
+            else if (msg instanceof IgfsSyncMessage) {
+                IgfsSyncMessage sync = (IgfsSyncMessage)msg;
 
                 if (sync.response() && sync.order() == ggfsCtx.kernalContext().grid().localNode().order()) {
                     if (log.isDebugEnabled())
@@ -564,7 +564,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
             while (!startSync0.isEmpty()) {
                 for (UUID nodeId : startSync0) {
-                    GridGgfsSyncMessage syncReq = new GridGgfsSyncMessage(locNode.order(), false);
+                    IgfsSyncMessage syncReq = new IgfsSyncMessage(locNode.order(), false);
 
                     try {
                         if (log.isDebugEnabled())
@@ -644,7 +644,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             for (Map.Entry<UUID, Collection<GridGgfsFileAffinityRange>> entry : grpMap.entrySet()) {
                 UUID nodeId = entry.getKey();
 
-                GridGgfsFragmentizerRequest msg = new GridGgfsFragmentizerRequest(fileInfo.id(), entry.getValue());
+                IgfsFragmentizerRequest msg = new IgfsFragmentizerRequest(fileInfo.id(), entry.getValue());
 
                 try {
                     if (log.isDebugEnabled())
@@ -692,7 +692,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      */
     private class FragmentizerWorker extends GridWorker implements GridMessageListener {
         /** Requests for this worker. */
-        private BlockingQueue<IgniteBiTuple<UUID, GridGgfsCommunicationMessage>> msgs = new LinkedBlockingDeque<>();
+        private BlockingQueue<IgniteBiTuple<UUID, IgfsCommunicationMessage>> msgs = new LinkedBlockingDeque<>();
 
         /**
          * Constructor.
@@ -703,13 +703,13 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (msg instanceof GridGgfsFragmentizerRequest ||
-                msg instanceof GridGgfsSyncMessage) {
+            if (msg instanceof IgfsFragmentizerRequest ||
+                msg instanceof IgfsSyncMessage) {
                 if (log.isDebugEnabled())
                     log.debug("Received fragmentizer request from remote node [nodeId=" + nodeId +
                         ", msg=" + msg + ']');
 
-                IgniteBiTuple<UUID, GridGgfsCommunicationMessage> tup = F.t(nodeId, (GridGgfsCommunicationMessage)msg);
+                IgniteBiTuple<UUID, IgfsCommunicationMessage> tup = F.t(nodeId, (IgfsCommunicationMessage)msg);
 
                 try {
                     if (!msgs.offer(tup, MSG_OFFER_TIMEOUT, TimeUnit.MILLISECONDS)) {
@@ -729,12 +729,12 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                IgniteBiTuple<UUID, GridGgfsCommunicationMessage> req = msgs.take();
+                IgniteBiTuple<UUID, IgfsCommunicationMessage> req = msgs.take();
 
                 UUID nodeId = req.get1();
 
-                if (req.get2() instanceof GridGgfsFragmentizerRequest) {
-                    GridGgfsFragmentizerRequest fragmentizerReq = (GridGgfsFragmentizerRequest)req.get2();
+                if (req.get2() instanceof IgfsFragmentizerRequest) {
+                    IgfsFragmentizerRequest fragmentizerReq = (IgfsFragmentizerRequest)req.get2();
 
                     if (!rw.tryReadLock()) {
                         if (log.isDebugEnabled())
@@ -759,7 +759,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                                     ", req=" + req + ']', e);
                         }
                         finally {
-                            sendResponse(nodeId, new GridGgfsFragmentizerResponse(fragmentizerReq.fileId()));
+                            sendResponse(nodeId, new IgfsFragmentizerResponse(fragmentizerReq.fileId()));
                         }
                     }
                     finally {
@@ -767,12 +767,12 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     }
                 }
                 else {
-                    assert req.get2() instanceof GridGgfsSyncMessage;
+                    assert req.get2() instanceof IgfsSyncMessage;
 
-                    GridGgfsSyncMessage syncMsg = (GridGgfsSyncMessage)req.get2();
+                    IgfsSyncMessage syncMsg = (IgfsSyncMessage)req.get2();
 
                     if (!syncMsg.response()) {
-                        GridGgfsSyncMessage res = new GridGgfsSyncMessage(syncMsg.order(), true);
+                        IgfsSyncMessage res = new IgfsSyncMessage(syncMsg.order(), true);
 
                         if (log.isDebugEnabled())
                             log.debug("Sending fragmentizer sync response to remote node [nodeId=" + nodeId +
@@ -790,7 +790,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
          * @param nodeId Node ID to send response to.
          * @param msg Message to send.
          */
-        private void sendResponse(UUID nodeId, GridGgfsCommunicationMessage msg) {
+        private void sendResponse(UUID nodeId, IgfsCommunicationMessage msg) {
             try {
                 sendWithRetries(nodeId, msg);
             }
