@@ -117,7 +117,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         public static VisorNodeEventsCollectorTaskArg createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable IgniteUuid taskSessionId) {
             return new VisorNodeEventsCollectorTaskArg(null,
-                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
+                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHORIZATION,
                     EVTS_SECURE_SESSION),
                 timeArg, taskName, taskSessionId);
         }
@@ -319,12 +319,6 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
                         node.id(), addr, node.isDaemon()));
-                }
-                else if (e instanceof AuthenticationEvent) {
-                    AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                        ae.subjectId(), ae.login()));
                 }
                 else if (e instanceof AuthorizationEvent) {
                     AuthorizationEvent ae = (AuthorizationEvent)e;

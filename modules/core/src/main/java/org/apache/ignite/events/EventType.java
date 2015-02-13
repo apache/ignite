@@ -619,34 +619,6 @@ public interface EventType {
      */
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
-
-
-    /**
-     * Built-in event type: authentication succeed.
-     * <p>
-     * Authentication procedure succeed. This event is triggered every time
-     * an authentication procedure finished without exception.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int EVT_AUTHENTICATION_SUCCEEDED = 111;
-
-    /**
-     * Built-in event type: authentication failed.
-     * <p>
-     * Authentication procedure failed. This means that  there was some error event
-     * during authentication procedure and authentication procedure was not successful.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int EVT_AUTHENTICATION_FAILED = 112;
-
     /**
      * Built-in event type: secure session validation succeed.
      * <p>
@@ -1034,23 +1006,11 @@ public interface EventType {
     };
 
     /**
-     * All authentication events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int[] EVTS_AUTHENTICATION = {
-        EVT_AUTHENTICATION_SUCCEEDED,
-        EVT_AUTHENTICATION_FAILED
-    };
-
-    /**
      * All authorization events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see AuthenticationEvent
+     * @see AuthorizationEvent
      */
     public static final int[] EVTS_AUTHORIZATION = {
         EVT_AUTHORIZATION_SUCCEEDED,

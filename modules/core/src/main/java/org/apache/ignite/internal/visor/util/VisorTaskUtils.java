@@ -88,7 +88,6 @@ public class VisorTaskUtils {
         EVT_TASK_DEPLOY_FAILED,
 
         EVT_AUTHORIZATION_FAILED,
-        EVT_AUTHENTICATION_FAILED,
 
         EVT_SECURE_SESSION_VALIDATION_FAILED
     };
@@ -424,12 +423,6 @@ public class VisorTaskUtils {
 
                 res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                     ae.subject()));
-            }
-            else if (e instanceof AuthenticationEvent) {
-                AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                    ae.subjectId(), ae.login()));
             }
             else if (e instanceof SecureSessionEvent) {
                 SecureSessionEvent se = (SecureSessionEvent)e;
