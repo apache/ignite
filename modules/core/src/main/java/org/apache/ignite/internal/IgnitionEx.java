@@ -1378,7 +1378,6 @@ public class IgnitionEx {
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
-            myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());

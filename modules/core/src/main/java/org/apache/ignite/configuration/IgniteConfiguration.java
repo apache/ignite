@@ -28,7 +28,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -390,9 +389,6 @@ public class IgniteConfiguration {
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
 
-    /** Security credentials. */
-    private GridSecurityCredentialsProvider securityCred;
-
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
 
@@ -488,8 +484,6 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
-        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2137,24 +2131,6 @@ public class IgniteConfiguration {
      */
     public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
         this.hadoopCfg = hadoopCfg;
-    }
-
-    /**
-     * Gets security credentials.
-     *
-     * @return Security credentials.
-     */
-    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
-        return securityCred;
-    }
-
-    /**
-     * Sets security credentials.
-     *
-     * @param securityCred Security credentials.
-     */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
-        this.securityCred = securityCred;
     }
 
     /**
