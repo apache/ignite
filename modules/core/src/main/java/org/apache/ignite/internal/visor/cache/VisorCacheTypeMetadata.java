@@ -73,6 +73,22 @@ public class VisorCacheTypeMetadata implements Serializable {
     private Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> grps;
 
     /**
+     * @param types Cache types metadata configurations.
+     * @return Data transfer object for cache type metadata configurations.
+     */
+    public static Collection<VisorCacheTypeMetadata> list(Collection<CacheTypeMetadata> types) {
+        if (types == null)
+            return Collections.emptyList();
+
+        final Collection<VisorCacheTypeMetadata> cfgs = new ArrayList<>(types.size());
+
+        for (CacheTypeMetadata type : types)
+            cfgs.add(from(type));
+
+        return cfgs;
+    }
+
+    /**
      * @param m Actual cache type metadata.
      * @return Data transfer object for given cache type metadata.
      */

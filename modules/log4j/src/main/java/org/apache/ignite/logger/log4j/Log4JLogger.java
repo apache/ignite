@@ -64,11 +64,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware,
-    IgniteLog4jFileAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, IgniteLog4jFileAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 

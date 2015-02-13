@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -133,12 +137,33 @@ public class VisorCacheConfiguration implements Serializable {
     /** Write behind config */
     private VisorCacheWriteBehindConfiguration writeBehind;
 
+    /** Collection of type metadata. */
+    private Collection<VisorCacheTypeMetadata> typeMeta;
+
+    /** Check that cache have JDBC store. */
+    private boolean jdbcStore;
+
     /**
+     * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(CacheConfiguration ccfg) {
+    public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
         // TODO gg-9141 Update Visor.
+
+        Collection<CacheTypeMetadata> cacheMetadata = ccfg.getTypeMetadata();
+
+        if (cacheMetadata == null)
+            cacheMetadata = Collections.emptyList();
+
+        Collection<VisorCacheTypeMetadata> typeMeta = new ArrayList<>(cacheMetadata!= null ? cacheMetadata.size() : 0);
+
+        for (CacheTypeMetadata m: cacheMetadata)
+            typeMeta.add(VisorCacheTypeMetadata.from(m));
+
+        GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(ccfg.getName()).context();
+
+        boolean jdbcStore = cctx.store().configuredStore() instanceof CacheAbstractJdbcStore;
 
         VisorCacheConfiguration cfg = new VisorCacheConfiguration();
 
@@ -173,22 +198,25 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.dgcConfiguration(VisorCacheDgcConfiguration.from(ccfg));
         cfg.storeConfiguration(VisorCacheStoreConfiguration.from(ccfg));
         cfg.writeBehind(VisorCacheWriteBehindConfiguration.from(ccfg));
+        cfg.typeMeta(VisorCacheTypeMetadata.list(ccfg.getTypeMetadata()));
+        cfg.jdbcStore(jdbcStore);
 
         return cfg;
     }
 
     /**
+     * @param ignite Grid.
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfiguration> list(CacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(Ignite ignite, CacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
         final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
 
         for (CacheConfiguration cache : caches)
-            cfgs.add(from(cache));
+            cfgs.add(from(ignite, cache));
 
         return cfgs;
     }
@@ -659,5 +687,33 @@ public class VisorCacheConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorCacheConfiguration.class, this);
+    }
+
+    /**
+     * @param typeMeta New collection of type metadata.
+     */
+    public void typeMeta(Collection<VisorCacheTypeMetadata> typeMeta) {
+        this.typeMeta = typeMeta;
+    }
+
+    /**
+     * @return Collection of type metadata.
+     */
+    public Collection<VisorCacheTypeMetadata> typeMeta() {
+        return typeMeta;
+    }
+
+    /**
+     * @return Check that cache have JDBC store.
+     */
+    public boolean jdbcStore() {
+        return jdbcStore;
+    }
+
+    /**
+     * @param jdbcStore Check that cache have JDBC store.
+     */
+    public void jdbcStore(boolean jdbcStore) {
+        this.jdbcStore = jdbcStore;
     }
 }
