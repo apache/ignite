@@ -316,7 +316,7 @@ public class IgfsMarshaller {
      * @param path Path to write.
      * @throws IOException If write failed.
      */
-    private void writePath(ObjectOutput out, @Nullable IgniteFsPath path) throws IOException {
+    private void writePath(ObjectOutput out, @Nullable IgfsPath path) throws IOException {
         out.writeBoolean(path != null);
 
         if (path != null)
@@ -324,15 +324,15 @@ public class IgfsMarshaller {
     }
 
     /**
-     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.ignitefs.IgniteFsPath)}
+     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.ignitefs.IgfsPath)}
      * method.
      *
      * @param in Data input.
      * @return Written path or {@code null}.
      */
-    @Nullable private IgniteFsPath readPath(ObjectInput in) throws IOException {
+    @Nullable private IgfsPath readPath(ObjectInput in) throws IOException {
         if(in.readBoolean()) {
-            IgniteFsPath path = new IgniteFsPath();
+            IgfsPath path = new IgfsPath();
 
             path.readExternal(in);
 

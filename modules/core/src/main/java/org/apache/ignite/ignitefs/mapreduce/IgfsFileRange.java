@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public class IgfsFileRange {
     /** File path. */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /** Start position. */
     private long start;
@@ -40,7 +40,7 @@ public class IgfsFileRange {
      * @param start Start position.
      * @param len Length.
      */
-    public IgfsFileRange(IgniteFsPath path, long start, long len) {
+    public IgfsFileRange(IgfsPath path, long start, long len) {
         this.path = path;
         this.start = start;
         this.len = len;
@@ -51,7 +51,7 @@ public class IgfsFileRange {
      *
      * @return File path.
      */
-    public IgniteFsPath path() {
+    public IgfsPath path() {
         return path;
     }
 

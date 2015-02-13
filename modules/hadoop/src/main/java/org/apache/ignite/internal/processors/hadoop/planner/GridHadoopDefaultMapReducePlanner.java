@@ -164,7 +164,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                     Collection<IgniteFsBlockLocation> blocks;
 
                     try {
-                        blocks = ggfs.affinity(new IgniteFsPath(split0.file()), split0.start(), split0.length());
+                        blocks = ggfs.affinity(new IgfsPath(split0.file()), split0.start(), split0.length());
                     }
                     catch (IgniteException e) {
                         throw new IgniteCheckedException(e);

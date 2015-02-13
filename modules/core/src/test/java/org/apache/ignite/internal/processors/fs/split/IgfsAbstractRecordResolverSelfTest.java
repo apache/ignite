@@ -40,7 +40,7 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
  */
 public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     /** File path. */
-    protected static final IgniteFsPath FILE = new IgniteFsPath("/file");
+    protected static final IgfsPath FILE = new IgfsPath("/file");
 
     /** Shared IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -152,7 +152,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @return Input stream.
      * @throws Exception In case of exception.
      */
-    protected IgniteFsInputStream read() throws Exception {
+    protected IgfsInputStream read() throws Exception {
         return ggfs.open(FILE);
     }
 

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.*;
 import java.io.*;
 
 /**
- * Convenient {@link IgfsJob} adapter. It limits data returned from {@link org.apache.ignite.ignitefs.IgniteFsInputStream} to bytes within
+ * Convenient {@link IgfsJob} adapter. It limits data returned from {@link org.apache.ignite.ignitefs.IgfsInputStream} to bytes within
  * the {@link IgfsFileRange} assigned to the job.
  * <p>
  * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into
@@ -32,7 +32,7 @@ import java.io.*;
  */
 public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {
     /** {@inheritDoc} */
-    @Override public final Object execute(IgniteFs ggfs, IgfsFileRange range, IgniteFsInputStream in)
+    @Override public final Object execute(IgniteFs ggfs, IgfsFileRange range, IgfsInputStream in)
         throws IgniteException, IOException {
         in.seek(range.start());
 

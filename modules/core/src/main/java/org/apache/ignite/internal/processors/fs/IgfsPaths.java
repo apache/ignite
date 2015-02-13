@@ -39,7 +39,7 @@ public class IgfsPaths implements Externalizable {
     private IgniteFsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<IgniteFsPath, IgniteFsMode>> pathModes;
+    private List<T2<IgfsPath, IgniteFsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -55,7 +55,7 @@ public class IgfsPaths implements Externalizable {
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath,
+    public IgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgfsPath,
         IgniteFsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;
@@ -79,7 +79,7 @@ public class IgfsPaths implements Externalizable {
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<IgniteFsPath, IgniteFsMode>> pathModes() {
+    @Nullable public List<T2<IgfsPath, IgniteFsMode>> pathModes() {
         return pathModes;
     }
 
@@ -92,7 +92,7 @@ public class IgfsPaths implements Externalizable {
             out.writeBoolean(true);
             out.writeInt(pathModes.size());
 
-            for (T2<IgniteFsPath, IgniteFsMode> pathMode : pathModes) {
+            for (T2<IgfsPath, IgniteFsMode> pathMode : pathModes) {
                 pathMode.getKey().writeExternal(out);
                 U.writeEnum(out, pathMode.getValue());
             }
@@ -112,10 +112,10 @@ public class IgfsPaths implements Externalizable {
             pathModes = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                IgniteFsPath path = new IgniteFsPath();
+                IgfsPath path = new IgfsPath();
                 path.readExternal(in);
 
-                T2<IgniteFsPath, IgniteFsMode> entry = new T2<>(path, IgniteFsMode.fromOrdinal(in.readByte()));
+                T2<IgfsPath, IgniteFsMode> entry = new T2<>(path, IgniteFsMode.fromOrdinal(in.readByte()));
 
                 pathModes.add(entry);
             }

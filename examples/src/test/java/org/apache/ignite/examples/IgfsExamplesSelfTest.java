@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * IgniteFs examples self test.
  */
-public class IgniteFsExamplesSelfTest extends GridAbstractExamplesTest {
+public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     /** IgniteFs config with shared memory IPC. */
     private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
 

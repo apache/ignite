@@ -177,7 +177,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Response.
      */
-    public void response(IgniteFsPath res) {
+    public void response(IgfsPath res) {
         resType = RES_TYPE_GGFS_PATH;
 
         this.res = res;
@@ -186,7 +186,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Path summary response.
      */
-    public void response(IgniteFsPathSummary res) {
+    public void response(IgfsPathSummary res) {
         resType = RES_TYPE_GGFS_PATH_SUMMARY;
 
         this.res = res;
@@ -204,7 +204,7 @@ public class IgfsControlResponse extends IgfsMessage {
     /**
      * @param res Response.
      */
-    public void paths(Collection<IgniteFsPath> res) {
+    public void paths(Collection<IgfsPath> res) {
         resType = RES_TYPE_COL_GGFS_PATH;
 
         this.res = res;
@@ -261,7 +261,7 @@ public class IgfsControlResponse extends IgfsMessage {
         assert errCode != -1;
 
         if (errCode == ERR_FILE_NOT_FOUND)
-            throw new IgniteFsFileNotFoundException(err);
+            throw new IgfsFileNotFoundException(err);
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
             throw new IgniteFsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
@@ -332,7 +332,7 @@ public class IgfsControlResponse extends IgfsMessage {
      */
     @SuppressWarnings("unchecked")
     private int errorCode(IgniteCheckedException e, boolean checkIo) {
-        if (X.hasCause(e, IgniteFsFileNotFoundException.class))
+        if (X.hasCause(e, IgfsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
         else if (e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return ERR_PATH_ALREADY_EXISTS;
@@ -475,7 +475,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    IgniteFsPath path = new IgniteFsPath();
+                    IgfsPath path = new IgfsPath();
 
                     path.readExternal(in);
 
@@ -489,7 +489,7 @@ public class IgfsControlResponse extends IgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    IgniteFsPathSummary sum = new IgniteFsPathSummary();
+                    IgfsPathSummary sum = new IgfsPathSummary();
 
                     sum.readExternal(in);
 
@@ -578,7 +578,7 @@ public class IgfsControlResponse extends IgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_PATH: {
-                Collection<IgniteFsPath> paths = null;
+                Collection<IgfsPath> paths = null;
 
                 int size = in.readInt();
 
@@ -586,7 +586,7 @@ public class IgfsControlResponse extends IgfsMessage {
                     paths = new ArrayList<>(size);
 
                     for (int i = 0; i < size; i++) {
-                        IgniteFsPath path = new IgniteFsPath();
+                        IgfsPath path = new IgfsPath();
 
                         path.readExternal(in);
 

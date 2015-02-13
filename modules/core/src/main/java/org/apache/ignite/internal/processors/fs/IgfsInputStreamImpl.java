@@ -45,13 +45,13 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
     /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final IgniteFsReader secReader;
+    private final IgfsReader secReader;
 
     /** Logger. */
     private IgniteLogger log;
 
     /** Path to file. */
-    protected final IgniteFsPath path;
+    protected final IgfsPath path;
 
     /** File descriptor. */
     private volatile IgfsFileInfo fileInfo;
@@ -109,8 +109,8 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
      * @param secReader Optional secondary file system reader.
      * @param metrics Local GGFS metrics.
      */
-    IgfsInputStreamImpl(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader, IgfsLocalMetrics metrics) {
+    IgfsInputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
+        int seqReadsBeforePrefetch, @Nullable IgfsReader secReader, IgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;
@@ -126,7 +126,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
         meta = ggfsCtx.meta();
         data = ggfsCtx.data();
 
-        log = ggfsCtx.kernalContext().log(IgniteFsInputStream.class);
+        log = ggfsCtx.kernalContext().log(IgfsInputStream.class);
 
         maxLocCacheSize = (prefetchBlocks > 0 ? prefetchBlocks : 1) * 3 / 2;
 
@@ -396,7 +396,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
                     // File was deleted.
                     if (newInfo == null)
-                        throw new IgniteFsFileNotFoundException("Failed to read file block (file was concurrently " +
+                        throw new IgfsFileNotFoundException("Failed to read file block (file was concurrently " +
                                 "deleted) [path=" + path + ", blockIdx=" + blockIdx + ']');
 
                     fileInfo = newInfo;

@@ -221,7 +221,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.mkdirs(new IgniteFsPath("/dir1"));
+        fs.mkdirs(new IgfsPath("/dir1"));
 
         m = fs.metrics();
 
@@ -231,8 +231,8 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.mkdirs(new IgniteFsPath("/dir1/dir2/dir3"));
-        fs.mkdirs(new IgniteFsPath("/dir4"));
+        fs.mkdirs(new IgfsPath("/dir1/dir2/dir3"));
+        fs.mkdirs(new IgfsPath("/dir4"));
 
         m = fs.metrics();
 
@@ -242,9 +242,9 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        IgniteFsOutputStream out1 = fs.create(new IgniteFsPath("/dir1/file1"), false);
-        IgniteFsOutputStream out2 = fs.create(new IgniteFsPath("/dir1/file2"), false);
-        IgniteFsOutputStream out3 = fs.create(new IgniteFsPath("/dir1/dir2/file"), false);
+        IgniteFsOutputStream out1 = fs.create(new IgfsPath("/dir1/file1"), false);
+        IgniteFsOutputStream out2 = fs.create(new IgfsPath("/dir1/file2"), false);
+        IgniteFsOutputStream out3 = fs.create(new IgfsPath("/dir1/dir2/file"), false);
 
         m = fs.metrics();
 
@@ -279,7 +279,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        IgniteFsOutputStream out = fs.append(new IgniteFsPath("/dir1/file1"), false);
+        IgniteFsOutputStream out = fs.append(new IgfsPath("/dir1/file1"), false);
 
         out.write(new byte[20]);
 
@@ -303,8 +303,8 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        IgniteFsInputStream in1 = fs.open(new IgniteFsPath("/dir1/file1"));
-        IgniteFsInputStream in2 = fs.open(new IgniteFsPath("/dir1/file2"));
+        IgfsInputStream in1 = fs.open(new IgfsPath("/dir1/file1"));
+        IgfsInputStream in2 = fs.open(new IgfsPath("/dir1/file2"));
 
         m = fs.metrics();
 
@@ -325,8 +325,8 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.delete(new IgniteFsPath("/dir1/file1"), false);
-        fs.delete(new IgniteFsPath("/dir1/dir2"), true);
+        fs.delete(new IgfsPath("/dir1/file1"), false);
+        fs.delete(new IgfsPath("/dir1/dir2"), true);
 
         m = fs.metrics();
 
@@ -336,7 +336,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.delete(new IgniteFsPath("/"), true);
+        fs.delete(new IgfsPath("/"), true);
 
         m = fs.metrics();
 
@@ -351,12 +351,12 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     public void testMultipleClose() throws Exception {
         IgniteFs fs = ggfsPrimary[0];
 
-        IgniteFsOutputStream out = fs.create(new IgniteFsPath("/file"), false);
+        IgniteFsOutputStream out = fs.create(new IgfsPath("/file"), false);
 
         out.close();
         out.close();
 
-        IgniteFsInputStream in = fs.open(new IgniteFsPath("/file"));
+        IgfsInputStream in = fs.open(new IgfsPath("/file"));
 
         in.close();
         in.close();
@@ -375,9 +375,9 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     public void testBlockMetrics() throws Exception {
         IgfsEx ggfs = (IgfsEx)ggfsPrimary[0];
 
-        IgniteFsPath fileRemote = new IgniteFsPath("/fileRemote");
-        IgniteFsPath file1 = new IgniteFsPath("/file1");
-        IgniteFsPath file2 = new IgniteFsPath("/file2");
+        IgfsPath fileRemote = new IgfsPath("/fileRemote");
+        IgfsPath file1 = new IgfsPath("/file1");
+        IgfsPath file2 = new IgfsPath("/file2");
 
         // Create remote file and write some data to it.
         IgniteFsOutputStream out = ggfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);

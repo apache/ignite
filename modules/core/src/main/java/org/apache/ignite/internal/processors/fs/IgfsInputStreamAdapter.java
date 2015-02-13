@@ -24,7 +24,7 @@ import java.io.*;
 /**
  * Implementation adapter providing necessary methods.
  */
-public abstract class IgfsInputStreamAdapter extends IgniteFsInputStream {
+public abstract class IgfsInputStreamAdapter extends IgfsInputStream {
     /** {@inheritDoc} */
     @Override public long length() {
         return fileInfo().length();

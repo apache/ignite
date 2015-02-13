@@ -24,14 +24,14 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Decorator for regular {@link org.apache.ignite.ignitefs.IgniteFsInputStream} which streams only data within the given range.
+ * Decorator for regular {@link org.apache.ignite.ignitefs.IgfsInputStream} which streams only data within the given range.
  * This stream is used for {@link IgfsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
  * working with {@link IgfsJob} directly.
  */
-public final class IgfsRangeInputStream extends IgniteFsInputStream {
+public final class IgfsRangeInputStream extends IgfsInputStream {
     /** Base input stream. */
-    private final IgniteFsInputStream is;
+    private final IgfsInputStream is;
 
     /** Start position. */
     private final long start;
@@ -50,7 +50,7 @@ public final class IgfsRangeInputStream extends IgniteFsInputStream {
      * @param maxLen Maximum stream length.
      * @throws IOException In case of exception.
      */
-    public IgfsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
+    public IgfsRangeInputStream(IgfsInputStream is, long start, long maxLen) throws IOException {
         if (is == null)
             throw new IllegalArgumentException("Input stream cannot be null.");
 
@@ -85,7 +85,7 @@ public final class IgfsRangeInputStream extends IgniteFsInputStream {
      * @param range File range.
      * @throws IOException In case of exception.
      */
-    public IgfsRangeInputStream(IgniteFsInputStream is, IgfsFileRange range) throws IOException {
+    public IgfsRangeInputStream(IgfsInputStream is, IgfsFileRange range) throws IOException {
         this(is, range.start(), range.length());
     }
 

@@ -186,7 +186,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgfsPath path,
         long start, long len, IgfsRecordResolver recRslv) {
         return new IgfsJobImpl(job, ggfsName, path, start, len, recRslv);
     }

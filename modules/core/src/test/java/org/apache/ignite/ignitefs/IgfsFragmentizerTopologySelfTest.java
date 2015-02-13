@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ignitefs;
 
-import org.apache.ignite.*;
-
 /**
  * Tests coordinator transfer from one node to other.
  */
@@ -31,7 +29,7 @@ public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSe
 
         // Now node 1 should be coordinator.
         try {
-            IgniteFsPath path = new IgniteFsPath("/someFile");
+            IgfsPath path = new IgfsPath("/someFile");
 
             IgniteFs ggfs = grid(1).fileSystem("ggfs");
 

@@ -125,7 +125,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param path Path to await.
      * @throws Exception If failed.
      */
-    protected void awaitFileFragmenting(int gridIdx, IgniteFsPath path) throws Exception {
+    protected void awaitFileFragmenting(int gridIdx, IgfsPath path) throws Exception {
         IgfsEx ggfs = (IgfsEx)grid(gridIdx).fileSystem("ggfs");
 
         IgfsMetaManager meta = ggfs.context().meta();
@@ -133,13 +133,13 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
-            throw new IgniteFsFileNotFoundException("File not found: " + path);
+            throw new IgfsFileNotFoundException("File not found: " + path);
 
         IgfsFileInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)
-                throw new IgniteFsFileNotFoundException("File not found: " + path);
+                throw new IgfsFileNotFoundException("File not found: " + path);
 
             if (fileInfo.fileMap().ranges().isEmpty())
                 return;

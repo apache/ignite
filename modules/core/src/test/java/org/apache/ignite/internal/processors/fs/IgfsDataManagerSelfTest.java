@@ -158,7 +158,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
-            IgniteFsPath path = new IgniteFsPath();
+            IgfsPath path = new IgfsPath();
             IgfsFileInfo info = new IgfsFileInfo(200, null, false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -239,7 +239,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int blockSize = GGFS_BLOCK_SIZE;
 
         for (int i = 0; i < 10; i++) {
-            IgniteFsPath path = new IgniteFsPath();
+            IgfsPath path = new IgfsPath();
             IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -326,7 +326,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int writesCnt = 64;
 
         for (int i = 0; i < 10; i++) {
-            IgniteFsPath path = new IgniteFsPath();
+            IgfsPath path = new IgfsPath();
             IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();

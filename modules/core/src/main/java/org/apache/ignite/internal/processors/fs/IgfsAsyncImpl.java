@@ -57,7 +57,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) {
+        Collection<IgfsPath> paths, @Nullable T arg) {
         try {
             return saveOrGet(ggfs.executeAsync(task, rslvr, paths, arg));
         }
@@ -68,7 +68,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
             return saveOrGet(ggfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
         }
@@ -79,7 +79,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
             return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, arg));
         }
@@ -90,7 +90,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         try {
             return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
@@ -116,18 +116,18 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize,
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
         return ggfs.open(path, bufSize, seqReadsBeforePrefetch);
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) {
+    @Override public IgfsInputStreamAdapter open(IgfsPath path) {
         return ggfs.open(path);
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
         return ggfs.open(path, bufSize);
     }
 
@@ -172,7 +172,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictExclude(IgniteFsPath path, boolean primary) {
+    @Override public boolean evictExclude(IgfsPath path, boolean primary) {
         return ggfs.evictExclude(path, primary);
     }
 
@@ -197,50 +197,50 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPathSummary summary(IgniteFsPath path) {
+    @Override public IgfsPathSummary summary(IgfsPath path) {
         return ggfs.summary(path);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) {
+    @Override public IgniteFsOutputStream create(IgfsPath path, boolean overwrite) {
         return ggfs.create(path, overwrite);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         return ggfs.create(path, bufSize, overwrite, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
         return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) {
+    @Override public IgniteFsOutputStream append(IgfsPath path, boolean create) {
         return ggfs.append(path, create);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
+    @Override public IgniteFsOutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         return ggfs.append(path, bufSize, create, props);
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) {
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
         ggfs.setTimes(path, accessTime, modificationTime);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) {
+    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) {
         return ggfs.affinity(path, start, len);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen) {
+    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
         return ggfs.affinity(path, start, len, maxLen);
     }
 
@@ -255,52 +255,52 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public long size(IgniteFsPath path) {
+    @Override public long size(IgfsPath path) {
         return ggfs.size(path);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) {
+    @Override public boolean exists(IgfsPath path) {
         return ggfs.exists(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
+    @Nullable @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
         return ggfs.update(path, props);
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
+    @Override public void rename(IgfsPath src, IgfsPath dest) {
         ggfs.rename(src, dest);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) {
+    @Override public boolean delete(IgfsPath path, boolean recursive) {
         return ggfs.delete(path, recursive);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) {
+    @Override public void mkdirs(IgfsPath path) {
         ggfs.mkdirs(path);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
+    @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         ggfs.mkdirs(path, props);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) {
+    @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
         return ggfs.listPaths(path);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) {
+    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) {
         return ggfs.listFiles(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile info(IgniteFsPath path) {
+    @Nullable @Override public IgniteFsFile info(IgfsPath path) {
         return ggfs.info(path);
     }
 

@@ -52,7 +52,7 @@ public interface IgfsHadoop {
      * @return Future for info operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public IgniteFsFile info(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to update file properties.
@@ -62,7 +62,7 @@ public interface IgfsHadoop {
      * @return Future for update operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
+    public IgniteFsFile update(IgfsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Sets last access time and last modification time for a file.
@@ -72,7 +72,7 @@ public interface IgfsHadoop {
      * @param modificationTime Last modification time to set.
      * @throws IgniteCheckedException If failed.
      */
-    public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException,
+    public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -83,7 +83,7 @@ public interface IgfsHadoop {
      * @return Future for rename operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException, IOException;
+    public Boolean rename(IgfsPath src, IgfsPath dest) throws IgniteCheckedException, IOException;
 
     /**
      * Command to delete given path.
@@ -93,7 +93,7 @@ public interface IgfsHadoop {
      * @return Future for delete operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException, IOException;
+    public Boolean delete(IgfsPath path, boolean recursive) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get affinity for given path, offset and length.
@@ -104,7 +104,7 @@ public interface IgfsHadoop {
      * @return Future for affinity command.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws IgniteCheckedException,
+    public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -114,7 +114,7 @@ public interface IgfsHadoop {
      * @return Future that will be completed when summary is received.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public IgfsPathSummary contentSummary(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to create directories.
@@ -123,7 +123,7 @@ public interface IgfsHadoop {
      * @return Future for mkdirs operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
+    public Boolean mkdirs(IgfsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get list of files in directory.
@@ -132,7 +132,7 @@ public interface IgfsHadoop {
      * @return Future for listFiles operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public Collection<IgniteFsFile> listFiles(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get directory listing.
@@ -141,7 +141,7 @@ public interface IgfsHadoop {
      * @return Future for listPaths operation.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public Collection<IgfsPath> listPaths(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Performs status request.
@@ -158,7 +158,7 @@ public interface IgfsHadoop {
      * @return Future for open operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public IgfsHadoopStreamDelegate open(IgfsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to open file for reading.
@@ -167,7 +167,7 @@ public interface IgfsHadoop {
      * @return Future for open operation.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws IgniteCheckedException,
+    public IgfsHadoopStreamDelegate open(IgfsPath path, int seqReadsBeforePrefetch) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -181,7 +181,7 @@ public interface IgfsHadoop {
      * @return Stream descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
+    public IgfsHadoopStreamDelegate create(IgfsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
@@ -193,6 +193,6 @@ public interface IgfsHadoop {
      * @return Stream descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
+    public IgfsHadoopStreamDelegate append(IgfsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 }

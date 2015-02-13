@@ -30,7 +30,7 @@ public class IgniteFsConcurrentModificationException extends IgniteFsException {
      *
      * @param path Affected path.
      */
-    public IgniteFsConcurrentModificationException(IgniteFsPath path) {
+    public IgniteFsConcurrentModificationException(IgfsPath path) {
         super("File system entry has been modified concurrently: " + path, null);
     }
 }

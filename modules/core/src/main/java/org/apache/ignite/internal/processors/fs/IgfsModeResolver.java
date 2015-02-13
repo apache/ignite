@@ -35,30 +35,30 @@ public class IgfsModeResolver {
     private final IgniteFsMode dfltMode;
 
     /** Modes for particular paths. Ordered from longest to shortest. */
-    private ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes;
+    private ArrayList<T2<IgfsPath, IgniteFsMode>> modes;
 
     /** Cached modes per path. */
-    private Map<IgniteFsPath, IgniteFsMode> modesCache;
+    private Map<IgfsPath, IgniteFsMode> modesCache;
 
     /** Cached children modes per path. */
-    private Map<IgniteFsPath, Set<IgniteFsMode>> childrenModesCache;
+    private Map<IgfsPath, Set<IgniteFsMode>> childrenModesCache;
 
     /**
      * @param dfltMode Default GGFS mode.
      * @param modes List of configured modes.
      */
-    public IgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath, IgniteFsMode>> modes) {
+    public IgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgfsPath, IgniteFsMode>> modes) {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
 
         if (modes != null) {
-            ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes0 = new ArrayList<>(modes);
+            ArrayList<T2<IgfsPath, IgniteFsMode>> modes0 = new ArrayList<>(modes);
 
             // Sort paths, longest first.
-            Collections.sort(modes0, new Comparator<Map.Entry<IgniteFsPath, IgniteFsMode>>() {
-                @Override public int compare(Map.Entry<IgniteFsPath, IgniteFsMode> o1,
-                    Map.Entry<IgniteFsPath, IgniteFsMode> o2) {
+            Collections.sort(modes0, new Comparator<Map.Entry<IgfsPath, IgniteFsMode>>() {
+                @Override public int compare(Map.Entry<IgfsPath, IgniteFsMode> o1,
+                    Map.Entry<IgfsPath, IgniteFsMode> o2) {
                     return o2.getKey().components().size() - o1.getKey().components().size();
                 }
             });
@@ -76,7 +76,7 @@ public class IgfsModeResolver {
      * @param path GGFS path.
      * @return GGFS mode.
      */
-    public IgniteFsMode resolveMode(IgniteFsPath path) {
+    public IgniteFsMode resolveMode(IgfsPath path) {
         assert path != null;
 
         if (modes == null)
@@ -85,7 +85,7 @@ public class IgfsModeResolver {
             IgniteFsMode mode = modesCache.get(path);
 
             if (mode == null) {
-                for (T2<IgniteFsPath, IgniteFsMode> entry : modes) {
+                for (T2<IgfsPath, IgniteFsMode> entry : modes) {
                     if (startsWith(path, entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
@@ -108,7 +108,7 @@ public class IgfsModeResolver {
      * @param path Path.
      * @return Set of all modes that children paths could have.
      */
-    public Set<IgniteFsMode> resolveChildrenModes(IgniteFsPath path) {
+    public Set<IgniteFsMode> resolveChildrenModes(IgfsPath path) {
         assert path != null;
 
         if (modes == null)
@@ -121,7 +121,7 @@ public class IgfsModeResolver {
 
                 IgniteFsMode pathDefault = dfltMode;
 
-                for (T2<IgniteFsPath, IgniteFsMode> child : modes) {
+                for (T2<IgfsPath, IgniteFsMode> child : modes) {
                     if (startsWith(path, child.getKey())) {
                         pathDefault = child.getValue();
 
@@ -144,7 +144,7 @@ public class IgfsModeResolver {
      * @return Unmodifiable copy of properly ordered modes prefixes
      *  or {@code null} if no modes set.
      */
-    @Nullable public List<T2<IgniteFsPath, IgniteFsMode>> modesOrdered() {
+    @Nullable public List<T2<IgfsPath, IgniteFsMode>> modesOrdered() {
         return modes != null ? Collections.unmodifiableList(modes) : null;
     }
 
@@ -155,7 +155,7 @@ public class IgfsModeResolver {
      * @param prefix Prefix.
      * @return {@code true} if path starts with prefix, {@code false} if not.
      */
-    private static boolean startsWith(IgniteFsPath path, IgniteFsPath prefix) {
+    private static boolean startsWith(IgfsPath path, IgfsPath prefix) {
         List<String> p1Comps = path.components();
         List<String> p2Comps = prefix.components();
 

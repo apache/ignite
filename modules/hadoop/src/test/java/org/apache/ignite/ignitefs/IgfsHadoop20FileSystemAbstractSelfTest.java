@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -1300,7 +1299,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
             IgniteFs igniteFs = grid(0).fileSystem("ggfs");
 
-            IgniteFsPath filePath = new IgniteFsPath("/someFile");
+            IgfsPath filePath = new IgfsPath("/someFile");
 
             IgniteFsFile fileInfo = igniteFs.info(filePath);
 

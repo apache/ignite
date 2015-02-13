@@ -33,7 +33,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Path to this file. */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /** File id. */
     private IgniteUuid fileId;
@@ -68,7 +68,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
      *
      * @param path Path.
      */
-    public IgfsFileImpl(IgniteFsPath path, IgfsFileInfo info, long globalGrpBlockSize) {
+    public IgfsFileImpl(IgfsPath path, IgfsFileInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -98,7 +98,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
      * @param path Path.
      * @param entry Listing entry.
      */
-    public IgfsFileImpl(IgniteFsPath path, IgfsListingEntry entry, long globalGrpSize) {
+    public IgfsFileImpl(IgfsPath path, IgfsListingEntry entry, long globalGrpSize) {
         A.notNull(path, "path");
         A.notNull(entry, "entry");
 
@@ -118,7 +118,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPath path() {
+    @Override public IgfsPath path() {
         return path;
     }
 
@@ -208,7 +208,7 @@ public final class IgfsFileImpl implements IgniteFsFile, Externalizable {
      * @param in Data input.
      */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        path = new IgniteFsPath();
+        path = new IgfsPath();
 
         path.readExternal(in);
 

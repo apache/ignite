@@ -64,10 +64,10 @@ public class IgniteFsMapReduceExample {
                 IgniteFs fs = ignite.fileSystem("ignitefs");
 
                 // Working directory path.
-                IgniteFsPath workDir = new IgniteFsPath("/examples/fs");
+                IgfsPath workDir = new IgfsPath("/examples/fs");
 
                 // Write file to GGFS.
-                IgniteFsPath fsPath = new IgniteFsPath(workDir, file.getName());
+                IgfsPath fsPath = new IgfsPath(workDir, file.getName());
 
                 writeFile(fs, fsPath, file);
 
@@ -94,7 +94,7 @@ public class IgniteFsMapReduceExample {
      * @param file File to write.
      * @throws Exception In case of exception.
      */
-    private static void writeFile(IgniteFs fs, IgniteFsPath fsPath, File file) throws Exception {
+    private static void writeFile(IgniteFs fs, IgfsPath fsPath, File file) throws Exception {
         System.out.println();
         System.out.println("Copying file to IgniteFs: " + file);
 
@@ -128,7 +128,7 @@ public class IgniteFsMapReduceExample {
      */
     private static class GrepTask extends IgfsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
-        @Override public IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+        @Override public IgfsJob createJob(IgfsPath path, IgfsFileRange range,
             IgfsTaskArgs<String> args) {
             return new GrepJob(args.userArgument());
         }

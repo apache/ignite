@@ -28,10 +28,10 @@ import java.util.*;
  */
 public class IgfsPathControlRequest extends IgfsMessage {
     /** Main path. */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /** Second path, rename command. */
-    private IgniteFsPath destPath;
+    private IgfsPath destPath;
 
     /** Boolean flag, meaning depends on command. */
     private boolean flag;
@@ -66,14 +66,14 @@ public class IgfsPathControlRequest extends IgfsMessage {
     /**
      * @param path Path.
      */
-    public void path(IgniteFsPath path) {
+    public void path(IgfsPath path) {
         this.path = path;
     }
 
     /**
      * @param destPath Destination path (rename only).
      */
-    public void destinationPath(IgniteFsPath destPath) {
+    public void destinationPath(IgfsPath destPath) {
         this.destPath = destPath;
     }
 
@@ -150,14 +150,14 @@ public class IgfsPathControlRequest extends IgfsMessage {
     /**
      * @return Path.
      */
-    public IgniteFsPath path() {
+    public IgfsPath path() {
         return path;
     }
 
     /**
      * @return Destination path (rename only).
      */
-    public IgniteFsPath destinationPath() {
+    public IgfsPath destinationPath() {
         return destPath;
     }
 

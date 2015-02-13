@@ -44,7 +44,7 @@ public class IgfsFileWorkerBatch {
     private final BlockingDeque<IgfsFileWorkerTask> queue = new LinkedBlockingDeque<>();
 
     /** Path to the file in the primary file system. */
-    private final IgniteFsPath path;
+    private final IgfsPath path;
 
     /** Output stream to the file. */
     private final OutputStream out;
@@ -61,7 +61,7 @@ public class IgfsFileWorkerBatch {
      * @param path Path to the file in the primary file system.
      * @param out Output stream opened to that file.
      */
-    IgfsFileWorkerBatch(IgniteFsPath path, OutputStream out) {
+    IgfsFileWorkerBatch(IgfsPath path, OutputStream out) {
         assert path != null;
         assert out != null;
 
@@ -191,7 +191,7 @@ public class IgfsFileWorkerBatch {
      *
      * @return Primary file system path.
      */
-    IgniteFsPath path() {
+    IgfsPath path() {
         return path;
     }
 

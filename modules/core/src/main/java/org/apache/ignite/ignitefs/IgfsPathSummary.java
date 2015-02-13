@@ -24,12 +24,12 @@ import java.io.*;
 /**
  * Path summary: total files count, total directories count, total length.
  */
-public class IgniteFsPathSummary implements Externalizable {
+public class IgfsPathSummary implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Path. */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /** File count. */
     private int filesCnt;
@@ -43,7 +43,7 @@ public class IgniteFsPathSummary implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public IgniteFsPathSummary() {
+    public IgfsPathSummary() {
         // No-op.
     }
 
@@ -52,7 +52,7 @@ public class IgniteFsPathSummary implements Externalizable {
      *
      * @param path Path.
      */
-    public IgniteFsPathSummary(IgniteFsPath path) {
+    public IgfsPathSummary(IgfsPath path) {
         this.path = path;
     }
 
@@ -101,14 +101,14 @@ public class IgniteFsPathSummary implements Externalizable {
     /**
      * @return Path for which summary is obtained.
      */
-    public IgniteFsPath path() {
+    public IgfsPath path() {
         return path;
     }
 
     /**
      * @param path Path for which summary is obtained.
      */
-    public void path(IgniteFsPath path) {
+    public void path(IgfsPath path) {
         this.path = path;
     }
 
@@ -127,12 +127,12 @@ public class IgniteFsPathSummary implements Externalizable {
         dirCnt = in.readInt();
         totalLen = in.readLong();
 
-        path = new IgniteFsPath();
+        path = new IgfsPath();
         path.readExternal(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsPathSummary.class, this);
+        return S.toString(IgfsPathSummary.class, this);
     }
 }

@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * {@code GGFS} file's data block location in the grid. It is used to determine
  * node affinity of a certain file block within the Grid by calling
- * {@link org.apache.ignite.IgniteFs#affinity(IgniteFsPath, long, long)} method.
+ * {@link org.apache.ignite.IgniteFs#affinity(IgfsPath, long, long)} method.
  */
 public interface IgniteFsBlockLocation {
     /**

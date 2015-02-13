@@ -27,7 +27,7 @@ public class IgfsSecondaryInputStreamDescriptor {
     private final IgfsFileInfo info;
 
     /** Secondary file system input stream wrapper. */
-    private final IgniteFsReader secReader;
+    private final IgfsReader secReader;
 
     /**
      * Constructor.
@@ -35,7 +35,7 @@ public class IgfsSecondaryInputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param secReader Secondary file system reader.
      */
-    IgfsSecondaryInputStreamDescriptor(IgfsFileInfo info, IgniteFsReader secReader) {
+    IgfsSecondaryInputStreamDescriptor(IgfsFileInfo info, IgfsReader secReader) {
         assert info != null;
         assert secReader != null;
 
@@ -53,7 +53,7 @@ public class IgfsSecondaryInputStreamDescriptor {
     /**
      * @return Secondary file system reader.
      */
-    IgniteFsReader reader() {
+    IgfsReader reader() {
         return secReader;
     }
 }

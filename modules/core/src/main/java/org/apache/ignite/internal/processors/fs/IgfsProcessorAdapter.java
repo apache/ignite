@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.ignitefs.mapreduce.*;
@@ -75,6 +74,6 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * @param recRslv Record resolver.
      * @return Compute job.
      */
-    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv);
 }

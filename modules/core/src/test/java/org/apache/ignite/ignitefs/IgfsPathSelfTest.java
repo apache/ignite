@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.apache.ignite.ignitefs.IgniteFsPath} self test.
+ * {@link IgfsPath} self test.
  */
 public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
@@ -43,7 +43,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     public void testMethods() throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/a/s/d/f");
+        IgfsPath path = new IgfsPath("/a/s/d/f");
 
         validateParent("/a/s/d/f", "/a/s/d");
         validateParent("/a/s/d", "/a/s");
@@ -51,7 +51,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         validateParent("/a", "/");
         validateParent("/", null);
 
-        assertEquals(new IgniteFsPath("/a/s/d/f-2"), path.suffix("-2"));
+        assertEquals(new IgfsPath("/a/s/d/f-2"), path.suffix("-2"));
         assertEquals(Arrays.asList("a", "s", "d", "f"), path.components());
         assertEquals(4, path.depth());
         assertEquals(3, path.parent().depth());
@@ -59,10 +59,10 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
 
         assertEquals(path, mu(path));
 
-        IgniteFsPath parent = path.parent();
+        IgfsPath parent = path.parent();
 
-        assertTrue(path.compareTo(new IgniteFsPath(parent, "e")) > 0);
-        assertTrue(path.compareTo(new IgniteFsPath(parent, "g")) < 0);
+        assertTrue(path.compareTo(new IgfsPath(parent, "e")) > 0);
+        assertTrue(path.compareTo(new IgfsPath(parent, "g")) < 0);
     }
 
     /**
@@ -72,7 +72,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
      * @param parent Expected parent path.
      */
     private void validateParent(String child, @Nullable String parent) {
-        assertEquals(parent == null ? null : new IgniteFsPath(parent), new IgniteFsPath(child).parent());
+        assertEquals(parent == null ? null : new IgfsPath(parent), new IgfsPath(child).parent());
     }
 
     /**
@@ -95,17 +95,17 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
     public void testConstructors() throws Exception {
         String pathStr = "///";
         URI uri = URI.create(pathStr);
-        IgniteFsPath path = new IgniteFsPath(uri);
+        IgfsPath path = new IgfsPath(uri);
 
-        assertNotNull(new IgniteFsPath(uri));
-        assertNotNull(new IgniteFsPath(pathStr));
-        assertNotNull(new IgniteFsPath("/"));
-        assertNotNull(new IgniteFsPath(path, pathStr));
-        assertNotNull(new IgniteFsPath());
+        assertNotNull(new IgfsPath(uri));
+        assertNotNull(new IgfsPath(pathStr));
+        assertNotNull(new IgfsPath("/"));
+        assertNotNull(new IgfsPath(path, pathStr));
+        assertNotNull(new IgfsPath());
 
         Class nullUri = URI.class;
         Class nullStr = String.class;
-        Class nullPath = IgniteFsPath.class;
+        Class nullPath = IgfsPath.class;
 
         expectConstructorThrows(NullPointerException.class, nullUri);
         expectConstructorThrows(IllegalArgumentException.class, nullStr);
@@ -115,7 +115,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
 
         String name = "with space in path.txt";
 
-        assertEquals(name, new IgniteFsPath(path, name).name());
+        assertEquals(name, new IgfsPath(path, name).name());
     }
 
     /**
@@ -141,7 +141,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
-                    Constructor<IgniteFsPath> constructor = IgniteFsPath.class.getConstructor(paramTypes);
+                    Constructor<IgfsPath> constructor = IgfsPath.class.getConstructor(paramTypes);
 
                     constructor.newInstance(args);
                 }

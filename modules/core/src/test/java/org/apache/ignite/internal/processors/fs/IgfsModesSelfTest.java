@@ -490,7 +490,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void checkMode(String pathStr, IgniteFsMode expMode) throws Exception {
         assert ggfs != null;
 
-        IgniteFsPath path = new IgniteFsPath(pathStr);
+        IgfsPath path = new IgfsPath(pathStr);
 
         IgfsModeResolver rslvr = ggfs.modeResolver();
 
@@ -518,8 +518,8 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         boolean primaryNotUsed = mode == PROXY;
         boolean secondaryUsed = mode != PRIMARY;
 
-        IgniteFsPath dir = new IgniteFsPath("/dir");
-        IgniteFsPath file = new IgniteFsPath("/dir/file");
+        IgfsPath dir = new IgfsPath("/dir");
+        IgfsPath file = new IgfsPath("/dir/file");
 
         // Create new directory.
         ggfs.mkdirs(dir);
@@ -539,7 +539,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         os.close();
 
         // Check file content.
-        IgniteFsInputStream is = ggfs.open(file);
+        IgfsInputStream is = ggfs.open(file);
 
         assertEquals(testData.length, is.length());
 
@@ -557,7 +557,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
             // In ASYNC mode we wait at most 2 seconds for background writer to finish.
             for (int i = 0; i < 20; i++) {
-                IgniteFsInputStream isSecondary = null;
+                IgfsInputStream isSecondary = null;
 
                 try {
                     isSecondary = ggfsSecondary.open(file);
@@ -572,7 +572,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
                 }
             }
 
-            IgniteFsInputStream isSecondary = ggfsSecondary.open(file);
+            IgfsInputStream isSecondary = ggfsSecondary.open(file);
 
             assertEquals(testData.length, isSecondary.length());
 

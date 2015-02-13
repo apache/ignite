@@ -56,10 +56,10 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     }};
 
     /** File working in PRIMARY mode. */
-    public static final IgniteFsPath FILE = new IgniteFsPath("/file");
+    public static final IgfsPath FILE = new IgfsPath("/file");
 
     /** File working in DUAL mode. */
-    public static final IgniteFsPath FILE_RMT = new IgniteFsPath("/fileRemote");
+    public static final IgfsPath FILE_RMT = new IgfsPath("/fileRemote");
 
     /** Primary GGFS instances. */
     private static IgfsImpl ggfsPrimary;
@@ -426,8 +426,8 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @param len Length.
      * @throws Exception If failed.
      */
-    private void read(IgniteFsPath path, int off, int len) throws Exception {
-        IgniteFsInputStream is = ggfsPrimary.open(path);
+    private void read(IgfsPath path, int off, int len) throws Exception {
+        IgfsInputStream is = ggfsPrimary.open(path);
 
         is.readFully(off, new byte[len]);
 
@@ -441,7 +441,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
      * @param len Data length.
      * @throws Exception If failed.
      */
-    private void append(IgniteFsPath path, int len) throws Exception {
+    private void append(IgfsPath path, int len) throws Exception {
         IgniteFsOutputStream os = ggfsPrimary.append(path, false);
 
         os.write(new byte[len]);

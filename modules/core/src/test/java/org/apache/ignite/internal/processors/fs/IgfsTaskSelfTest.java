@@ -50,7 +50,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         "word6", "word7"};
 
     /** File path. */
-    private static final IgniteFsPath FILE = new IgniteFsPath("/file");
+    private static final IgfsPath FILE = new IgfsPath("/file");
 
     /** Shared IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -232,7 +232,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      */
     private static class Task extends IgfsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
-        @Override public IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+        @Override public IgfsJob createJob(IgfsPath path, IgfsFileRange range,
             IgfsTaskArgs<String> args) {
             return new Job();
         }
@@ -269,7 +269,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, IgfsFileRange range, IgniteFsInputStream in)
+        @Override public Object execute(IgniteFs ggfs, IgfsFileRange range, IgfsInputStream in)
             throws IOException {
             assert ignite != null;
             assert ses != null;

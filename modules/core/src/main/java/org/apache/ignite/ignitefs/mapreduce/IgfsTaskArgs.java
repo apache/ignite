@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgfsFileRange, IgfsTaskArgs)} method.
+ * passed to {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
@@ -49,7 +49,7 @@ public interface IgfsTaskArgs<T> {
      *
      * @return File paths to process.
      */
-    public Collection<IgniteFsPath> paths();
+    public Collection<IgfsPath> paths();
 
     /**
      * Gets record resolver for the task.

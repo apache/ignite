@@ -40,7 +40,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     private String ggfsName;
 
     /** GGFS path. */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /** Start. */
     private long start;
@@ -67,7 +67,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public IgfsJobImpl(IgfsJob job, String ggfsName, IgniteFsPath path, long start, long len,
+    public IgfsJobImpl(IgfsJob job, String ggfsName, IgfsPath path, long start, long len,
         IgfsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;
@@ -81,7 +81,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     @Override public Object execute() {
         IgniteFs fs = ignite.fileSystem(ggfsName);
 
-        try (IgniteFsInputStream in = fs.open(path)) {
+        try (IgfsInputStream in = fs.open(path)) {
             IgfsFileRange split = new IgfsFileRange(path, start, len);
 
             if (rslvr != null) {

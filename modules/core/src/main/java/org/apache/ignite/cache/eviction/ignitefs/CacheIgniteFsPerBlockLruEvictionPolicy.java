@@ -276,7 +276,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @return {@code True} in case non block of related file must be excluded.
      * @throws IgniteCheckedException In case of faulty patterns.
      */
-    public boolean exclude(IgniteFsPath path) throws IgniteCheckedException {
+    public boolean exclude(IgfsPath path) throws IgniteCheckedException {
         assert path != null;
 
         Collection<Pattern> excludePatterns0;

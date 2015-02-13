@@ -33,7 +33,7 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgfsFileRange, IgfsTaskArgs)} method.
+ * {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgfsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
@@ -95,7 +95,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
 
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
-        for (IgniteFsPath path : args.paths()) {
+        for (IgfsPath path : args.paths()) {
             IgniteFsFile file = fs.info(path);
 
             if (file == null) {
@@ -152,7 +152,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws IgniteException If job creation failed.
      */
-    @Nullable public abstract IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+    @Nullable public abstract IgfsJob createJob(IgfsPath path, IgfsFileRange range,
         IgfsTaskArgs<T> args) throws IgniteException;
 
     /**

@@ -47,14 +47,14 @@ public interface IgfsEx extends IgniteFs {
     public IgfsPaths proxyPaths();
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteException;
+    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteException;
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException;
 
     /**
      * Gets global space counters.
@@ -124,7 +124,7 @@ public interface IgfsEx extends IgniteFs {
      * @param primary Whether the mode is PRIMARY.
      * @return {@code True} if path is excluded from evictions.
      */
-    public boolean evictExclude(IgniteFsPath path, boolean primary);
+    public boolean evictExclude(IgfsPath path, boolean primary);
 
     /**
      * Get next affinity key.

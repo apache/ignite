@@ -89,13 +89,13 @@ public final class IgfsImpl implements IgfsEx {
     private final IgfsModeResolver modeRslvr;
 
     /** Connection to the secondary file system. */
-    private IgniteFsFileSystem secondaryFs;
+    private Igfs secondaryFs;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<IgniteFsPath, IgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<IgfsPath, IgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
 
     /** Delete futures. */
     private final ConcurrentHashMap8<IgniteUuid, GridFutureAdapter<Object>> delFuts = new ConcurrentHashMap8<>();
@@ -171,7 +171,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes = null;
+        ArrayList<T2<IgfsPath, IgniteFsMode>> modes = null;
 
         if (!cfgModes.isEmpty()) {
             modes = new ArrayList<>(cfgModes.size());
@@ -180,7 +180,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgniteFsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
-                    modes.add(new T2<>(new IgniteFsPath(mode.getKey()), mode0));
+                    modes.add(new T2<>(new IgfsPath(mode.getKey()), mode0));
                 }
                 catch (IllegalArgumentException e) {
                     throw new IgniteCheckedException("Invalid path found in mode pattern: " + mode.getKey(), e);
@@ -264,7 +264,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Created batch.
      * @throws IgniteCheckedException In case new batch cannot be created.
      */
-    private IgfsFileWorkerBatch newBatch(final IgniteFsPath path, OutputStream out) throws IgniteCheckedException {
+    private IgfsFileWorkerBatch newBatch(final IgfsPath path, OutputStream out) throws IgniteCheckedException {
         assert path != null;
         assert out != null;
 
@@ -327,15 +327,15 @@ public final class IgfsImpl implements IgfsEx {
      *
      * @param paths Paths to check.
      */
-    void await(IgniteFsPath... paths) {
+    void await(IgfsPath... paths) {
         assert paths != null;
 
-        for (Map.Entry<IgniteFsPath, IgfsFileWorker> workerEntry : workerMap.entrySet()) {
-            IgniteFsPath workerPath = workerEntry.getKey();
+        for (Map.Entry<IgfsPath, IgfsFileWorker> workerEntry : workerMap.entrySet()) {
+            IgfsPath workerPath = workerEntry.getKey();
 
             boolean await = false;
 
-            for (IgniteFsPath path : paths) {
+            for (IgfsPath path : paths) {
                 if (workerPath.isSubDirectoryOf(path) || workerPath.isSame(path))  {
                     await = true;
 
@@ -469,7 +469,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) {
+    @Override public boolean exists(IgfsPath path) {
         try {
             A.notNull(path, "path");
 
@@ -510,7 +510,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgniteFsPath path) {
+    @Override public IgniteFsFile info(IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -542,7 +542,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPathSummary summary(IgniteFsPath path) {
+    @Override public IgfsPathSummary summary(IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -553,9 +553,9 @@ public final class IgfsImpl implements IgfsEx {
                 IgniteUuid fileId = meta.fileId(path);
 
                 if (fileId == null)
-                    throw new IgniteFsFileNotFoundException("Failed to get path summary (path not found): " + path);
+                    throw new IgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
 
-                IgniteFsPathSummary sum = new IgniteFsPathSummary(path);
+                IgfsPathSummary sum = new IgfsPathSummary(path);
 
                 summary0(fileId, sum);
 
@@ -573,7 +573,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
+    @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -632,7 +632,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
+    @Override public void rename(IgfsPath src, IgfsPath dest) {
         if (enterBusy()) {
             try {
                 A.notNull(src, "src");
@@ -673,7 +673,7 @@ public final class IgfsImpl implements IgfsEx {
                     return;
                 }
 
-                IgniteFsPath destParent = dest.parent();
+                IgfsPath destParent = dest.parent();
 
                 // Resolve source file info.
                 FileDescriptor srcDesc = getFileDescriptor(src);
@@ -683,7 +683,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (mode == PRIMARY)
                         checkConflictWithPrimary(src);
 
-                    throw new IgniteFsFileNotFoundException("Failed to rename (source path not found): " + src);
+                    throw new IgfsFileNotFoundException("Failed to rename (source path not found): " + src);
                 }
 
                 String srcFileName = src.name();
@@ -703,7 +703,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     // Destination directory doesn't exist.
                     if (destDesc == null)
-                        throw new IgniteFsFileNotFoundException("Failed to rename (destination directory does not " +
+                        throw new IgfsFileNotFoundException("Failed to rename (destination directory does not " +
                             "exist): " + dest);
 
                     destFileName = dest.name();
@@ -723,7 +723,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
                         evts.record(new IgniteFsEvent(
                             src,
-                            newDest ? dest : new IgniteFsPath(dest, destFileName),
+                            newDest ? dest : new IgfsPath(dest, destFileName),
                             localNode(),
                             EVT_GGFS_FILE_RENAMED));
                 }
@@ -744,7 +744,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) {
+    @Override public boolean delete(IgfsPath path, boolean recursive) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -811,9 +811,9 @@ public final class IgfsImpl implements IgfsEx {
      *      {@code recursive} flag is false, will return {@code false}.
      * @throws IgniteCheckedException In case of error.
      */
-    private boolean delete0(FileDescriptor desc, @Nullable IgniteFsPath parentPath, boolean recursive)
+    private boolean delete0(FileDescriptor desc, @Nullable IgfsPath parentPath, boolean recursive)
         throws IgniteCheckedException {
-        IgniteFsPath curPath = parentPath == null ? new IgniteFsPath() : new IgniteFsPath(parentPath, desc.fileName);
+        IgfsPath curPath = parentPath == null ? new IgfsPath() : new IgfsPath(parentPath, desc.fileName);
 
         if (desc.isFile) {
             deleteFile(curPath, desc, true);
@@ -843,12 +843,12 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) {
+    @Override public void mkdirs(IgfsPath path) {
         mkdirs(path, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props)  {
+    @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props)  {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -881,7 +881,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgniteUuid parentId = ROOT_ID;
 
-                IgniteFsPath curPath = path.root();
+                IgfsPath curPath = path.root();
 
                 for (int step = 0, size = components.size(); step < size; step++) {
                     IgniteUuid fileId = ids.get(step + 1); // Skip the first ROOT element.
@@ -891,7 +891,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         String fileName = components.get(step); // Get current component name.
 
-                        curPath = new IgniteFsPath(curPath, fileName);
+                        curPath = new IgfsPath(curPath, fileName);
 
                         try {
                             // Fails only if parent is not a directory or if modified concurrently.
@@ -938,7 +938,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(final IgniteFsPath path) {
+    @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -958,9 +958,9 @@ public final class IgfsImpl implements IgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<IgniteFsPath> children = secondaryFs.listPaths(path);
+                    Collection<IgfsPath> children = secondaryFs.listPaths(path);
 
-                    for (IgniteFsPath child : children)
+                    for (IgfsPath child : children)
                         files.add(child.name());
                 }
 
@@ -971,12 +971,12 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
                 }
 
-                return F.viewReadOnly(files, new C1<String, IgniteFsPath>() {
-                    @Override public IgniteFsPath apply(String e) {
-                        return new IgniteFsPath(path, e);
+                return F.viewReadOnly(files, new C1<String, IgfsPath>() {
+                    @Override public IgfsPath apply(String e) {
+                        return new IgfsPath(path, e);
                     }
                 });
             }
@@ -992,7 +992,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) {
+    @Override public Collection<IgniteFsFile> listFiles(final IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1036,7 +1036,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgniteFsPath p = new IgniteFsPath(path, e.getKey());
+                            IgfsPath p = new IgfsPath(path, e.getKey());
 
                             files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
                         }
@@ -1045,7 +1045,7 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return files;
@@ -1072,17 +1072,17 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path) {
+    @Override public IgfsInputStreamAdapter open(IgfsPath path) {
         return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
         return open(path, bufSize, cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
+    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1118,7 +1118,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (info == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgniteFsFileNotFoundException("File not found: " + path);
+                    throw new IgfsFileNotFoundException("File not found: " + path);
                 }
 
                 if (!info.isFile())
@@ -1145,18 +1145,18 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) {
+    @Override public IgniteFsOutputStream create(IgfsPath path, boolean overwrite) {
         return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         return create0(path, bufSize, overwrite, null, replication, props, false);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+    @Override public IgniteFsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
         return create0(path, bufSize, overwrite, affKey, replication, props, false);
     }
@@ -1174,7 +1174,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Output stream.
      */
     private IgniteFsOutputStream create0(
-        final IgniteFsPath path,
+        final IgfsPath path,
         final int bufSize,
         final boolean overwrite,
         @Nullable IgniteUuid affKey,
@@ -1217,7 +1217,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 // Re-create parents when working in PRIMARY mode. In DUAL mode this is done by MetaManager.
-                IgniteFsPath parent = path.parent();
+                IgfsPath parent = path.parent();
 
                 // Create missing parent directories if necessary.
                 if (parent != null)
@@ -1287,12 +1287,12 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) {
+    @Override public IgniteFsOutputStream append(IgfsPath path, boolean create) {
         return append(path, cfg.getStreamBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(final IgniteFsPath path, final int bufSize, boolean create,
+    @Override public IgniteFsOutputStream append(final IgfsPath path, final int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         if (enterBusy()) {
             try {
@@ -1333,7 +1333,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (!create) {
                         checkConflictWithPrimary(path);
 
-                        throw new IgniteFsFileNotFoundException("File not found: " + path);
+                        throw new IgfsFileNotFoundException("File not found: " + path);
                     }
 
                     if (parentId == null)
@@ -1374,7 +1374,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) {
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1387,7 +1387,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (desc == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgniteFsFileNotFoundException("Failed to update times (path not found): " + path);
+                    throw new IgfsFileNotFoundException("Failed to update times (path not found): " + path);
                 }
 
                 // Cannot update times for root.
@@ -1413,7 +1413,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param path Path to check.
      * @throws IgniteCheckedException If path exists.
      */
-    private void checkConflictWithPrimary(IgniteFsPath path) throws IgniteCheckedException {
+    private void checkConflictWithPrimary(IgfsPath path) throws IgniteCheckedException {
         if (secondaryFs != null) {
             if (secondaryFs.info(path) != null) {
                 throw new IgniteCheckedException("Path mapped to a PRIMARY mode found in secondary file " +
@@ -1423,12 +1423,12 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) {
+    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len) {
         return affinity(path, start, len, 0L);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen) {
+    @Override public Collection<IgniteFsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1456,7 +1456,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 if (info == null)
-                    throw new IgniteFsFileNotFoundException("File not found: " + path);
+                    throw new IgfsFileNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
                     throw new IgniteFsInvalidPathException("Failed to get affinity info for file (not a file): " +
@@ -1479,7 +1479,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public IgniteFsMetrics metrics() {
         if (enterBusy()) {
             try {
-                IgniteFsPathSummary sum = new IgniteFsPathSummary();
+                IgfsPathSummary sum = new IgfsPathSummary();
 
                 summary0(ROOT_ID, sum);
 
@@ -1530,7 +1530,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long size(IgniteFsPath path) {
+    @Override public long size(IgfsPath path) {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1540,7 +1540,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (nextId == null)
                     return 0;
 
-                IgniteFsPathSummary sum = new IgniteFsPathSummary(path);
+                IgfsPathSummary sum = new IgfsPathSummary(path);
 
                 summary0(nextId, sum);
 
@@ -1564,7 +1564,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param sum Summary object that will collect information.
      * @throws IgniteCheckedException If failed.
      */
-    private void summary0(IgniteUuid fileId, IgniteFsPathSummary sum) throws IgniteCheckedException {
+    private void summary0(IgniteUuid fileId, IgfsPathSummary sum) throws IgniteCheckedException {
         assert sum != null;
 
         IgfsFileInfo info = meta.info(fileId);
@@ -1672,7 +1672,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Detailed file descriptor or {@code null}, if file does not exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private FileDescriptor getFileDescriptor(IgniteFsPath path) throws IgniteCheckedException {
+    @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
         List<IgniteUuid> ids = meta.fileIds(path);
         IgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 
@@ -1693,7 +1693,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
      * @throws IgniteCheckedException If failed.
      */
-    private void deleteFile(IgniteFsPath path, FileDescriptor desc, boolean rmvLocked) throws IgniteCheckedException {
+    private void deleteFile(IgfsPath path, FileDescriptor desc, boolean rmvLocked) throws IgniteCheckedException {
         IgniteUuid parentId = desc.parentId;
         IgniteUuid fileId = desc.fileId;
 
@@ -1729,7 +1729,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) {
+        Collection<IgfsPath> paths, @Nullable T arg) {
         try {
             return executeAsync(task, rslvr, paths, arg).get();
         }
@@ -1740,7 +1740,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
             return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
         }
@@ -1751,7 +1751,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
             return executeAsync(taskCls, rslvr, paths, arg).get();
         }
@@ -1762,7 +1762,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         try {
             return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
@@ -1782,7 +1782,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Execution future.
      */
     <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) {
+        Collection<IgfsPath> paths, @Nullable T arg) {
         return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
@@ -1801,7 +1801,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Execution future.
      */
     <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
     }
@@ -1816,7 +1816,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Execution future.
      */
     <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
@@ -1834,14 +1834,14 @@ public final class IgfsImpl implements IgfsEx {
      * @return Execution future.
      */
     <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
             new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictExclude(IgniteFsPath path, boolean primary) {
+    @Override public boolean evictExclude(IgfsPath path, boolean primary) {
         assert path != null;
 
         try {
@@ -1863,7 +1863,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws IgniteCheckedException {
+    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgniteFsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1994,7 +1994,7 @@ public final class IgfsImpl implements IgfsEx {
          * @param batch Optional secondary file system batch.
          * @throws IgniteCheckedException In case of error.
          */
-        IgfsEventAwareOutputStream(IgniteFsPath path, IgfsFileInfo fileInfo,
+        IgfsEventAwareOutputStream(IgfsPath path, IgfsFileInfo fileInfo,
             IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch)
             throws IgniteCheckedException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
@@ -2034,8 +2034,8 @@ public final class IgfsImpl implements IgfsEx {
          * @param secReader Optional secondary file system reader.
          * @param metrics Metrics.
          */
-        IgfsEventAwareInputStream(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo,
-            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader,
+        IgfsEventAwareInputStream(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo,
+            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgfsReader secReader,
             IgfsLocalMetrics metrics) {
             super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
 
@@ -2217,7 +2217,7 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public boolean isProxy(URI path) {
         IgniteFsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
-            modeRslvr.resolveMode(new IgniteFsPath(path));
+            modeRslvr.resolveMode(new IgfsPath(path));
 
         return mode == PROXY;
     }

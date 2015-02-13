@@ -37,7 +37,7 @@ import java.util.*;
  *     GridGgfsFile file = ggfs.info(filePath);
  * </pre>
  */
-public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externalizable {
+public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +53,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
     /**
      * Constructs default root path.
      */
-    public IgniteFsPath() {
+    public IgfsPath() {
         path = SLASH;
     }
 
@@ -62,7 +62,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      *
      * @param uri URI to create path from.
      */
-    public IgniteFsPath(URI uri) {
+    public IgfsPath(URI uri) {
         A.notNull(uri, "uri");
 
         path = normalizePath(uri.getPath());
@@ -73,7 +73,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      *
      * @param path URI string.
      */
-    public IgniteFsPath(String path) {
+    public IgfsPath(String path) {
         A.ensure(!F.isEmpty(path), "'path' is null or empty");
 
         this.path = normalizePath(path);
@@ -85,7 +85,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      * @param parentPath Parent path.
      * @param childPath Child path.
      */
-    public IgniteFsPath(IgniteFsPath parentPath, String childPath) {
+    public IgfsPath(IgfsPath parentPath, String childPath) {
         A.notNull(parentPath, "parentPath");
 
         String path = GridFilenameUtils.concat(parentPath.path, childPath);
@@ -135,8 +135,8 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      *
      * @return Root for this path.
      */
-    public IgniteFsPath root() {
-        return new IgniteFsPath();
+    public IgfsPath root() {
+        return new IgfsPath();
     }
 
     /**
@@ -158,7 +158,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      *
      * @return The parent of a path or {@code null} if at root.
      */
-    @Nullable public IgniteFsPath parent() {
+    @Nullable public IgfsPath parent() {
         String path = this.path;
 
         if (path.length() == 1)
@@ -166,7 +166,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
 
         path = GridFilenameUtils.getFullPathNoEndSeparator(path);
 
-        return new IgniteFsPath(path);
+        return new IgfsPath(path);
     }
 
     /**
@@ -175,11 +175,11 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      * @param suffix Suffix.
      * @return Path with suffix.
      */
-    public IgniteFsPath suffix(String suffix) {
+    public IgfsPath suffix(String suffix) {
         A.ensure(!F.isEmpty(suffix), "'suffix' is null or empty.");
         A.ensure(!suffix.contains(SLASH), "'suffix' contains file's separator '" + SLASH + "'");
 
-        return new IgniteFsPath(path + suffix);
+        return new IgfsPath(path + suffix);
     }
 
     /**
@@ -212,7 +212,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      * @param path Path to check.
      * @return {@code True} if argument is same or a sub-directory of this object.
      */
-    public boolean isSubDirectoryOf(IgniteFsPath path) {
+    public boolean isSubDirectoryOf(IgfsPath path) {
         A.notNull(path, "path");
 
         return this.path.startsWith(path.path.endsWith(SLASH) ? path.path : path.path + SLASH);
@@ -224,14 +224,14 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
      * @param path Path to check.
      * @return {@code True} if paths are identical.
      */
-    public boolean isSame(IgniteFsPath path) {
+    public boolean isSame(IgfsPath path) {
         A.notNull(path, "path");
 
         return this == path || this.path.equals(path.path);
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(IgniteFsPath o) {
+    @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }
 
@@ -252,7 +252,7 @@ public final class IgniteFsPath implements Comparable<IgniteFsPath>, Externaliza
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o == this || o != null && getClass() == o.getClass() && path.equals(((IgniteFsPath)o).path);
+        return o == this || o != null && getClass() == o.getClass() && path.equals(((IgfsPath)o).path);
     }
 
     /** {@inheritDoc} */

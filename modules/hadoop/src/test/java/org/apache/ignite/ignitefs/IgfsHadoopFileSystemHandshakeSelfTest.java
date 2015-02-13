@@ -58,7 +58,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     private static final String GGFS_NAME = "ggfs";
 
     /** GGFS path. */
-    private static final IgniteFsPath PATH = new IgniteFsPath("/path");
+    private static final IgfsPath PATH = new IgfsPath("/path");
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

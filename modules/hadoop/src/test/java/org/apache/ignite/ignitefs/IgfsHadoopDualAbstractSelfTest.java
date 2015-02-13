@@ -23,7 +23,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -81,13 +80,13 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     }};
 
     /** Directory. */
-    protected static final IgniteFsPath DIR = new IgniteFsPath("/dir");
+    protected static final IgfsPath DIR = new IgfsPath("/dir");
 
     /** Sub-directory. */
-    protected static final IgniteFsPath SUBDIR = new IgniteFsPath(DIR, "subdir");
+    protected static final IgfsPath SUBDIR = new IgfsPath(DIR, "subdir");
 
     /** File. */
-    protected static final IgniteFsPath FILE = new IgniteFsPath(SUBDIR, "file");
+    protected static final IgfsPath FILE = new IgfsPath(SUBDIR, "file");
 
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
@@ -123,7 +122,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
      * @throws Exception If failed.
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
-        @Nullable IgniteFsFileSystem secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
+        @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -183,7 +182,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
 
         Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        IgniteFsFileSystem hadoopFs = new IgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
+        Igfs hadoopFs = new IgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
 
         Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
 
@@ -208,7 +207,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
      * @param paths Paths to group.
      * @return Paths as array.
      */
-    protected IgniteFsPath[] paths(IgniteFsPath... paths) {
+    protected IgfsPath[] paths(IgfsPath... paths) {
         return paths;
     }
 
@@ -285,7 +284,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         // Try reading the third block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsInputStream in0 = ggfs.open(FILE);
+                IgfsInputStream in0 = ggfs.open(FILE);
 
                 in0.seek(blockSize * 2);
 

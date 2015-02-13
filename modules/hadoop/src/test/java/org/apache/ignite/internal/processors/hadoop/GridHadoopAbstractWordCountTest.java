@@ -98,7 +98,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
         }
 
         //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(ggfs.create(new IgniteFsPath(path), true));
+        PrintWriter testInputFileWriter = new PrintWriter(ggfs.create(new IgfsPath(path), true));
 
         int j = 0;
 
@@ -122,7 +122,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
      * @throws Exception If could not read the file.
      */
     protected String readAndSortFile(String fileName) throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(new IgniteFsPath(fileName))));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(new IgfsPath(fileName))));
 
         List<String> list = new ArrayList<>();
 

@@ -30,7 +30,7 @@ import java.io.*;
  * <p>
  * The class is expected to be used only from synchronized context and therefore is not tread-safe.
  */
-public class IgfsHadoopReader implements IgniteFsReader {
+public class IgfsHadoopReader implements IgfsReader {
     /** Secondary file system. */
     private final FileSystem fs;
 

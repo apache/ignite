@@ -1538,7 +1538,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
             IgniteFs igniteFs = grid(0).fileSystem("ggfs");
 
-            IgniteFsPath filePath = new IgniteFsPath("/someFile");
+            IgfsPath filePath = new IgfsPath("/someFile");
 
             IgniteFsFile fileInfo = igniteFs.info(filePath);
 

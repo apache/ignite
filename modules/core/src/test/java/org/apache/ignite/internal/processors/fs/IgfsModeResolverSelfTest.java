@@ -35,22 +35,22 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         resolver = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
-            new T2<>(new IgniteFsPath("/a/b/"), PRIMARY),
-            new T2<>(new IgniteFsPath("/a/b/c/d"), PROXY)));
+            new T2<>(new IgfsPath("/a/b/"), PRIMARY),
+            new T2<>(new IgfsPath("/a/b/c/d"), PROXY)));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testResolve() throws Exception {
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/")));
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/a")));
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/a/1")));
-        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b")));
-        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b/c")));
-        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b/c/2")));
-        assertEquals(PROXY, resolver.resolveMode(new IgniteFsPath("/a/b/c/d")));
-        assertEquals(PROXY, resolver.resolveMode(new IgniteFsPath("/a/b/c/d/e")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgfsPath("/")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgfsPath("/a")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgfsPath("/a/1")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgfsPath("/a/b")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgfsPath("/a/b/c")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgfsPath("/a/b/c/2")));
+        assertEquals(PROXY, resolver.resolveMode(new IgfsPath("/a/b/c/d")));
+        assertEquals(PROXY, resolver.resolveMode(new IgfsPath("/a/b/c/d/e")));
     }
 
     /**
@@ -58,20 +58,20 @@ public class IgfsModeResolverSelfTest extends TestCase {
      */
     public void testResolveChildren() throws Exception {
         assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/")));
+            resolver.resolveChildrenModes(new IgfsPath("/")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a")));
+            resolver.resolveChildrenModes(new IgfsPath("/a")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/1")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/1")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/b")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/b")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/b/c")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/2")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/b/c/2")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/b/c/d")));
         assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
-            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d/e")));
+            resolver.resolveChildrenModes(new IgfsPath("/a/b/c/d/e")));
     }
 }

@@ -129,7 +129,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
 
             client.handshake(null);
 
-            IgniteFsPath path = new IgniteFsPath("/test1.file");
+            IgfsPath path = new IgfsPath("/test1.file");
 
             IgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 

@@ -91,7 +91,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     private IgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
-    private IgniteFsPath workingDir;
+    private IgfsPath workingDir;
 
     /** URI. */
     private URI uri;
@@ -151,7 +151,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             throw e;
         }
 
-        workingDir = new IgniteFsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
+        workingDir = new IgfsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
     }
 
     /** {@inheritDoc} */
@@ -266,7 +266,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null) {
-                for (T2<IgniteFsPath, IgniteFsMode> pathMode : paths.pathModes()) {
+                for (T2<IgfsPath, IgniteFsMode> pathMode : paths.pathModes()) {
                     IgniteFsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
@@ -429,7 +429,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -504,7 +504,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         OutputStream out = null;
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (LOG.isDebugEnabled())
@@ -602,8 +602,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         enterBusy();
 
         try {
-            IgniteFsPath srcPath = convert(src);
-            IgniteFsPath dstPath = convert(dst);
+            IgfsPath srcPath = convert(src);
+            IgfsPath dstPath = convert(dst);
             Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
             if (childrenModes.contains(PROXY)) {
@@ -630,7 +630,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = modeRslvr.resolveMode(path);
             Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -675,7 +675,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -735,7 +735,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -783,7 +783,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     @Override public BlockLocation[] getFileBlockLocations(Path path, long start, long len) throws IOException {
         A.notNull(path, "path");
 
-        IgniteFsPath ggfsPath = convert(path);
+        IgfsPath ggfsPath = convert(path);
 
         enterBusy();
 
@@ -890,7 +890,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(IgniteFsPath path) {
+    private Path convert(IgfsPath path) {
         return new Path(GGFS_SCHEME, uriAuthority, path.toString());
     }
 
@@ -900,12 +900,12 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @param path Hadoop path.
      * @return GGFS path.
      */
-    @Nullable private IgniteFsPath convert(Path path) {
+    @Nullable private IgfsPath convert(Path path) {
         if (path == null)
             return null;
 
-        return path.isAbsolute() ? new IgniteFsPath(path.toUri().getPath()) :
-            new IgniteFsPath(workingDir, path.toUri().getPath());
+        return path.isAbsolute() ? new IgfsPath(path.toUri().getPath()) :
+            new IgfsPath(workingDir, path.toUri().getPath());
     }
 
     /**

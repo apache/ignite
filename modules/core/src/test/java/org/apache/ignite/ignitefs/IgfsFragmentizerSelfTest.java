@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ignitefs;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.fs.*;
@@ -38,7 +37,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     public void testReadFragmentizing() throws Exception {
         IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
-        IgniteFsPath path = new IgniteFsPath("/someFile");
+        IgfsPath path = new IgfsPath("/someFile");
 
         try (IgniteFsOutputStream out = ggfs.create(path, true)) {
             // Write 10 groups.
@@ -54,7 +53,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         long start = System.currentTimeMillis();
 
         do {
-            try (IgniteFsInputStream in = ggfs.open(path)) {
+            try (IgfsInputStream in = ggfs.open(path)) {
                 for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++) {
                     for (int j = 0; j < GGFS_BLOCK_SIZE; j++)
                         assertEquals(i & 0xFF, in.read());
@@ -98,7 +97,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     * @throws Exception If failed.
     */
     private void checkAppendFragmentizing(int chunkSize, boolean rotate) throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/someFile");
+        IgfsPath path = new IgfsPath("/someFile");
 
         long written = 0;
 
@@ -133,7 +132,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
 
         IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
-        try (IgniteFsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = ggfs.open(path)) {
             i = 0;
 
             int read = 0;
@@ -173,7 +172,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void checkFlushFragmentizing(int chunkSize) throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/someFile");
+        IgfsPath path = new IgfsPath("/someFile");
 
         long written = 0;
         int cnt = 0;
@@ -200,7 +199,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             }
         }
 
-        try (IgniteFsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = ggfs.open(path)) {
             cnt = 0;
 
             int read = 0;
@@ -226,7 +225,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         IgfsImpl ggfs = (IgfsImpl)grid(0).fileSystem("ggfs");
 
         for (int i = 0; i < 30; i++) {
-            IgniteFsPath path = new IgniteFsPath("/someFile" + i);
+            IgfsPath path = new IgfsPath("/someFile" + i);
 
             try (IgniteFsOutputStream out = ggfs.create(path, true)) {
                 for (int j = 0; j < 5 * GGFS_GROUP_SIZE; j++)
@@ -236,7 +235,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             U.sleep(200);
         }
 
-        ggfs.delete(new IgniteFsPath("/"), true);
+        ggfs.delete(new IgfsPath("/"), true);
 
         ggfs.awaitDeletesAsync().get();
 

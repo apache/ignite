@@ -17,28 +17,22 @@
 
 package org.apache.ignite.ignitefs;
 
+import java.io.*;
+
 /**
- * {@code GGFS} exception indicating that target resource is not found.
+ * The simplest data input interface to read from secondary file system in dual modes.
  */
-public class IgniteFsFileNotFoundException extends IgniteFsInvalidPathException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public interface IgfsReader extends Closeable {
     /**
-     * Creates exception with error message specified.
+     * Read up to the specified number of bytes, from a given position within a file, and return the number of bytes
+     * read.
      *
-     * @param msg Error message.
+     * @param pos Position in the input stream to seek.
+     * @param buf Buffer into which data is read.
+     * @param off Offset in the buffer from which stream data should be written.
+     * @param len The number of bytes to read.
+     * @return Total number of bytes read into the buffer, or -1 if there is no more data (EOF).
+     * @throws IOException In case of any exception.
      */
-    public IgniteFsFileNotFoundException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates exception with given exception cause.
-     *
-     * @param cause Exception cause.
-     */
-    public IgniteFsFileNotFoundException(Throwable cause) {
-        super(cause);
-    }
+    public int read(long pos, byte[] buf, int off, int len) throws IOException;
 }

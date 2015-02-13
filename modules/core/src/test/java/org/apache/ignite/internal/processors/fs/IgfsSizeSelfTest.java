@@ -350,7 +350,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 int total = 0;
 
-                IgniteFsInputStream is = ggfs(i).open(file.path());
+                IgfsInputStream is = ggfs(i).open(file.path());
 
                 while (true) {
                     int read = is.read(buf);
@@ -427,7 +427,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         startUp();
 
-        final IgniteFsPath path = new IgniteFsPath("/file");
+        final IgfsPath path = new IgfsPath("/file");
 
         // This write is expected to be successful.
         IgniteFsOutputStream os = ggfs(0).create(path, false);
@@ -481,8 +481,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         IgfsImpl ggfs = ggfs(0);
 
-        final IgniteFsPath path = new IgniteFsPath("/file");
-        final IgniteFsPath otherPath = new IgniteFsPath("/fileOther");
+        final IgfsPath path = new IgfsPath("/file");
+        final IgfsPath otherPath = new IgfsPath("/fileOther");
 
         // Fill cache with data up to it's limit.
         IgniteFsOutputStream os = ggfs.create(path, false);
@@ -673,7 +673,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Block key.
      * @throws Exception If failed.
      */
-    private IgfsBlockKey blockKey(IgniteFsPath path, long blockId) throws Exception {
+    private IgfsBlockKey blockKey(IgfsPath path, long blockId) throws Exception {
         IgfsEx ggfs0 = (IgfsEx)grid(0).fileSystem(GGFS_NAME);
 
         IgniteUuid fileId = ggfs0.context().meta().fileId(path);
@@ -763,7 +763,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         for (int i = 0; i < FILES_CNT; i++) {
             // Create empty file locally.
-            IgniteFsPath path = new IgniteFsPath("/file-" + i);
+            IgfsPath path = new IgfsPath("/file-" + i);
 
             ggfs(0).create(path, false).close();
 
@@ -806,7 +806,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** A file written to the file system. */
     private static class IgfsFile {
         /** Path to the file, */
-        private final IgniteFsPath path;
+        private final IgfsPath path;
 
         /** File length. */
         private final int len;
@@ -821,14 +821,14 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
          * @param len Length.
          * @param blocks Blocks.
          */
-        private IgfsFile(IgniteFsPath path, int len, Collection<IgfsBlock> blocks) {
+        private IgfsFile(IgfsPath path, int len, Collection<IgfsBlock> blocks) {
             this.path = path;
             this.len = len;
             this.blocks = blocks;
         }
 
         /** @return Path. */
-        IgniteFsPath path() {
+        IgfsPath path() {
             return path;
         }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;

@@ -271,7 +271,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null && !paths.pathModes().isEmpty()) {
-                for (T2<IgniteFsPath, IgniteFsMode> pathMode : paths.pathModes()) {
+                for (T2<IgfsPath, IgniteFsMode> pathMode : paths.pathModes()) {
                     IgniteFsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
@@ -412,7 +412,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 secondaryFs.setTimes(toSecondary(p), mtime, atime);
             }
             else {
-                IgniteFsPath path = convert(p);
+                IgfsPath path = convert(p);
 
                 rmtClient.setTimes(path, atime, mtime);
             }
@@ -484,7 +484,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -552,7 +552,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         OutputStream out = null;
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
@@ -630,7 +630,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
@@ -695,8 +695,8 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath srcPath = convert(src);
-            IgniteFsPath dstPath = convert(dst);
+            IgfsPath srcPath = convert(src);
+            IgfsPath dstPath = convert(dst);
             IgniteFsMode mode = mode(srcPath);
 
             if (mode == PROXY) {
@@ -747,7 +747,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -792,7 +792,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -906,7 +906,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(f);
+            IgfsPath path = convert(f);
             IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -991,7 +991,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 return secondaryFs.getContentSummary(toSecondary(f));
             }
             else {
-                IgniteFsPathSummary sum = rmtClient.contentSummary(convert(f));
+                IgfsPathSummary sum = rmtClient.contentSummary(convert(f));
 
                 return new ContentSummary(sum.totalLength(), sum.filesCount(), sum.directoriesCount(),
                     -1, sum.totalLength(), rmtClient.fsStatus().spaceTotal());
@@ -1009,7 +1009,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            IgniteFsPath path = convert(status.getPath());
+            IgfsPath path = convert(status.getPath());
 
             if (mode(status.getPath()) == PROXY) {
                 if (secondaryFs == null) {
@@ -1069,7 +1069,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
      * @param path GGFS path.
      * @return Path mode.
      */
-    public IgniteFsMode mode(IgniteFsPath path) {
+    public IgniteFsMode mode(IgfsPath path) {
         return modeRslvr.resolveMode(path);
     }
 
@@ -1141,7 +1141,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(IgniteFsPath path) {
+    private Path convert(IgfsPath path) {
         return new Path(GGFS_SCHEME, uriAuthority, path.toString());
     }
 
@@ -1151,12 +1151,12 @@ public class IgfsHadoopFileSystem extends FileSystem {
      * @param path Hadoop path.
      * @return GGFS path.
      */
-    @Nullable private IgniteFsPath convert(@Nullable Path path) {
+    @Nullable private IgfsPath convert(@Nullable Path path) {
         if (path == null)
             return null;
 
-        return path.isAbsolute() ? new IgniteFsPath(path.toUri().getPath()) :
-            new IgniteFsPath(convert(workingDir.get()), path.toUri().getPath());
+        return path.isAbsolute() ? new IgfsPath(path.toUri().getPath()) :
+            new IgfsPath(convert(workingDir.get()), path.toUri().getPath());
     }
 
     /**

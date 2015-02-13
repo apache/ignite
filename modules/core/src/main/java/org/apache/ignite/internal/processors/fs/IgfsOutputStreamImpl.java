@@ -98,7 +98,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws IgniteCheckedException If stream creation failed.
      */
-    IgfsOutputStreamImpl(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
+    IgfsOutputStreamImpl(IgfsContext ggfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
         int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
         throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
@@ -366,7 +366,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
-                catch (IgniteFsFileNotFoundException ignore) {
+                catch (IgfsFileNotFoundException ignore) {
                     data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
                     throw new IOException("File was concurrently deleted: " + path);

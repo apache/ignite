@@ -35,7 +35,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     private String ggfsName;
 
     /** Paths. */
-    private Collection<IgniteFsPath> paths;
+    private Collection<IgfsPath> paths;
 
     /** Record resolver. */
     private IgfsRecordResolver recRslvr;
@@ -66,7 +66,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public IgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgfsRecordResolver recRslvr,
+    public IgfsTaskArgsImpl(String ggfsName, Collection<IgfsPath> paths, IgfsRecordResolver recRslvr,
         boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
@@ -82,7 +82,7 @@ public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> paths() {
+    @Override public Collection<IgfsPath> paths() {
         return paths;
     }
 

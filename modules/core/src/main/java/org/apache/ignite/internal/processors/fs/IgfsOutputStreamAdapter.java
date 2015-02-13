@@ -31,7 +31,7 @@ import java.nio.*;
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 abstract class IgfsOutputStreamAdapter extends IgniteFsOutputStream {
     /** Path to file. */
-    protected final IgniteFsPath path;
+    protected final IgfsPath path;
 
     /** Buffer size. */
     private final int bufSize;
@@ -55,7 +55,7 @@ abstract class IgfsOutputStreamAdapter extends IgniteFsOutputStream {
      * @param path Path to stored file.
      * @param bufSize The size of the buffer to be used.
      */
-    IgfsOutputStreamAdapter(IgniteFsPath path, int bufSize) {
+    IgfsOutputStreamAdapter(IgfsPath path, int bufSize) {
         assert path != null;
         assert bufSize > 0;
 

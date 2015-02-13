@@ -37,7 +37,7 @@ public interface IgniteFsFile {
      *
      * @return Path to file.
      */
-    public IgniteFsPath path();
+    public IgfsPath path();
 
     /**
      * Check this file is a data file.
@@ -77,7 +77,7 @@ public interface IgniteFsFile {
     /**
      * Gets file last access time. File last access time is not updated automatically due to
      * performance considerations and can be updated on demand with
-     * {@link org.apache.ignite.IgniteFs#setTimes(IgniteFsPath, long, long)} method.
+     * {@link org.apache.ignite.IgniteFs#setTimes(IgfsPath, long, long)} method.
      * <p>
      * By default last access time equals file creation time.
      *

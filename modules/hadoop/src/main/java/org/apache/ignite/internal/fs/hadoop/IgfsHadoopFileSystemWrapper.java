@@ -34,9 +34,9 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.ignitefs.IgniteFsFileSystem}.
+ * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.ignitefs.Igfs}.
  */
-public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoCloseable {
+public class IgfsHadoopWrapper implements Igfs, AutoCloseable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
@@ -84,7 +84,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(IgniteFsPath path) {
+    private Path convert(IgfsPath path) {
         URI uri = fileSys.getUri();
 
         return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
@@ -118,7 +118,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
      */
     public static IgniteFsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
-            return new IgniteFsFileNotFoundException(e);
+            return new IgfsFileNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
             return new IgniteFsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
@@ -146,7 +146,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) {
+    @Override public boolean exists(IgfsPath path) {
         try {
             return fileSys.exists(convert(path));
         }
@@ -156,7 +156,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
+    @Nullable @Override public IgniteFsFile update(IgfsPath path, Map<String, String> props) {
         IgfsHadoopFSProperties props0 = new IgfsHadoopFSProperties(props);
 
         try {
@@ -175,7 +175,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
+    @Override public void rename(IgfsPath src, IgfsPath dest) {
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
@@ -188,7 +188,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) {
+    @Override public boolean delete(IgfsPath path, boolean recursive) {
         try {
             return fileSys.delete(convert(path), recursive);
         }
@@ -198,7 +198,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) {
+    @Override public void mkdirs(IgfsPath path) {
         try {
             if (!fileSys.mkdirs(convert(path)))
                 throw new IgniteException("Failed to make directories [path=" + path + "]");
@@ -209,7 +209,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
+    @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         try {
             if (!fileSys.mkdirs(convert(path), new IgfsHadoopFSProperties(props).permission()))
                 throw new IgniteException("Failed to make directories [path=" + path + ", props=" + props + "]");
@@ -220,22 +220,22 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) {
+    @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
 
-            Collection<IgniteFsPath> res = new ArrayList<>(statuses.length);
+            Collection<IgfsPath> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses)
-                res.add(new IgniteFsPath(path, status.getPath().getName()));
+                res.add(new IgfsPath(path, status.getPath().getName()));
 
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -243,12 +243,12 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) {
+    @Override public Collection<IgniteFsFile> listFiles(IgfsPath path) {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgniteFsFile> res = new ArrayList<>(statuses.length);
 
@@ -257,13 +257,13 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
                     new IgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
                     properties(status));
 
-                res.add(new IgfsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
+                res.add(new IgfsFileImpl(new IgfsPath(path, status.getPath().getName()), fsInfo, 1));
             }
 
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgniteFsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -271,12 +271,12 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsReader open(IgniteFsPath path, int bufSize) {
+    @Override public IgfsReader open(IgfsPath path, int bufSize) {
         return new IgfsHadoopReader(fileSys, convert(path), bufSize);
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) {
+    @Override public OutputStream create(IgfsPath path, boolean overwrite) {
         try {
             return fileSys.create(convert(path), overwrite);
         }
@@ -286,7 +286,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         IgfsHadoopFSProperties props0 =
             new IgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
@@ -303,7 +303,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream append(IgniteFsPath path, int bufSize, boolean create,
+    @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         try {
             return fileSys.append(convert(path), bufSize);
@@ -314,7 +314,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(final IgniteFsPath path) {
+    @Override public IgniteFsFile info(final IgfsPath path) {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -324,7 +324,7 @@ public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoClos
             final Map<String, String> props = properties(status);
 
             return new IgniteFsFile() {
-                @Override public IgniteFsPath path() {
+                @Override public IgfsPath path() {
                     return path;
                 }
 

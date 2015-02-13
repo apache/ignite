@@ -38,7 +38,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     private static final String PATH_STR_ESCAPED = PATH_STR.replace(';', '~');
 
     /** Path. */
-    private static final IgniteFsPath PATH = new IgniteFsPath(PATH_STR);
+    private static final IgfsPath PATH = new IgfsPath(PATH_STR);
 
     /** GGFS name. */
     private static final String GGFS_NAME = "ggfs";
@@ -204,7 +204,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
         String file2 = "/dir3/file1.test";
 
         log.logMakeDirectory(PATH, PRIMARY);
-        log.logRename(PATH, PRIMARY, new IgniteFsPath(newFile));
+        log.logRename(PATH, PRIMARY, new IgfsPath(newFile));
         log.logListDirectory(PATH, PRIMARY, new String[] { file1, file2 });
         log.logDelete(PATH, PRIMARY, false);
 
@@ -228,7 +228,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
      * @return GGFS file instance.
      */
     private IgniteFsFile file(String path) {
-        return new IgfsFileImpl(new IgniteFsPath(path), new IgfsFileInfo(), 64 * 1024 * 1024);
+        return new IgfsFileImpl(new IgfsPath(path), new IgfsFileInfo(), 64 * 1024 * 1024);
     }
 
     /**

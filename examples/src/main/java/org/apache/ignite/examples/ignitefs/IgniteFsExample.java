@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link IgniteFs} API. It starts a node with {@code IgniteFs}
+ * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code IgniteFs}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>
@@ -50,10 +50,10 @@ public final class IgniteFsExample {
 
         try {
             // Get an instance of Ignite File System.
-            org.apache.ignite.IgniteFs fs = ignite.fileSystem("ignitefs");
+            IgniteFs fs = ignite.fileSystem("ignitefs");
 
             // Working directory path.
-            IgniteFsPath workDir = new IgniteFsPath("/examples/fs");
+            IgfsPath workDir = new IgfsPath("/examples/fs");
 
             // Cleanup working directory.
             delete(fs, workDir);
@@ -65,7 +65,7 @@ public final class IgniteFsExample {
             printInfo(fs, workDir);
 
             // File path.
-            IgniteFsPath filePath = new IgniteFsPath(workDir, "file.txt");
+            IgfsPath filePath = new IgfsPath(workDir, "file.txt");
 
             // Create file.
             create(fs, filePath, new byte[] {1, 2, 3});
@@ -90,7 +90,7 @@ public final class IgniteFsExample {
 
             // Create several files.
             for (int i = 0; i < 5; i++)
-                create(fs, new IgniteFsPath(workDir, "file-" + i + ".txt"), null);
+                create(fs, new IgfsPath(workDir, "file-" + i + ".txt"), null);
 
             list(fs, workDir);
         }
@@ -107,7 +107,7 @@ public final class IgniteFsExample {
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
-    private static void delete(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void delete(IgniteFs fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -139,7 +139,7 @@ public final class IgniteFsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void mkdirs(IgniteFs fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -166,7 +166,7 @@ public final class IgniteFsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void create(IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
+    private static void create(IgniteFs fs, IgfsPath path, @Nullable byte[] data)
         throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
@@ -195,7 +195,7 @@ public final class IgniteFsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteException, IOException {
+    private static void append(IgniteFs fs, IgfsPath path, byte[] data) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
@@ -220,14 +220,14 @@ public final class IgniteFsExample {
      * @throws IgniteException If file can't be opened.
      * @throws IOException If data can't be read.
      */
-    private static void read(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException, IOException {
+    private static void read(IgniteFs fs, IgfsPath path) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isFile();
 
         byte[] data = new byte[(int)fs.info(path).length()];
 
-        try (IgniteFsInputStream in = fs.open(path)) {
+        try (IgfsInputStream in = fs.open(path)) {
             in.read(data);
         }
 
@@ -242,12 +242,12 @@ public final class IgniteFsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static void list(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void list(IgniteFs fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
 
-        Collection<IgniteFsPath> files = fs.listPaths(path);
+        Collection<IgfsPath> files = fs.listPaths(path);
 
         if (files.isEmpty()) {
             System.out.println();
@@ -257,7 +257,7 @@ public final class IgniteFsExample {
             System.out.println();
             System.out.println(">>> List of files in directory: " + path);
 
-            for (IgniteFsPath f : files)
+            for (IgfsPath f : files)
                 System.out.println(">>>     " + f.name());
         }
 
@@ -271,7 +271,7 @@ public final class IgniteFsExample {
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
-    private static void printInfo(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void printInfo(IgniteFs fs, IgfsPath path) throws IgniteException {
         System.out.println();
         System.out.println("Information for " + path + ": " + fs.info(path));
     }

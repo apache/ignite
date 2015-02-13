@@ -77,7 +77,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
+    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgfsInputStream stream,
         IgfsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
@@ -145,7 +145,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
      * @return The first found delimiter.
      * @throws IOException In case of IO exception.
      */
-    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(IgniteFsInputStream stream, long startPos)
+    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(IgfsInputStream stream, long startPos)
         throws IOException {
         State state;
         Delimiter delim;
@@ -176,7 +176,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
      * @return Next delimiter and updated map.
      * @throws IOException In case of exception.
      */
-    private Delimiter nextDelimiter(IgniteFsInputStream is, State state) throws IOException {
+    private Delimiter nextDelimiter(IgfsInputStream is, State state) throws IOException {
         assert is != null;
         assert state != null;
 

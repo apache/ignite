@@ -110,7 +110,7 @@ public class IgfsHadoopUtils {
         // First check for any nested IOException; if exists - re-throw it.
         if (e.hasCause(IOException.class))
             return e.getCause(IOException.class);
-        else if (e.hasCause(IgniteFsFileNotFoundException.class))
+        else if (e.hasCause(IgfsFileNotFoundException.class))
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
         else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);

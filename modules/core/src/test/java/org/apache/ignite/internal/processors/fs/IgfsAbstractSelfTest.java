@@ -78,34 +78,34 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }};
 
     /** Directory. */
-    protected static final IgniteFsPath DIR = new IgniteFsPath("/dir");
+    protected static final IgfsPath DIR = new IgfsPath("/dir");
 
     /** Sub-directory. */
-    protected static final IgniteFsPath SUBDIR = new IgniteFsPath(DIR, "subdir");
+    protected static final IgfsPath SUBDIR = new IgfsPath(DIR, "subdir");
 
     /** Another sub-directory in the same directory. */
-    protected static final IgniteFsPath SUBDIR2 = new IgniteFsPath(DIR, "subdir2");
+    protected static final IgfsPath SUBDIR2 = new IgfsPath(DIR, "subdir2");
 
     /** Sub-directory of the sub-directory. */
-    protected static final IgniteFsPath SUBSUBDIR = new IgniteFsPath(SUBDIR, "subsubdir");
+    protected static final IgfsPath SUBSUBDIR = new IgfsPath(SUBDIR, "subsubdir");
 
     /** File. */
-    protected static final IgniteFsPath FILE = new IgniteFsPath(SUBDIR, "file");
+    protected static final IgfsPath FILE = new IgfsPath(SUBDIR, "file");
 
     /** Another file in the same directory. */
-    protected static final IgniteFsPath FILE2 = new IgniteFsPath(SUBDIR, "file2");
+    protected static final IgfsPath FILE2 = new IgfsPath(SUBDIR, "file2");
 
     /** Other directory. */
-    protected static final IgniteFsPath DIR_NEW = new IgniteFsPath("/dirNew");
+    protected static final IgfsPath DIR_NEW = new IgfsPath("/dirNew");
 
     /** Other subdirectory. */
-    protected static final IgniteFsPath SUBDIR_NEW = new IgniteFsPath(DIR_NEW, "subdirNew");
+    protected static final IgfsPath SUBDIR_NEW = new IgfsPath(DIR_NEW, "subdirNew");
 
     /** Other sub-directory of the sub-directory. */
-    protected static final IgniteFsPath SUBSUBDIR_NEW = new IgniteFsPath(SUBDIR_NEW, "subsubdirNew");
+    protected static final IgfsPath SUBSUBDIR_NEW = new IgfsPath(SUBDIR_NEW, "subsubdirNew");
 
     /** Other file. */
-    protected static final IgniteFsPath FILE_NEW = new IgniteFsPath(SUBDIR_NEW, "fileNew");
+    protected static final IgfsPath FILE_NEW = new IgfsPath(SUBDIR_NEW, "fileNew");
 
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
@@ -181,7 +181,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
-        @Nullable IgniteFsFileSystem secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
+        @Nullable Igfs secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -370,8 +370,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRenameFileParentRoot() throws Exception {
-        IgniteFsPath file1 = new IgniteFsPath("/file1");
-        IgniteFsPath file2 = new IgniteFsPath("/file2");
+        IgfsPath file1 = new IgfsPath("/file1");
+        IgfsPath file2 = new IgfsPath("/file2");
 
         create(ggfs, null, paths(file1));
 
@@ -402,8 +402,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRenameDirectoryParentRoot() throws Exception {
-        IgniteFsPath dir1 = new IgniteFsPath("/dir1");
-        IgniteFsPath dir2 = new IgniteFsPath("/dir2");
+        IgfsPath dir1 = new IgfsPath("/dir1");
+        IgfsPath dir2 = new IgfsPath("/dir2");
 
         create(ggfs, paths(dir1), null);
 
@@ -424,7 +424,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         ggfs.rename(FILE, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -436,9 +436,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveFileDestinationRoot() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.rename(FILE, new IgniteFsPath());
+        ggfs.rename(FILE, new IgfsPath());
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath("/" + FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -448,13 +448,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveFileSourceParentRoot() throws Exception {
-        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
+        IgfsPath file = new IgfsPath("/" + FILE.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
         ggfs.rename(file, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, file);
     }
 
@@ -479,7 +479,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameFileDestinationRoot() throws Exception {
-        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
+        IgfsPath file = new IgfsPath("/" + FILE.name());
 
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
@@ -495,7 +495,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameFileSourceParentRoot() throws Exception {
-        IgniteFsPath file = new IgniteFsPath("/" + FILE_NEW.name());
+        IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
@@ -516,7 +516,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -528,9 +528,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveDirectoryDestinationRoot() throws Exception {
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        ggfs.rename(SUBSUBDIR, new IgniteFsPath());
+        ggfs.rename(SUBSUBDIR, new IgfsPath());
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -540,13 +540,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveDirectorySourceParentRoot() throws Exception {
-        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
+        IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
         ggfs.rename(dir, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, dir);
     }
 
@@ -571,7 +571,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectoryDestinationRoot() throws Exception {
-        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
+        IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
@@ -587,7 +587,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectorySourceParentRoot() throws Exception {
-        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR_NEW.name());
+        IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
@@ -866,7 +866,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFsInputStream is = null;
+                IgfsInputStream is = null;
 
                 try {
                     is = ggfs.open(FILE);
@@ -877,7 +877,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteFsFileNotFoundException.class, "File not found: " + FILE);
+        }, IgfsFileNotFoundException.class, "File not found: " + FILE);
     }
 
     /**
@@ -899,7 +899,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateParentRoot() throws Exception {
-        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
+        IgfsPath file = new IgfsPath("/" + FILE.name());
 
         createFile(ggfs, file, true, chunk);
 
@@ -1079,7 +1079,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             @Override public void run() {
                 int idx = ctr.incrementAndGet();
 
-                IgniteFsPath path = new IgniteFsPath("/file" + idx);
+                IgfsPath path = new IgfsPath("/file" + idx);
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
@@ -1195,7 +1195,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendParentRoot() throws Exception {
-        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
+        IgfsPath file = new IgfsPath("/" + FILE.name());
 
         createFile(ggfs, file, true, BLOCK_SIZE, chunk);
 
@@ -1388,13 +1388,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int threadCnt = 10;
 
         for (int i = 0; i < threadCnt; i++)
-            createFile(ggfs, new IgniteFsPath("/file" + i), false);
+            createFile(ggfs, new IgfsPath("/file" + i), false);
 
         multithreaded(new Runnable() {
             @Override public void run() {
                 int idx = ctr.getAndIncrement();
 
-                IgniteFsPath path = new IgniteFsPath("/file" + idx);
+                IgfsPath path = new IgfsPath("/file" + idx);
 
                 try {
                     byte[][] chunks = new byte[REPEAT_CNT][];
@@ -1916,15 +1916,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         assert childrenDirPerLvl > 0;
 
         // First define file system structure.
-        final Map<Integer, List<IgniteFsPath>> dirPaths = new HashMap<>();
-        final Map<Integer, List<IgniteFsPath>> filePaths = new HashMap<>();
+        final Map<Integer, List<IgfsPath>> dirPaths = new HashMap<>();
+        final Map<Integer, List<IgfsPath>> filePaths = new HashMap<>();
 
-        Queue<IgniteBiTuple<Integer, IgniteFsPath>> queue = new ArrayDeque<>();
+        Queue<IgniteBiTuple<Integer, IgfsPath>> queue = new ArrayDeque<>();
 
-        queue.add(F.t(0, new IgniteFsPath())); // Add root directory.
+        queue.add(F.t(0, new IgfsPath())); // Add root directory.
 
         while (!queue.isEmpty()) {
-            IgniteBiTuple<Integer, IgniteFsPath> entry = queue.poll();
+            IgniteBiTuple<Integer, IgfsPath> entry = queue.poll();
 
             int lvl = entry.getKey();
 
@@ -1932,21 +1932,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 int newLvl = lvl + 1;
 
                 for (int i = 0; i < childrenDirPerLvl; i++) {
-                    IgniteFsPath path = new IgniteFsPath(entry.getValue(), "dir-" + newLvl + "-" + i);
+                    IgfsPath path = new IgfsPath(entry.getValue(), "dir-" + newLvl + "-" + i);
 
                     queue.add(F.t(newLvl, path));
 
                     if (!dirPaths.containsKey(newLvl))
-                        dirPaths.put(newLvl, new ArrayList<IgniteFsPath>());
+                        dirPaths.put(newLvl, new ArrayList<IgfsPath>());
 
                     dirPaths.get(newLvl).add(path);
                 }
 
                 for (int i = 0; i < childrenFilePerLvl; i++) {
-                    IgniteFsPath path = new IgniteFsPath(entry.getValue(), "file-" + newLvl + "-" + i);
+                    IgfsPath path = new IgfsPath(entry.getValue(), "file-" + newLvl + "-" + i);
 
                     if (!filePaths.containsKey(newLvl))
-                        filePaths.put(newLvl, new ArrayList<IgniteFsPath>());
+                        filePaths.put(newLvl, new ArrayList<IgfsPath>());
 
                     filePaths.get(newLvl).add(path);
                 }
@@ -1970,8 +1970,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         int fromLvl = rand.nextInt(lvlCnt) + 1;
                         int toLvl = rand.nextInt(lvlCnt) + 1;
 
-                        List<IgniteFsPath> fromPaths;
-                        List<IgniteFsPath> toPaths;
+                        List<IgfsPath> fromPaths;
+                        List<IgfsPath> toPaths;
 
                         if (rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl) {
                             // Rename directories.
@@ -1984,8 +1984,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                             toPaths = filePaths.get(toLvl);
                         }
 
-                        IgniteFsPath fromPath = fromPaths.get(rand.nextInt(fromPaths.size()));
-                        IgniteFsPath toPath = toPaths.get(rand.nextInt(toPaths.size()));
+                        IgfsPath fromPath = fromPaths.get(rand.nextInt(fromPaths.size()));
+                        IgfsPath toPath = toPaths.get(rand.nextInt(toPaths.size()));
 
                         U.awaitQuiet(barrier);
 
@@ -2007,7 +2007,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        IgniteFsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
                             dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
                             filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
 
@@ -2031,7 +2031,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        IgniteFsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
                             dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
                             filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
 
@@ -2057,9 +2057,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        IgniteFsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
 
-                        IgniteFsPath path = new IgniteFsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
+                        IgfsPath path = new IgfsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
 
                         U.awaitQuiet(barrier);
 
@@ -2084,9 +2084,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        IgniteFsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
 
-                        IgniteFsPath path = new IgniteFsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
+                        IgfsPath path = new IgfsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
 
                         U.awaitQuiet(barrier);
 
@@ -2116,8 +2116,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             IgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? ggfs : ggfsSecondary : ggfs;
 
-            IgniteFsPath[] dirs = dirPaths.get(lvl).toArray(new IgniteFsPath[dirPaths.get(lvl).size()]);
-            IgniteFsPath[] files = filePaths.get(lvl).toArray(new IgniteFsPath[filePaths.get(lvl).size()]);
+            IgfsPath[] dirs = dirPaths.get(lvl).toArray(new IgfsPath[dirPaths.get(lvl).size()]);
+            IgfsPath[] files = filePaths.get(lvl).toArray(new IgfsPath[filePaths.get(lvl).size()]);
 
             create(targetGgfs, dirs, files);
         }
@@ -2137,15 +2137,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param files Files.
      * @throws Exception If failed.
      */
-    public static void create(IgniteFsFileSystem ggfs, @Nullable IgniteFsPath[] dirs, @Nullable IgniteFsPath[] files)
+    public static void create(Igfs ggfs, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files)
         throws Exception {
         if (dirs != null) {
-            for (IgniteFsPath dir : dirs)
+            for (IgfsPath dir : dirs)
                 ggfs.mkdirs(dir);
         }
 
         if (files != null) {
-            for (IgniteFsPath file : files) {
+            for (IgfsPath file : files) {
                 OutputStream os = ggfs.create(file, true);
 
                 os.close();
@@ -2163,7 +2163,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected static void createFile(IgniteFsFileSystem ggfs, IgniteFsPath file, boolean overwrite,
+    protected static void createFile(Igfs ggfs, IgfsPath file, boolean overwrite,
         @Nullable byte[]... chunks) throws IOException, IgniteCheckedException {
         OutputStream os = null;
 
@@ -2189,7 +2189,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(IgniteFs ggfs, IgniteFsPath file, boolean overwrite, long blockSize,
+    protected void createFile(IgniteFs ggfs, IgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         IgniteFsOutputStream os = null;
 
@@ -2213,7 +2213,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(IgniteFs ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
+    protected void appendFile(IgniteFs ggfs, IgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
         IgniteFsOutputStream os = null;
 
@@ -2249,7 +2249,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param ggfs GGFS.
      * @param file File.
      */
-    public static void awaitFileClose(IgniteFsFileSystem ggfs, IgniteFsPath file) {
+    public static void awaitFileClose(Igfs ggfs, IgfsPath file) {
         try {
             ggfs.update(file, Collections.singletonMap("prop", "val"));
         }
@@ -2266,7 +2266,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath... paths) throws Exception {
+    protected void checkExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath... paths) throws Exception {
         checkExist(ggfs, paths);
 
         if (dual)
@@ -2280,8 +2280,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
-    protected void checkExist(IgfsImpl ggfs, IgniteFsPath... paths) throws IgniteCheckedException {
-        for (IgniteFsPath path : paths) {
+    protected void checkExist(IgfsImpl ggfs, IgfsPath... paths) throws IgniteCheckedException {
+        for (IgfsPath path : paths) {
             assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [ggfs=" + ggfs.name() +
                 ", path=" + path + ']';
             assert ggfs.exists(path) : "Path doesn't exist [ggfs=" + ggfs.name() + ", path=" + path + ']';
@@ -2296,7 +2296,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath... paths)
+    protected void checkNotExist(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath... paths)
         throws Exception {
         checkNotExist(ggfs, paths);
 
@@ -2311,8 +2311,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(IgfsImpl ggfs, IgniteFsPath... paths) throws Exception {
-        for (IgniteFsPath path : paths) {
+    protected void checkNotExist(IgfsImpl ggfs, IgfsPath... paths) throws Exception {
+        for (IgfsPath path : paths) {
             assert ggfs.context().meta().fileId(path) == null : "Path exists [ggfs=" + ggfs.name() + ", path=" +
                 path + ']';
             assert !ggfs.exists(path) : "Path exists [ggfs=" + ggfs.name() + ", path=" + path + ']';
@@ -2329,7 +2329,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgniteFsPath file,
+    protected void checkFile(IgfsImpl ggfs, IgfsImpl ggfsSecondary, IgfsPath file,
         @Nullable byte[]... chunks) throws Exception {
         checkExist(ggfs, file);
         checkFileContent(ggfs, file, chunks);
@@ -2349,10 +2349,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected void checkFileContent(IgfsImpl ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
+    protected void checkFileContent(IgfsImpl ggfs, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException, IgniteCheckedException {
         if (chunks != null && chunks.length > 0) {
-            IgniteFsInputStream is = null;
+            IgfsInputStream is = null;
 
             try {
                 is = ggfs.open(file);
@@ -2408,7 +2408,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths to group.
      * @return Paths as array.
      */
-    protected IgniteFsPath[] paths(IgniteFsPath... paths) {
+    protected IgfsPath[] paths(IgfsPath... paths) {
         return paths;
     }
 
@@ -2438,10 +2438,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgniteFsPath, IgfsFileWorker> workerMap =
-            (Map<IgniteFsPath, IgfsFileWorker>)workerMapFld.get(ggfs);
+        Map<IgfsPath, IgfsFileWorker> workerMap =
+            (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(ggfs);
 
-        for (Map.Entry<IgniteFsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
+        for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
 
             U.join(entry.getValue());

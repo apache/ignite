@@ -170,13 +170,13 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     public void testCreateFile() throws Exception {
-        IgniteFsPath root = new IgniteFsPath("/");
-        IgniteFsPath path = new IgniteFsPath("/asdf");
+        IgfsPath root = new IgfsPath("/");
+        IgfsPath path = new IgfsPath("/asdf");
 
         long max = 100L * CFG_BLOCK_SIZE / WRITING_THREADS_CNT;
 
         for (long size = 0; size <= max; size = size * 15 / 10 + 1) {
-            assertEquals(Collections.<IgniteFsPath>emptyList(), fs.listPaths(root));
+            assertEquals(Collections.<IgfsPath>emptyList(), fs.listPaths(root));
 
             testCreateFile(path, size, new Random().nextInt());
         }
@@ -184,7 +184,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileColocated() throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/colocated");
+        IgfsPath path = new IgfsPath("/colocated");
 
         UUID uuid = UUID.randomUUID();
 
@@ -226,7 +226,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.setFieldValue(fragmentizer, "fragmentizerEnabled", false);
 
-        IgniteFsPath path = new IgniteFsPath("/file");
+        IgfsPath path = new IgfsPath("/file");
 
         try {
             IgniteFs fs0 = grid(0).fileSystem("ggfs");
@@ -272,7 +272,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             assertTrue(ranges.get(1).endOffset() == 3 * CFG_BLOCK_SIZE - 1);
 
             // Validate data read after colocated writes.
-            try (IgniteFsInputStream in = fs2.open(path)) {
+            try (IgfsInputStream in = fs2.open(path)) {
                 // Validate first part of file.
                 for (int i = 0; i < CFG_BLOCK_SIZE * 3 / 2; i++)
                     assertEquals((byte)1, in.read());
@@ -313,17 +313,17 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @param salt Salt for file content generation.
      * @throws Exception In case of any exception.
      */
-    private void testCreateFile(final IgniteFsPath path, final long size, final int salt) throws Exception {
+    private void testCreateFile(final IgfsPath path, final long size, final int salt) throws Exception {
         info("Create file [path=" + path + ", size=" + size + ", salt=" + salt + ']');
 
         final AtomicInteger cnt = new AtomicInteger(0);
-        final Collection<IgniteFsPath> cleanUp = new ConcurrentLinkedQueue<>();
+        final Collection<IgfsPath> cleanUp = new ConcurrentLinkedQueue<>();
 
         long time = runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int id = cnt.incrementAndGet();
 
-                IgniteFsPath f = new IgniteFsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
+                IgfsPath f = new IgfsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
 
                 try (IgniteFsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
                     assertNotNull(out);
@@ -347,7 +347,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         info("Read and validate saved file: " + path);
 
         final InputStream expIn = new IgfsTestInputStream(size, salt);
-        final IgniteFsInputStream actIn = fs.open(path, CFG_BLOCK_SIZE * READING_THREADS_CNT * 11 / 10);
+        final IgfsInputStream actIn = fs.open(path, CFG_BLOCK_SIZE * READING_THREADS_CNT * 11 / 10);
 
         // Validate continuous reading of whole file.
         assertEqualStreams(expIn, actIn, size, null);
@@ -395,7 +395,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         info("Cleanup files: " + cleanUp);
 
-        for (IgniteFsPath f : cleanUp) {
+        for (IgfsPath f : cleanUp) {
             fs.delete(f, true);
             assertNull(fs.info(f));
         }
@@ -410,7 +410,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @param seek Seek to use async position-based reading or {@code null} to use simple continuous reading.
      * @throws IOException In case of any IO exception.
      */
-    private void assertEqualStreams(InputStream expIn, IgniteFsInputStream actIn,
+    private void assertEqualStreams(InputStream expIn, IgfsInputStream actIn,
         @Nullable Long expSize, @Nullable Long seek) throws IOException {
         if (seek != null)
             expIn.skip(seek);

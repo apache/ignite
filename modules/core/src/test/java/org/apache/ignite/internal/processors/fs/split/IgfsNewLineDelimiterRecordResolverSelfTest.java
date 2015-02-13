@@ -86,7 +86,7 @@ public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractReco
 
         IgfsFileRange split;
 
-        try (IgniteFsInputStream is = read()) {
+        try (IgfsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 
@@ -111,7 +111,7 @@ public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractReco
 
         IgfsFileRange split;
 
-        try (IgniteFsInputStream is = read()) {
+        try (IgfsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 

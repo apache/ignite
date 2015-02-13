@@ -80,7 +80,7 @@ public final class IgfsFileInfo implements Externalizable {
      * Original file path. This is a helper field used only in some
      * operations like delete.
      */
-    private IgniteFsPath path;
+    private IgfsPath path;
 
     /**
      * {@link Externalizable} support.
@@ -468,7 +468,7 @@ public final class IgfsFileInfo implements Externalizable {
     /**
      * @return Original file path. This is a helper field used only in some operations like delete.
      */
-    public IgniteFsPath path() {
+    public IgfsPath path() {
         return path;
     }
 
@@ -501,7 +501,7 @@ public final class IgfsFileInfo implements Externalizable {
         accessTime = in.readLong();
         modificationTime = in.readLong();
         evictExclude = in.readBoolean();
-        path = (IgniteFsPath)in.readObject();
+        path = (IgfsPath)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -550,7 +550,7 @@ public final class IgfsFileInfo implements Externalizable {
          * @param path A new path value.
          * @return This builder instance (for chaining).
          */
-        public Builder path(IgniteFsPath path) {
+        public Builder path(IgfsPath path) {
             info.path = path;
 
             return this;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.ignitefs.mapreduce.*;
@@ -64,7 +63,7 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv) {
         return null;
     }

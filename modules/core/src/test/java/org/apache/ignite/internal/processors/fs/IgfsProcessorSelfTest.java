@@ -168,7 +168,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUpdateProperties() throws Exception {
-        IgniteFsPath p = path("/tmp/my");
+        IgfsPath p = path("/tmp/my");
 
         ggfs.mkdirs(p);
 
@@ -201,7 +201,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreate() throws Exception {
-        IgniteFsPath path = path("/file");
+        IgfsPath path = path("/file");
 
         try (IgniteFsOutputStream os = ggfs.create(path, false)) {
             assert os != null;
@@ -358,7 +358,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assert ggfs.exists(path("/A/B1/C1"));
 
         // List items.
-        Collection<IgniteFsPath> paths = ggfs.listPaths(path("/"));
+        Collection<IgfsPath> paths = ggfs.listPaths(path("/"));
 
         assert paths.size() == 3 : "Unexpected paths: " + paths;
 
@@ -388,12 +388,12 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         ggfs.delete(path("/A1/B1/C3"), false);
         assertNull(ggfs.info(path("/A1/B1/C3")));
 
-        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/A1/B1")));
+        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/A1/B1")));
 
         ggfs.delete(path("/A2/B2"), true);
         assertNull(ggfs.info(path("/A2/B2")));
 
-        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/A2")));
+        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/A2")));
 
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
 
@@ -407,10 +407,10 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
 
         ggfs.delete(path("/"), true);
-        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
+        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/")));
 
         ggfs.delete(path("/"), false);
-        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
+        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(path("/")));
 
         for (Cache.Entry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
@@ -422,13 +422,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSize() throws Exception {
-        IgniteFsPath dir1 = path("/dir1");
-        IgniteFsPath subDir1 = path("/dir1/subdir1");
-        IgniteFsPath dir2 = path("/dir2");
+        IgfsPath dir1 = path("/dir1");
+        IgfsPath subDir1 = path("/dir1/subdir1");
+        IgfsPath dir2 = path("/dir2");
 
-        IgniteFsPath fileDir1 = path("/dir1/file");
-        IgniteFsPath fileSubdir1 = path("/dir1/subdir1/file");
-        IgniteFsPath fileDir2 = path("/dir2/file");
+        IgfsPath fileDir1 = path("/dir1/file");
+        IgfsPath fileSubdir1 = path("/dir1/subdir1/file");
+        IgfsPath fileDir2 = path("/dir2/file");
 
         IgniteFsOutputStream os = ggfs.create(fileDir1, false);
         os.write(new byte[1000]);
@@ -520,11 +520,11 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             F.t("/C1", "/A/B1")
         );
 
-        final IgniteFsPath root = path("/");
+        final IgfsPath root = path("/");
 
         for (IgniteBiTuple<String, String> e : chain) {
-            final IgniteFsPath p1 = path(e.get1());
-            final IgniteFsPath p2 = path(e.get2());
+            final IgfsPath p1 = path(e.get1());
+            final IgfsPath p2 = path(e.get2());
 
             assertTrue("Entry: " + e, ggfs.exists(p1));
             ggfs.rename(p1, p2);
@@ -577,7 +577,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         // Validate renamed during reading.
 
-        try (IgniteFsInputStream in0 = ggfs.open(path("/A/a"))) {
+        try (IgfsInputStream in0 = ggfs.open(path("/A/a"))) {
             // Rename file.
             ggfs.rename(path("/A/a"), path("/b"));
 
@@ -591,24 +591,24 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Cleanup.
         ggfs.delete(root, true);
 
-        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(root));
+        assertEquals(Collections.<IgfsPath>emptyList(), ggfs.listPaths(root));
     }
 
     /**
      * @param path Path.
      * @return GGFS path.
      */
-    private IgniteFsPath path(String path) {
+    private IgfsPath path(String path) {
         assert path != null;
 
-        return new IgniteFsPath(path);
+        return new IgfsPath(path);
     }
 
     /**
      * @param i Path index.
      * @return GGFS path.
      */
-    private IgniteFsPath path(long i) {
+    private IgfsPath path(long i) {
         //return path(String.format("/%d", i));
         return path(String.format("/%d/q/%d/%d", i % 10, (i / 10) % 10, i));
     }
@@ -675,7 +675,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     public void testDeleteCacheConsistency() throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/someFile");
+        IgfsPath path = new IgfsPath("/someFile");
 
         try (IgniteFsOutputStream out = ggfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
@@ -787,7 +787,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkCreateAppendLongData(int chunkSize, int bufSize, int cnt) throws Exception {
-        IgniteFsPath path = new IgniteFsPath("/someFile");
+        IgfsPath path = new IgfsPath("/someFile");
 
         byte[] buf = new byte[chunkSize];
 
@@ -820,7 +820,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         byte[] readBuf = new byte[chunkSize];
 
-        try (IgniteFsInputStream in = ggfs.open(path)) {
+        try (IgfsInputStream in = ggfs.open(path)) {
             long pos = 0;
 
             for (int k = 0; k < 2 * cnt; k++) {
@@ -883,7 +883,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      */
     private String read(String path) throws Exception {
 
-        try (IgniteFsInputStream in = ggfs.open(path(path))) {
+        try (IgfsInputStream in = ggfs.open(path(path))) {
             return IOUtils.toString(in, UTF_8);
         }
     }
@@ -895,7 +895,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @param props File properties to set.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void assertUpdatePropertiesFails(@Nullable final IgniteFsPath path,
+    private void assertUpdatePropertiesFails(@Nullable final IgfsPath path,
         @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
@@ -963,7 +963,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void assertListDir(String path, String... item) throws IgniteCheckedException {
-        Collection<IgniteFsFile> files = ggfs.listFiles(new IgniteFsPath(path));
+        Collection<IgniteFsFile> files = ggfs.listFiles(new IgfsPath(path));
 
         List<String> names = new ArrayList<>(item.length);
 
