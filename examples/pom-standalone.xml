@@ -29,7 +29,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <ignite.version>1.0.0</ignite.version>
-        <src.dir>src/main/java</src.dir>
     </properties>
 
     <groupId>org.apache.ignite</groupId>
@@ -87,8 +86,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>${src.dir}</sourceDirectory>
-
         <resources>
             <resource>
                 <directory>src/main/java</directory>
@@ -117,9 +114,9 @@
         <profile>
             <id>java8</id>
 
-            <properties>
-                <src.dir>src/main/java8</src.dir>
-            </properties>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
 
             <build>
                 <plugins>
@@ -130,6 +127,23 @@
                             <source>1.8</source>
                             <target>1.8</target>
                         </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.9.1</version>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals><goal>add-source</goal></goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/java8</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
