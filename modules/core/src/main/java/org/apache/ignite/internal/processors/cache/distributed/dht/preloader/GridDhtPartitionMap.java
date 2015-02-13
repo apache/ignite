@@ -118,26 +118,7 @@ public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
 
         out.writeLong(updateSeq);
 
-        int size = size();
-
-        out.writeInt(size);
-
-        int i = 0;
-
-        for (Map.Entry<Integer, GridDhtPartitionState> entry : entrySet()) {
-            int ordinal = entry.getValue().ordinal();
-
-            assert ordinal == (ordinal & 0x3);
-            assert entry.getKey() == (entry.getKey() & 0x3FFF);
-
-            int coded = (ordinal << 14) | entry.getKey();
-
-            out.writeShort((short)coded);
-
-            i++;
-        }
-
-        assert i == size;
+        U.writeMap(out, this);
     }
 
     /** {@inheritDoc} */
@@ -146,16 +127,7 @@ public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
 
         updateSeq = in.readLong();
 
-        int size = in.readInt();
-
-        for (int i = 0; i < size; i++) {
-            int entry = in.readShort() & 0xFFFF;
-
-            int part = entry & 0x3FFF;
-            int ordinal = entry >> 14;
-
-            put(part, GridDhtPartitionState.fromOrdinal(ordinal));
-        }
+        putAll(U.<Integer, GridDhtPartitionState>readMap(in));
     }
 
     /** {@inheritDoc} */
