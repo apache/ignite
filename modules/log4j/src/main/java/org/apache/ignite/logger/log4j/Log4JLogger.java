@@ -64,7 +64,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, IgniteLog4jFileAware {
+public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -397,7 +397,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, IgniteLog4j
 
         this.nodeId = nodeId;
 
-        updateFilePath(new IgniteLog4jNodeIdFilePath(nodeId));
+        updateFilePath(new Log4jNodeIdFilePath(nodeId));
     }
 
     /** {@inheritDoc} */
@@ -508,8 +508,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, IgniteLog4j
         A.notNull(filePathClos, "filePathClos");
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof IgniteLog4jFileAware) {
-                ((IgniteLog4jFileAware)a).updateFilePath(filePathClos);
+            if (a instanceof Log4jFileAware) {
+                ((Log4jFileAware)a).updateFilePath(filePathClos);
 
                 a.activateOptions();
             }

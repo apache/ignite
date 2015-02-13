@@ -26,14 +26,14 @@ import java.io.*;
 /**
  * Log4J {@link ExternallyRolledFileAppender} with added support for grid node IDs.
  */
-public class IgniteLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender implements IgniteLog4jFileAware {
+public class Log4JExternallyRolledFileAppender extends ExternallyRolledFileAppender implements Log4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public IgniteLog4jExternallyRolledFileAppender() {
+    public Log4JExternallyRolledFileAppender() {
         init();
     }
 
