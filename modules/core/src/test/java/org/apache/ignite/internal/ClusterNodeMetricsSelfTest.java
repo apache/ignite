@@ -235,12 +235,11 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Ignite ignite1 = startGrid(1);
 
         ClusterMetrics metrics0 = ignite0.cluster().localNode().metrics();
-        ClusterMetrics metrics1 = ignite1.cluster().localNode().metrics();
 
         ClusterMetrics nodesMetrics =
             ignite0.cluster().forNode(ignite0.cluster().localNode(), ignite1.cluster().localNode()).metrics();
 
-        assertEquals(metrics0.getTotalCpus() + metrics1.getTotalCpus(), nodesMetrics.getTotalCpus());
+        assertEquals(metrics0.getTotalCpus(), nodesMetrics.getTotalCpus());
     }
 
     /**
