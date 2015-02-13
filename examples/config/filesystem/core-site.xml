@@ -25,18 +25,18 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ignitefs:///</value>
+        <value>igfs:///</value>
     </property>
 
     <property>
-        <!-- FS driver class for the 'ignitefs://' URIs. -->
-        <name>fs.ignitefs.impl</name>
+        <!-- FS driver class for the 'igfs://' URIs. -->
+        <name>fs.igfs.impl</name>
         <value>org.apache.ignite.igfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <property>
-        <!-- FS driver class for the 'ignitefs://' URIs in Hadoop2.x -->
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <!-- FS driver class for the 'igfs://' URIs in Hadoop2.x -->
+        <name>fs.AbstractFileSystem.igfs.impl</name>
         <value>org.apache.ignite.igfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 </configuration>

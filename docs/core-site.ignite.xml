@@ -36,18 +36,18 @@
 
 <configuration>
     <!--
-        Set default file system to IgniteFS instance named "ignitefs" configured in Ignite.
+        Set default file system to IgniteFS instance named "igfs" configured in Ignite.
     -->
     <property>
         <name>fs.default.name</name>
-        <value>ignitefs://ignitefs@localhost</value>
+        <value>igfs://igfs@localhost</value>
     </property>
 
     <!--
         Set Hadoop 1.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.ignitefs.impl</name>
+        <name>fs.igfs.impl</name>
         <value>org.apache.ignite.igfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
@@ -55,7 +55,7 @@
         Set Hadoop 2.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <name>fs.AbstractFileSystem.igfs.impl</name>
         <value>org.apache.ignite.igfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 

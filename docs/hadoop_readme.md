@@ -65,9 +65,9 @@ Ignite has it's own distributed in-memory file system called IgniteFS. Hadoop jo
 
 Generally URI for IgniteFS which will be used by Apache Hadoop looks like:
 
-    ignitefs://ignitefs_name@host_name
+    igfs://igfs_name@host_name
 
-Where `ignitefs_name` is IgniteFS instance name, `host_name` is any host running Ignite node with that IgniteFS instance configured. 
+Where `igfs_name` is IgniteFS instance name, `host_name` is any host running Ignite node with that IgniteFS instance configured.
 For more details please refer to IgniteFS documentation.
 
 ### 3.2 Apache Hadoop Client Configuration
