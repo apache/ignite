@@ -61,8 +61,8 @@ public class IgniteFsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 
-        suite.addTestSuite(GridGgfsFragmentizerSelfTest.class);
-        suite.addTestSuite(GridGgfsFragmentizerTopologySelfTest.class);
+        suite.addTestSuite(IgfsFragmentizerSelfTest.class);
+        suite.addTestSuite(IgfsFragmentizerTopologySelfTest.class);
         suite.addTestSuite(IgfsFileMapSelfTest.class);
 
         suite.addTestSuite(IgfsByteDelimiterRecordResolverSelfTest.class);

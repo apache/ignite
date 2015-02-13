@@ -74,7 +74,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
     /**
      * Shared memory IPC in PRIVATE mode.
      */
-    public static class ShmemPrivate extends GridGgfsEventsAbstractSelfTest {
+    public static class ShmemPrivate extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
@@ -91,7 +91,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
     /**
      * Loopback socket IPS in PRIVATE mode.
      */
-    public static class LoopbackPrivate extends GridGgfsEventsAbstractSelfTest {
+    public static class LoopbackPrivate extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
@@ -108,7 +108,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
     /**
      * Base class for all GGFS tests with primary and secondary file system.
      */
-    public abstract static class PrimarySecondaryTest extends GridGgfsEventsAbstractSelfTest {
+    public abstract static class PrimarySecondaryTest extends IgfsEventsAbstractSelfTest {
         /** Secondary file system. */
         private static IgniteFs ggfsSec;
 

@@ -32,7 +32,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Fragmentizer abstract self test.
  */
-public class GridGgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
+public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

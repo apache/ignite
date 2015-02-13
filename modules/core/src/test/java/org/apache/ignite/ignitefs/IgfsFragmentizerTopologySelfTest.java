@@ -17,35 +17,33 @@
 
 package org.apache.ignite.ignitefs;
 
-import java.io.*;
+import org.apache.ignite.*;
 
 /**
- *
+ * Tests coordinator transfer from one node to other.
  */
-public class GridGgfsTestInputGenerator {
-    public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
-            System.out.println("Run: GridGgfsTestInputGenerator <file name> <length>");
-            System.exit(-1);
+public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSelfTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorLeave() throws Exception {
+        stopGrid(0);
+
+        // Now node 1 should be coordinator.
+        try {
+            IgniteFsPath path = new IgniteFsPath("/someFile");
+
+            IgniteFs ggfs = grid(1).fileSystem("ggfs");
+
+            try (IgniteFsOutputStream out = ggfs.create(path, true)) {
+                for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++)
+                    out.write(new byte[GGFS_BLOCK_SIZE]);
+            }
+
+            awaitFileFragmenting(1, path);
         }
-
-        String outFileName = args[0];
-
-        long len = Long.parseLong(args[1]);
-
-        long start = System.currentTimeMillis();
-
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(outFileName), 32*1024*1024);
-
-        for (long i = 0; i < len; i++)
-                out.write(read(i));
-
-        out.close();
-
-        System.out.println("Finished in: " + (System.currentTimeMillis() - start));
-    }
-
-    private static int read(long pos) {
-        return (int)(pos % 116) + 10;
+        finally {
+            startGrid(0);
+        }
     }
 }

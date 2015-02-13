@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 /**
  * {@link org.apache.ignite.ignitefs.IgniteFsPath} self test.
  */
-public class GridGgfsPathSelfTest extends GridCommonAbstractTest {
+public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
     private final Marshaller marshaller = new OptimizedMarshaller();
 

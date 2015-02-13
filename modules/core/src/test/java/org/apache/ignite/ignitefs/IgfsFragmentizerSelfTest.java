@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Tests fragmentizer work.
  */
-public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSelfTest {
+public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */

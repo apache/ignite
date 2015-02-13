@@ -315,13 +315,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Perform writes.
-        Collection<GgfsFile> files = write();
+        Collection<IgfsFile> files = write();
 
         // Check sizes.
         Map<UUID, Integer> expSizes = new HashMap<>(GRID_CNT, 1.0f);
 
-        for (GgfsFile file : files) {
-            for (GgfsBlock block : file.blocks()) {
+        for (IgfsFile file : files) {
+            for (IgfsBlock block : file.blocks()) {
                 Collection<UUID> ids = primaryOrBackups(block.key());
 
                 for (UUID id : ids) {
@@ -346,7 +346,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         // Perform reads which could potentially be non-local.
         byte[] buf = new byte[BLOCK_SIZE];
 
-        for (GgfsFile file : files) {
+        for (IgfsFile file : files) {
             for (int i = 0; i < GRID_CNT; i++) {
                 int total = 0;
 
@@ -385,7 +385,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // All data must exist on each cache.
             int totalSize = 0;
 
-            for (GgfsFile file : files)
+            for (IgfsFile file : files)
                 totalSize += file.length();
 
             for (int i = 0; i < GRID_CNT; i++) {
@@ -398,11 +398,11 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Delete data and ensure that all counters are 0 now.
-        for (GgfsFile file : files) {
+        for (IgfsFile file : files) {
             ggfs(0).delete(file.path(), false);
 
             // Await for actual delete to occur.
-            for (GgfsBlock block : file.blocks()) {
+            for (IgfsBlock block : file.blocks()) {
                 for (int i = 0; i < GRID_CNT; i++) {
                     while (cache(grid(i).localNode().id()).peek(block.key()) != null)
                         U.sleep(100);
@@ -567,13 +567,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         startUp();
 
         // Perform writes.
-        Collection<GgfsFile> files = write();
+        Collection<IgfsFile> files = write();
 
         // Check sizes.
         Map<UUID, Integer> expSizes = new HashMap<>(GRID_CNT, 1.0f);
 
-        for (GgfsFile file : files) {
-            for (GgfsBlock block : file.blocks()) {
+        for (IgfsFile file : files) {
+            for (IgfsBlock block : file.blocks()) {
                 Collection<UUID> ids = primaryOrBackups(block.key());
 
                 for (UUID id : ids) {
@@ -622,8 +622,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         // Check sizes again.
         expSizes.clear();
 
-        for (GgfsFile file : files) {
-            for (GgfsBlock block : file.blocks()) {
+        for (IgfsFile file : files) {
+            for (IgfsBlock block : file.blocks()) {
                 Collection<UUID> ids = primaryOrBackups(block.key());
 
                 assert !ids.isEmpty();
@@ -756,8 +756,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Collection of written file descriptors.
      * @throws Exception If failed.
      */
-    private Collection<GgfsFile> write() throws Exception {
-        Collection<GgfsFile> res = new HashSet<>(FILES_CNT, 1.0f);
+    private Collection<IgfsFile> write() throws Exception {
+        Collection<IgfsFile> res = new HashSet<>(FILES_CNT, 1.0f);
 
         ThreadLocalRandom8 rand = ThreadLocalRandom8.current();
 
@@ -777,18 +777,18 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             int fullBlocks = fileSize / BLOCK_SIZE;
             int remainderSize = fileSize % BLOCK_SIZE;
 
-            Collection<GgfsBlock> blocks = new ArrayList<>(fullBlocks + remainderSize > 0 ? 1 : 0);
+            Collection<IgfsBlock> blocks = new ArrayList<>(fullBlocks + remainderSize > 0 ? 1 : 0);
 
             for (int j = 0; j < fullBlocks; j++)
-                blocks.add(new GgfsBlock(new IgfsBlockKey(fileId, null, true, j), BLOCK_SIZE));
+                blocks.add(new IgfsBlock(new IgfsBlockKey(fileId, null, true, j), BLOCK_SIZE));
 
             if (remainderSize > 0)
-                blocks.add(new GgfsBlock(new IgfsBlockKey(fileId, null, true, fullBlocks), remainderSize));
+                blocks.add(new IgfsBlock(new IgfsBlockKey(fileId, null, true, fullBlocks), remainderSize));
 
-            GgfsFile file = new GgfsFile(path, fileSize, blocks);
+            IgfsFile file = new IgfsFile(path, fileSize, blocks);
 
             // Actual write.
-            for (GgfsBlock block : blocks) {
+            for (IgfsBlock block : blocks) {
                 IgniteFsOutputStream os = ggfs(0).append(path, false);
 
                 os.write(chunk(block.length()));
@@ -804,7 +804,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** A file written to the file system. */
-    private static class GgfsFile {
+    private static class IgfsFile {
         /** Path to the file, */
         private final IgniteFsPath path;
 
@@ -812,7 +812,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         private final int len;
 
         /** Blocks with their corresponding locations. */
-        private final Collection<GgfsBlock> blocks;
+        private final Collection<IgfsBlock> blocks;
 
         /**
          * Constructor.
@@ -821,7 +821,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
          * @param len Length.
          * @param blocks Blocks.
          */
-        private GgfsFile(IgniteFsPath path, int len, Collection<GgfsBlock> blocks) {
+        private IgfsFile(IgniteFsPath path, int len, Collection<IgfsBlock> blocks) {
             this.path = path;
             this.len = len;
             this.blocks = blocks;
@@ -838,13 +838,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         }
 
         /** @return Blocks. */
-        Collection<GgfsBlock> blocks() {
+        Collection<IgfsBlock> blocks() {
             return blocks;
         }
     }
 
     /** Block written to the file system. */
-    private static class GgfsBlock {
+    private static class IgfsBlock {
         /** Block key. */
         private final IgfsBlockKey key;
 
@@ -857,7 +857,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
          * @param key Block key.
          * @param len Block length.
          */
-        private GgfsBlock(IgfsBlockKey key, int len) {
+        private IgfsBlock(IgfsBlockKey key, int len) {
             this.key = key;
             this.len = len;
         }
