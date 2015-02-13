@@ -22,7 +22,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.security.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
@@ -120,5 +122,97 @@ public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements
     /** {@inheritDoc} */
     @Override public boolean enabled() {
         return false;
+    }
+
+     /**
+     * Authenticated security subject.
+     */
+     private class GridSecuritySubjectAdapter implements GridSecuritySubject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Subject ID. */
+        private UUID id;
+
+        /** Subject type. */
+        private GridSecuritySubjectType subjType;
+
+        /** Address. */
+        private InetSocketAddress addr;
+
+        /** Permissions assigned to a subject. */
+        private GridSecurityPermissionSet permissions;
+
+        /** Login. */
+        @GridToStringInclude
+        private Object login;
+
+        /**
+         * @param subjType Subject type.
+         * @param id Subject ID.
+         */
+        public GridSecuritySubjectAdapter(GridSecuritySubjectType subjType, UUID id) {
+            this.subjType = subjType;
+            this.id = id;
+        }
+
+        /**
+         * @return Subject ID.
+         */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /**
+         * @return Subject type.
+         */
+        @Override public GridSecuritySubjectType type() {
+            return subjType;
+        }
+
+        /**
+         * @return Subject address.
+         */
+        @Override public InetSocketAddress address() {
+            return addr;
+        }
+
+        /**
+         * @param addr Subject address.
+         */
+        public void address(InetSocketAddress addr) {
+            this.addr = addr;
+        }
+
+        /**
+         * @return Security permissions.
+         */
+        @Override public GridSecurityPermissionSet permissions() {
+            return permissions;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object login() {
+            return login;
+        }
+
+        /**
+         * @param login Login.
+         */
+        public void login(Object login) {
+            this.login = login;
+        }
+
+        /**
+         * @param permissions Permissions.
+         */
+        public void permissions(GridSecurityPermissionSet permissions) {
+            this.permissions = permissions;
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(GridSecuritySubjectAdapter.class, this);
+        }
     }
 }

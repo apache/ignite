@@ -38,6 +38,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -98,7 +99,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Allow all permission security set.
      */
-    protected GridSecurityPermissionSet getAllPermissionSet() {
+    private GridSecurityPermissionSet getAllPermissionSet() {
         return new GridSecurityPermissionSet() {
             /** Serial version uid. */
             private static final long serialVersionUID = 0L;
@@ -121,6 +122,38 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             /** {@inheritDoc} */
             @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
                 return null;
+            }
+        };
+    }
+
+    /**
+     * @return Grid allow all security subject.
+     */
+    protected GridSecuritySubject getGridSecuritySubject(final GridSecuritySubjectType type, final UUID id) {
+        return new GridSecuritySubject() {
+            /** {@inheritDoc} */
+            @Override public UUID id() {
+                return id;
+            }
+
+            /** {@inheritDoc} */
+            @Override public GridSecuritySubjectType type() {
+                return type;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object login() {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public InetSocketAddress address() {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public GridSecurityPermissionSet permissions() {
+                return getAllPermissionSet();
             }
         };
     }
@@ -349,10 +382,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
-                    GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                subj.permissions(getAllPermissionSet());
+                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
                 return new GridSecurityContext(subj);
             }
