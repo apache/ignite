@@ -367,8 +367,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         if (cacheMode() == LOCAL)
             assert res.size() == 20000;
-        else if (cacheMode() == REPLICATED)
-            assert res.size() == 60000;
         else
             assert res.size() <= 20000;
 
@@ -414,7 +412,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         Collection<List<?>> res = qry.getAll();
 
         assert res != null;
-        assert res.size() == (cacheMode() == REPLICATED ? 200 * gridCount() : 200);
+        assert res.size() == 200;
     }
 
     /** @throws Exception If failed. */
@@ -499,7 +497,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             cnt++;
         }
 
-        int size = cacheMode() == REPLICATED ? 200 * gridCount() : 200;
+        int size = 200;
 
         assertEquals(size, cnt);
     }
