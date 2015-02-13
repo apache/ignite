@@ -509,31 +509,31 @@
             </plugin>
 
             <!-- ensure proper cleanup after install -->
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-clean-plugin</artifactId>-->
-                <!--<inherited>false</inherited>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>flatten.clean.after</id>-->
-                        <!--<phase>install</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>clean</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<excludeDefaultDirectories>true</excludeDefaultDirectories>-->
-                            <!--<filesets>-->
-                                <!--<fileset>-->
-                                    <!--<directory>${project.basedir}</directory>-->
-                                    <!--<includes>-->
-                                        <!--<include>**/pom-installed.xml</include>-->
-                                    <!--</includes>-->
-                                <!--</fileset>-->
-                            <!--</filesets>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>flatten.clean.after</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>**/pom-installed.xml</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -553,7 +553,7 @@
                 <executions>
                     <execution>
                         <id>deploy-core</id>
-                        <phase>deploy</phase>
+                        <phase>validate</phase>
                         <goals>
                             <goal>deploy-file</goal>
                         </goals>
@@ -562,6 +562,7 @@
                             <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-core</artifactId>
                             <version>${ignite.version}</version>
+                            <repositoryId>${distributionManagement.snapshotRepository.id}</repositoryId>
                             <url>${distributionManagement.snapshotRepository.url}</url>
                             <file>${basedir}/target/ignite-core-${ignite.version}.jar</file>
                         </configuration>
