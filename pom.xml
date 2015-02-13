@@ -559,7 +559,7 @@
                         </goals>
                         <configuration>
                             <packaging>jar</packaging>
-                            <pomFile>${basedir}/modules/core/pom.xml</pomFile>
+                            <pomFile>${basedir}/modules/core/pom-installed.xml</pomFile>
                             <url>${project.distributionManagement.repository.url}</url>
                             <file>${basedir}/target/ignite-core-${ignite.version}.jar</file>
                         </configuration>
