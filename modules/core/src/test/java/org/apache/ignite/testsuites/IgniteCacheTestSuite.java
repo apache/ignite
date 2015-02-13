@@ -380,6 +380,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+        // suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         return suite;
     }
