@@ -205,8 +205,8 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS pool size. */
-    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
+    /** IGFS pool size. */
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -392,8 +392,8 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** GGFS configuration. */
-    private IgniteFsConfiguration[] ggfsCfg;
+    /** IGFS configuration. */
+    private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
@@ -473,8 +473,8 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
+        igfsCfg = cfg.getIgfsConfiguration();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -994,14 +994,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing GGFS messages.
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
      * <p>
      * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool size to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for IGFS outgoing message sending.
      */
-    public int getGgfsThreadPoolSize() {
-        return ggfsPoolSize;
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
     }
 
     /**
@@ -1045,13 +1045,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Set thread pool size that will be used to process outgoing GGFS messages.
+     * Set thread pool size that will be used to process outgoing IGFS messages.
      *
-     * @param poolSize Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsThreadPoolSize()
+     * @param poolSize Executor service to use for outgoing IGFS messages.
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
-    public void setGgfsThreadPoolSize(int poolSize) {
-        this.ggfsPoolSize = poolSize;
+    public void setIgfsThreadPoolSize(int poolSize) {
+        this.igfsPoolSize = poolSize;
     }
 
     /**
@@ -2138,21 +2138,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets GGFS configurations.
+     * Gets IGFS configurations.
      *
-     * @return GGFS configurations.
+     * @return IGFS configurations.
      */
-    public IgniteFsConfiguration[] getGgfsConfiguration() {
-        return ggfsCfg;
+    public IgfsConfiguration[] getIgfsConfiguration() {
+        return igfsCfg;
     }
 
     /**
-     * Sets GGFS configurations.
+     * Sets IGFS configurations.
      *
-     * @param ggfsCfg GGFS configurations.
+     * @param igfsCfg IGFS configurations.
      */
-    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
-        this.ggfsCfg = ggfsCfg;
+    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
     }
 
     /**

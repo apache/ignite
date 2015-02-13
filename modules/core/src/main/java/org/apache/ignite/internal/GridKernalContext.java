@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
@@ -261,14 +261,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return File system processor.
      */
-    public IgniteFsProcessorAdapter ggfs();
+    public IgfsProcessorAdapter igfs();
 
     /**
-     * Gets GGFS utils processor.
+     * Gets IGFS utils processor.
      *
-     * @return GGFS utils processor.
+     * @return IGFS utils processor.
      */
-    public IgniteFsHelper ggfsHelper();
+    public IgfsHelper igfsHelper();
 
     /**
      * Gets stream processor.
@@ -502,11 +502,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getPeerClassLoadingExecutorService();
 
     /**
-     * Executor service that is in charge of processing outgoing GGFS messages.
+     * Executor service that is in charge of processing outgoing IGFS messages.
      *
-     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     * @return Thread pool implementation to be used for IGFS outgoing message sending.
      */
-    public ExecutorService getGgfsExecutorService();
+    public ExecutorService getIgfsExecutorService();
 
     /**
      * Should return an instance of fully configured thread pool to be used for

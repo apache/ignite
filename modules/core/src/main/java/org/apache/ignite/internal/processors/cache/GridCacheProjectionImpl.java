@@ -708,18 +708,18 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsDataCache() {
-        return cache.isGgfsDataCache();
+    @Override public boolean isIgfsDataCache() {
+        return cache.isIgfsDataCache();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
-        return cache.ggfsDataSpaceUsed();
+    @Override public long igfsDataSpaceUsed() {
+        return cache.igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceMax() {
-        return cache.ggfsDataSpaceMax();
+    @Override public long igfsDataSpaceMax() {
+        return cache.igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */

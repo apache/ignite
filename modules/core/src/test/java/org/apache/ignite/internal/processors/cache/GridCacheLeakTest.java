@@ -42,7 +42,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
-    private static final String CACHE_NAME = "ggfs-data";
+    private static final String CACHE_NAME = "igfs-data";
 
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;

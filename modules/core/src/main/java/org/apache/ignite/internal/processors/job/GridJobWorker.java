@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -495,7 +495,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 assert ex != null;
             }
             else {
-                if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
+                if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgfsOutOfSpaceException.class)) {
                     // Print exception for internal errors only if debug is enabled.
                     if (log.isDebugEnabled())
                         U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);

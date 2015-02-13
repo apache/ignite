@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.hadoop.planner;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.fs.hadoop.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -152,19 +152,19 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         if (split instanceof GridHadoopFileBlock) {
             GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
 
-            if (GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
-                GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(split0.file().getAuthority());
+            if (IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
+                IgfsHadoopEndpoint endpoint = new IgfsHadoopEndpoint(split0.file().getAuthority());
 
-                GridGgfsEx ggfs = null;
+                IgfsEx igfs = null;
 
                 if (F.eq(ignite.name(), endpoint.grid()))
-                    ggfs = (GridGgfsEx)((IgniteEx)ignite).ggfsx(endpoint.ggfs());
+                    igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
-                if (ggfs != null && !ggfs.isProxy(split0.file())) {
-                    Collection<IgniteFsBlockLocation> blocks;
+                if (igfs != null && !igfs.isProxy(split0.file())) {
+                    Collection<IgfsBlockLocation> blocks;
 
                     try {
-                        blocks = ggfs.affinity(new IgniteFsPath(split0.file()), split0.start(), split0.length());
+                        blocks = igfs.affinity(new IgfsPath(split0.file()), split0.start(), split0.length());
                     }
                     catch (IgniteException e) {
                         throw new IgniteCheckedException(e);
@@ -173,16 +173,16 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                     assert blocks != null;
 
                     if (blocks.size() == 1)
-                        // Fast-path, split consists of one GGFS block (as in most cases).
+                        // Fast-path, split consists of one IGFS block (as in most cases).
                         return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
                     else {
-                        // Slow-path, file consists of multiple GGFS blocks. First, find the most co-located nodes.
+                        // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
                         Map<UUID, Long> nodeMap = new HashMap<>();
 
                         List<UUID> bestNodeIds = null;
                         long bestLen = -1L;
 
-                        for (IgniteFsBlockLocation block : blocks) {
+                        for (IgfsBlockLocation block : blocks) {
                             for (UUID blockNodeId : block.nodeIds()) {
                                 if (topIds.contains(blockNodeId)) {
                                     Long oldLen = nodeMap.get(blockNodeId);
@@ -215,7 +215,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             }
         }
 
-        // Cannot use local GGFS for some reason, try selecting the node by host.
+        // Cannot use local IGFS for some reason, try selecting the node by host.
         Collection<UUID> blockNodes = null;
 
         for (String host : split.hosts()) {

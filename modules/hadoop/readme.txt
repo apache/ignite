@@ -1,7 +1,7 @@
 Apache Ignite Hadoop Module
 ---------------------------
 
-Apache Ignite Hadoop module provides In-Memory MapReduce engine and driver to use GGFS as Hadoop file system
+Apache Ignite Hadoop module provides In-Memory MapReduce engine and driver to use IGFS as Hadoop file system
 which are 100% compatible with HDFS and YARN.
 
 To enable Hadoop module when starting a standalone node, move 'optional/ignite-hadoop' folder to
