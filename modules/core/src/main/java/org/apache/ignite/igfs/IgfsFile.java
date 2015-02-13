@@ -28,7 +28,7 @@ import java.util.*;
  *     GridGgfsPath filePath = new GridGgfsPath("my/working/dir", "file.txt");
  *
  *     // Get metadata about file.
- *     GridGgfsFile file = ggfs.info(filePath);
+ *     GridGgfsFile file = igfs.info(filePath);
  * </pre>
  */
 public interface IgfsFile {

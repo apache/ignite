@@ -45,5 +45,5 @@ public interface IgfsHelper {
      * @param key Key.
      * @return {@code True} if GGFS block key.
      */
-    public abstract boolean isGgfsBlockKey(Object key);
+    public abstract boolean isIgfsBlockKey(Object key);
 }

@@ -34,7 +34,7 @@ import java.util.*;
  *     GridGgfsPath filePath = new GridGgfsPath(dirPath, "file.txt");
  *
  *     // Get metadata about file.
- *     GridGgfsFile file = ggfs.info(filePath);
+ *     GridGgfsFile file = igfs.info(filePath);
  * </pre>
  */
 public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {

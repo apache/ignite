@@ -31,13 +31,13 @@ import java.io.*;
  */
 public class IgfsHadoopUtils {
     /** Parameter name for endpoint no embed mode flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.ggfs.%s.endpoint.no_embed";
+    public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.igfs.%s.endpoint.no_embed";
 
     /** Parameter name for endpoint no shared memory flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM = "fs.ggfs.%s.endpoint.no_local_shmem";
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM = "fs.igfs.%s.endpoint.no_local_shmem";
 
     /** Parameter name for endpoint no local TCP flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP = "fs.ggfs.%s.endpoint.no_local_tcp";
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP = "fs.igfs.%s.endpoint.no_local_tcp";
 
     /**
      * Get string parameter.

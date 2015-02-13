@@ -92,7 +92,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             return;
 
         // Initialize FS.
-        fs = grid(0).fileSystem("ggfs");
+        fs = grid(0).fileSystem("igfs");
 
         // Cleanup FS.
         fs.format();
@@ -114,7 +114,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
         ggfsCfg.setFragmentizerEnabled(true);
 
@@ -220,7 +220,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
-        IgfsEx impl = (IgfsEx)grid(0).fileSystem("ggfs");
+        IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
 
         IgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
 
@@ -229,9 +229,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         IgfsPath path = new IgfsPath("/file");
 
         try {
-            IgniteFs fs0 = grid(0).fileSystem("ggfs");
-            IgniteFs fs1 = grid(1).fileSystem("ggfs");
-            IgniteFs fs2 = grid(2).fileSystem("ggfs");
+            IgniteFs fs0 = grid(0).fileSystem("igfs");
+            IgniteFs fs1 = grid(1).fileSystem("igfs");
+            IgniteFs fs2 = grid(2).fileSystem("igfs");
 
             try (IgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
                 F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {

@@ -49,13 +49,13 @@ import java.util.concurrent.*;
  * <li>-primaryOnly {true|false} if 'true' then creates files only in directory named 'primary' </li>
  * </ul>
  * Note: GGFS logging is disabled by default, to enable logging it is necessary to set flag
- * 'fs.ggfs.<name>.log.enabled' in Hadoop configuration file. By default log files are created in the
- * directory 'work/ggfs/log', this path can be changed in Hadoop configuration file using property
- * 'fs.ggfs.<name>.log.dir'.
+ * 'fs.igfs.<name>.log.enabled' in Hadoop configuration file. By default log files are created in the
+ * directory 'work/igfs/log', this path can be changed in Hadoop configuration file using property
+ * 'fs.igfs.<name>.log.dir'.
  */
 public class IgfsLoad {
     /** */
-    private static final String DFLT_URL = "ggfs:///";
+    private static final String DFLT_URL = "igfs:///";
 
     /** */
     private static final int DFLT_MIN_FILE_SIZE = 100 * 1024;

@@ -220,7 +220,7 @@ public final class IgfsLogger {
         A.ensure(dirFile.isDirectory(), "dir must point to a directory");
         A.ensure(dirFile.exists(), "dir must exist");
 
-        file = new File(dirFile, "ggfs-log-" + ggfsName + "-" + pid + ".csv");
+        file = new File(dirFile, "igfs-log-" + ggfsName + "-" + pid + ".csv");
 
         entries = new ConcurrentLinkedDeque8<>();
 

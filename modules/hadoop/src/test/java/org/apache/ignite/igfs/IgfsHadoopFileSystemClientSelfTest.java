@@ -70,7 +70,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "tcp");
@@ -125,7 +125,7 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
         try {
             switchHandlerErrorFlag(true);
 
-            IgfsHadoop client = new IgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "ggfs", LOG);
+            IgfsHadoop client = new IgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "igfs", LOG);
 
             client.handshake(null);
 

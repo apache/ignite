@@ -4750,7 +4750,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
+    @Override public long igfsDataSpaceUsed() {
         assert ggfsDataCache;
 
         return ggfsDataCacheSize.longValue();

@@ -633,8 +633,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
-        return dht().ggfsDataSpaceUsed();
+    @Override public long igfsDataSpaceUsed() {
+        return dht().igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */

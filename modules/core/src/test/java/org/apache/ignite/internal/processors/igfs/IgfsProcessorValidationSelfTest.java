@@ -172,7 +172,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfGgfsConfigsHaveDifferentNames() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        String ggfsCfgName = "ggfs-cfg";
+        String ggfsCfgName = "igfs-cfg";
 
         g1GgfsCfg1.setName(ggfsCfgName);
         g1GgfsCfg2.setName(ggfsCfgName);

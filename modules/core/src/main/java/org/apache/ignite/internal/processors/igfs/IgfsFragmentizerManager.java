@@ -200,7 +200,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 Collection<ClusterNode> nodes = discoEvt.topologyNodes();
 
                 for (ClusterNode node : nodes) {
-                    if (node.order() < minNodeOrder && igfsCtx.ggfsNode(node))
+                    if (node.order() < minNodeOrder && igfsCtx.igfsNode(node))
                         minNodeOrder = node.order();
                 }
 
@@ -556,7 +556,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                     F.node2id(),
                     new P1<ClusterNode>() {
                         @Override public boolean apply(ClusterNode n) {
-                            return igfsCtx.ggfsNode(n);
+                            return igfsCtx.igfsNode(n);
                         }
                     }));
 

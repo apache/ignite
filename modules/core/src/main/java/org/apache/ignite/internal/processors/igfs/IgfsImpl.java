@@ -282,7 +282,7 @@ public final class IgfsImpl implements IgfsEx {
                             workerMap.remove(path, worker); // Worker is stopping. Remove it from map.
                     }
                     else {
-                        worker = new IgfsFileWorker("ggfs-file-worker-" + path) {
+                        worker = new IgfsFileWorker("igfs-file-worker-" + path) {
                             @Override protected void onFinish() {
                                 workerMap.remove(path, this);
                             }

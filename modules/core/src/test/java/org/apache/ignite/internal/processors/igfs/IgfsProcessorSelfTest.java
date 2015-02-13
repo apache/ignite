@@ -115,7 +115,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
 
         cfg.setGgfsConfiguration(ggfsCfg);
 
@@ -152,7 +152,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @return FS name. */
     public String ggfsName() {
-        return "ggfs";
+        return "igfs";
     }
 
     /** @throws Exception If failed. */

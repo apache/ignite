@@ -57,13 +57,13 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
+    protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
 
     /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "ggfs://ggfs:grid@/";
+    protected static final String PRIMARY_URI = "igfs://igfs:grid@/";
 
     /** Primary file system configuration path. */
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
@@ -181,14 +181,14 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "igfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
         Igfs hadoopFs = new IgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
 
-        Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithGgfs("grid", "igfs", mode, hadoopFs, PRIMARY_REST_CFG);
 
-        ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
-        ggfs = (IgfsImpl) ignite.fileSystem("ggfs");
+        ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("igfs-secondary");
+        ggfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */
@@ -244,7 +244,7 @@ public abstract class IgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractT
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 
-        cfg.setInt(String.format(PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, "ggfs:grid@"), seqReads);
+        cfg.setInt(String.format(PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, "igfs:grid@"), seqReads);
 
         FileSystem fs = FileSystem.get(new URI(PRIMARY_URI), cfg);
 

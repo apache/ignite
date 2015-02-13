@@ -1665,7 +1665,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     "the secondary file system because the path points to a directory: " + path);
 
                             IgfsFileInfo newInfo = new IgfsFileInfo(status.blockSize(), status.length(), affKey,
-                                IgniteUuid.randomUuid(), igfsCtx.ggfs().evictExclude(path, false), status.properties());
+                                IgniteUuid.randomUuid(), igfsCtx.igfs().evictExclude(path, false), status.properties());
 
                             // Add new file info to the listing optionally removing the previous one.
                             IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
@@ -2299,7 +2299,7 @@ public class IgfsMetaManager extends IgfsManager {
                 // Recreate the path locally.
                 IgfsFileInfo curInfo = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
                     new IgfsFileInfo(igfsCtx.configuration().getBlockSize(), status.length(),
-                        igfsCtx.ggfs().evictExclude(curPath, false), status.properties());
+                        igfsCtx.igfs().evictExclude(curPath, false), status.properties());
 
                 IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 

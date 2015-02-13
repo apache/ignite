@@ -474,7 +474,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             Collection<VisorIgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
-                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:ggfs-log-" + ggfsName + "-*.csv");
+                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:igfs-log-" + ggfsName + "-*.csv");
 
                 for (Path p : dirStream) {
                     if (matcher.matches(p.getFileName())) {

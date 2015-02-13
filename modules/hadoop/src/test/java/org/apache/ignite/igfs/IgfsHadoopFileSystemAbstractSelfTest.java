@@ -59,16 +59,16 @@ import static org.apache.ignite.igfs.IgfsMode.*;
 @SuppressWarnings("all")
 public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Primary file system authority. */
-    private static final String PRIMARY_AUTHORITY = "ggfs:grid0@";
+    private static final String PRIMARY_AUTHORITY = "igfs:grid0@";
 
     /** Primary file systme URI. */
-    private static final String PRIMARY_URI = "ggfs://" + PRIMARY_AUTHORITY + "/";
+    private static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
     private static final String SECONDARY_AUTHORITY = "ggfs_secondary:grid_secondary@127.0.0.1:11500";
 
     /** Secondary file systme URI. */
-    private static final String SECONDARY_URI = "ggfs://" + SECONDARY_AUTHORITY + "/";
+    private static final String SECONDARY_URI = "igfs://" + SECONDARY_AUTHORITY + "/";
 
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
@@ -146,7 +146,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     @Override protected void beforeTestsStarted() throws Exception {
         Configuration secondaryConf = configuration(SECONDARY_AUTHORITY, true, true);
 
-        secondaryConf.setInt("fs.ggfs.block.size", 1024);
+        secondaryConf.setInt("fs.igfs.block.size", 1024);
 
         String path = U.getIgniteHome() + SECONDARY_CFG_PATH;
 
@@ -323,7 +323,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
         cfg.setDataCacheName("partitioned");
         cfg.setMetaCacheName("replicated");
-        cfg.setName("ggfs");
+        cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
 
@@ -424,7 +424,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
                 Configuration cfg = configuration(PRIMARY_AUTHORITY, skipEmbed, skipLocShmem);
 
                 // we disable caching in order to obtain new FileSystem instance.
-                cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+                cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
                 // Initial cache size.
                 int initSize = cache.size();
@@ -1536,7 +1536,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
                 out.write(new byte[1024 * 1024]);
             }
 
-            IgniteFs igniteFs = grid(0).fileSystem("ggfs");
+            IgniteFs igniteFs = grid(0).fileSystem("igfs");
 
             IgfsPath filePath = new IgfsPath("/someFile");
 
@@ -2017,7 +2017,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
         for (Map.Entry<String, String> entry : primaryFsCfg)
             cfg.set(entry.getKey(), entry.getValue());
 
-        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         final int nClients = 1;
 
@@ -2347,12 +2347,12 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
     private static Configuration configuration(String authority, boolean skipEmbed, boolean skipLocShmem) {
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", IgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl",
+        cfg.set("fs.defaultFS", "igfs://" + authority + "/");
+        cfg.set("fs.igfs.impl", IgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.igfs.impl",
             org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem.class.getName());
 
-        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         if (skipEmbed)
             cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);

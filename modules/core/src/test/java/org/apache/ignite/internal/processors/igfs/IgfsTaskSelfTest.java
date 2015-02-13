@@ -76,7 +76,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             Ignite g = G.start(config(i));
 
             if (i + 1 == NODE_CNT)
-                ggfs = g.fileSystem("ggfs");
+                ggfs = g.fileSystem("igfs");
         }
     }
 
@@ -101,7 +101,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setFragmentizerEnabled(false);

@@ -78,7 +78,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("ggfs");
+        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("igfs");
 
         mgr = ggfs.context().data();
     }
@@ -95,15 +95,15 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration ggfsCfg = new IgfsConfiguration();
+        IgfsConfiguration igfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setMetaCacheName(META_CACHE_NAME);
-        ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
-        ggfsCfg.setName("ggfs");
-        ggfsCfg.setBlockSize(BLOCK_SIZE);
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
+        igfsCfg.setName("igfs");
+        igfsCfg.setBlockSize(BLOCK_SIZE);
 
-        cfg.setGgfsConfiguration(ggfsCfg);
+        cfg.setGgfsConfiguration(igfsCfg);
 
         return cfg;
     }

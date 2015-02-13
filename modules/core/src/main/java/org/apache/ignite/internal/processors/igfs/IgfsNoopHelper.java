@@ -35,7 +35,7 @@ public class IgfsNoopHelper implements IgfsHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isGgfsBlockKey(Object key) {
+    @Override public boolean isIgfsBlockKey(Object key) {
         return false;
     }
 }

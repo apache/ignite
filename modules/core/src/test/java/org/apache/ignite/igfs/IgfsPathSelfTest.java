@@ -38,7 +38,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
     private final Marshaller marshaller = new OptimizedMarshaller();
 
     /**
-     * Test public methods of ggfs path.
+     * Test public methods of igfs path.
      *
      * @throws Exception In case of any exception.
      */
@@ -87,7 +87,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test ggfs path constructors.
+     * Test igfs path constructors.
      *
      * @throws Exception In case of any exception.
      */
@@ -119,7 +119,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Validate ggfs path constructor fails with specified exception.
+     * Validate igfs path constructor fails with specified exception.
      *
      * @param cls Expected exception.
      * @param args Constructor arguments. Null-values are passed as Class instancies: null-string => String.class.

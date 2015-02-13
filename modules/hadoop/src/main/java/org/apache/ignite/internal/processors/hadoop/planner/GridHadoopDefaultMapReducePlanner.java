@@ -152,7 +152,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         if (split instanceof GridHadoopFileBlock) {
             GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
 
-            if (GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
+            if (IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
                 IgfsHadoopEndpoint endpoint = new IgfsHadoopEndpoint(split0.file().getAuthority());
 
                 IgfsEx ggfs = null;

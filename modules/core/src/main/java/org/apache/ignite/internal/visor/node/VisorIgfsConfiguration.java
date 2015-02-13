@@ -171,10 +171,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * Construct data transfer object for ggfs configurations properties.
+     * Construct data transfer object for igfs configurations properties.
      *
-     * @param ggfss ggfs configurations.
-     * @return ggfs configurations properties.
+     * @param ggfss igfs configurations.
+     * @return igfs configurations properties.
      */
     public static Iterable<VisorIgfsConfiguration> list(IgfsConfiguration[] ggfss) {
         if (ggfss == null)

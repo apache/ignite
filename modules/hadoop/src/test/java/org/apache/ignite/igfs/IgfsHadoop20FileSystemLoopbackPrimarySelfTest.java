@@ -35,7 +35,7 @@ public class IgfsHadoop20FileSystemLoopbackPrimarySelfTest extends IgfsHadoop20F
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://ggfs:" + getTestGridName(0) + "@/";
+        return "igfs://igfs:" + getTestGridName(0) + "@/";
     }
 
     /** {@inheritDoc} */

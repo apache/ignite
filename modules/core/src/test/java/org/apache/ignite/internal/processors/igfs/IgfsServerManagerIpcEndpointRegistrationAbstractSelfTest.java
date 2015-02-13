@@ -174,7 +174,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         ggfsConfiguration.setDataCacheName("partitioned");
         ggfsConfiguration.setMetaCacheName("replicated");
-        ggfsConfiguration.setName("ggfs" + UUID.randomUUID());
+        ggfsConfiguration.setName("igfs" + UUID.randomUUID());
         ggfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 
         if (endPntCfg != null)

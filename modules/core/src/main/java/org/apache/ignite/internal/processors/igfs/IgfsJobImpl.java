@@ -37,7 +37,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     private IgfsJob job;
 
     /** GGFS name. */
-    private String ggfsName;
+    private String igfsName;
 
     /** GGFS path. */
     private IgfsPath path;
@@ -61,16 +61,16 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
 
     /**
      * @param job GGFS job.
-     * @param ggfsName GGFS name.
+     * @param igfsName GGFS name.
      * @param path Split path.
      * @param start Split start offset.
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public IgfsJobImpl(IgfsJob job, String ggfsName, IgfsPath path, long start, long len,
+    public IgfsJobImpl(IgfsJob job, String igfsName, IgfsPath path, long start, long len,
         IgfsRecordResolver rslvr) {
         this.job = job;
-        this.ggfsName = ggfsName;
+        this.igfsName = igfsName;
         this.path = path;
         this.start = start;
         this.len = len;
@@ -79,7 +79,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
 
     /** {@inheritDoc} */
     @Override public Object execute() {
-        IgniteFs fs = ignite.fileSystem(ggfsName);
+        IgniteFs fs = ignite.fileSystem(igfsName);
 
         try (IgfsInputStream in = fs.open(path)) {
             IgfsFileRange split = new IgfsFileRange(path, start, len);
@@ -89,7 +89,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
 
                 if (split == null) {
                     log.warning("No data found for split on local node after resolver is applied " +
-                        "[ggfsName=" + ggfsName + ", path=" + path + ", start=" + start + ", len=" + len + ']');
+                        "[ggfsName=" + igfsName + ", path=" + path + ", start=" + start + ", len=" + len + ']');
 
                     return null;
                 }
@@ -100,7 +100,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
             return job.execute(fs, new IgfsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
-            throw new IgniteException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
+            throw new IgniteException("Failed to execute GGFS job for file split [ggfsName=" + igfsName +
                 ", path=" + path + ", start=" + start + ", len=" + len + ']', e);
         }
     }

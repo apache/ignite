@@ -58,7 +58,7 @@ import java.util.*;
  */
 public interface IgniteFs extends Igfs, IgniteAsyncSupport {
     /** GGFS scheme name. */
-    public static final String GGFS_SCHEME = "ggfs";
+    public static final String IGFS_SCHEME = "igfs";
 
     /** File property: prefer writes to local node. */
     public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";

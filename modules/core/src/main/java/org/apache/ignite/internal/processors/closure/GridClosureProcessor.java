@@ -712,7 +712,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return "system";
 
             case GGFS_POOL:
-                return "ggfs";
+                return "igfs";
 
             default:
                 throw new IllegalArgumentException("Invalid closure execution policy: " + plc);

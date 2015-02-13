@@ -37,7 +37,7 @@ public class IgfsPerformanceBenchmark {
     private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";
 
     /** FS prefix. */
-    private static final String FS_PREFIX = "ggfs:///";
+    private static final String FS_PREFIX = "igfs:///";
 
     /** Test writes. */
     private static final int OP_WRITE = 0;

@@ -79,7 +79,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
@@ -108,7 +108,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ggfs-grid");
+        cfg.setGridName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -123,7 +123,7 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         Ignite g = G.start(cfg);
 
-        ggfs = (IgfsEx)g.fileSystem("ggfs");
+        ggfs = (IgfsEx)g.fileSystem("igfs");
 
         ggfs.globalSampling(sampling);
 
@@ -297,14 +297,14 @@ public class IgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractT
 
         fsCfg.addResource(U.resolveIgniteUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
-        fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        fsCfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "ggfs:ggfs-grid@"), logging);
+            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "igfs:igfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getIgniteHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "igfs:igfs-grid@"), U.getIgniteHome());
 
-        return (IgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
+        return (IgfsHadoopFileSystem)FileSystem.get(new URI("igfs://igfs:igfs-grid@/"), fsCfg);
     }
 
     /**

@@ -33,7 +33,7 @@ public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSe
         try {
             IgfsPath path = new IgfsPath("/someFile");
 
-            IgniteFs ggfs = grid(1).fileSystem("ggfs");
+            IgniteFs ggfs = grid(1).fileSystem("igfs");
 
             try (IgfsOutputStream out = ggfs.create(path, true)) {
                 for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++)

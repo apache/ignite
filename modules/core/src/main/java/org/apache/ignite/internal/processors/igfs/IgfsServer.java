@@ -67,7 +67,7 @@ public class IgfsServer {
     private final boolean mgmt;
 
     /**
-     * Constructs ggfs server manager.
+     * Constructs igfs server manager.
      * @param ggfsCtx GGFS context.
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
@@ -217,7 +217,7 @@ public class IgfsServer {
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
         protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
-            super(ggfsCtx.kernalContext().gridName(), "ggfs-client-worker-" + idx, log);
+            super(ggfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, log);
 
             this.endpoint = endpoint;
 
@@ -384,7 +384,7 @@ public class IgfsServer {
          * Creates accept worker.
          */
         protected AcceptWorker() {
-            super(ggfsCtx.kernalContext().gridName(), "ggfs-accept-worker", log);
+            super(ggfsCtx.kernalContext().gridName(), "igfs-accept-worker", log);
         }
 
         /** {@inheritDoc} */

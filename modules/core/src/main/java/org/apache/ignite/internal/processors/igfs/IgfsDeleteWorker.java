@@ -82,7 +82,7 @@ public class IgfsDeleteWorker extends IgfsThread {
      * @param ggfsCtx GGFS context.
      */
     IgfsDeleteWorker(IgfsContext ggfsCtx) {
-        super("ggfs-delete-worker%" + ggfsCtx.ggfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
+        super("igfs-delete-worker%" + ggfsCtx.igfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
 
         this.ggfsCtx = ggfsCtx;
 
@@ -91,7 +91,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         evts = ggfsCtx.kernalContext().event();
 
-        String ggfsName = ggfsCtx.ggfs().name();
+        String ggfsName = ggfsCtx.igfs().name();
 
         topic = F.isEmpty(ggfsName) ? TOPIC_GGFS : TOPIC_GGFS.topic(ggfsName);
 

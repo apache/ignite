@@ -54,7 +54,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(512);
         ggfsCfg.setDefaultMode(PRIMARY);
 
@@ -91,7 +91,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         Ignite g = G.start(cfg);
 
-        ggfs = g.fileSystem("ggfs");
+        ggfs = g.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */

@@ -565,11 +565,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
+    @Override public long igfsDataSpaceUsed() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.ggfsDataSpaceUsed();
+            return delegate.igfsDataSpaceUsed();
         }
         finally {
             gate.leave(prev);

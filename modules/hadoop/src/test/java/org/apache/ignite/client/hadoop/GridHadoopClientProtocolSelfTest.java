@@ -454,7 +454,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
-        conf.set("fs.defaultFS", "ggfs://:" + getTestGridName(0) + "@/");
+        conf.set("fs.defaultFS", "igfs://:" + getTestGridName(0) + "@/");
 
         return conf;
     }

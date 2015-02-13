@@ -34,21 +34,21 @@ import java.util.*;
  */
 public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements IgfsEx {
     /** */
-    private final IgfsImpl ggfs;
+    private final IgfsImpl igfs;
 
     /**
-     * @param ggfs Ggfs.
+     * @param igfs Ggfs.
      */
-    public IgfsAsyncImpl(IgfsImpl ggfs) {
+    public IgfsAsyncImpl(IgfsImpl igfs) {
         super(true);
 
-        this.ggfs = ggfs;
+        this.igfs = igfs;
     }
 
     /** {@inheritDoc} */
     @Override public void format() {
         try {
-            saveOrGet(ggfs.formatAsync());
+            saveOrGet(igfs.formatAsync());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -59,7 +59,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return saveOrGet(ggfs.executeAsync(task, rslvr, paths, arg));
+            return saveOrGet(igfs.executeAsync(task, rslvr, paths, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -70,7 +70,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
-            return saveOrGet(ggfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+            return saveOrGet(igfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -81,7 +81,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, arg));
+            return saveOrGet(igfs.executeAsync(taskCls, rslvr, paths, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -93,7 +93,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         try {
-            return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+            return saveOrGet(igfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -102,215 +102,215 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        ggfs.stop();
+        igfs.stop();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsContext context() {
-        return ggfs.context();
+        return igfs.context();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsPaths proxyPaths() {
-        return ggfs.proxyPaths();
+        return igfs.proxyPaths();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
-        return ggfs.open(path, bufSize, seqReadsBeforePrefetch);
+        return igfs.open(path, bufSize, seqReadsBeforePrefetch);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsInputStreamAdapter open(IgfsPath path) {
-        return ggfs.open(path);
+        return igfs.open(path);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
-        return ggfs.open(path, bufSize);
+        return igfs.open(path, bufSize);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
-        return ggfs.globalSpace();
+        return igfs.globalSpace();
     }
 
     /** {@inheritDoc} */
     @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
-        ggfs.globalSampling(val);
+        igfs.globalSampling(val);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Boolean globalSampling() {
-        return ggfs.globalSampling();
+        return igfs.globalSampling();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsLocalMetrics localMetrics() {
-        return ggfs.localMetrics();
+        return igfs.localMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
-        return ggfs.groupBlockSize();
+        return igfs.groupBlockSize();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
-        return ggfs.awaitDeletesAsync();
+        return igfs.awaitDeletesAsync();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String clientLogDirectory() {
-        return ggfs.clientLogDirectory();
+        return igfs.clientLogDirectory();
     }
 
     /** {@inheritDoc} */
     @Override public void clientLogDirectory(String logDir) {
-        ggfs.clientLogDirectory(logDir);
+        igfs.clientLogDirectory(logDir);
     }
 
     /** {@inheritDoc} */
     @Override public boolean evictExclude(IgfsPath path, boolean primary) {
-        return ggfs.evictExclude(path, primary);
+        return igfs.evictExclude(path, primary);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid nextAffinityKey() {
-        return ggfs.nextAffinityKey();
+        return igfs.nextAffinityKey();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isProxy(URI path) {
-        return ggfs.isProxy(path);
+        return igfs.isProxy(path);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String name() {
-        return ggfs.name();
+        return igfs.name();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsConfiguration configuration() {
-        return ggfs.configuration();
+        return igfs.configuration();
     }
 
     /** {@inheritDoc} */
     @Override public IgfsPathSummary summary(IgfsPath path) {
-        return ggfs.summary(path);
+        return igfs.summary(path);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
-        return ggfs.create(path, overwrite);
+        return igfs.create(path, overwrite);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        return ggfs.create(path, bufSize, overwrite, replication, blockSize, props);
+        return igfs.create(path, bufSize, overwrite, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
-        return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
+        return igfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
-        return ggfs.append(path, create);
+        return igfs.append(path, create);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
-        return ggfs.append(path, bufSize, create, props);
+        return igfs.append(path, bufSize, create, props);
     }
 
     /** {@inheritDoc} */
     @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-        ggfs.setTimes(path, accessTime, modificationTime);
+        igfs.setTimes(path, accessTime, modificationTime);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
-        return ggfs.affinity(path, start, len);
+        return igfs.affinity(path, start, len);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
-        return ggfs.affinity(path, start, len, maxLen);
+        return igfs.affinity(path, start, len, maxLen);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsMetrics metrics() {
-        return ggfs.metrics();
+        return igfs.metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        ggfs.resetMetrics();
+        igfs.resetMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public long size(IgfsPath path) {
-        return ggfs.size(path);
+        return igfs.size(path);
     }
 
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
-        return ggfs.exists(path);
+        return igfs.exists(path);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        return ggfs.update(path, props);
+        return igfs.update(path, props);
     }
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
-        ggfs.rename(src, dest);
+        igfs.rename(src, dest);
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(IgfsPath path, boolean recursive) {
-        return ggfs.delete(path, recursive);
+        return igfs.delete(path, recursive);
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path) {
-        ggfs.mkdirs(path);
+        igfs.mkdirs(path);
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-        ggfs.mkdirs(path, props);
+        igfs.mkdirs(path, props);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
-        return ggfs.listPaths(path);
+        return igfs.listPaths(path);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
-        return ggfs.listFiles(path);
+        return igfs.listFiles(path);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile info(IgfsPath path) {
-        return ggfs.info(path);
+        return igfs.info(path);
     }
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        return ggfs.usedSpaceSize();
+        return igfs.usedSpaceSize();
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties() {
-        return ggfs.properties();
+        return igfs.properties();
     }
 }

@@ -58,7 +58,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("ggfs");
+        IgfsEx ggfs = (IgfsEx)grid(0).fileSystem("igfs");
 
         mgr = ggfs.context().meta();
     }
@@ -79,7 +79,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
 
         cfg.setGgfsConfiguration(ggfsCfg);
 
@@ -111,7 +111,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        mgr.igfsCtx.ggfs().format();
+        mgr.igfsCtx.igfs().format();
     }
 
     /** {@inheritDoc} */

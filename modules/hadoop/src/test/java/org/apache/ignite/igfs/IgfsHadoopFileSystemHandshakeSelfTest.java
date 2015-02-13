@@ -55,7 +55,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     private static final String GRID_NAME = "grid";
 
     /** GGFS name. */
-    private static final String GGFS_NAME = "ggfs";
+    private static final String GGFS_NAME = "igfs";
 
     /** GGFS path. */
     private static final IgfsPath PATH = new IgfsPath("/path");
@@ -284,7 +284,7 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     private static FileSystem fileSystem(String authority) throws Exception {
-        return FileSystem.get(new URI("ggfs://" + authority + "/"), configuration(authority));
+        return FileSystem.get(new URI("igfs://" + authority + "/"), configuration(authority));
     }
 
     /**
@@ -296,12 +296,12 @@ public class IgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTes
     private static Configuration configuration(String authority) {
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl",
+        cfg.set("fs.defaultFS", "igfs://" + authority + "/");
+        cfg.set("fs.igfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.igfs.impl",
             IgfsHadoopFileSystem.class.getName());
 
-        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
         cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);

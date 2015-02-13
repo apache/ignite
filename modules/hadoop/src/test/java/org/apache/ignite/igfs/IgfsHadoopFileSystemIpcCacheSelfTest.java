@@ -69,7 +69,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setManagementPort(IgfsConfiguration.DFLT_MGMT_PORT + cnt);
 
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
@@ -151,16 +151,16 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         Map<String, IgfsHadoopIpcIo> cache = (Map<String, IgfsHadoopIpcIo>)cacheField.get(null);
 
-        String name = "ggfs:" + getTestGridName(0) + "@";
+        String name = "igfs:" + getTestGridName(0) + "@";
 
         Configuration cfg = new Configuration();
 
         cfg.addResource(U.resolveIgniteUrl(HADOOP_FS_CFG));
-        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
         cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, name), true);
 
         // Ensure that existing IO is reused.
-        FileSystem fs1 = FileSystem.get(new URI("ggfs://" + name + "/"), cfg);
+        FileSystem fs1 = FileSystem.get(new URI("igfs://" + name + "/"), cfg);
 
         assertEquals(1, cache.size());
 
@@ -181,7 +181,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
         // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-        FileSystem fs2 = FileSystem.get(new URI("ggfs://" + name + "/abc"), cfg);
+        FileSystem fs2 = FileSystem.get(new URI("igfs://" + name + "/abc"), cfg);
 
         assertEquals(1, cache.size());
         assertEquals(2, ((AtomicInteger)activeCntField.get(io)).get());

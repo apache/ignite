@@ -72,7 +72,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private static final String META_CACHE_NAME = "metaCache";
 
     /** GGFS name. */
-    private static final String GGFS_NAME = "ggfs";
+    private static final String GGFS_NAME = "igfs";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -340,7 +340,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
-            assert expSize == cache.ggfsDataSpaceUsed();
+            assert expSize == cache.igfsDataSpaceUsed();
         }
 
         // Perform reads which could potentially be non-local.
@@ -378,7 +378,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
                 int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
-                assert expSize == cache.ggfsDataSpaceUsed();
+                assert expSize == cache.igfsDataSpaceUsed();
             }
         }
         else {
@@ -393,7 +393,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
                 GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(id);
 
-                assertEquals(totalSize, cache.ggfsDataSpaceUsed());
+                assertEquals(totalSize, cache.igfsDataSpaceUsed());
             }
         }
 
@@ -413,7 +413,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             GridCacheAdapter<IgfsBlockKey, byte[]> cache = cache(grid(i).localNode().id());
 
-            assert 0 == cache.ggfsDataSpaceUsed() : "Size counter is not 0: " + cache.ggfsDataSpaceUsed();
+            assert 0 == cache.igfsDataSpaceUsed() : "Size counter is not 0: " + cache.igfsDataSpaceUsed();
         }
     }
 
@@ -594,7 +594,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
-            assertEquals(expSize, cache.ggfsDataSpaceUsed());
+            assertEquals(expSize, cache.igfsDataSpaceUsed());
         }
 
         // Start a node.
@@ -646,7 +646,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             int expSize = expSizes.get(id) != null ? expSizes.get(id) : 0;
 
-            assertEquals("For node: " + id, expSize, cache.ggfsDataSpaceUsed());
+            assertEquals("For node: " + id, expSize, cache.igfsDataSpaceUsed());
         }
     }
 

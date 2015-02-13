@@ -53,7 +53,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** Converts context to GGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFs> CTX_TO_GGFS = new C1<IgfsContext, IgniteFs>() {
         @Override public IgniteFs apply(IgfsContext ggfsCtx) {
-            return ggfsCtx.ggfs();
+            return ggfsCtx.igfs();
         }
     };
 
@@ -120,7 +120,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         // Stop GGFS instances.
         for (IgfsContext ggfsCtx : ggfsCache.values()) {
             if (log.isDebugEnabled())
-                log.debug("Stopping ggfs: " + ggfsCtx.configuration().getName());
+                log.debug("Stopping igfs: " + ggfsCtx.configuration().getName());
 
             List<IgfsManager> mgrs = ggfsCtx.managers();
 
@@ -130,7 +130,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 mgr.stop(cancel);
             }
 
-            ggfsCtx.ggfs().stop();
+            ggfsCtx.igfs().stop();
         }
 
         ggfsCache.clear();
@@ -143,7 +143,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         for (IgfsContext ggfsCtx : ggfsCache.values()) {
             if (log.isDebugEnabled())
-                log.debug("Stopping ggfs: " + ggfsCtx.configuration().getName());
+                log.debug("Stopping igfs: " + ggfsCtx.configuration().getName());
 
             List<IgfsManager> mgrs = ggfsCtx.managers();
 
@@ -175,7 +175,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Override @Nullable public IgniteFs ggfs(@Nullable String name) {
         IgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
-        return ggfsCtx == null ? null : ggfsCtx.ggfs();
+        return ggfsCtx == null ? null : ggfsCtx.igfs();
     }
 
     /** {@inheritDoc} */

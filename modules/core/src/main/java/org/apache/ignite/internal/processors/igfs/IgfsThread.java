@@ -27,7 +27,7 @@ public abstract class IgfsThread extends Thread {
      * Creates {@code GGFS} add-hoc thread.
      */
     protected IgfsThread() {
-        super("ggfs-worker");
+        super("igfs-worker");
     }
 
     /**

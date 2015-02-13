@@ -64,7 +64,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  */
 public class IgfsDataManager extends IgfsManager {
     /** GGFS. */
-    private IgfsEx ggfs;
+    private IgfsEx igfs;
 
     /** Data cache projection. */
     private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
@@ -149,7 +149,7 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        ggfs = igfsCtx.ggfs();
+        igfs = igfsCtx.igfs();
 
         dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
         dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
@@ -161,7 +161,7 @@ public class IgfsDataManager extends IgfsManager {
             throw new IgniteCheckedException("Data cache should be transactional: " +
                 igfsCtx.configuration().getDataCacheName());
 
-        metrics = igfsCtx.ggfs().localMetrics();
+        metrics = igfsCtx.igfs().localMetrics();
 
         assert dataCachePrj != null;
 
@@ -192,7 +192,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                if (igfsCtx.ggfsNode(discoEvt.eventNode())) {
+                if (igfsCtx.igfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {
                         future.onError(discoEvt.eventNode().id(),
                             new ClusterTopologyCheckedException("Node left grid before write completed: " + evt.node().id()));
@@ -221,7 +221,7 @@ public class IgfsDataManager extends IgfsManager {
         maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
 
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
-            "ggfs-" + ggfsName + "-delete-worker", log);
+            "igfs-" + ggfsName + "-delete-worker", log);
     }
 
     /** {@inheritDoc} */
@@ -252,7 +252,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Number of bytes used to store files.
      */
     public long spaceSize() {
-        return dataCachePrj.ggfsDataSpaceUsed();
+        return dataCachePrj.igfsDataSpaceUsed();
     }
 
     /**
@@ -484,7 +484,7 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Registers write future in ggfs data manager.
+     * Registers write future in igfs data manager.
      *
      * @param fileInfo File info of file opened to write.
      * @return Future that will be completed when all ack messages are received or when write failed.
@@ -1077,16 +1077,16 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
-        if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
-                ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
+                igfs.awaitDeletesAsync().get(trashPurgeTimeout);
             }
             catch (IgniteFutureTimeoutCheckedException ignore) {
                 // Ignore.
             }
 
             // Additional size check.
-            if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+            if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
                 final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
 
                 if (completionFut == null) {
@@ -1098,7 +1098,7 @@ public class IgfsDataManager extends IgfsManager {
                 }
 
                 IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                    "(GGFS maximum data size exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
+                    "(GGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                     ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
 
                 completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
@@ -1246,20 +1246,20 @@ public class IgfsDataManager extends IgfsManager {
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
 
-        if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
+        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
                 try {
-                    ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
+                    igfs.awaitDeletesAsync().get(trashPurgeTimeout);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignore) {
                     // Ignore.
                 }
 
                 // Additional size check.
-                if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
+                if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
                     return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
                         new IgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
-                            "exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
+                            "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
             }
@@ -1363,7 +1363,7 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         // Check if we have enough free space to do colocated writes.
-        if (dataCachePrj.ggfsDataSpaceUsed() > dataCachePrj.ggfsDataSpaceMax() *
+        if (dataCachePrj.igfsDataSpaceUsed() > dataCachePrj.ggfsDataSpaceMax() *
             igfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
             // Forbid further co-location.
             locRange.markDone();
@@ -1744,7 +1744,7 @@ public class IgfsDataManager extends IgfsManager {
                                 ldr.close(isCancelled());
                             }
                             catch (IgniteException e) {
-                                log.error("Failed to stop data loader while shutting down ggfs async delete thread.", e);
+                                log.error("Failed to stop data loader while shutting down igfs async delete thread.", e);
                             }
                             finally {
                                 fut.onDone(); // Complete future.
@@ -1755,7 +1755,7 @@ public class IgfsDataManager extends IgfsManager {
             }
             finally {
                 if (log.isDebugEnabled())
-                    log.debug("Stopping asynchronous ggfs file delete thread: " + name());
+                    log.debug("Stopping asynchronous igfs file delete thread: " + name());
 
                 IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo> req = delReqs.poll();
 

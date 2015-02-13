@@ -493,7 +493,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Preloading key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
 
                     if (cctx.dht().isGgfsDataCache() &&
-                        cctx.dht().ggfsDataSpaceUsed() > cctx.dht().ggfsDataSpaceMax()) {
+                        cctx.dht().igfsDataSpaceUsed() > cctx.dht().ggfsDataSpaceMax()) {
                         LT.error(log, null, "Failed to preload GGFS data cache (GGFS space size exceeded maximum " +
                             "value, will ignore preload entries): " + name());
 

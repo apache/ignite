@@ -38,10 +38,10 @@ import static org.apache.ignite.igfs.IgfsMode.*;
  */
 public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Primary GGFS name. */
-    private static final String GGFS_PRIMARY = "ggfs-primary";
+    private static final String GGFS_PRIMARY = "igfs-primary";
 
     /** Primary GGFS name. */
-    private static final String GGFS_SECONDARY = "ggfs-secondary";
+    private static final String GGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
     private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>(){{

@@ -65,7 +65,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
 
                 if (logsDir != null) {
                     PathMatcher matcher = FileSystems.getDefault().getPathMatcher(
-                        "glob:ggfs-log-" + arg + "-*.csv");
+                        "glob:igfs-log-" + arg + "-*.csv");
 
                     try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logsDir)) {
                         for (Path p : dirStream) {

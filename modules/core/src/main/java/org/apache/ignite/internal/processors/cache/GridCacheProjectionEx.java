@@ -344,7 +344,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *
      * @return Amount of used GGFS space in bytes.
      */
-    public long ggfsDataSpaceUsed();
+    public long igfsDataSpaceUsed();
 
     /**
      * Get maximum space available for GGFS.

@@ -55,7 +55,7 @@ public class IgfsContext {
     private final IgfsFragmentizerManager fragmentizerMgr;
 
     /** GGFS instance. */
-    private final IgfsEx ggfs;
+    private final IgfsEx igfs;
 
     /**
      * @param ctx Kernal context.
@@ -82,14 +82,14 @@ public class IgfsContext {
         this.srvMgr = add(srvMgr);
         this.fragmentizerMgr = add(fragmentizerMgr);
 
-        ggfs = new IgfsImpl(this);
+        igfs = new IgfsImpl(this);
     }
 
     /**
      * @return GGFS instance.
      */
-    public IgfsEx ggfs() {
-        return ggfs;
+    public IgfsEx igfs() {
+        return igfs;
     }
 
     /**
@@ -177,7 +177,7 @@ public class IgfsContext {
      * @param node Node to check.
      * @return {@code True} if node has GGFS with this name, {@code false} otherwise.
      */
-    public boolean ggfsNode(ClusterNode node) {
+    public boolean igfsNode(ClusterNode node) {
         assert node != null;
 
         IgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);

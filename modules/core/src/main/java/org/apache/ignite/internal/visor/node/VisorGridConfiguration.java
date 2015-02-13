@@ -75,7 +75,7 @@ public class VisorGridConfiguration implements Serializable {
     private Iterable<VisorCacheConfiguration> caches;
 
     /** Ggfss. */
-    private Iterable<VisorIgfsConfiguration> ggfss;
+    private Iterable<VisorIgfsConfiguration> igfss;
 
     /** Streamers. */
     private Iterable<VisorStreamerConfiguration> streamers;
@@ -301,15 +301,15 @@ public class VisorGridConfiguration implements Serializable {
     /**
      * @return Ggfss.
      */
-    public Iterable<VisorIgfsConfiguration> ggfss() {
-        return ggfss;
+    public Iterable<VisorIgfsConfiguration> igfss() {
+        return igfss;
     }
 
     /**
-     * @param ggfss New ggfss.
+     * @param igfss New igfss.
      */
-    public void ggfss(Iterable<VisorIgfsConfiguration> ggfss) {
-        this.ggfss = ggfss;
+    public void ggfss(Iterable<VisorIgfsConfiguration> igfss) {
+        this.igfss = igfss;
     }
 
     /**

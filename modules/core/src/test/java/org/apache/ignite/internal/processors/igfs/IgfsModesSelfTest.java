@@ -86,7 +86,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(512 * 1024);
 
         if (setNullMode)
@@ -120,7 +120,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ggfs-grid");
+        cfg.setGridName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -135,7 +135,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         grid = (IgniteEx)G.start(cfg);
 
-        ggfs = (IgfsImpl)grid.fileSystem("ggfs");
+        ggfs = (IgfsImpl)grid.fileSystem("igfs");
     }
 
     /**
@@ -148,7 +148,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs-secondary");
+        ggfsCfg.setName("igfs-secondary");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
@@ -177,7 +177,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ggfs-grid-secondary");
+        cfg.setGridName("igfs-grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -190,7 +190,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-        ggfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("ggfs-secondary");
+        ggfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("igfs-secondary");
     }
 
     /**

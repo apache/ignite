@@ -40,7 +40,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
     private IgfsEx ggfs;
 
     /** */
-    private static final String ggfsName = "ggfs";
+    private static final String ggfsName = "igfs";
 
     /** */
     private static File testWorkDir;

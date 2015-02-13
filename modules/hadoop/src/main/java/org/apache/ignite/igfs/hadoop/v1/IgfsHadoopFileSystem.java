@@ -51,11 +51,11 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  * <pre name="code" class="xml">
  *  &lt;property&gt;
  *      &lt;name&gt;fs.default.name&lt;/name&gt;
- *      &lt;value&gt;ggfs://ipc&lt;/value&gt;
+ *      &lt;value&gt;igfs://ipc&lt;/value&gt;
  *  &lt;/property&gt;
  *
  *  &lt;property&gt;
- *      &lt;name&gt;fs.ggfs.impl&lt;/name&gt;
+ *      &lt;name&gt;fs.igfs.impl&lt;/name&gt;
  *      &lt;value&gt;org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
@@ -82,7 +82,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  */
 public class IgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */
-    public static final String GGFS_MANAGEMENT = "fs.ggfs.management.connection";
+    public static final String GGFS_MANAGEMENT = "fs.igfs.management.connection";
 
     /** Empty array of file block locations. */
     private static final BlockLocation[] EMPTY_BLOCK_LOCATIONS = new BlockLocation[0];
@@ -211,8 +211,8 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
             mgmt = cfg.getBoolean(GGFS_MANAGEMENT, false);
 
-            if (!GGFS_SCHEME.equals(name.getScheme()))
-                throw new IOException("Illegal file system URI [expected=" + GGFS_SCHEME +
+            if (!IGFS_SCHEME.equals(name.getScheme()))
+                throw new IOException("Illegal file system URI [expected=" + IGFS_SCHEME +
                     "://[name]/[optional_path], actual=" + name + ']');
 
             uri = name;
@@ -334,8 +334,8 @@ public class IgfsHadoopFileSystem extends FileSystem {
         URI uri = path.toUri();
 
         if (uri.isAbsolute()) {
-            if (!F.eq(uri.getScheme(), GGFS_SCHEME))
-                throw new InvalidPathException("Wrong path scheme [expected=" + GGFS_SCHEME + ", actual=" +
+            if (!F.eq(uri.getScheme(), IGFS_SCHEME))
+                throw new InvalidPathException("Wrong path scheme [expected=" + IGFS_SCHEME + ", actual=" +
                     uri.getAuthority() + ']');
 
             if (!F.eq(uri.getAuthority(), uriAuthority))
@@ -1142,7 +1142,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
      * @return Hadoop path.
      */
     private Path convert(IgfsPath path) {
-        return new Path(GGFS_SCHEME, uriAuthority, path.toString());
+        return new Path(IGFS_SCHEME, uriAuthority, path.toString());
     }
 
     /**

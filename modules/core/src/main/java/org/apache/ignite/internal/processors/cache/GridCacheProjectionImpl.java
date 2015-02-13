@@ -713,8 +713,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public long ggfsDataSpaceUsed() {
-        return cache.ggfsDataSpaceUsed();
+    @Override public long igfsDataSpaceUsed() {
+        return cache.igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */

@@ -58,7 +58,7 @@ public class IgfsConfiguration {
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
 
     /** Default {@code GGFS} log directory. */
-    public static final String DFLT_GGFS_LOG_DIR = "work/ggfs/log";
+    public static final String DFLT_GGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BATCH_SIZE = 100;

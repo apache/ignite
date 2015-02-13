@@ -65,7 +65,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         IgfsConfiguration ggfsCfg = new IgfsConfiguration();
 
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
@@ -126,7 +126,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void awaitFileFragmenting(int gridIdx, IgfsPath path) throws Exception {
-        IgfsEx ggfs = (IgfsEx)grid(gridIdx).fileSystem("ggfs");
+        IgfsEx ggfs = (IgfsEx)grid(gridIdx).fileSystem("igfs");
 
         IgfsMetaManager meta = ggfs.context().meta();
 
@@ -163,6 +163,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem("ggfs").format();
+        grid(0).fileSystem("igfs").format();
     }
 }

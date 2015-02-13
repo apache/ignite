@@ -51,11 +51,11 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  * <pre name="code" class="xml">
  *  &lt;property&gt;
  *      &lt;name&gt;fs.default.name&lt;/name&gt;
- *      &lt;value&gt;ggfs://ipc&lt;/value&gt;
+ *      &lt;value&gt;igfs://ipc&lt;/value&gt;
  *  &lt;/property&gt;
  *
  *  &lt;property&gt;
- *      &lt;name&gt;fs.ggfs.impl&lt;/name&gt;
+ *      &lt;name&gt;fs.igfs.impl&lt;/name&gt;
  *      &lt;value&gt;org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
@@ -136,7 +136,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @throws IOException If initialization failed.
      */
     public IgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(IgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, false, -1);
+        super(IgfsHadoopEndpoint.normalize(name), IGFS_SCHEME, false, -1);
 
         uri = name;
 
@@ -159,8 +159,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
         URI uri = path.toUri();
 
         if (uri.isAbsolute()) {
-            if (!F.eq(uri.getScheme(), GGFS_SCHEME))
-                throw new InvalidPathException("Wrong path scheme [expected=" + GGFS_SCHEME + ", actual=" +
+            if (!F.eq(uri.getScheme(), IGFS_SCHEME))
+                throw new InvalidPathException("Wrong path scheme [expected=" + IGFS_SCHEME + ", actual=" +
                     uri.getAuthority() + ']');
 
             if (!F.eq(uri.getAuthority(), uriAuthority))
@@ -211,8 +211,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             A.notNull(name, "name");
             A.notNull(cfg, "cfg");
 
-            if (!GGFS_SCHEME.equals(name.getScheme()))
-                throw new IOException("Illegal file system URI [expected=" + GGFS_SCHEME +
+            if (!IGFS_SCHEME.equals(name.getScheme()))
+                throw new IOException("Illegal file system URI [expected=" + IGFS_SCHEME +
                     "://[name]/[optional_path], actual=" + name + ']');
 
             uriAuthority = name.getAuthority();
@@ -891,7 +891,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @return Hadoop path.
      */
     private Path convert(IgfsPath path) {
-        return new Path(GGFS_SCHEME, uriAuthority, path.toString());
+        return new Path(IGFS_SCHEME, uriAuthority, path.toString());
     }
 
     /**

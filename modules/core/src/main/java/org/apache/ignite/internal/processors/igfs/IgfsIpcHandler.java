@@ -68,7 +68,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
         assert ggfsCtx != null;
 
         ctx = ggfsCtx.kernalContext();
-        ggfs = ggfsCtx.ggfs();
+        ggfs = ggfsCtx.igfs();
 
         // Keep buffer size multiple of block size so no extra byte array copies is performed.
         bufSize = ggfsCtx.configuration().getBlockSize() * 2;

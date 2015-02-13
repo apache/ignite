@@ -208,7 +208,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         ggfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected ggfs", getClass(), start0);
+            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
 
         streamers(res);
 

@@ -154,9 +154,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         ggfsSecondary = (IgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
 
-        Ignite ignite = startGridWithGgfs("ignite", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithGgfs("ignite", "igfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
-        ggfs = (IgfsImpl) ignite.fileSystem("ggfs");
+        ggfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
 
     /** {@inheritDoc} */
@@ -2282,9 +2282,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected void checkExist(IgfsImpl ggfs, IgfsPath... paths) throws IgniteCheckedException {
         for (IgfsPath path : paths) {
-            assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [ggfs=" + ggfs.name() +
+            assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + ggfs.name() +
                 ", path=" + path + ']';
-            assert ggfs.exists(path) : "Path doesn't exist [ggfs=" + ggfs.name() + ", path=" + path + ']';
+            assert ggfs.exists(path) : "Path doesn't exist [igfs=" + ggfs.name() + ", path=" + path + ']';
         }
     }
 
@@ -2313,9 +2313,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected void checkNotExist(IgfsImpl ggfs, IgfsPath... paths) throws Exception {
         for (IgfsPath path : paths) {
-            assert ggfs.context().meta().fileId(path) == null : "Path exists [ggfs=" + ggfs.name() + ", path=" +
+            assert ggfs.context().meta().fileId(path) == null : "Path exists [igfs=" + ggfs.name() + ", path=" +
                 path + ']';
-            assert !ggfs.exists(path) : "Path exists [ggfs=" + ggfs.name() + ", path=" + path + ']';
+            assert !ggfs.exists(path) : "Path exists [igfs=" + ggfs.name() + ", path=" + path + ']';
         }
     }
 
@@ -2364,7 +2364,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                     is.readFully(0, buf);
 
-                    assert Arrays.equals(chunk, buf) : "Bad chunk [ggfs=" + ggfs.name() + ", chunkIdx=" + chunkIdx +
+                    assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + ggfs.name() + ", chunkIdx=" + chunkIdx +
                         ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
 
                     chunkIdx++;
@@ -2447,7 +2447,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             U.join(entry.getValue());
         }
 
-        // Clear ggfs.
+        // Clear igfs.
         ggfs.format();
     }
 }

@@ -41,7 +41,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     private static final IgfsPath PATH = new IgfsPath(PATH_STR);
 
     /** GGFS name. */
-    private static final String GGFS_NAME = "ggfs";
+    private static final String GGFS_NAME = "igfs";
 
     /** Log file path. */
     private static final String LOG_DIR = U.getIgniteHome();
@@ -50,7 +50,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     private static final String ENDPOINT = "localhost:10500";
 
     /** Log file name. */
-    private static final String LOG_FILE = LOG_DIR + File.separator + "ggfs-log-" + GGFS_NAME + "-" + U.jvmPid() +
+    private static final String LOG_FILE = LOG_DIR + File.separator + "igfs-log-" + GGFS_NAME + "-" + U.jvmPid() +
         ".csv";
 
     /** {@inheritDoc} */
@@ -73,7 +73,7 @@ public class IgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
 
         File[] logs = dir.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
-                return name.startsWith("ggfs-log-");
+                return name.startsWith("igfs-log-");
             }
         });
 

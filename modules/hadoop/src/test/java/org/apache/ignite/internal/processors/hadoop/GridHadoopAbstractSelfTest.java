@@ -196,8 +196,8 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      */
     protected void setupFileSystems(Configuration cfg) {
         cfg.set("fs.defaultFS", ggfsScheme());
-        cfg.set("fs.ggfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl", IgfsHadoopFileSystem.
+        cfg.set("fs.igfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.igfs.impl", IgfsHadoopFileSystem.
             class.getName());
 
         GridHadoopFileSystemsUtils.setupFileSystems(cfg);
@@ -207,6 +207,6 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      * @return GGFS scheme for test.
      */
     protected String ggfsScheme() {
-        return "ggfs://:" + getTestGridName(0) + "@/";
+        return "igfs://:" + getTestGridName(0) + "@/";
     }
 }

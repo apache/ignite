@@ -56,7 +56,7 @@ public class IgfsHadoopEndpoint {
      */
     public static URI normalize(URI uri) throws IOException {
         try {
-            if (!F.eq(IgniteFs.GGFS_SCHEME, uri.getScheme()))
+            if (!F.eq(IgniteFs.IGFS_SCHEME, uri.getScheme()))
                 throw new IOException("Failed to normalize UIR because it has non GGFS scheme: " + uri);
 
             IgfsHadoopEndpoint endpoint = new IgfsHadoopEndpoint(uri.getAuthority());

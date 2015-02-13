@@ -481,7 +481,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @return Split.
      */
     private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
-        URI uri = URI.create((ggfs ? "ggfs://ggfs@" : "hdfs://") + file);
+        URI uri = URI.create((ggfs ? "igfs://igfs@" : "hdfs://") + file);
 
         return new GridHadoopFileBlock(hosts, uri, start, len);
     }
@@ -926,7 +926,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
         /** {@inheritDoc} */
         @Override public IgniteFs ggfsx(String name) {
-            assert F.eq("ggfs", name);
+            assert F.eq("igfs", name);
 
             return GGFS;
         }

@@ -256,7 +256,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
         cfg.setDataCacheName("partitioned");
         cfg.setMetaCacheName("replicated");
-        cfg.setName("ggfs");
+        cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
@@ -327,7 +327,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         long used = 0, max = 0;
 
         for (int i = 0; i < 4; i++) {
-            IgniteFs ggfs = grid(i).fileSystem("ggfs");
+            IgniteFs ggfs = grid(i).fileSystem("igfs");
 
             IgfsMetrics metrics = ggfs.metrics();
 
@@ -1298,7 +1298,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
                 out.write(new byte[1024 * 1024]);
             }
 
-            IgniteFs igniteFs = grid(0).fileSystem("ggfs");
+            IgniteFs igniteFs = grid(0).fileSystem("igfs");
 
             IgfsPath filePath = new IgfsPath("/someFile");
 
@@ -1543,7 +1543,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs:///"), "/dir");
+        final Path dir = new Path(new Path("igfs:///"), "/dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1734,7 +1734,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            fs.mkdir(new Path("ggfs:///dir1/dir2"), FsPermission.getDefault(), true);
+            fs.mkdir(new Path("igfs:///dir1/dir2"), FsPermission.getDefault(), true);
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1773,7 +1773,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         for (Map.Entry<String, String> entry : primaryFsCfg)
             cfg.set(entry.getKey(), entry.getValue());
 
-        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         final int nClients = 16;
 
@@ -1791,7 +1791,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs:///" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("igfs:///" + Thread.currentThread().getName())));
 
                     return true;
                 }

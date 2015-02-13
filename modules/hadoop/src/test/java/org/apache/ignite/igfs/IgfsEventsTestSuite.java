@@ -117,7 +117,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             IgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
-                "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
             return ggfsCfg;
@@ -129,7 +129,7 @@ public class IgfsEventsTestSuite extends TestSuite {
         protected IgfsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
             IgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setName("ggfs-secondary");
+            ggfsCfg.setName("igfs-secondary");
             ggfsCfg.setDefaultMode(PRIMARY);
             ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>(){{
                 put("type", "tcp");
@@ -175,7 +175,7 @@ public class IgfsEventsTestSuite extends TestSuite {
 
             Ignite secG = G.start(cfg);
 
-            return secG.fileSystem("ggfs-secondary");
+            return secG.fileSystem("igfs-secondary");
         }
     }
 
@@ -216,7 +216,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             IgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
-                "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
             return ggfsCfg;
@@ -226,7 +226,7 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected IgfsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
             IgfsConfiguration ggfsCfg = super.getSecondaryGgfsConfiguration();
 
-            ggfsCfg.setName("ggfs-secondary");
+            ggfsCfg.setName("igfs-secondary");
             ggfsCfg.setDefaultMode(PRIMARY);
             ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "tcp");

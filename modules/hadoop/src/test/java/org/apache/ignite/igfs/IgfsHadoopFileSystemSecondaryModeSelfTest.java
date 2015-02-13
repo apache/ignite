@@ -87,7 +87,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs");
+        ggfsCfg.setName("igfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(mode);
         ggfsCfg.setPathModes(pathModes);
@@ -98,7 +98,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         ggfsCfg.setManagementPort(-1);
         ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
-            "ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/",
+            "igfs://igfs-secondary:igfs-grid-secondary@127.0.0.1:11500/",
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -122,7 +122,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ggfs-grid");
+        cfg.setGridName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -140,9 +140,9 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         fsCfg.addResource(U.resolveIgniteUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
-        fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+        fsCfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
-        fs = (IgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
+        fs = (IgfsHadoopFileSystem)FileSystem.get(new URI("igfs://igfs:igfs-grid@/"), fsCfg);
     }
 
     /**
@@ -155,7 +155,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
-        ggfsCfg.setName("ggfs-secondary");
+        ggfsCfg.setName("igfs-secondary");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
@@ -184,7 +184,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ggfs-grid-secondary");
+        cfg.setGridName("igfs-grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
