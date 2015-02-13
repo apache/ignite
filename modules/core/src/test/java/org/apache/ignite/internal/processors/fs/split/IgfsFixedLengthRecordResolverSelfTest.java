@@ -98,9 +98,9 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
         throws Exception {
         write(data);
 
-        IgniteFsFixedLengthRecordResolver rslvr = resolver(len);
+        IgfsFixedLengthRecordResolver rslvr = resolver(len);
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -124,9 +124,9 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
         throws Exception {
         write(data);
 
-        IgniteFsFixedLengthRecordResolver rslvr = resolver(len);
+        IgfsFixedLengthRecordResolver rslvr = resolver(len);
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -141,7 +141,7 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
      * @param len Length.
      * @return Resolver.
      */
-    private IgniteFsFixedLengthRecordResolver resolver(int len) {
-        return new IgniteFsFixedLengthRecordResolver(len);
+    private IgfsFixedLengthRecordResolver resolver(int len) {
+        return new IgfsFixedLengthRecordResolver(len);
     }
 }

@@ -23,10 +23,10 @@ import org.apache.ignite.ignitefs.*;
 import java.io.*;
 
 /**
- * Defines executable unit for {@link IgniteFsTask}. Before this job is executed, it is assigned one of the
- * ranges provided by the {@link IgniteFsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
+ * Defines executable unit for {@link IgfsTask}. Before this job is executed, it is assigned one of the
+ * ranges provided by the {@link IgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
- * {@link #execute(org.apache.ignite.IgniteFs, IgniteFsFileRange, org.apache.ignite.ignitefs.IgniteFsInputStream)} method is given {@link IgniteFsFileRange} this
+ * {@link #execute(org.apache.ignite.IgniteFs, IgfsFileRange, org.apache.ignite.ignitefs.IgniteFsInputStream)} method is given {@link IgfsFileRange} this
  * job is expected to operate on, and already opened {@link org.apache.ignite.ignitefs.IgniteFsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not
@@ -34,13 +34,13 @@ import java.io.*;
  * the range end or seek position before the reange start.
  * <p>
  * In majority of the cases, when you want to process only provided range, you should explicitly control amount
- * of returned data and stop at range end. You can also use {@link IgniteFsInputStreamJobAdapter}, which operates
- * on {@link IgniteFsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
- * {@link IgniteFsRangeInputStream}.
+ * of returned data and stop at range end. You can also use {@link IgfsInputStreamJobAdapter}, which operates
+ * on {@link IgfsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
+ * {@link IgfsRangeInputStream}.
  * <p>
  * You can inject any resources in concrete implementation, just as with regular {@link org.apache.ignite.compute.ComputeJob} implementations.
  */
-public interface IgniteFsJob {
+public interface IgfsJob {
     /**
      * Executes this job.
      *
@@ -52,7 +52,7 @@ public interface IgniteFsJob {
      * @throws IgniteException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in) throws IgniteException,
+    public Object execute(IgniteFs ggfs, IgfsFileRange range, IgniteFsInputStream in) throws IgniteException,
         IOException;
 
     /**

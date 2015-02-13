@@ -180,7 +180,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @param len Length.
      * @return Split.
      */
-    protected IgniteFsFileRange split(long start, long len) {
-        return new IgniteFsFileRange(FILE, start, len);
+    protected IgfsFileRange split(long start, long len) {
+        return new IgfsFileRange(FILE, start, len);
     }
 }

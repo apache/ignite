@@ -75,6 +75,6 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * @param recRslv Record resolver.
      * @return Compute job.
      */
-    @Nullable public abstract ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, IgniteFsRecordResolver recRslv);
+    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+        long start, long length, IgfsRecordResolver recRslv);
 }

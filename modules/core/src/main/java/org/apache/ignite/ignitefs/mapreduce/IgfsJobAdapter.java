@@ -18,9 +18,9 @@
 package org.apache.ignite.ignitefs.mapreduce;
 
 /**
- * Adapter for {@link IgniteFsJob} with no-op implementation of {@link #cancel()} method.
+ * Adapter for {@link IgfsJob} with no-op implementation of {@link #cancel()} method.
  */
-public abstract class IgniteFsJobAdapter implements IgniteFsJob {
+public abstract class IgfsJobAdapter implements IgfsJob {
     /** {@inheritDoc} */
     @Override public void cancel() {
         // No-op.

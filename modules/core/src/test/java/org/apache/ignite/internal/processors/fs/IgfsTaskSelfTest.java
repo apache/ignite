@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgniteFsTask}.
+ * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgfsTask}.
  */
 public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Predefined words dictionary. */
@@ -155,7 +155,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             Long genLen = ggfs.info(FILE).length();
 
             IgniteBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
-                new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+                new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
             assert F.eq(genLen, taskRes.getKey());
             assert F.eq(TOTAL_WORDS, taskRes.getValue());
@@ -183,7 +183,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             Long genLen = ggfs.info(FILE).length();
 
             assertNull(ggfsAsync.execute(
-                new Task(), new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
+                new Task(), new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
             IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
@@ -230,10 +230,10 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /**
      * Task.
      */
-    private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
+    private static class Task extends IgfsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
-        @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) {
+        @Override public IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+            IgfsTaskArgs<String> args) {
             return new Job();
         }
 
@@ -258,7 +258,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /**
      * Job.
      */
-    private static class Job implements IgniteFsJob, Serializable {
+    private static class Job implements IgfsJob, Serializable {
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -269,7 +269,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
+        @Override public Object execute(IgniteFs ggfs, IgfsFileRange range, IgniteFsInputStream in)
             throws IOException {
             assert ignite != null;
             assert ses != null;

@@ -24,8 +24,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS record resolver. When {@link IgniteFsTask} is split into {@link IgniteFsJob}s each produced job will obtain
- * {@link IgniteFsFileRange} based on file data location. Record resolver is invoked in each job before actual
+ * GGFS record resolver. When {@link IgfsTask} is split into {@link IgfsJob}s each produced job will obtain
+ * {@link IgfsFileRange} based on file data location. Record resolver is invoked in each job before actual
  * execution in order to adjust record boundaries in a way consistent with user data.
  * <p>
  * E.g., you may want to split your task into jobs so that each job process zero, one or several lines from that file.
@@ -34,13 +34,13 @@ import java.io.*;
  * <p>
  * The following record resolvers are available out of the box:
  * <ul>
- *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgniteFsFixedLengthRecordResolver}</li>
- *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgniteFsByteDelimiterRecordResolver}</li>
- *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgniteFsStringDelimiterRecordResolver}</li>
- *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgniteFsNewLineRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgfsFixedLengthRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgfsByteDelimiterRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgfsStringDelimiterRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.ignitefs.mapreduce.records.IgfsNewLineRecordResolver}</li>
  * </ul>
  */
-public interface IgniteFsRecordResolver extends Serializable {
+public interface IgfsRecordResolver extends Serializable {
     /**
      * Adjusts record start offset and length.
      *
@@ -51,6 +51,6 @@ public interface IgniteFsRecordResolver extends Serializable {
      * @throws IgniteException If resolve failed.
      * @throws IOException If resolve failed.
      */
-    @Nullable public IgniteFsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord) throws IgniteException, IOException;
+    @Nullable public IgfsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
+        IgfsFileRange suggestedRecord) throws IgniteException, IOException;
 }

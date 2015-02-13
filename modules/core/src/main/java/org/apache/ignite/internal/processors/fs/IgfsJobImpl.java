@@ -29,12 +29,12 @@ import java.io.*;
 /**
  * GGFS job implementation.
  */
-public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob> {
+public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** GGFS job. */
-    private IgniteFsJob job;
+    private IgfsJob job;
 
     /** GGFS name. */
     private String ggfsName;
@@ -49,7 +49,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob>
     private long len;
 
     /** Split resolver. */
-    private IgniteFsRecordResolver rslvr;
+    private IgfsRecordResolver rslvr;
 
     /** Injected grid. */
     @IgniteInstanceResource
@@ -67,8 +67,8 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob>
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public IgfsJobImpl(IgniteFsJob job, String ggfsName, IgniteFsPath path, long start, long len,
-        IgniteFsRecordResolver rslvr) {
+    public IgfsJobImpl(IgfsJob job, String ggfsName, IgniteFsPath path, long start, long len,
+        IgfsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;
         this.path = path;
@@ -82,7 +82,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob>
         IgniteFs fs = ignite.fileSystem(ggfsName);
 
         try (IgniteFsInputStream in = fs.open(path)) {
-            IgniteFsFileRange split = new IgniteFsFileRange(path, start, len);
+            IgfsFileRange split = new IgfsFileRange(path, start, len);
 
             if (rslvr != null) {
                 split = rslvr.resolveRecords(fs, in, split);
@@ -97,7 +97,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob>
 
             in.seek(split.start());
 
-            return job.execute(fs, new IgniteFsFileRange(path, split.start(), split.length()), in);
+            return job.execute(fs, new IgfsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
             throw new IgniteException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
@@ -111,7 +111,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFsJob>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsJob userObject() {
+    @Override public IgfsJob userObject() {
         return job;
     }
 }

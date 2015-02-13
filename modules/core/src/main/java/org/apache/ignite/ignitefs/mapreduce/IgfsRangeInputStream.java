@@ -25,11 +25,11 @@ import java.io.*;
 
 /**
  * Decorator for regular {@link org.apache.ignite.ignitefs.IgniteFsInputStream} which streams only data within the given range.
- * This stream is used for {@link IgniteFsInputStreamJobAdapter} convenience adapter to create
+ * This stream is used for {@link IgfsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
- * working with {@link IgniteFsJob} directly.
+ * working with {@link IgfsJob} directly.
  */
-public final class IgniteFsRangeInputStream extends IgniteFsInputStream {
+public final class IgfsRangeInputStream extends IgniteFsInputStream {
     /** Base input stream. */
     private final IgniteFsInputStream is;
 
@@ -50,7 +50,7 @@ public final class IgniteFsRangeInputStream extends IgniteFsInputStream {
      * @param maxLen Maximum stream length.
      * @throws IOException In case of exception.
      */
-    public IgniteFsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
+    public IgfsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
         if (is == null)
             throw new IllegalArgumentException("Input stream cannot be null.");
 
@@ -85,7 +85,7 @@ public final class IgniteFsRangeInputStream extends IgniteFsInputStream {
      * @param range File range.
      * @throws IOException In case of exception.
      */
-    public IgniteFsRangeInputStream(IgniteFsInputStream is, IgniteFsFileRange range) throws IOException {
+    public IgfsRangeInputStream(IgniteFsInputStream is, IgfsFileRange range) throws IOException {
         this(is, range.start(), range.length());
     }
 
@@ -192,6 +192,6 @@ public final class IgniteFsRangeInputStream extends IgniteFsInputStream {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsRangeInputStream.class, this);
+        return S.toString(IgfsRangeInputStream.class, this);
     }
 }

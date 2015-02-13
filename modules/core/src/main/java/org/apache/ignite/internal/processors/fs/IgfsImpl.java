@@ -401,7 +401,7 @@ public final class IgfsImpl implements IgfsEx {
         if (enterBusy()) {
             try {
                 IgniteBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
-                    new GgfsGlobalSpaceTask(name()), null);
+                    new IgfsGlobalSpaceTask(name()), null);
 
                 return new IgfsStatus(space.get1(), space.get2());
             }
@@ -1104,7 +1104,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
-                    GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
@@ -1125,7 +1125,7 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info,
+                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(ggfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
@@ -1207,7 +1207,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     batch = newBatch(path, desc.out());
 
-                    GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
+                    IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
                         bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
@@ -1267,7 +1267,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 info = meta.lock(info.id());
 
-                GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, info, parentId,
+                IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, info, parentId,
                     bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
@@ -1318,7 +1318,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     batch = newBatch(path, desc.out());
 
-                    return new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
+                    return new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
                         bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
                 }
 
@@ -1359,7 +1359,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
                     evts.record(new IgniteFsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
 
-                return new GgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
+                return new IgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
                     cfg.getStreamBufferSize() : bufSize, mode, batch);
             }
             catch (IgniteCheckedException e) {
@@ -1728,7 +1728,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) {
         try {
             return executeAsync(task, rslvr, paths, arg).get();
@@ -1739,7 +1739,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
             return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
@@ -1750,8 +1750,8 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+    @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
         try {
             return executeAsync(taskCls, rslvr, paths, arg).get();
         }
@@ -1761,8 +1761,8 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+    @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         try {
             return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
@@ -1781,7 +1781,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) {
         return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
@@ -1800,7 +1800,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
@@ -1815,8 +1815,8 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
         return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
@@ -1833,10 +1833,10 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
-        return ggfsCtx.kernalContext().task().execute((Class<IgniteFsTask<T, R>>)taskCls,
+        return ggfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
             new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -1979,7 +1979,7 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * GGFS output stream extension that fires events.
      */
-    private class GgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
+    private class IgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
         /** Close guard. */
         private final AtomicBoolean closeGuard = new AtomicBoolean(false);
 
@@ -1994,7 +1994,7 @@ public final class IgfsImpl implements IgfsEx {
          * @param batch Optional secondary file system batch.
          * @throws IgniteCheckedException In case of error.
          */
-        GgfsEventAwareOutputStream(IgniteFsPath path, IgfsFileInfo fileInfo,
+        IgfsEventAwareOutputStream(IgniteFsPath path, IgfsFileInfo fileInfo,
             IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable IgfsFileWorkerBatch batch)
             throws IgniteCheckedException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
@@ -2019,7 +2019,7 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * GGFS input stream extension that fires events.
      */
-    private class GgfsEventAwareInputStream extends IgfsInputStreamImpl {
+    private class IgfsEventAwareInputStream extends IgfsInputStreamImpl {
         /** Close guard. */
         private final AtomicBoolean closeGuard = new AtomicBoolean(false);
 
@@ -2034,7 +2034,7 @@ public final class IgfsImpl implements IgfsEx {
          * @param secReader Optional secondary file system reader.
          * @param metrics Metrics.
          */
-        GgfsEventAwareInputStream(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo,
+        IgfsEventAwareInputStream(IgfsContext ggfsCtx, IgniteFsPath path, IgfsFileInfo fileInfo,
             int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader,
             IgfsLocalMetrics metrics) {
             super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
@@ -2060,7 +2060,7 @@ public final class IgfsImpl implements IgfsEx {
      * Space calculation task.
      */
     @GridInternal
-    private static class GgfsGlobalSpaceTask extends ComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
+    private static class IgfsGlobalSpaceTask extends ComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2070,7 +2070,7 @@ public final class IgfsImpl implements IgfsEx {
         /**
          * @param ggfsName GGFS name.
          */
-        private GgfsGlobalSpaceTask(@Nullable String ggfsName) {
+        private IgfsGlobalSpaceTask(@Nullable String ggfsName) {
             this.ggfsName = ggfsName;
         }
 

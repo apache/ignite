@@ -33,9 +33,9 @@ import java.util.*;
  * Record resolver which adjusts records based on provided delimiters. Both start position and length are
  * shifted to the right, based on delimiter positions.
  * <p>
- * Note that you can use {@link IgniteFsStringDelimiterRecordResolver} if your delimiter is a plain string.
+ * Note that you can use {@link IgfsStringDelimiterRecordResolver} if your delimiter is a plain string.
  */
-public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolver, Externalizable {
+public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public IgniteFsByteDelimiterRecordResolver() {
+    public IgfsByteDelimiterRecordResolver() {
         // No-op.
     }
 
@@ -58,7 +58,7 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
      *
      * @param delims Delimiters.
      */
-    public IgniteFsByteDelimiterRecordResolver(byte[]... delims) {
+    public IgfsByteDelimiterRecordResolver(byte[]... delims) {
         if (delims == null || delims.length == 0)
             throw new IllegalArgumentException("Delimiters cannot be null or empty.");
 
@@ -77,8 +77,8 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord) throws IgniteException, IOException {
+    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
+        IgfsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
 
@@ -109,7 +109,7 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
 
             long end = curDelim != null ? curDelim.end : stream.position();
 
-            return new IgniteFsFileRange(suggestedRecord.path(), start, end - start);
+            return new IgfsFileRange(suggestedRecord.path(), start, end - start);
         }
         else
             // We failed to find any delimiters up to the EOS.
@@ -270,7 +270,7 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsByteDelimiterRecordResolver.class, this);
+        return S.toString(IgfsByteDelimiterRecordResolver.class, this);
     }
 
     /** {@inheritDoc} */

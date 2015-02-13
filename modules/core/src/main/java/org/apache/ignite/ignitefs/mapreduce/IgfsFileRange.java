@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Entity representing part of GGFS file identified by file path, start position, and length.
  */
-public class IgniteFsFileRange {
+public class IgfsFileRange {
     /** File path. */
     private IgniteFsPath path;
 
@@ -40,7 +40,7 @@ public class IgniteFsFileRange {
      * @param start Start position.
      * @param len Length.
      */
-    public IgniteFsFileRange(IgniteFsPath path, long start, long len) {
+    public IgfsFileRange(IgniteFsPath path, long start, long len) {
         this.path = path;
         this.start = start;
         this.len = len;
@@ -75,6 +75,6 @@ public class IgniteFsFileRange {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsFileRange.class, this);
+        return S.toString(IgfsFileRange.class, this);
     }
 }

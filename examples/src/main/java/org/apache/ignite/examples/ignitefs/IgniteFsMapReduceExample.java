@@ -27,7 +27,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows how to use {@link IgniteFsTask} to find lines matching particular pattern in the file in pretty
+ * Example that shows how to use {@link org.apache.ignite.ignitefs.mapreduce.IgfsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
@@ -71,7 +71,7 @@ public class IgniteFsMapReduceExample {
 
                 writeFile(fs, fsPath, file);
 
-                Collection<Line> lines = fs.execute(new GrepTask(), IgniteFsNewLineRecordResolver.NEW_LINE,
+                Collection<Line> lines = fs.execute(new GrepTask(), IgfsNewLineRecordResolver.NEW_LINE,
                     Collections.singleton(fsPath), regexStr);
 
                 if (lines.isEmpty()) {
@@ -126,10 +126,10 @@ public class IgniteFsMapReduceExample {
     /**
      * Grep task.
      */
-    private static class GrepTask extends IgniteFsTask<String, Collection<Line>> {
+    private static class GrepTask extends IgfsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
-        @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) {
+        @Override public IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+            IgfsTaskArgs<String> args) {
             return new GrepJob(args.userArgument());
         }
 
@@ -159,7 +159,7 @@ public class IgniteFsMapReduceExample {
     /**
      * Grep job.
      */
-    private static class GrepJob extends IgniteFsInputStreamJobAdapter {
+    private static class GrepJob extends IgfsInputStreamJobAdapter {
         /** Regex string. */
         private final String regex;
 
@@ -173,7 +173,7 @@ public class IgniteFsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs igniteFs, IgniteFsRangeInputStream in) throws IgniteException, IOException {
+        @Override public Object execute(IgniteFs igniteFs, IgfsRangeInputStream in) throws IgniteException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

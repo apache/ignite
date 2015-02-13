@@ -762,13 +762,13 @@ public class IgniteFsConfiguration {
 
     /**
      * Get maximum default range size of a file being split during GGFS task execution. When GGFS task is about to
-     * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.ignitefs.mapreduce.IgniteFsFileRange} which
+     * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.ignitefs.mapreduce.IgfsFileRange} which
      * has length. In case this parameter is set to positive value, then GGFS will split single file range into smaller
      * ranges with length not greater that this parameter. The only exception to this case is when maximum task range
      * length is smaller than file block size. In this case maximum task range size will be overridden and set to file
      * block size.
      * <p>
-     * Note that this parameter is applied when task is split into jobs before {@link org.apache.ignite.ignitefs.mapreduce.IgniteFsRecordResolver} is
+     * Note that this parameter is applied when task is split into jobs before {@link org.apache.ignite.ignitefs.mapreduce.IgfsRecordResolver} is
      * applied. Therefore, final file ranges being assigned to particular jobs could be greater than value of this
      * parameter depending on file data layout and selected resolver type.
      * <p>

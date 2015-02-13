@@ -874,26 +874,26 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
             Collection<IgniteFsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
             Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
+        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+            @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+            @Nullable IgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
             long maxRangeLen, @Nullable T arg) {
             return null;
         }

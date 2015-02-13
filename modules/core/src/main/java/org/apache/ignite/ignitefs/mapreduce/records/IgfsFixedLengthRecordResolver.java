@@ -28,7 +28,7 @@ import java.io.*;
  * Record resolver which adjusts records to fixed length. That is, start offset of the record is shifted to the
  * nearest position so that {@code newStart % length == 0}.
  */
-public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver, Externalizable {
+public class IgfsFixedLengthRecordResolver implements IgfsRecordResolver, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,7 +38,7 @@ public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public IgniteFsFixedLengthRecordResolver() {
+    public IgfsFixedLengthRecordResolver() {
         // No-op.
     }
 
@@ -47,13 +47,13 @@ public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver
      *
      * @param recLen Record length.
      */
-    public IgniteFsFixedLengthRecordResolver(long recLen) {
+    public IgfsFixedLengthRecordResolver(long recLen) {
         this.recLen = recLen;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord)
+    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
+        IgfsFileRange suggestedRecord)
         throws IgniteException, IOException {
         long suggestedEnd = suggestedRecord.start() + suggestedRecord.length();
 
@@ -66,12 +66,12 @@ public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver
 
         assert end >= start;
 
-        return start != end ? new IgniteFsFileRange(suggestedRecord.path(), start, end - start) : null;
+        return start != end ? new IgfsFileRange(suggestedRecord.path(), start, end - start) : null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsFixedLengthRecordResolver.class, this);
+        return S.toString(IgfsFixedLengthRecordResolver.class, this);
     }
 
     /** {@inheritDoc} */

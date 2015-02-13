@@ -24,19 +24,19 @@ import java.util.*;
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link IgniteFsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
+ * passed to {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
  *     <li>GGFS name</li>
  *     <li>File paths passed to {@code GridGgfs.execute()} method</li>
- *     <li>{@link IgniteFsRecordResolver} for that task</li>
+ *     <li>{@link IgfsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>
  *     <li>Maximum file range length for that task (see {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
  */
-public interface IgniteFsTaskArgs<T> {
+public interface IgfsTaskArgs<T> {
     /**
      * Gets GGFS name.
      *
@@ -56,7 +56,7 @@ public interface IgniteFsTaskArgs<T> {
      *
      * @return Record resolver.
      */
-    public IgniteFsRecordResolver recordResolver();
+    public IgfsRecordResolver recordResolver();
 
     /**
      * Flag indicating whether to fail or simply skip non-existent files.

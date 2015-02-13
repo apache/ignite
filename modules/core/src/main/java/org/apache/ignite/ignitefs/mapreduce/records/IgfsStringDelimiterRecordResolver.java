@@ -25,9 +25,9 @@ import java.nio.charset.*;
 
 /**
  * Record resolver based on delimiters represented as strings. Works in the same way as
- * {@link IgniteFsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
+ * {@link IgfsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
  */
-public class IgniteFsStringDelimiterRecordResolver extends IgniteFsByteDelimiterRecordResolver {
+public class IgfsStringDelimiterRecordResolver extends IgfsByteDelimiterRecordResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,7 +54,7 @@ public class IgniteFsStringDelimiterRecordResolver extends IgniteFsByteDelimiter
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public IgniteFsStringDelimiterRecordResolver() {
+    public IgfsStringDelimiterRecordResolver() {
         // No-op.
     }
 
@@ -64,7 +64,7 @@ public class IgniteFsStringDelimiterRecordResolver extends IgniteFsByteDelimiter
      * @param delims Delimiters.
      * @param charset Charset.
      */
-    public IgniteFsStringDelimiterRecordResolver(Charset charset, String... delims) {
+    public IgfsStringDelimiterRecordResolver(Charset charset, String... delims) {
         super(toBytes(charset, delims));
     }
 
@@ -73,12 +73,12 @@ public class IgniteFsStringDelimiterRecordResolver extends IgniteFsByteDelimiter
      *
      * @param delims Delimiters.
      */
-    public IgniteFsStringDelimiterRecordResolver(String... delims) {
+    public IgfsStringDelimiterRecordResolver(String... delims) {
         super(toBytes(Charset.defaultCharset(), delims));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteFsStringDelimiterRecordResolver.class, this);
+        return S.toString(IgfsStringDelimiterRecordResolver.class, this);
     }
 }

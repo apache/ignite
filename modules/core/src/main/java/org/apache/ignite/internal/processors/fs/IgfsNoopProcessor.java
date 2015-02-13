@@ -64,8 +64,8 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, IgniteFsRecordResolver recRslv) {
+    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String ggfsName, IgniteFsPath path,
+        long start, long length, IgfsRecordResolver recRslv) {
         return null;
     }
 }

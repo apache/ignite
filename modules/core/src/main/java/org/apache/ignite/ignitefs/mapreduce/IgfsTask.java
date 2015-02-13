@@ -33,15 +33,15 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link IgniteFsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
+ * {@link IgfsTask#createJob(org.apache.ignite.ignitefs.IgniteFsPath, IgfsFileRange, IgfsTaskArgs)} method.
  * <p>
- * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
+ * Each file participating in GGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
  * Once file is split into ranges, each range is passed to {@code GridGgfsTask.createJob()} method in order to create a
- * {@link IgniteFsJob}.
+ * {@link IgfsJob}.
  * <p>
  * Finally all generated jobs are sent to Grid nodes for execution.
  * <p>
@@ -74,7 +74,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTaskArgs<T>, R> {
+public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>, R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,7 +84,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
 
     /** {@inheritDoc} */
     @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable IgniteFsTaskArgs<T> args) {
+        @Nullable IgfsTaskArgs<T> args) {
         assert ignite != null;
         assert args != null;
 
@@ -123,7 +123,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                     throw new IgniteException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
                         ", subgrid=" + subgrid + ']');
 
-                IgniteFsJob job = createJob(path, new IgniteFsFileRange(file.path(), loc.start(), loc.length()), args);
+                IgfsJob job = createJob(path, new IgfsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
                     ComputeJob jobImpl = ggfsProc.createJob(job, fs.name(), file.path(), loc.start(),
@@ -152,8 +152,8 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws IgniteException If job creation failed.
      */
-    @Nullable public abstract IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-        IgniteFsTaskArgs<T> args) throws IgniteException;
+    @Nullable public abstract IgfsJob createJob(IgniteFsPath path, IgfsFileRange range,
+        IgfsTaskArgs<T> args) throws IgniteException;
 
     /**
      * Maps list by node ID.

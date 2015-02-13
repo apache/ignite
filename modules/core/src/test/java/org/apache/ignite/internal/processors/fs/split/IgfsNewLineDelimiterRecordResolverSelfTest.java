@@ -22,7 +22,7 @@ import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.ignitefs.mapreduce.records.*;
 import org.apache.ignite.internal.util.typedef.*;
 
-import static org.apache.ignite.ignitefs.mapreduce.records.IgniteFsNewLineRecordResolver.*;
+import static org.apache.ignite.ignitefs.mapreduce.records.IgfsNewLineRecordResolver.*;
 
 /**
  * New line split resolver self test.
@@ -82,9 +82,9 @@ public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractReco
         throws Exception {
         write(data);
 
-        IgniteFsNewLineRecordResolver rslvr = resolver();
+        IgfsNewLineRecordResolver rslvr = resolver();
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -107,9 +107,9 @@ public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractReco
         throws Exception {
         write(data);
 
-        IgniteFsNewLineRecordResolver rslvr = resolver();
+        IgfsNewLineRecordResolver rslvr = resolver();
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -123,7 +123,7 @@ public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractReco
      *
      * @return Resolver.
      */
-    private IgniteFsNewLineRecordResolver resolver() {
-        return IgniteFsNewLineRecordResolver.NEW_LINE;
+    private IgfsNewLineRecordResolver resolver() {
+        return IgfsNewLineRecordResolver.NEW_LINE;
     }
 }

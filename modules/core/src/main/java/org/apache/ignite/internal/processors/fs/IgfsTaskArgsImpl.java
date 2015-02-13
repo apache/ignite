@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * GGFS task arguments implementation.
  */
-public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable {
+public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,7 +38,7 @@ public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable
     private Collection<IgniteFsPath> paths;
 
     /** Record resolver. */
-    private IgniteFsRecordResolver recRslvr;
+    private IgfsRecordResolver recRslvr;
 
     /** Skip non existent files flag. */
     private boolean skipNonExistentFiles;
@@ -66,7 +66,7 @@ public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public IgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
+    public IgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgfsRecordResolver recRslvr,
         boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
@@ -87,7 +87,7 @@ public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsRecordResolver recordResolver() {
+    @Override public IgfsRecordResolver recordResolver() {
         return recRslvr;
     }
 
@@ -127,7 +127,7 @@ public class IgfsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable
         ggfsName = U.readString(in);
         paths = U.readCollection(in);
 
-        recRslvr = (IgniteFsRecordResolver)in.readObject();
+        recRslvr = (IgfsRecordResolver)in.readObject();
         skipNonExistentFiles = in.readBoolean();
         maxRangeLen = in.readLong();
         usrArg = (T)in.readObject();

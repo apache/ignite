@@ -286,9 +286,9 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
         byte[]... delims) throws Exception {
         write(data);
 
-        IgniteFsByteDelimiterRecordResolver rslvr = resolver(delims);
+        IgfsByteDelimiterRecordResolver rslvr = resolver(delims);
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -312,9 +312,9 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
         throws Exception {
         write(data);
 
-        IgniteFsByteDelimiterRecordResolver rslvr = resolver(delims);
+        IgfsByteDelimiterRecordResolver rslvr = resolver(delims);
 
-        IgniteFsFileRange split;
+        IgfsFileRange split;
 
         try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
@@ -329,7 +329,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      * @param delims Delimiters.
      * @return Resolver.
      */
-    private IgniteFsByteDelimiterRecordResolver resolver(byte[]... delims) {
-        return new IgniteFsByteDelimiterRecordResolver(delims);
+    private IgfsByteDelimiterRecordResolver resolver(byte[]... delims) {
+        return new IgfsByteDelimiterRecordResolver(delims);
     }
 }

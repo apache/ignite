@@ -24,19 +24,19 @@ import org.apache.ignite.internal.util.*;
 import java.io.*;
 
 /**
- * Convenient {@link IgniteFsJob} adapter. It limits data returned from {@link org.apache.ignite.ignitefs.IgniteFsInputStream} to bytes within
- * the {@link IgniteFsFileRange} assigned to the job.
+ * Convenient {@link IgfsJob} adapter. It limits data returned from {@link org.apache.ignite.ignitefs.IgniteFsInputStream} to bytes within
+ * the {@link IgfsFileRange} assigned to the job.
  * <p>
  * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into
  * {@link GridFixedSizeInputStream} limited to range length.
  */
-public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
+public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {
     /** {@inheritDoc} */
-    @Override public final Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
+    @Override public final Object execute(IgniteFs ggfs, IgfsFileRange range, IgniteFsInputStream in)
         throws IgniteException, IOException {
         in.seek(range.start());
 
-        return execute(ggfs, new IgniteFsRangeInputStream(in, range));
+        return execute(ggfs, new IgfsRangeInputStream(in, range));
     }
 
     /**
@@ -48,5 +48,5 @@ public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
      * @throws IgniteException If execution failed.
      * @throws IOException If IO exception encountered while working with stream.
      */
-    public abstract Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws IgniteException, IOException;
+    public abstract Object execute(IgniteFs ggfs, IgfsRangeInputStream in) throws IgniteException, IOException;
 }
