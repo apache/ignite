@@ -357,6 +357,11 @@ public class CommunicationMessageCodeGenerator {
     private void start(Collection<String> code, @Nullable String superMtd, boolean write) {
         assert code != null;
 
+        if (write) {
+            code.add(builder().a("MessageWriter writer = WRITER.get();").toString());
+            code.add(EMPTY);
+        }
+
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
         code.add(EMPTY);
 

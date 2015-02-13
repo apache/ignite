@@ -993,100 +993,115 @@ public class GridNioServer<T> {
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
-            WritableByteChannel sockCh = (WritableByteChannel)key.channel();
+            try {
+                WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
-            GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
-            ByteBuffer buf = ses.writeBuffer();
-            NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
+                GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+                ByteBuffer buf = ses.writeBuffer();
+                NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            List<NioOperationFuture<?>> doneFuts = null;
+                MessageWriter writer = ses.meta(WRITER.ordinal());
 
-            while (true) {
-                if (req == null) {
-                    req = (NioOperationFuture<?>)ses.pollFuture();
+                if (writer == null) {
+                    ses.addMeta(WRITER.ordinal(), writer = formatter.writer());
 
-                    if (req == null && buf.position() == 0) {
-                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                    MessageAdapter.WRITER.set(writer);
+                }
+
+                List<NioOperationFuture<?>> doneFuts = null;
+
+                while (true) {
+                    if (req == null) {
+                        req = (NioOperationFuture<?>)ses.pollFuture();
+
+                        if (req == null && buf.position() == 0) {
+                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+
+                            break;
+                        }
+                    }
+
+                    MessageAdapter msg;
+                    boolean finished = false;
+
+                    if (req != null) {
+                        msg = req.directMessage();
+
+                        assert msg != null;
+
+                        finished = msg.writeTo(buf);
+
+                        if (finished)
+                            writer.reset();
+                    }
+
+                    // Fill up as many messages as possible to write buffer.
+                    while (finished) {
+                        if (doneFuts == null)
+                            doneFuts = new ArrayList<>();
+
+                        doneFuts.add(req);
+
+                        req = (NioOperationFuture<?>)ses.pollFuture();
+
+                        if (req == null)
+                            break;
+
+                        msg = req.directMessage();
+
+                        assert msg != null;
+
+                        finished = msg.writeTo(buf);
+
+                        if (finished)
+                            writer.reset();
+                    }
+
+                    buf.flip();
+
+                    assert buf.hasRemaining();
+
+                    if (!skipWrite) {
+                        int cnt = sockCh.write(buf);
+
+                        if (!F.isEmpty(doneFuts)) {
+                            for (int i = 0; i < doneFuts.size(); i++)
+                                doneFuts.get(i).onDone();
+
+                            doneFuts.clear();
+                        }
+
+                        if (log.isTraceEnabled())
+                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                        if (metricsLsnr != null)
+                            metricsLsnr.onBytesSent(cnt);
+
+                        ses.bytesSent(cnt);
+                    }
+                    else {
+                        // For test purposes only (skipWrite is set to true in tests only).
+                        try {
+                            U.sleep(50);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new IOException("Thread has been interrupted.", e);
+                        }
+                    }
+
+                    if (buf.hasRemaining()) {
+                        buf.compact();
+
+                        ses.addMeta(NIO_OPERATION.ordinal(), req);
 
                         break;
                     }
+                    else
+                        buf.clear();
                 }
-
-                MessageAdapter msg;
-                boolean finished = false;
-
-                if (req != null) {
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    msg.setWriter(formatter.writer());
-
-                    finished = msg.writeTo(buf);
-                }
-
-                // Fill up as many messages as possible to write buffer.
-                while (finished) {
-                    if (doneFuts == null)
-                        doneFuts = new ArrayList<>();
-
-                    doneFuts.add(req);
-
-                    req = (NioOperationFuture<?>)ses.pollFuture();
-
-                    if (req == null)
-                        break;
-
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    msg.setWriter(formatter.writer());
-
-                    finished = msg.writeTo(buf);
-                }
-
-                buf.flip();
-
-                assert buf.hasRemaining();
-
-                if (!skipWrite) {
-                    int cnt = sockCh.write(buf);
-
-                    if (!F.isEmpty(doneFuts)) {
-                        for (int i = 0; i < doneFuts.size(); i++)
-                            doneFuts.get(i).onDone();
-
-                        doneFuts.clear();
-                    }
-
-                    if (log.isTraceEnabled())
-                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
-
-                    ses.bytesSent(cnt);
-                }
-                else {
-                    // For test purposes only (skipWrite is set to true in tests only).
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IOException("Thread has been interrupted.", e);
-                    }
-                }
-
-                if (buf.hasRemaining()) {
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-
-                    break;
-                }
-                else
-                    buf.clear();
+            }
+            finally {
+                MessageAdapter.WRITER.remove();
             }
         }
     }

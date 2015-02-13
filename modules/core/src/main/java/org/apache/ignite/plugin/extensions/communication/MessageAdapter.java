@@ -25,6 +25,9 @@ import java.nio.*;
  */
 public abstract class MessageAdapter implements Serializable, Cloneable {
     /** Message writer. */
+    public static final ThreadLocal<MessageWriter> WRITER = new ThreadLocal<>();
+
+    // TODO: remove
     protected MessageWriter writer;
 
     /** Message reader. */
@@ -36,20 +39,24 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     /** Current write/read state. */
     protected int state;
 
-    /**
-     * @param writer Message writer.
-     */
-    public final void setWriter(MessageWriter writer) {
-        if (this.writer == null)
-            this.writer = writer;
-    }
+//    /**
+//     * @param writer Message writer.
+//     */
+//    public final void setWriter(MessageWriter writer) {
+//        assert writer != null;
+//
+//        WRITER.set(writer);
+//    }
 
     /**
      * @param reader Message reader.
      */
     public final void setReader(MessageReader reader) {
-        if (this.reader == null)
-            this.reader = reader;
+        assert reader != null;
+
+        assert this.reader == null;
+
+        this.reader = reader;
     }
 
     /**
