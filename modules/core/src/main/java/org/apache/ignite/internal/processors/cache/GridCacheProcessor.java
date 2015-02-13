@@ -381,7 +381,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "for cache: " + cc.getName());
 
         if (cc.isWriteThrough() && cfgStore == null)
-            throw new IgniteCheckedException("Cannot enable read-through (writer or store is not provided) " +
+            throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + cc.getName());
 
         long delay = cc.getPreloadPartitionedDelay();

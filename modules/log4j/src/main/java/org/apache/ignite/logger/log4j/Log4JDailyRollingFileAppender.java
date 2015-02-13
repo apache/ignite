@@ -24,16 +24,16 @@ import org.apache.log4j.*;
 import java.io.*;
 
 /**
- * Log4J {@link RollingFileAppender} with added support for grid node IDs.
+ * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
  */
-public class IgniteLog4jRollingFileAppender extends RollingFileAppender implements IgniteLog4jFileAware {
+public class Log4JDailyRollingFileAppender extends DailyRollingFileAppender implements Log4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
     /**
      * Default constructor (does not do anything).
      */
-    public IgniteLog4jRollingFileAppender() {
+    public Log4JDailyRollingFileAppender() {
         init();
     }
 
@@ -42,30 +42,17 @@ public class IgniteLog4jRollingFileAppender extends RollingFileAppender implemen
      *
      * @param layout Layout.
      * @param filename File name.
+     * @param datePtrn Date pattern.
      * @throws IOException If failed.
      */
-    public IgniteLog4jRollingFileAppender(Layout layout, String filename) throws IOException {
-        super(layout, filename);
+    public Log4JDailyRollingFileAppender(Layout layout, String filename, String datePtrn) throws IOException {
+        super(layout, filename, datePtrn);
 
         init();
     }
 
     /**
-     * Instantiate a FileAppender with given parameters.
      *
-     * @param layout Layout.
-     * @param filename File name.
-     * @param append Append flag.
-     * @throws IOException If failed.
-     */
-    public IgniteLog4jRollingFileAppender(Layout layout, String filename, boolean append) throws IOException {
-        super(layout, filename, append);
-
-        init();
-    }
-
-    /**
-     * Initializes appender.
      */
     private void init() {
         Log4JLogger.addAppender(this);

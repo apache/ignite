@@ -31,7 +31,7 @@ import java.util.*;
  * Session implementation.
  */
 @SuppressWarnings({"deprecation", "NonSerializableObjectBoundToHttpSession"})
-class GridWebSession implements HttpSession, Externalizable {
+class IgniteWebSession implements HttpSession, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,7 +68,7 @@ class GridWebSession implements HttpSession, Externalizable {
 
     /** Listener. */
     @GridToStringExclude
-    private transient GridWebSessionListener lsnr;
+    private transient IgniteWebSessionListener lsnr;
 
     /** New session flag. */
     private transient boolean isNew;
@@ -79,14 +79,14 @@ class GridWebSession implements HttpSession, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridWebSession() {
+    public IgniteWebSession() {
         // No-op.
     }
 
     /**
      * @param ses Session.
      */
-    GridWebSession(HttpSession ses) {
+    IgniteWebSession(HttpSession ses) {
         assert ses != null;
 
         id = ses.getId();
@@ -110,7 +110,7 @@ class GridWebSession implements HttpSession, Externalizable {
      * @param ses Session.
      * @param isNew Is new flag.
      */
-    GridWebSession(HttpSession ses, boolean isNew) {
+    IgniteWebSession(HttpSession ses, boolean isNew) {
         this(ses);
 
         this.isNew = isNew;
@@ -135,7 +135,7 @@ class GridWebSession implements HttpSession, Externalizable {
     /**
      * @param lsnr Listener.
      */
-    public void listener(GridWebSessionListener lsnr) {
+    public void listener(IgniteWebSessionListener lsnr) {
         assert lsnr != null;
 
         this.lsnr = lsnr;
@@ -281,6 +281,6 @@ class GridWebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridWebSession.class, this);
+        return S.toString(IgniteWebSession.class, this);
     }
 }

@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Closure that generates file path adding node id to filename as a suffix.
  */
-class IgniteLog4jNodeIdFilePath implements IgniteClosure<String, String> {
+class Log4jNodeIdFilePath implements IgniteClosure<String, String> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +40,7 @@ class IgniteLog4jNodeIdFilePath implements IgniteClosure<String, String> {
      *
      * @param id Node id.
      */
-    IgniteLog4jNodeIdFilePath(UUID id) {
+    Log4jNodeIdFilePath(UUID id) {
         nodeId = id;
     }
 
