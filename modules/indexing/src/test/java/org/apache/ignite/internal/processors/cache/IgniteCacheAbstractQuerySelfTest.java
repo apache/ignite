@@ -257,7 +257,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<List<?>> res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         List<?> row = res.iterator().next();
 
@@ -269,7 +272,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         res = qry.getAll();
 
-        assertEquals(gridCount(), res.size());
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
 
         row = res.iterator().next();
 
