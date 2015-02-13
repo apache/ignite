@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.fs.common.*;
+import org.apache.ignite.internal.igfs.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

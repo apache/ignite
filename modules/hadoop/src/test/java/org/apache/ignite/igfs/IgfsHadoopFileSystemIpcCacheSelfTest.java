@@ -21,7 +21,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.fs.hadoop.*;
+import org.apache.ignite.internal.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;

@@ -26,8 +26,8 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.fs.common.*;
-import org.apache.ignite.internal.fs.hadoop.*;
+import org.apache.ignite.internal.igfs.common.*;
+import org.apache.ignite.internal.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -42,7 +42,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgfsConfiguration.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
-import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
+import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 2.x file system driver over file system API. To use

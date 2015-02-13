@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.fs.common.*;
+import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.fs.common.IgfsLogger.*;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.*;
 
 /**
  * Grid GGFS client logger test.
