@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -26,7 +25,11 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -51,9 +54,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  * Data loader implementation.
  */
+@SuppressWarnings("unchecked")
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
+    /** Isolated updater. */
+    private static final Updater ISOLATED_UPDATER = new IsolatedUpdater();
+
     /** Cache updater. */
-    private Updater<K, V> updater = GridDataLoadCacheUpdaters.individual();
+    private Updater<K, V> updater = ISOLATED_UPDATER;
 
     /** */
     private byte[] updaterBytes;
@@ -278,13 +285,13 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isolated() {
-        return updater != GridDataLoadCacheUpdaters.individual();
+    @Override public boolean allowOverwrite() {
+        return updater != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
-    @Override public void isolated(boolean isolated) {
-        if (isolated())
+    @Override public void allowOverwrite(boolean allow) {
+        if (allow == allowOverwrite())
             return;
 
         ClusterNode node = F.first(ctx.grid().forCacheNodes(cacheName).nodes());
@@ -292,13 +299,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (node == null)
             throw new IgniteException("Failed to get node for cache: " + cacheName);
 
-        GridCacheAttributes a = U.cacheAttributes(node, cacheName);
-
-        assert a != null;
-
-        updater = a.atomicityMode() == CacheAtomicityMode.ATOMIC ?
-            GridDataLoadCacheUpdaters.<K, V>batched() :
-            GridDataLoadCacheUpdaters.<K, V>groupLocked();
+        updater = allow ? GridDataLoadCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -444,7 +445,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
         for (Map.Entry<K, V> entry : entries) {
-            ClusterNode node;
+            List<ClusterNode> nodes;
 
             try {
                 K key = entry.getKey();
@@ -457,7 +458,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     initPda = false;
                 }
 
-                node = ctx.affinity().mapKeyToNode(cacheName, key);
+                nodes = nodes(key);
             }
             catch (IgniteCheckedException e) {
                 resFut.onDone(e);
@@ -465,20 +466,22 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 return;
             }
 
-            if (node == null) {
-                resFut.onDone(new ClusterTopologyCheckedException("Failed to map key to node " +
+            if (F.isEmpty(nodes)) {
+                resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
                     "(no nodes with cache found in topology) [infos=" + entries.size() +
                     ", cacheName=" + cacheName + ']'));
 
                 return;
             }
 
-            Collection<Map.Entry<K, V>> col = mappings.get(node);
+            for (ClusterNode node : nodes) {
+                Collection<Map.Entry<K, V>> col = mappings.get(node);
 
-            if (col == null)
-                mappings.put(node, col = new ArrayList<>());
+                if (col == null)
+                    mappings.put(node, col = new ArrayList<>());
 
-            col.add(entry);
+                col.add(entry);
+            }
         }
 
         for (final Map.Entry<ClusterNode, Collection<Map.Entry<K, V>>> e : mappings.entrySet()) {
@@ -549,6 +552,18 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         "(node has left): " + nodeId));
             }
         }
+    }
+
+    /**
+     * @param key Key to map.
+     * @return Nodes to send requests to.
+     * @throws IgniteCheckedException If failed.
+     */
+    private List<ClusterNode> nodes(K key) throws IgniteCheckedException {
+        GridAffinityProcessor aff = ctx.affinity();
+
+        return !allowOverwrite() ? aff.mapKeyToPrimaryAndBackups(cacheName, key) :
+            Collections.singletonList(aff.mapKeyToNode(cacheName, key));
     }
 
     /**
@@ -1362,6 +1377,50 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 Object v = in.readObject();
 
                 delegate.add(new Entry0<>((K)k, (V)v));
+            }
+        }
+    }
+
+    /**
+     * Isolated updater which only loads entry initial value.
+     */
+    private static class IsolatedUpdater<K, V> implements Updater<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+            IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)cache;
+
+            GridCacheAdapter<K, V> internalCache = proxy.context().cache();
+
+            if (internalCache.isNear())
+                internalCache = internalCache.context().near().dht();
+
+            GridCacheContext<K, V> cctx = internalCache.context();
+
+            long topVer = cctx.affinity().affinityTopologyVersion();
+
+            GridCacheVersion ver = cctx.versions().next(topVer);
+
+            for (Map.Entry<K, V> e : entries) {
+                try {
+                    GridCacheEntryEx<K, V> entry = internalCache.entryEx(e.getKey(), topVer);
+
+                    entry.unswap(true, false);
+
+                    entry.initialValue(e.getValue(), null, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
+
+                    cctx.evicts().touch(entry, topVer);
+                }
+                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+                catch (IgniteCheckedException ex) {
+                    IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                }
             }
         }
     }
