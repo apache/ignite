@@ -35,14 +35,14 @@ import java.util.*;
 @GridCommonTest(group = "Logger")
 public class GridLog4jCorrectFileNameTest extends TestCase {
     /** Appender */
-    private IgniteLog4jRollingFileAppender appender;
+    private Log4jRollingFileAppender appender;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         Logger root = Logger.getRootLogger();
 
         for (Enumeration appenders = root.getAllAppenders(); appenders.hasMoreElements(); ) {
-            if (appenders.nextElement() instanceof IgniteLog4jRollingFileAppender)
+            if (appenders.nextElement() instanceof Log4jRollingFileAppender)
                 return;
         }
 
@@ -54,7 +54,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     /** {@inheritDoc} */
     @Override public void tearDown() {
         if (appender != null) {
-            Logger.getRootLogger().removeAppender(IgniteLog4jRollingFileAppender.class.getSimpleName());
+            Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
 
             Log4JLogger.removeAppender(appender);
         }
@@ -116,12 +116,12 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
      * @return GridLog4jRollingFileAppender.
      * @throws Exception If error occurred.
      */
-    private static IgniteLog4jRollingFileAppender createAppender() throws Exception {
-        IgniteLog4jRollingFileAppender appender = new IgniteLog4jRollingFileAppender();
+    private static Log4jRollingFileAppender createAppender() throws Exception {
+        Log4jRollingFileAppender appender = new Log4jRollingFileAppender();
 
         appender.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
         appender.setFile("work/log/ignite.log");
-        appender.setName(IgniteLog4jRollingFileAppender.class.getSimpleName());
+        appender.setName(Log4jRollingFileAppender.class.getSimpleName());
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();
 
