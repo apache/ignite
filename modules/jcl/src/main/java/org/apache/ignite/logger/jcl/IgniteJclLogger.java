@@ -73,9 +73,6 @@ import org.jetbrains.annotations.*;
  * injection.
  */
 public class IgniteJclLogger implements IgniteLogger {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** JCL implementation proxy. */
     private Log impl;
 
