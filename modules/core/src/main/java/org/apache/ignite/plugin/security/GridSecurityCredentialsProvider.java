@@ -31,7 +31,7 @@ import org.apache.ignite.*;
  * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
  * environment, possibly in encrypted format. Ignite comes with
- * {@link GridSecurityCredentialsProvider} which simply provides
+ * {@link GridSecurityCredentialsBasicProvider} which simply provides
  * the passed in {@code login} and {@code password} when encryption or custom logic is not required.
  * <p>
  * In addition to {@code login} and {@code password}, security credentials allow for

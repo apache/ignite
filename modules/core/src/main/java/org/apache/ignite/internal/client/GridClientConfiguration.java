@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.client.marshaller.optimized.*;
@@ -841,25 +840,5 @@ public class GridClientConfiguration {
      */
     public boolean isDaemon() {
         return daemon;
-    }
-
-    /**
-     * Basic implementation for {@link GridSecurityCredentialsProvider}.
-     */
-    public class GridSecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
-        /** */
-        private GridSecurityCredentials cred;
-
-        /**
-         * @param cred Security credentials.
-         */
-        public GridSecurityCredentialsBasicProvider(GridSecurityCredentials cred) {
-            this.cred = cred;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridSecurityCredentials credentials() throws IgniteCheckedException {
-            return cred;
-        }
     }
 }
