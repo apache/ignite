@@ -43,7 +43,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * IPC cache test.
  */
-public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

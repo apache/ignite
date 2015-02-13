@@ -40,7 +40,7 @@ public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite GGFS Test Suite For Linux And Mac OS");
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalPrimarySelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemShmemExternalSecondarySelfTest.class.getName())));

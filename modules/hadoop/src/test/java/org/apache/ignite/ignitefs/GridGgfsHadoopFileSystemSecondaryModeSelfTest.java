@@ -40,7 +40,7 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 /**
  * Ensures correct modes resolution for SECONDARY paths.
  */
-public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstractTest {
     /** Path to check. */
     private static final Path PATH = new Path("/dir");
 

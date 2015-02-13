@@ -53,7 +53,7 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 /**
  * Hadoop 2.x compliant file system.
  */
-public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgfsCommonAbstractTest {
+public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Group size. */
     public static final int GRP_SIZE = 128;
 

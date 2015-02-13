@@ -57,7 +57,7 @@ import static org.apache.ignite.ignitefs.IgniteFsMode.*;
  * Test hadoop file system implementation.
  */
 @SuppressWarnings("all")
-public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsCommonAbstractTest {
+public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Primary file system authority. */
     private static final String PRIMARY_AUTHORITY = "ggfs:grid0@";
 

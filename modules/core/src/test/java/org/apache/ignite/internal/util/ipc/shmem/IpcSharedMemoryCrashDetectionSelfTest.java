@@ -339,14 +339,14 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
 
         /** Process. */
         GridJavaProcess proc = GridJavaProcess.exec(
-            GgfsSharedMemoryTestClient.class, null,
+            IgfsSharedMemoryTestClient.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String s) {
                     info("Client process prints: " + s);
 
-                    if (s.startsWith(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
-                        res.shmemIds(s.substring(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
+                    if (s.startsWith(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
+                        res.shmemIds(s.substring(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
 
                         readyLatch.countDown();
                     }
@@ -381,7 +381,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         final CountDownLatch isKilledLatch = new CountDownLatch(1);
 
         GridJavaProcess proc = GridJavaProcess.exec(
-            GgfsSharedMemoryTestServer.class, null,
+            IgfsSharedMemoryTestServer.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String str) {

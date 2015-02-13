@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
 /**
  * Test interaction between a GGFS client and a GGFS server.
  */
-public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystemClientSelfTest.class);
 

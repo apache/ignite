@@ -43,7 +43,7 @@ import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
 /**
  * Ensures that sampling is really turned on/off.
  */
-public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractTest {
     /** GGFS. */
     private GridGgfsEx ggfs;
 

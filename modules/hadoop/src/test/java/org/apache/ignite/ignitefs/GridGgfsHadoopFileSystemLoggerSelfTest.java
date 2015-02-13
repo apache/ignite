@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.fs.common.GridGgfsLogger.*;
 /**
  * Grid GGFS client logger test.
  */
-public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest {
     /** Path string. */
     private static final String PATH_STR = "/dir1/dir2/file;test";
 

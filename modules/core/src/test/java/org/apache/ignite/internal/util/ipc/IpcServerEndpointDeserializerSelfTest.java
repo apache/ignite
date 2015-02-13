@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 /**
  * Tests for {@code IpcServerEndpointDeserializer}.
  */
-public class IpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbstractTest {
+public class IpcServerEndpointDeserializerSelfTest extends IgfsCommonAbstractTest {
     /** */
     private Map<String,String> shmemSrvEndpoint;
 

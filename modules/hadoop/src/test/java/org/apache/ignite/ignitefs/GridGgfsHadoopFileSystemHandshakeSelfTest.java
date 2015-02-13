@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
 /**
  * Tests for GGFS file system handshake.
  */
-public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbstractTest {
+public class GridGgfsHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

@@ -37,42 +37,42 @@ public class IgniteFsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
 //        suite.addTest(new TestSuite(GridGgfsSizeSelfTest.class)); TODO Enable after GG-9035
-        suite.addTest(new TestSuite(GridGgfsAttributesSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsFileInfoSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsMetaManagerSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsDataManagerSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsProcessorSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsProcessorValidationSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsCacheSelfTest.class));
+        suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
+        suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
+        suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDataManagerSelfTest.class));
+        suite.addTest(new TestSuite(IgfsProcessorSelfTest.class));
+        suite.addTest(new TestSuite(IgfsProcessorValidationSelfTest.class));
+        suite.addTest(new TestSuite(IgfsCacheSelfTest.class));
 
         if (U.isWindows())
-            suite.addTest(new TestSuite(GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
+            suite.addTest(new TestSuite(IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheGgfsPerBlockLruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheIgfsPerBlockLruEvictionPolicySelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsStreamsSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsModesSelfTest.class));
+        suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
+        suite.addTest(new TestSuite(IgfsModesSelfTest.class));
         suite.addTest(new TestSuite(IpcServerEndpointDeserializerSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
+        suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsPrimaryOffheapTieredSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsPrimaryOffheapValuesSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsModeResolverSelfTest.class));
+        suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 
         suite.addTestSuite(GridGgfsFragmentizerSelfTest.class);
         suite.addTestSuite(GridGgfsFragmentizerTopologySelfTest.class);
-        suite.addTestSuite(GridGgfsFileMapSelfTest.class);
+        suite.addTestSuite(IgfsFileMapSelfTest.class);
 
-        suite.addTestSuite(GridGgfsByteDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(GridGgfsStringDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(GridGgfsFixedLengthRecordResolverSelfTest.class);
-        suite.addTestSuite(GridGgfsNewLineDelimiterRecordResolverSelfTest.class);
+        suite.addTestSuite(IgfsByteDelimiterRecordResolverSelfTest.class);
+        suite.addTestSuite(IgfsStringDelimiterRecordResolverSelfTest.class);
+        suite.addTestSuite(IgfsFixedLengthRecordResolverSelfTest.class);
+        suite.addTestSuite(IgfsNewLineDelimiterRecordResolverSelfTest.class);
 
-        suite.addTestSuite(GridGgfsTaskSelfTest.class);
+        suite.addTestSuite(IgfsTaskSelfTest.class);
 
-        suite.addTestSuite(GridGgfsGroupDataBlockKeyMapperHashSelfTest.class);
+        suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
 
         return suite;
     }

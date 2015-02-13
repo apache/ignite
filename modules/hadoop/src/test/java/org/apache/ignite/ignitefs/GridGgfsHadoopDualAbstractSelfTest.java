@@ -41,12 +41,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
-import static org.apache.ignite.internal.processors.fs.GridGgfsAbstractSelfTest.*;
+import static org.apache.ignite.internal.processors.fs.IgfsAbstractSelfTest.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
-public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonAbstractTest {
+public abstract class GridGgfsHadoopDualAbstractSelfTest extends IgfsCommonAbstractTest {
     /** GGFS block size. */
     protected static final int GGFS_BLOCK_SIZE = 512 * 1024;
 
