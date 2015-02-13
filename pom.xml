@@ -551,7 +551,10 @@
                 <version>2.8.2</version>
                 <inherited>false</inherited>
                 <configuration>
-                    <skip>true</skip>
+                    <packaging>jar</packaging>
+                    <pomFile>${basedir}/modules/core/pom.xml</pomFile>
+                    <url>${project.distributionManagement.repository.url}</url>
+                    <file>${basedir}/target/ignite-core-${ignite.version}.jar</file>
                 </configuration>
             </plugin>
         </plugins>
@@ -1277,25 +1280,6 @@
                                                 <exclude name="**/missing"/>
                                             </zipfileset>
                                         </zip>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>deploy-core</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>deploy</phase>
-                                <configuration>
-                                    <target>
-                                        <exec executable="${env.M2_HOME}/bin/mvn" failonerror="true">
-                                            <arg value="org.apache.maven.plugins:maven-deploy-plugin:2.8.2:deploy-file"/>
-                                            <arg value="-Durl=${distributionManagement.repository.url}"/>
-                                            <arg value="-DrepositoryId=${distributionManagement.repository.name}"/>
-                                            <arg value="-DpomFile=${basedir}/modules/core/pom.xml"/>
-                                            <arg value="-Dfile=${basedir}/target/ignite-core-${ignite.version}.jar"/>
-                                        </exec>
                                     </target>
                                 </configuration>
                             </execution>
