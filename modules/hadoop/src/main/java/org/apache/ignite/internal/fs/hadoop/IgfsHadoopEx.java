@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Extended GGFS server interface.
  */
-public interface GridGgfsHadoopEx extends GridGgfsHadoop {
+public interface IgfsHadoopEx extends IgfsHadoop {
     /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.
      * If connection is closed already, callback will be invoked synchronously inside this method.
@@ -33,14 +33,14 @@ public interface GridGgfsHadoopEx extends GridGgfsHadoop {
      * @param delegate Stream delegate.
      * @param lsnr Event listener.
      */
-    public void addEventListener(GridGgfsHadoopStreamDelegate delegate, GridGgfsHadoopStreamEventListener lsnr);
+    public void addEventListener(IgfsHadoopStreamDelegate delegate, IgfsHadoopStreamEventListener lsnr);
 
     /**
      * Removes event listener that will be invoked when connection with server is lost or remote error has occurred.
      *
      * @param delegate Stream delegate.
      */
-    public void removeEventListener(GridGgfsHadoopStreamDelegate delegate);
+    public void removeEventListener(IgfsHadoopStreamDelegate delegate);
 
     /**
      * Asynchronously reads specified amount of bytes from opened input stream.
@@ -55,7 +55,7 @@ public interface GridGgfsHadoopEx extends GridGgfsHadoop {
      * @param outLen Output length.
      * @return Read data.
      */
-    public GridPlainFuture<byte[]> readData(GridGgfsHadoopStreamDelegate delegate, long pos, int len,
+    public GridPlainFuture<byte[]> readData(IgfsHadoopStreamDelegate delegate, long pos, int len,
         @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**
@@ -68,7 +68,7 @@ public interface GridGgfsHadoopEx extends GridGgfsHadoop {
      * @param len Length.
      * @throws IOException If failed.
      */
-    public void writeData(GridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len) throws IOException;
+    public void writeData(IgfsHadoopStreamDelegate delegate, byte[] data, int off, int len) throws IOException;
 
     /**
      * Close server stream.
@@ -76,7 +76,7 @@ public interface GridGgfsHadoopEx extends GridGgfsHadoop {
      * @param delegate Stream delegate.
      * @throws IOException If failed.
      */
-    public void closeStream(GridGgfsHadoopStreamDelegate delegate) throws IOException;
+    public void closeStream(IgfsHadoopStreamDelegate delegate) throws IOException;
 
     /**
      * Flush output stream.
@@ -84,5 +84,5 @@ public interface GridGgfsHadoopEx extends GridGgfsHadoop {
      * @param delegate Stream delegate.
      * @throws IOException If failed.
      */
-    public void flush(GridGgfsHadoopStreamDelegate delegate) throws IOException;
+    public void flush(IgfsHadoopStreamDelegate delegate) throws IOException;
 }

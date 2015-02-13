@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * GGFS input stream event listener.
  */
-public interface GridGgfsHadoopStreamEventListener {
+public interface IgfsHadoopStreamEventListener {
     /**
      * Callback invoked when the stream is being closed.
      *

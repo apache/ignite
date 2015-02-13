@@ -42,7 +42,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
-import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
+import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 2.x file system driver over file system API. To use
@@ -88,7 +88,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
-    private GridGgfsHadoopWrapper rmtClient;
+    private IgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
     private IgniteFsPath workingDir;
@@ -136,7 +136,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
      * @throws IOException If initialization failed.
      */
     public IgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(GridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, false, -1);
+        super(IgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, false, -1);
 
         uri = name;
 
@@ -238,7 +238,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
-            rmtClient = new GridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
+            rmtClient = new IgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
             IgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
@@ -276,8 +276,8 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             if (initSecondary) {
                 Map<String, String> props = paths.properties();
 
-                String secUri = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
-                String secConfPath = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
+                String secUri = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
+                String secConfPath = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
 
                 if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
@@ -445,13 +445,13 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
-                    return new FSDataInputStream(new GridGgfsHadoopProxyInputStream(is, clientLog, logId));
+                    return new FSDataInputStream(new IgfsHadoopProxyInputStream(is, clientLog, logId));
                 }
                 else
                     return is;
             }
             else {
-                GridGgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
+                IgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
                     rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
 
                 long logId = -1;
@@ -466,7 +466,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                GridGgfsHadoopInputStream ggfsIn = new GridGgfsHadoopInputStream(stream, stream.length(),
+                IgfsHadoopInputStream ggfsIn = new IgfsHadoopInputStream(stream, stream.length(),
                     bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
@@ -523,7 +523,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
                     else
                         clientLog.logCreate(logId, path, PROXY, overwrite, bufSize, replication, blockSize);
 
-                    return new FSDataOutputStream(new GridGgfsHadoopProxyOutputStream(os, clientLog, logId));
+                    return new FSDataOutputStream(new IgfsHadoopProxyOutputStream(os, clientLog, logId));
                 }
                 else
                     return os;
@@ -533,7 +533,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
                     PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
-                GridGgfsHadoopStreamDelegate stream;
+                IgfsHadoopStreamDelegate stream;
 
                 long logId = -1;
 
@@ -565,7 +565,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
                 assert stream != null;
 
-                GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(stream, LOG,
+                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG,
                     clientLog, logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);

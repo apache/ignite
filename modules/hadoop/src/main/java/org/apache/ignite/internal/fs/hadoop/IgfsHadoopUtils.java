@@ -29,7 +29,7 @@ import java.io.*;
 /**
  * Utility constants and methods for GGFS Hadoop file system.
  */
-public class GridGgfsHadoopUtils {
+public class IgfsHadoopUtils {
     /** Parameter name for endpoint no embed mode flag. */
     public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.ggfs.%s.endpoint.no_embed";
 
@@ -125,7 +125,7 @@ public class GridGgfsHadoopUtils {
     /**
      * Constructor.
      */
-    private GridGgfsHadoopUtils() {
+    private IgfsHadoopUtils() {
         // No-op.
     }
 }

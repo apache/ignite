@@ -36,7 +36,7 @@ import java.util.*;
 /**
  * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.ignitefs.IgniteFsFileSystem}.
  */
-public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoCloseable {
+public class IgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoCloseable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
@@ -56,7 +56,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
      * @param cfgPath Additional path to Hadoop configuration.
      * @throws IgniteCheckedException In case of error.
      */
-    public GridGgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws IgniteCheckedException {
+    public IgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws IgniteCheckedException {
         Configuration cfg = new Configuration();
 
         if (cfgPath != null)
@@ -157,7 +157,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
-        GridGgfsHadoopFSProperties props0 = new GridGgfsHadoopFSProperties(props);
+        IgfsHadoopFSProperties props0 = new IgfsHadoopFSProperties(props);
 
         try {
             if (props0.userName() != null || props0.groupName() != null)
@@ -211,7 +211,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     /** {@inheritDoc} */
     @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
         try {
-            if (!fileSys.mkdirs(convert(path), new GridGgfsHadoopFSProperties(props).permission()))
+            if (!fileSys.mkdirs(convert(path), new IgfsHadoopFSProperties(props).permission()))
                 throw new IgniteException("Failed to make directories [path=" + path + ", props=" + props + "]");
         }
         catch (IOException e) {
@@ -272,7 +272,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Override public IgniteFsReader open(IgniteFsPath path, int bufSize) {
-        return new GridGgfsHadoopReader(fileSys, convert(path), bufSize);
+        return new IgfsHadoopReader(fileSys, convert(path), bufSize);
     }
 
     /** {@inheritDoc} */
@@ -288,8 +288,8 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     /** {@inheritDoc} */
     @Override public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        GridGgfsHadoopFSProperties props0 =
-            new GridGgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
+        IgfsHadoopFSProperties props0 =
+            new IgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
 
         try {
             return fileSys.create(convert(path), props0.permission(), overwrite, bufSize, (short)replication, blockSize,

@@ -116,7 +116,7 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+            ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
                 "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
@@ -215,7 +215,7 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+            ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
                 "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 

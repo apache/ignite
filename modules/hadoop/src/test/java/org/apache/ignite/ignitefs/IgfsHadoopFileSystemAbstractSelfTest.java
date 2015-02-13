@@ -328,7 +328,7 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
         cfg.setDefaultMode(mode);
 
         if (mode != PRIMARY)
-            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
+            cfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
 
         cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
 
@@ -409,17 +409,17 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
      * @throws Exception If failed.
      */
     public void testIpcCache() throws Exception {
-        GridGgfsHadoopEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
+        IgfsHadoopEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
 
-        if (hadoop instanceof GridGgfsHadoopOutProc) {
+        if (hadoop instanceof IgfsHadoopOutProc) {
             FileSystem fsOther = null;
 
             try {
-                Field field = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
+                Field field = IgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
                 field.setAccessible(true);
 
-                Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)field.get(null);
+                Map<String, IgfsHadoopIpcIo> cache = (Map<String, IgfsHadoopIpcIo>)field.get(null);
 
                 Configuration cfg = configuration(PRIMARY_AUTHORITY, skipEmbed, skipLocShmem);
 
@@ -440,13 +440,13 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
 
                 assertEquals(initSize, cache.size());
 
-                Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
+                Field stopField = IgfsHadoopIpcIo.class.getDeclaredField("stopping");
 
                 stopField.setAccessible(true);
 
-                GridGgfsHadoopIpcIo io = null;
+                IgfsHadoopIpcIo io = null;
 
-                for (Map.Entry<String, GridGgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
+                for (Map.Entry<String, IgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
                     if (endpoint.contains(ioEntry.getKey())) {
                         io = ioEntry.getValue();
 
@@ -2355,10 +2355,10 @@ public abstract class IgfsHadoopFileSystemAbstractSelfTest extends IgfsCommonAbs
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
         if (skipEmbed)
-            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
+            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
 
         if (skipLocShmem)
-            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+            cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
 
         return cfg;
     }

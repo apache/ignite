@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Facade for communication with grid.
  */
-public interface GridGgfsHadoop {
+public interface IgfsHadoop {
     /**
      * Perform handshake.
      *
@@ -158,7 +158,7 @@ public interface GridGgfsHadoop {
      * @return Future for open operation.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException, IOException;
+    public IgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to open file for reading.
@@ -167,7 +167,7 @@ public interface GridGgfsHadoop {
      * @return Future for open operation.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws IgniteCheckedException,
+    public IgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -181,7 +181,7 @@ public interface GridGgfsHadoop {
      * @return Stream descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
+    public IgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
@@ -193,6 +193,6 @@ public interface GridGgfsHadoop {
      * @return Stream descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
+    public IgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 }

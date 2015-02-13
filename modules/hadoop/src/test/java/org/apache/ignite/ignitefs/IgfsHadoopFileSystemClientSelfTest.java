@@ -125,15 +125,15 @@ public class IgfsHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
         try {
             switchHandlerErrorFlag(true);
 
-            GridGgfsHadoop client = new GridGgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "ggfs", LOG);
+            IgfsHadoop client = new IgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "ggfs", LOG);
 
             client.handshake(null);
 
             IgniteFsPath path = new IgniteFsPath("/test1.file");
 
-            GridGgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
+            IgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 
-            final GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(delegate, LOG,
+            final IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(delegate, LOG,
                 IgfsLogger.disabledLogger(), 0);
 
             // This call should return fine as exception is thrown for the first time.

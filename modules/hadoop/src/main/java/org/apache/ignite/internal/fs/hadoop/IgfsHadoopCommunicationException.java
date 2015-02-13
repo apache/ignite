@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Communication exception indicating a problem between file system and GGFS instance.
  */
-public class GridGgfsHadoopCommunicationException extends IgniteCheckedException {
+public class IgfsHadoopCommunicationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class GridGgfsHadoopCommunicationException extends IgniteCheckedException
      *
      * @param cause Non-null throwable cause.
      */
-    public GridGgfsHadoopCommunicationException(Exception cause) {
+    public IgfsHadoopCommunicationException(Exception cause) {
         super(cause);
     }
 
@@ -41,7 +41,7 @@ public class GridGgfsHadoopCommunicationException extends IgniteCheckedException
      *
      * @param msg Error message.
      */
-    public GridGgfsHadoopCommunicationException(String msg) {
+    public IgfsHadoopCommunicationException(String msg) {
         super(msg);
     }
 
@@ -51,7 +51,7 @@ public class GridGgfsHadoopCommunicationException extends IgniteCheckedException
      * @param msg Error message.
      * @param cause Cause.
      */
-    public GridGgfsHadoopCommunicationException(String msg, Exception cause) {
+    public IgfsHadoopCommunicationException(String msg, Exception cause) {
         super(msg, cause);
     }
 }

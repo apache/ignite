@@ -42,7 +42,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.ignitefs.hadoop.IgfsHadoopParameters.*;
-import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
+import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 1.x file system driver over file system API. To use
@@ -94,7 +94,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
-    private GridGgfsHadoopWrapper rmtClient;
+    private IgfsHadoopWrapper rmtClient;
 
     /** User name for each thread. */
     private final ThreadLocal<String> userName = new ThreadLocal<String>(){
@@ -242,7 +242,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
-            rmtClient = new GridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
+            rmtClient = new IgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
             IgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
@@ -281,8 +281,8 @@ public class IgfsHadoopFileSystem extends FileSystem {
             if (initSecondary) {
                 Map<String, String> props = paths.properties();
 
-                String secUri = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
-                String secConfPath = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
+                String secUri = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
+                String secConfPath = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
 
                 if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
@@ -506,13 +506,13 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
-                    return new FSDataInputStream(new GridGgfsHadoopProxyInputStream(is, clientLog, logId));
+                    return new FSDataInputStream(new IgfsHadoopProxyInputStream(is, clientLog, logId));
                 }
                 else
                     return is;
             }
             else {
-                GridGgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
+                IgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
                     rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
 
                 long logId = -1;
@@ -527,7 +527,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                GridGgfsHadoopInputStream ggfsIn = new GridGgfsHadoopInputStream(stream, stream.length(),
+                IgfsHadoopInputStream ggfsIn = new IgfsHadoopInputStream(stream, stream.length(),
                     bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
@@ -574,14 +574,14 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
                     clientLog.logCreate(logId, path, PROXY, overwrite, bufSize, replication, blockSize);
 
-                    return new FSDataOutputStream(new GridGgfsHadoopProxyOutputStream(os, clientLog, logId));
+                    return new FSDataOutputStream(new IgfsHadoopProxyOutputStream(os, clientLog, logId));
                 }
                 else
                     return os;
             }
             else {
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
-                GridGgfsHadoopStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
+                IgfsHadoopStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
                     replication, blockSize, F.asMap(PROP_PERMISSION, toString(perm),
                     PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites)));
 
@@ -598,7 +598,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened output stream in create [path=" + path + ", delegate=" + stream + ']');
 
-                GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(stream, LOG, clientLog,
+                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
                     logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);
@@ -651,13 +651,13 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
                     clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
 
-                    return new FSDataOutputStream(new GridGgfsHadoopProxyOutputStream(os, clientLog, logId));
+                    return new FSDataOutputStream(new IgfsHadoopProxyOutputStream(os, clientLog, logId));
                 }
                 else
                     return os;
             }
             else {
-                GridGgfsHadoopStreamDelegate stream = rmtClient.append(path, false, null);
+                IgfsHadoopStreamDelegate stream = rmtClient.append(path, false, null);
 
                 assert stream != null;
 
@@ -672,7 +672,7 @@ public class IgfsHadoopFileSystem extends FileSystem {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opened output stream in append [path=" + path + ", delegate=" + stream + ']');
 
-                GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(stream, LOG, clientLog,
+                IgfsHadoopOutputStream ggfsOut = new IgfsHadoopOutputStream(stream, LOG, clientLog,
                     logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);

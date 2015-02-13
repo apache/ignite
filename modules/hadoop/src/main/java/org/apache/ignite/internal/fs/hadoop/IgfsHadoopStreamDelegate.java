@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * GGFS Hadoop stream descriptor.
  */
-public class GridGgfsHadoopStreamDelegate {
+public class IgfsHadoopStreamDelegate {
     /** RPC handler. */
-    private final GridGgfsHadoopEx hadoop;
+    private final IgfsHadoopEx hadoop;
 
     /** Target. */
     private final Object target;
@@ -37,7 +37,7 @@ public class GridGgfsHadoopStreamDelegate {
      *
      * @param target Target.
      */
-    public GridGgfsHadoopStreamDelegate(GridGgfsHadoopEx hadoop, Object target) {
+    public IgfsHadoopStreamDelegate(IgfsHadoopEx hadoop, Object target) {
         this(hadoop, target, -1);
     }
 
@@ -47,7 +47,7 @@ public class GridGgfsHadoopStreamDelegate {
      * @param target Target.
      * @param len Optional length.
      */
-    public GridGgfsHadoopStreamDelegate(GridGgfsHadoopEx hadoop, Object target, long len) {
+    public IgfsHadoopStreamDelegate(IgfsHadoopEx hadoop, Object target, long len) {
         assert hadoop != null;
         assert target != null;
 
@@ -59,7 +59,7 @@ public class GridGgfsHadoopStreamDelegate {
     /**
      * @return RPC handler.
      */
-    public GridGgfsHadoopEx hadoop() {
+    public IgfsHadoopEx hadoop() {
         return hadoop;
     }
 
@@ -85,12 +85,12 @@ public class GridGgfsHadoopStreamDelegate {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj != null && obj instanceof GridGgfsHadoopStreamDelegate &&
-            target == ((GridGgfsHadoopStreamDelegate)obj).target;
+        return obj != null && obj instanceof IgfsHadoopStreamDelegate &&
+            target == ((IgfsHadoopStreamDelegate)obj).target;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsHadoopStreamDelegate.class, this);
+        return S.toString(IgfsHadoopStreamDelegate.class, this);
     }
 }

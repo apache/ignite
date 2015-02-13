@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * GGFS client future that holds response parse closure.
  */
-public class GridGgfsHadoopFuture<T> extends GridPlainFutureAdapter<T> {
+public class IgfsHadoopFuture<T> extends GridPlainFutureAdapter<T> {
     /** Output buffer. */
     private byte[] outBuf;
 

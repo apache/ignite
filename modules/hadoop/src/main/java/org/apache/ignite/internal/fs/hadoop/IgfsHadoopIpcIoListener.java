@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.fs.hadoop;
 
 /**
- * Listens to the events of {@link GridGgfsHadoopIpcIo}.
+ * Listens to the events of {@link IgfsHadoopIpcIo}.
  */
-public interface GridGgfsHadoopIpcIoListener {
+public interface IgfsHadoopIpcIoListener {
     /**
      * Callback invoked when the IO is being closed.
      */

@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.fs.common.IgfsIpcCommand.*;
 /**
  * Communication with external process (TCP or shmem).
  */
-public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIpcIoListener {
+public class IgfsHadoopOutProc implements IgfsHadoopEx, IgfsHadoopIpcIoListener {
     /** Expected result is boolean. */
     private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Boolean> BOOL_RES = createClosure();
 
@@ -82,10 +82,10 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     private final Log log;
 
     /** Client IO. */
-    private final GridGgfsHadoopIpcIo io;
+    private final IgfsHadoopIpcIo io;
 
     /** Event listeners. */
-    private final Map<Long, GridGgfsHadoopStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
+    private final Map<Long, IgfsHadoopStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
 
     /**
      * Constructor for TCP endpoint.
@@ -97,7 +97,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public GridGgfsHadoopOutProc(String host, int port, String grid, String ggfs, Log log) throws IOException {
+    public IgfsHadoopOutProc(String host, int port, String grid, String ggfs, Log log) throws IOException {
         this(host, port, grid, ggfs, false, log);
     }
 
@@ -110,7 +110,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public GridGgfsHadoopOutProc(int port, String grid, String ggfs, Log log) throws IOException {
+    public IgfsHadoopOutProc(int port, String grid, String ggfs, Log log) throws IOException {
         this(null, port, grid, ggfs, true, log);
     }
 
@@ -125,7 +125,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    private GridGgfsHadoopOutProc(String host, int port, String grid, String ggfs, boolean shmem, Log log)
+    private IgfsHadoopOutProc(String host, int port, String grid, String ggfs, boolean shmem, Log log)
         throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
@@ -136,7 +136,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
         this.ggfs = ggfs;
         this.log = log;
 
-        io = GridGgfsHadoopIpcIo.get(log, endpoint);
+        io = IgfsHadoopIpcIo.get(log, endpoint);
 
         io.addEventListener(this);
     }
@@ -279,7 +279,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException {
+    @Override public IgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(OPEN_READ);
@@ -288,11 +288,11 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
         IgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
 
-        return new GridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
+        return new IgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path,
+    @Override public IgfsHadoopStreamDelegate open(IgniteFsPath path,
         int seqReadsBeforePrefetch) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
@@ -303,11 +303,11 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
         IgfsInputStreamDescriptor rmtDesc = io.send(msg).chain(STREAM_DESCRIPTOR_RES).get();
 
-        return new GridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
+        return new IgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
+    @Override public IgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
@@ -321,11 +321,11 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
         Long streamId = io.send(msg).chain(LONG_RES).get();
 
-        return new GridGgfsHadoopStreamDelegate(this, streamId);
+        return new IgfsHadoopStreamDelegate(this, streamId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
+    @Override public IgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
@@ -336,11 +336,11 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
         Long streamId = io.send(msg).chain(LONG_RES).get();
 
-        return new GridGgfsHadoopStreamDelegate(this, streamId);
+        return new IgfsHadoopStreamDelegate(this, streamId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(GridGgfsHadoopStreamDelegate desc, long pos, int len,
+    @Override public GridPlainFuture<byte[]> readData(IgfsHadoopStreamDelegate desc, long pos, int len,
         final @Nullable byte[] outBuf, final int outOff, final int outLen) {
         assert len > 0;
 
@@ -360,7 +360,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(GridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
+    @Override public void writeData(IgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
         throws IOException {
         final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();
 
@@ -374,17 +374,17 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
             io.sendPlain(msg);
         }
         catch (IgniteCheckedException e) {
-            throw GridGgfsHadoopUtils.cast(e);
+            throw IgfsHadoopUtils.cast(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(GridGgfsHadoopStreamDelegate delegate) throws IOException {
+    @Override public void flush(IgfsHadoopStreamDelegate delegate) throws IOException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void closeStream(GridGgfsHadoopStreamDelegate desc) throws IOException {
+    @Override public void closeStream(IgfsHadoopStreamDelegate desc) throws IOException {
         final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();
 
         msg.command(CLOSE);
@@ -394,16 +394,16 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
             io.send(msg).chain(BOOL_RES).get();
         }
         catch (IgniteCheckedException e) {
-            throw GridGgfsHadoopUtils.cast(e);
+            throw IgfsHadoopUtils.cast(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventListener(GridGgfsHadoopStreamDelegate desc,
-        GridGgfsHadoopStreamEventListener lsnr) {
+    @Override public void addEventListener(IgfsHadoopStreamDelegate desc,
+        IgfsHadoopStreamEventListener lsnr) {
         long streamId = desc.target();
 
-        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
+        IgfsHadoopStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
 
         assert lsnr0 == null || lsnr0 == lsnr;
 
@@ -412,10 +412,10 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public void removeEventListener(GridGgfsHadoopStreamDelegate desc) {
+    @Override public void removeEventListener(IgfsHadoopStreamDelegate desc) {
         long streamId = desc.target();
 
-        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(streamId);
+        IgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(streamId);
 
         if (lsnr0 != null && log.isDebugEnabled())
             log.debug("Removed stream event listener [streamId=" + streamId + ']');
@@ -423,7 +423,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public void onClose() {
-        for (GridGgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
+        for (IgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
             try {
                 lsnr.onClose();
             }
@@ -435,7 +435,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** {@inheritDoc} */
     @Override public void onError(long streamId, String errMsg) {
-        GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
+        IgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
 
         if (lsnr != null)
             lsnr.onError(errMsg);

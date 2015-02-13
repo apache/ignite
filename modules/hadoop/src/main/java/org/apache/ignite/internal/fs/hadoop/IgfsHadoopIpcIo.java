@@ -39,12 +39,12 @@ import java.util.concurrent.locks.*;
  * IO layer implementation based on blocking IPC streams.
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
+public class IgfsHadoopIpcIo implements IgfsHadoopIo {
     /** Logger. */
     private Log log;
 
     /** Request futures map. */
-    private ConcurrentMap<Long, GridGgfsHadoopFuture> reqMap =
+    private ConcurrentMap<Long, IgfsHadoopFuture> reqMap =
         new ConcurrentHashMap8<>();
 
     /** Request ID counter. */
@@ -75,11 +75,11 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     private final AtomicInteger activeCnt = new AtomicInteger(1);
 
     /** Event listeners. */
-    private final Collection<GridGgfsHadoopIpcIoListener> lsnrs =
+    private final Collection<IgfsHadoopIpcIoListener> lsnrs =
         new GridConcurrentHashSet<>();
 
     /** Cached connections. */
-    private static final ConcurrentMap<String, GridGgfsHadoopIpcIo> ipcCache =
+    private static final ConcurrentMap<String, IgfsHadoopIpcIo> ipcCache =
         new ConcurrentHashMap8<>();
 
     /** Striped lock that prevents multiple instance creation in {@link #get(Log, String)}. */
@@ -90,7 +90,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
      * @param marsh Protocol.
      * @param log Logger to use.
      */
-    public GridGgfsHadoopIpcIo(String endpointAddr, IgfsMarshaller marsh, Log log) {
+    public IgfsHadoopIpcIo(String endpointAddr, IgfsMarshaller marsh, Log log) {
         assert endpointAddr != null;
         assert marsh != null;
 
@@ -108,9 +108,9 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
      * @return New or existing cached instance, which is started and operational.
      * @throws IOException If new instance was created but failed to start.
      */
-    public static GridGgfsHadoopIpcIo get(Log log, String endpoint) throws IOException {
+    public static IgfsHadoopIpcIo get(Log log, String endpoint) throws IOException {
         while (true) {
-            GridGgfsHadoopIpcIo clientIo = ipcCache.get(endpoint);
+            IgfsHadoopIpcIo clientIo = ipcCache.get(endpoint);
 
             if (clientIo != null) {
                 if (clientIo.acquire())
@@ -136,7 +136,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                     }
 
                     // Otherwise try creating a new one.
-                    clientIo = new GridGgfsHadoopIpcIo(endpoint, new IgfsMarshaller(), log);
+                    clientIo = new IgfsHadoopIpcIo(endpoint, new IgfsMarshaller(), log);
 
                     try {
                         clientIo.start();
@@ -145,7 +145,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                         throw new IOException(e.getMessage(), e);
                     }
 
-                    GridGgfsHadoopIpcIo old = ipcCache.putIfAbsent(endpoint, clientIo);
+                    IgfsHadoopIpcIo old = ipcCache.putIfAbsent(endpoint, clientIo);
 
                     // Put in exclusive lock.
                     assert old == null;
@@ -237,7 +237,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
         try {
             endpoint = IpcEndpointFactory.connectEndpoint(
-                    endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
+                    endpointAddr, new GridLoggerProxy(new IgfsHadoopJclLogger(log), null, null, ""));
 
             out = new IgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
@@ -287,7 +287,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventListener(GridGgfsHadoopIpcIoListener lsnr) {
+    @Override public void addEventListener(IgfsHadoopIpcIoListener lsnr) {
         if (!busyLock.readLock().tryLock()) {
             lsnr.onClose();
 
@@ -311,7 +311,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeEventListener(GridGgfsHadoopIpcIoListener lsnr) {
+    @Override public void removeEventListener(IgfsHadoopIpcIoListener lsnr) {
         lsnrs.remove(lsnr);
     }
 
@@ -326,24 +326,24 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
         assert outBuf == null || msg.command() == IgfsIpcCommand.READ_BLOCK;
 
         if (!busyLock.readLock().tryLock())
-            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+            throw new IgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
                 "closed).");
 
         try {
             if (stopping)
-                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+                throw new IgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
                     "closed).");
 
             long reqId = reqIdCnt.getAndIncrement();
 
-            GridGgfsHadoopFuture<T> fut = new GridGgfsHadoopFuture<>();
+            IgfsHadoopFuture<T> fut = new IgfsHadoopFuture<>();
 
             fut.outputBuffer(outBuf);
             fut.outputOffset(outOff);
             fut.outputLength(outLen);
             fut.read(msg.command() == IgfsIpcCommand.READ_BLOCK);
 
-            GridGgfsHadoopFuture oldFut = reqMap.putIfAbsent(reqId, fut);
+            IgfsHadoopFuture oldFut = reqMap.putIfAbsent(reqId, fut);
 
             assert oldFut == null;
 
@@ -365,7 +365,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                 err = e;
             }
             catch (IOException e) {
-                err = new GridGgfsHadoopCommunicationException(e);
+                err = new IgfsHadoopCommunicationException(e);
             }
 
             if (err != null) {
@@ -384,12 +384,12 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     /** {@inheritDoc} */
     @Override public void sendPlain(IgfsMessage msg) throws IgniteCheckedException {
         if (!busyLock.readLock().tryLock())
-            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being " +
+            throw new IgfsHadoopCommunicationException("Failed to send message (client is being " +
                 "concurrently closed).");
 
         try {
             if (stopping)
-                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
+                throw new IgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
 
             assert msg.command() == IgfsIpcCommand.WRITE_BLOCK;
 
@@ -408,7 +408,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             }
         }
         catch (IOException e) {
-            throw new GridGgfsHadoopCommunicationException(e);
+            throw new IgfsHadoopCommunicationException(e);
         }
         finally {
             busyLock.readLock().unlock();
@@ -444,17 +444,17 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             endpoint.close();
 
         // Unwind futures. We can safely iterate here because no more futures will be added.
-        Iterator<GridGgfsHadoopFuture> it = reqMap.values().iterator();
+        Iterator<IgfsHadoopFuture> it = reqMap.values().iterator();
 
         while (it.hasNext()) {
-            GridGgfsHadoopFuture fut = it.next();
+            IgfsHadoopFuture fut = it.next();
 
             fut.onDone(err);
 
             it.remove();
         }
 
-        for (GridGgfsHadoopIpcIoListener lsnr : lsnrs)
+        for (IgfsHadoopIpcIoListener lsnr : lsnrs)
             lsnr.onClose();
     }
 
@@ -495,11 +495,11 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                         long streamId = dis.readLong();
 
-                        for (GridGgfsHadoopIpcIoListener lsnr : lsnrs)
+                        for (IgfsHadoopIpcIoListener lsnr : lsnrs)
                             lsnr.onError(streamId, errMsg);
                     }
                     else {
-                        GridGgfsHadoopFuture<Object> fut = reqMap.remove(reqId);
+                        IgfsHadoopFuture<Object> fut = reqMap.remove(reqId);
 
                         if (fut == null) {
                             String msg = "Failed to read response from server: response closure is unavailable for " +
@@ -577,7 +577,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                 if (!stopping)
                     log.error("Failed to read data (connection will be closed)", e);
 
-                err = new GridGgfsHadoopCommunicationException(e);
+                err = new IgfsHadoopCommunicationException(e);
             }
             catch (IgniteCheckedException e) {
                 if (!stopping)

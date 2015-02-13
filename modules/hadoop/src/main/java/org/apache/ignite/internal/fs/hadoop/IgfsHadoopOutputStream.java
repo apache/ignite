@@ -27,7 +27,7 @@ import java.io.*;
 /**
  * GGFS Hadoop output stream implementation.
  */
-public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfsHadoopStreamEventListener {
+public class IgfsHadoopOutputStream extends OutputStream implements IgfsHadoopStreamEventListener {
     /** Log instance. */
     private Log log;
 
@@ -38,7 +38,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     private long logStreamId;
 
     /** Server stream delegate. */
-    private GridGgfsHadoopStreamDelegate delegate;
+    private IgfsHadoopStreamDelegate delegate;
 
     /** Closed flag. */
     private volatile boolean closed;
@@ -68,7 +68,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
      * @param log Logger to use.
      * @param clientLog Client logger.
      */
-    public GridGgfsHadoopOutputStream(GridGgfsHadoopStreamDelegate delegate, Log log,
+    public IgfsHadoopOutputStream(IgfsHadoopStreamDelegate delegate, Log log,
         IgfsLogger clientLog, long logStreamId) {
         this.delegate = delegate;
         this.log = log;

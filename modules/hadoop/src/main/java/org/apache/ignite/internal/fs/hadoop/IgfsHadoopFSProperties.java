@@ -27,7 +27,7 @@ import static org.apache.ignite.IgniteFs.*;
 /**
  * Hadoop file system properties.
  */
-class GridGgfsHadoopFSProperties {
+class IgfsHadoopFSProperties {
     /** Username. */
     private String usrName;
 
@@ -43,7 +43,7 @@ class GridGgfsHadoopFSProperties {
      * @param props Properties.
      * @throws IgniteException In case of error.
      */
-    GridGgfsHadoopFSProperties(Map<String, String> props) throws IgniteException {
+    IgfsHadoopFSProperties(Map<String, String> props) throws IgniteException {
         usrName = props.get(PROP_USER_NAME);
         grpName = props.get(PROP_GROUP_NAME);
 

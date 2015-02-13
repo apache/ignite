@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * IO abstraction layer for GGFS client. Two kind of messages are expected to be sent: requests with response
  * and request without response.
  */
-public interface GridGgfsHadoopIo {
+public interface IgfsHadoopIo {
     /**
      * Sends given GGFS client message and asynchronously awaits for response.
      *
@@ -65,12 +65,12 @@ public interface GridGgfsHadoopIo {
      *
      * @param lsnr Event listener.
      */
-    public void addEventListener(GridGgfsHadoopIpcIoListener lsnr);
+    public void addEventListener(IgfsHadoopIpcIoListener lsnr);
 
     /**
      * Removes event listener that will be invoked when connection with server is lost or remote error has occurred.
      *
      * @param lsnr Event listener.
      */
-    public void removeEventListener(GridGgfsHadoopIpcIoListener lsnr);
+    public void removeEventListener(IgfsHadoopIpcIoListener lsnr);
 }

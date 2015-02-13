@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Secondary Hadoop file system input stream wrapper.
  */
-public class GridGgfsHadoopProxyInputStream extends InputStream implements Seekable, PositionedReadable {
+public class IgfsHadoopProxyInputStream extends InputStream implements Seekable, PositionedReadable {
     /** Actual input stream to the secondary file system. */
     private final FSDataInputStream is;
 
@@ -56,7 +56,7 @@ public class GridGgfsHadoopProxyInputStream extends InputStream implements Seeka
      * @param is Actual input stream to the secondary file system.
      * @param clientLog Client log.
      */
-    public GridGgfsHadoopProxyInputStream(FSDataInputStream is, IgfsLogger clientLog, long logStreamId) {
+    public IgfsHadoopProxyInputStream(FSDataInputStream is, IgfsLogger clientLog, long logStreamId) {
         assert is != null;
         assert clientLog != null;
 

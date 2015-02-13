@@ -31,7 +31,7 @@ import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 /**
  * GGFS endpoint abstraction.
  */
-public class GridGgfsHadoopEndpoint {
+public class IgfsHadoopEndpoint {
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
@@ -59,7 +59,7 @@ public class GridGgfsHadoopEndpoint {
             if (!F.eq(IgniteFs.GGFS_SCHEME, uri.getScheme()))
                 throw new IOException("Failed to normalize UIR because it has non GGFS scheme: " + uri);
 
-            GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
+            IgfsHadoopEndpoint endpoint = new IgfsHadoopEndpoint(uri.getAuthority());
 
             StringBuilder sb = new StringBuilder();
 
@@ -83,7 +83,7 @@ public class GridGgfsHadoopEndpoint {
      * @param connStr Connection string.
      * @throws IgniteCheckedException If failed to parse connection string.
      */
-    public GridGgfsHadoopEndpoint(@Nullable String connStr) throws IgniteCheckedException {
+    public IgfsHadoopEndpoint(@Nullable String connStr) throws IgniteCheckedException {
         if (connStr == null)
             connStr = "";
 
@@ -205,6 +205,6 @@ public class GridGgfsHadoopEndpoint {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsHadoopEndpoint.class, this);
+        return S.toString(IgfsHadoopEndpoint.class, this);
     }
 }

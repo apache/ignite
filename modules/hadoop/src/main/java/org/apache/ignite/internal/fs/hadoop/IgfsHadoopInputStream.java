@@ -31,13 +31,13 @@ import java.io.*;
  * GGFS input stream wrapper for hadoop interfaces.
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-public final class GridGgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,
-    GridGgfsHadoopStreamEventListener {
+public final class IgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,
+    IgfsHadoopStreamEventListener {
     /** Minimum buffer size. */
     private static final int MIN_BUF_SIZE = 4 * 1024;
 
     /** Server stream delegate. */
-    private GridGgfsHadoopStreamDelegate delegate;
+    private IgfsHadoopStreamDelegate delegate;
 
     /** Stream ID used by logger. */
     private long logStreamId;
@@ -90,7 +90,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
      * @param log Log.
      * @param clientLog Client logger.
      */
-    public GridGgfsHadoopInputStream(GridGgfsHadoopStreamDelegate delegate, long limit, int bufSize, Log log,
+    public IgfsHadoopInputStream(IgfsHadoopStreamDelegate delegate, long limit, int bufSize, Log log,
         IgfsLogger clientLog, long logStreamId) {
         assert limit >= 0;
 
@@ -151,7 +151,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             return res;
         }
         catch (IgniteCheckedException e) {
-            throw GridGgfsHadoopUtils.cast(e);
+            throw IgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -191,7 +191,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             return read;
         }
         catch (IgniteCheckedException e) {
-            throw GridGgfsHadoopUtils.cast(e);
+            throw IgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -322,7 +322,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
                 clientLog.logRandomRead(logStreamId, position, len);
         }
         catch (IgniteCheckedException e) {
-            throw GridGgfsHadoopUtils.cast(e);
+            throw IgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();

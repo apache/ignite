@@ -30,7 +30,7 @@ import java.io.*;
  * <p>
  * The class is expected to be used only from synchronized context and therefore is not tread-safe.
  */
-public class GridGgfsHadoopReader implements IgniteFsReader {
+public class IgfsHadoopReader implements IgniteFsReader {
     /** Secondary file system. */
     private final FileSystem fs;
 
@@ -56,7 +56,7 @@ public class GridGgfsHadoopReader implements IgniteFsReader {
      * @param path Path to the file to open.
      * @param bufSize Buffer size.
      */
-    GridGgfsHadoopReader(FileSystem fs, Path path, int bufSize) {
+    IgfsHadoopReader(FileSystem fs, Path path, int bufSize) {
         assert fs != null;
         assert path != null;
 

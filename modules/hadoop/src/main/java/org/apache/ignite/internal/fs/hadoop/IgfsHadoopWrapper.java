@@ -30,13 +30,13 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopEndpoint.*;
-import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
+import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopEndpoint.*;
+import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
 
 /**
  * Wrapper for GGFS server.
  */
-public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
+public class IgfsHadoopWrapper implements IgfsHadoop {
     /** Delegate. */
     private final AtomicReference<Delegate> delegateRef = new AtomicReference<>();
 
@@ -44,7 +44,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     private final String authority;
 
     /** Connection string. */
-    private final GridGgfsHadoopEndpoint endpoint;
+    private final IgfsHadoopEndpoint endpoint;
 
     /** Log directory. */
     private final String logDir;
@@ -63,10 +63,10 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
      * @param conf Configuration.
      * @param log Current logger.
      */
-    public GridGgfsHadoopWrapper(String authority, String logDir, Configuration conf, Log log) throws IOException {
+    public IgfsHadoopWrapper(String authority, String logDir, Configuration conf, Log log) throws IOException {
         try {
             this.authority = authority;
-            this.endpoint = new GridGgfsHadoopEndpoint(authority);
+            this.endpoint = new IgfsHadoopEndpoint(authority);
             this.logDir = logDir;
             this.conf = conf;
             this.log = log;
@@ -79,7 +79,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgfsHandshakeResponse>() {
-            @Override public IgfsHandshakeResponse apply(GridGgfsHadoopEx hadoop,
+            @Override public IgfsHandshakeResponse apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hndResp;
             }
@@ -97,7 +97,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public IgniteFsFile info(final IgniteFsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
-            @Override public IgniteFsFile apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public IgniteFsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.info(path);
             }
@@ -107,7 +107,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public IgniteFsFile update(final IgniteFsPath path, final Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgniteFsFile>() {
-            @Override public IgniteFsFile apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public IgniteFsFile apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.update(path, props);
             }
@@ -118,7 +118,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     @Override public Boolean setTimes(final IgniteFsPath path, final long accessTime, final long modificationTime)
         throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public Boolean apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.setTimes(path, accessTime, modificationTime);
             }
@@ -128,7 +128,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Boolean rename(final IgniteFsPath src, final IgniteFsPath dest) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public Boolean apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.rename(src, dest);
             }
@@ -138,7 +138,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Boolean delete(final IgniteFsPath path, final boolean recursive) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public Boolean apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.delete(path, recursive);
             }
@@ -149,7 +149,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     @Override public Collection<IgniteFsBlockLocation> affinity(final IgniteFsPath path, final long start,
         final long len) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsBlockLocation>>() {
-            @Override public Collection<IgniteFsBlockLocation> apply(GridGgfsHadoopEx hadoop,
+            @Override public Collection<IgniteFsBlockLocation> apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.affinity(path, start, len);
             }
@@ -159,7 +159,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public IgniteFsPathSummary contentSummary(final IgniteFsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgniteFsPathSummary>() {
-            @Override public IgniteFsPathSummary apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public IgniteFsPathSummary apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.contentSummary(path);
             }
@@ -169,7 +169,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Boolean mkdirs(final IgniteFsPath path, final Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public Boolean apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.mkdirs(path, props);
             }
@@ -179,7 +179,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsFile>>() {
-            @Override public Collection<IgniteFsFile> apply(GridGgfsHadoopEx hadoop,
+            @Override public Collection<IgniteFsFile> apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.listFiles(path);
             }
@@ -189,7 +189,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsPath> listPaths(final IgniteFsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<IgniteFsPath>>() {
-            @Override public Collection<IgniteFsPath> apply(GridGgfsHadoopEx hadoop,
+            @Override public Collection<IgniteFsPath> apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.listPaths(path);
             }
@@ -199,7 +199,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public IgfsStatus fsStatus() throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgfsStatus>() {
-            @Override public IgfsStatus apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
+            @Override public IgfsStatus apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp)
                 throws IgniteCheckedException, IOException {
                 return hadoop.fsStatus();
             }
@@ -207,9 +207,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(final IgniteFsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
-            @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
+    @Override public IgfsHadoopStreamDelegate open(final IgniteFsPath path) throws IOException {
+        return withReconnectHandling(new FileSystemClosure<IgfsHadoopStreamDelegate>() {
+            @Override public IgfsHadoopStreamDelegate apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.open(path);
             }
@@ -217,10 +217,10 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(final IgniteFsPath path, final int seqReadsBeforePrefetch)
+    @Override public IgfsHadoopStreamDelegate open(final IgniteFsPath path, final int seqReadsBeforePrefetch)
         throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
-            @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
+        return withReconnectHandling(new FileSystemClosure<IgfsHadoopStreamDelegate>() {
+            @Override public IgfsHadoopStreamDelegate apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.open(path, seqReadsBeforePrefetch);
             }
@@ -228,11 +228,11 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate create(final IgniteFsPath path, final boolean overwrite,
+    @Override public IgfsHadoopStreamDelegate create(final IgniteFsPath path, final boolean overwrite,
         final boolean colocate, final int replication, final long blockSize, @Nullable final Map<String, String> props)
         throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
-            @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
+        return withReconnectHandling(new FileSystemClosure<IgfsHadoopStreamDelegate>() {
+            @Override public IgfsHadoopStreamDelegate apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.create(path, overwrite, colocate, replication, blockSize, props);
             }
@@ -240,10 +240,10 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate append(final IgniteFsPath path, final boolean create,
+    @Override public IgfsHadoopStreamDelegate append(final IgniteFsPath path, final boolean create,
         @Nullable final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
-            @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
+        return withReconnectHandling(new FileSystemClosure<IgfsHadoopStreamDelegate>() {
+            @Override public IgfsHadoopStreamDelegate apply(IgfsHadoopEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
                 return hadoop.append(path, create, props);
             }
@@ -288,7 +288,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
                 return clo.apply(curDelegate.hadoop, curDelegate.hndResp);
             }
-            catch (GridGgfsHadoopCommunicationException e) {
+            catch (IgfsHadoopCommunicationException e) {
                 if (curDelegate != null && !curDelegate.doomed) {
                     // Try getting rid fo faulty delegate ASAP.
                     delegateRef.compareAndSet(curDelegate, null);
@@ -303,7 +303,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
                 err = e;
             }
             catch (IgniteCheckedException e) {
-                throw GridGgfsHadoopUtils.cast(e, path != null ? path.toString() : null);
+                throw IgfsHadoopUtils.cast(e, path != null ? path.toString() : null);
             }
             finally {
                 if (close) {
@@ -322,7 +322,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
      *
      * @return Delegate.
      */
-    private Delegate delegate() throws GridGgfsHadoopCommunicationException {
+    private Delegate delegate() throws IgfsHadoopCommunicationException {
         Exception err = null;
 
         // 1. If delegate is set, return it immediately.
@@ -359,15 +359,15 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             }
 
             if (ggfs != null) {
-                GridGgfsHadoopEx hadoop = null;
+                IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new GridGgfsHadoopInProc(ggfs, log);
+                    hadoop = new IgfsHadoopInProc(ggfs, log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof GridGgfsHadoopCommunicationException)
+                    if (e instanceof IgfsHadoopCommunicationException)
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
@@ -381,15 +381,15 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
         // 3. Try connecting using shmem.
         if (!parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
             if (curDelegate == null && !U.isWindows()) {
-                GridGgfsHadoopEx hadoop = null;
+                IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new GridGgfsHadoopOutProc(endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
+                    hadoop = new IgfsHadoopOutProc(endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof GridGgfsHadoopCommunicationException)
+                    if (e instanceof IgfsHadoopCommunicationException)
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
@@ -405,16 +405,16 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
         if (!skipLocTcp) {
             if (curDelegate == null) {
-                GridGgfsHadoopEx hadoop = null;
+                IgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new GridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.ggfs(),
+                    hadoop = new IgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.ggfs(),
                         log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof GridGgfsHadoopCommunicationException)
+                    if (e instanceof IgfsHadoopCommunicationException)
                         hadoop.close(true);
 
                     if (log.isDebugEnabled())
@@ -427,15 +427,15 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
         // 5. Try remote TCP connection.
         if (curDelegate == null && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
-            GridGgfsHadoopEx hadoop = null;
+            IgfsHadoopEx hadoop = null;
 
             try {
-                hadoop = new GridGgfsHadoopOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
+                hadoop = new IgfsHadoopOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (IOException | IgniteCheckedException e) {
-                if (e instanceof GridGgfsHadoopCommunicationException)
+                if (e instanceof IgfsHadoopCommunicationException)
                     hadoop.close(true);
 
                 if (log.isDebugEnabled())
@@ -452,7 +452,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             return curDelegate;
         }
         else
-            throw new GridGgfsHadoopCommunicationException("Failed to connect to GGFS: " + endpoint, err);
+            throw new IgfsHadoopCommunicationException("Failed to connect to GGFS: " + endpoint, err);
     }
 
     /**
@@ -468,7 +468,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
          * @throws IgniteCheckedException If failed.
          * @throws IOException If failed.
          */
-        public T apply(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException;
+        public T apply(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException;
     }
 
     /**
@@ -476,7 +476,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
      */
     private static class Delegate {
         /** RPC handler. */
-        private final GridGgfsHadoopEx hadoop;
+        private final IgfsHadoopEx hadoop;
 
         /** Handshake request. */
         private final IgfsHandshakeResponse hndResp;
@@ -493,7 +493,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
          * @param hadoop Hadoop.
          * @param hndResp Handshake response.
          */
-        private Delegate(GridGgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp) {
+        private Delegate(IgfsHadoopEx hadoop, IgfsHandshakeResponse hndResp) {
             this.hadoop = hadoop;
             this.hndResp = hndResp;
         }

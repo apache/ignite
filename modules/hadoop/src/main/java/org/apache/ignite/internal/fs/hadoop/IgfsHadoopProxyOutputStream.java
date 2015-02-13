@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Secondary Hadoop file system output stream wrapper.
  */
-public class GridGgfsHadoopProxyOutputStream extends OutputStream {
+public class IgfsHadoopProxyOutputStream extends OutputStream {
     /** Actual output stream. */
     private FSDataOutputStream os;
 
@@ -57,7 +57,7 @@ public class GridGgfsHadoopProxyOutputStream extends OutputStream {
      * @param clientLog Client logger.
      * @param logStreamId Log stream ID.
      */
-    public GridGgfsHadoopProxyOutputStream(FSDataOutputStream os, IgfsLogger clientLog, long logStreamId) {
+    public IgfsHadoopProxyOutputStream(FSDataOutputStream os, IgfsLogger clientLog, long logStreamId) {
         assert os != null;
         assert clientLog != null;
 

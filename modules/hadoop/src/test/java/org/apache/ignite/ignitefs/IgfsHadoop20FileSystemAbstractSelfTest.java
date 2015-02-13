@@ -262,7 +262,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setDefaultMode(mode);
 
         if (mode != PRIMARY)
-            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(secondaryFileSystemUriPath(),
+            cfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(secondaryFileSystemUriPath(),
                 secondaryFileSystemConfigPath()));
 
         cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));

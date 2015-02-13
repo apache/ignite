@@ -97,7 +97,7 @@ public class IgfsHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstrac
         }});
 
         ggfsCfg.setManagementPort(-1);
-        ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+        ggfsCfg.setSecondaryFileSystem(new IgfsHadoopFileSystemWrapper(
             "ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/",
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 

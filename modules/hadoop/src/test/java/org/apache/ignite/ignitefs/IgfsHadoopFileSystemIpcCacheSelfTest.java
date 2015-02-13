@@ -141,15 +141,15 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
      */
     @SuppressWarnings("unchecked")
     public void testIpcCache() throws Exception {
-        Field cacheField = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
+        Field cacheField = IgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
         cacheField.setAccessible(true);
 
-        Field activeCntField = GridGgfsHadoopIpcIo.class.getDeclaredField("activeCnt");
+        Field activeCntField = IgfsHadoopIpcIo.class.getDeclaredField("activeCnt");
 
         activeCntField.setAccessible(true);
 
-        Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)cacheField.get(null);
+        Map<String, IgfsHadoopIpcIo> cache = (Map<String, IgfsHadoopIpcIo>)cacheField.get(null);
 
         String name = "ggfs:" + getTestGridName(0) + "@";
 
@@ -157,14 +157,14 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
 
         cfg.addResource(U.resolveIgniteUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
-        cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, name), true);
+        cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, name), true);
 
         // Ensure that existing IO is reused.
         FileSystem fs1 = FileSystem.get(new URI("ggfs://" + name + "/"), cfg);
 
         assertEquals(1, cache.size());
 
-        GridGgfsHadoopIpcIo io = null;
+        IgfsHadoopIpcIo io = null;
 
         System.out.println("CACHE: " + cache);
 
@@ -191,7 +191,7 @@ public class IgfsHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest
         assertEquals(1, cache.size());
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
-        Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
+        Field stopField = IgfsHadoopIpcIo.class.getDeclaredField("stopping");
 
         stopField.setAccessible(true);
 

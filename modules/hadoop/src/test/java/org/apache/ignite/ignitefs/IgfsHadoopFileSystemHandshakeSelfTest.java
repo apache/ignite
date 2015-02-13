@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
-import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
+import static org.apache.ignite.internal.fs.hadoop.IgfsHadoopUtils.*;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
