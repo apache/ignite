@@ -525,9 +525,9 @@
                             <filesets>
                                 <fileset>
                                     <directory>${project.basedir}</directory>
-                                    <includes>
+                                    <!--<includes>-->
                                         <!--<include>**/pom-installed.xml</include>-->
-                                    </includes>
+                                    <!--</includes>-->
                                 </fileset>
                             </filesets>
                         </configuration>
