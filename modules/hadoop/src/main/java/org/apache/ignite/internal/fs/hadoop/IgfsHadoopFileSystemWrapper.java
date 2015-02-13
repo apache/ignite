@@ -23,7 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.ipc.*;
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -34,7 +34,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.ignitefs.Igfs}.
+ * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.igfs.Igfs}.
  */
 public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
     /** Property name for path to Hadoop configuration. */

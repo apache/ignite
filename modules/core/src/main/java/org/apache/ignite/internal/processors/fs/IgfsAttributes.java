@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -38,7 +38,7 @@ public class IgfsAttributes implements Externalizable {
     /** File's data block size (bytes). */
     private int blockSize;
 
-    /** Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}. */
+    /** Size of the group figured in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}. */
     private int grpSize;
 
     /** Meta cache name. */
@@ -59,7 +59,7 @@ public class IgfsAttributes implements Externalizable {
     /**
      * @param ggfsName GGFS name.
      * @param blockSize File's data block size (bytes).
-     * @param grpSize Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
+     * @param grpSize Size of the group figured in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
      * @param dataCacheName Data cache name.
      * @param dfltMode Default mode.
@@ -99,7 +99,7 @@ public class IgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return Size of the group figured in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
+     * @return Size of the group figured in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
      */
     public int groupSize() {
         return grpSize;

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
  * Test fo regular GGFs operations.

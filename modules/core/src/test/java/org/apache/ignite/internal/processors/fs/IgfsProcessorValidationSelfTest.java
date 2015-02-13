@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -31,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.ignitefs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
  * Tests for node validation logic in {@link IgfsProcessor}.
@@ -482,7 +482,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @param grpSize Group size to use in {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper}.
+     * @param grpSize Group size to use in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */

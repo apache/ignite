@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.ignitefs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

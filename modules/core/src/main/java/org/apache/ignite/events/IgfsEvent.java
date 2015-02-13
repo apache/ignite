@@ -18,7 +18,7 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

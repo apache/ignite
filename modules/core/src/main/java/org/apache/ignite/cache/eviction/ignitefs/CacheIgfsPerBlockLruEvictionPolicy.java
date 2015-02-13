@@ -19,7 +19,7 @@ package org.apache.ignite.cache.eviction.ignitefs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.jdk8.backport.*;

@@ -18,8 +18,8 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.ignitefs.mapreduce.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.mapreduce.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -83,7 +83,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      *
      * @param path Path to get information for.
      * @return Summary object.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path is not found.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path is not found.
      * @throws IgniteException If failed.
      */
     public IgfsPathSummary summary(IgfsPath path) throws IgniteException;
@@ -94,7 +94,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param path File path to read.
      * @return File input stream to read data from.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist.
      */
     public IgfsInputStream open(IgfsPath path) throws IgniteException;
 
@@ -105,7 +105,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist.
      */
     @Override public IgfsInputStream open(IgfsPath path, int bufSize) throws IgniteException;
 
@@ -117,7 +117,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is started.
      * @return File input stream to read data from.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist.
      */
     public IgfsInputStream open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) throws IgniteException;
 
@@ -171,7 +171,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param create Create file if it doesn't exist yet.
      * @return File output stream to append data to.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public IgfsOutputStream append(IgfsPath path, boolean create) throws IgniteException;
 
@@ -184,7 +184,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws IgniteException;
@@ -197,7 +197,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @param modificationTime Optional last modification time to set. Value {@code -1} does not update
      *      modification time.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If target was not found.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If target was not found.
      * @throws IgniteException If error occurred.
      */
     public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
@@ -211,7 +211,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param len Size of data in the file to resolve affinity for.
      * @return Affinity block locations.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteException;
 
@@ -226,7 +226,7 @@ public interface IgniteFs extends Igfs, IgniteAsyncSupport {
      * @param maxLen Maximum length of a single returned block location length.
      * @return Affinity block locations.
      * @throws IgniteException In case of error.
-     * @throws org.apache.ignite.ignitefs.IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
         throws IgniteException;

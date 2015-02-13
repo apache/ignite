@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.ignitefs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
  * {@link IgfsAttributes} test case.

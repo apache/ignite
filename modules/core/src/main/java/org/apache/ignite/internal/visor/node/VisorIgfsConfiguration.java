@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

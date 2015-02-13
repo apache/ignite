@@ -22,7 +22,7 @@ import org.apache.commons.compress.archivers.tar.*;
 import org.apache.commons.compress.compressors.gzip.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.hadoop.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;

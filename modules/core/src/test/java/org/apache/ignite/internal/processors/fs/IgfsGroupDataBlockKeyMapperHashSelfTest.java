@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
 /**
- * Tests for {@link org.apache.ignite.ignitefs.IgfsGroupDataBlocksKeyMapper} hash.
+ * Tests for {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper} hash.
  */
 public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractTest {
     /**

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.fs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.protocol.*;
-import org.apache.ignite.ignitefs.hadoop.v1.*;
+import org.apache.ignite.igfs.hadoop.v1.*;
 
 /**
  * Utilities for configuring file systems to support the separate working directory per each thread.

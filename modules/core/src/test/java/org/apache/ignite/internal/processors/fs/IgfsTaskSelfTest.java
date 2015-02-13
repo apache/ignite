@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.ignitefs.mapreduce.*;
-import org.apache.ignite.ignitefs.mapreduce.records.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.mapreduce.*;
+import org.apache.ignite.igfs.mapreduce.records.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -39,10 +39,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.ignitefs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgfsTask}.
+ * Tests for {@link org.apache.ignite.igfs.mapreduce.IgfsTask}.
  */
 public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Predefined words dictionary. */

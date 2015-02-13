@@ -19,15 +19,15 @@ package org.apache.ignite.examples.ignitefs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.ignitefs.mapreduce.*;
-import org.apache.ignite.ignitefs.mapreduce.records.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.mapreduce.*;
+import org.apache.ignite.igfs.mapreduce.records.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows how to use {@link org.apache.ignite.ignitefs.mapreduce.IgfsTask} to find lines matching particular pattern in the file in pretty
+ * Example that shows how to use {@link org.apache.ignite.igfs.mapreduce.IgfsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes

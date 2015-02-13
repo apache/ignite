@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -491,8 +491,8 @@ public class IgfsConfiguration {
      * Secondary Hadoop file system is provided for pass-through, write-through, and read-through
      * purposes.
      * <p>
-     * Default mode is {@link org.apache.ignite.ignitefs.IgfsMode#DUAL_ASYNC}. If secondary Hadoop file system is
-     * not configured, this mode will work just like {@link org.apache.ignite.ignitefs.IgfsMode#PRIMARY} mode.
+     * Default mode is {@link org.apache.ignite.igfs.IgfsMode#DUAL_ASYNC}. If secondary Hadoop file system is
+     * not configured, this mode will work just like {@link org.apache.ignite.igfs.IgfsMode#PRIMARY} mode.
      *
      * @return Mode to specify how GGFS interacts with secondary HDFS file system.
      */
@@ -762,13 +762,13 @@ public class IgfsConfiguration {
 
     /**
      * Get maximum default range size of a file being split during GGFS task execution. When GGFS task is about to
-     * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.ignitefs.mapreduce.IgfsFileRange} which
+     * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.igfs.mapreduce.IgfsFileRange} which
      * has length. In case this parameter is set to positive value, then GGFS will split single file range into smaller
      * ranges with length not greater that this parameter. The only exception to this case is when maximum task range
      * length is smaller than file block size. In this case maximum task range size will be overridden and set to file
      * block size.
      * <p>
-     * Note that this parameter is applied when task is split into jobs before {@link org.apache.ignite.ignitefs.mapreduce.IgfsRecordResolver} is
+     * Note that this parameter is applied when task is split into jobs before {@link org.apache.ignite.igfs.mapreduce.IgfsRecordResolver} is
      * applied. Therefore, final file ranges being assigned to particular jobs could be greater than value of this
      * parameter depending on file data layout and selected resolver type.
      * <p>

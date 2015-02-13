@@ -716,11 +716,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igniigfsoop.v1:org.apache.ignite.ignitefsigfsv2:org.apache.ignite.ignitefs.mapigfsrg.apache.ignite.ignitefs.mapreduigfsds:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -911,11 +911,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igniigfsoop.v1:org.apache.ignite.ignitefsigfsv2:org.apache.ignite.ignitefs.mapigfsrg.apache.ignite.ignitefs.mapreduigfsds:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
