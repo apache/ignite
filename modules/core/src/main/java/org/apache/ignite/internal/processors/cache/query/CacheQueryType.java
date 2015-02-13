@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.query;
 
 /**
  * Cache query type.

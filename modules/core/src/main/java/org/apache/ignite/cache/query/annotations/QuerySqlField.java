@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.query.annotations;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 
 import java.lang.annotation.*;
 
