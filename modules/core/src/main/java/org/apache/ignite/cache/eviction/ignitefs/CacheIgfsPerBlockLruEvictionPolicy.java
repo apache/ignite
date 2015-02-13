@@ -33,8 +33,8 @@ import java.util.regex.*;
 /**
  * GGFS eviction policy which evicts particular blocks.
  */
-public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
-    CacheIgniteFsPerBlockLruEvictionPolicyMXBean {
+public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
+    CacheIgfsPerBlockLruEvictionPolicyMXBean {
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
 
@@ -60,7 +60,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
     /**
      * Default constructor.
      */
-    public CacheIgniteFsPerBlockLruEvictionPolicy() {
+    public CacheIgfsPerBlockLruEvictionPolicy() {
         // No-op.
     }
 
@@ -70,7 +70,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @param maxSize Maximum size. When reached, eviction begins.
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      */
-    public CacheIgniteFsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
+    public CacheIgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
         this(maxSize, maxBlocks, null);
     }
 
@@ -81,7 +81,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      * @param excludePaths Collection of regex for path which must not be evicted.
      */
-    public CacheIgniteFsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks,
+    public CacheIgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks,
         @Nullable Collection<String> excludePaths) {
         this.maxSize = maxSize;
         this.maxBlocks = maxBlocks;

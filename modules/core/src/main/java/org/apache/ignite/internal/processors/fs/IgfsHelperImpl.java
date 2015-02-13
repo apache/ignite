@@ -30,18 +30,18 @@ public class IgfsHelperImpl implements IgfsHelper {
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         CacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
 
-        if (evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
-            cfg.setEvictionFilter(new CacheIgniteFsEvictionFilter());
+        if (evictPlc instanceof CacheIgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
+            cfg.setEvictionFilter(new CacheIgfsEvictionFilter());
     }
 
     /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException {
         CacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
 
-        if (evictPlc != null && evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy) {
+        if (evictPlc != null && evictPlc instanceof CacheIgfsPerBlockLruEvictionPolicy) {
             CacheEvictionFilter evictFilter = cfg.getEvictionFilter();
 
-            if (evictFilter != null && !(evictFilter instanceof CacheIgniteFsEvictionFilter))
+            if (evictFilter != null && !(evictFilter instanceof CacheIgfsEvictionFilter))
                 throw new IgniteCheckedException("Eviction filter cannot be set explicitly when using " +
                     "CacheGgfsPerBlockLruEvictionPolicy:" + cfg.getName());
         }

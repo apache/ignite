@@ -71,7 +71,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
     private static GridCacheAdapter<IgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
+    private static CacheIgfsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Start a grid with the primary file system.
@@ -104,7 +104,7 @@ public class GridCacheIgfsPerBlockLruEvictionPolicySelfTest extends IgfsCommonAb
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheIgniteFsPerBlockLruEvictionPolicy();
+        evictPlc = new CacheIgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));

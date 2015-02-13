@@ -116,7 +116,7 @@ public final class IgfsImpl implements IgfsEx {
     private Object topic;
 
     /** Eviction policy (if set). */
-    private CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
+    private CacheIgfsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Creates GGFS instance with given context.
@@ -200,8 +200,8 @@ public final class IgfsImpl implements IgfsEx {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
                 CacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 
-                if (evictPlc != null & evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy)
-                    this.evictPlc = (CacheIgniteFsPerBlockLruEvictionPolicy)evictPlc;
+                if (evictPlc != null & evictPlc instanceof CacheIgfsPerBlockLruEvictionPolicy)
+                    this.evictPlc = (CacheIgfsPerBlockLruEvictionPolicy)evictPlc;
 
                 break;
             }

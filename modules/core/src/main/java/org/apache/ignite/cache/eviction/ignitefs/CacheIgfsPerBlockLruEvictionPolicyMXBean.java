@@ -26,7 +26,7 @@ import java.util.*;
  * MBean for {@code GGFS per-block LRU} eviction policy.
  */
 @MXBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
-public interface CacheIgniteFsPerBlockLruEvictionPolicyMXBean {
+public interface CacheIgfsPerBlockLruEvictionPolicyMXBean {
     /**
      * Gets maximum allowed size of all blocks in bytes.
      *

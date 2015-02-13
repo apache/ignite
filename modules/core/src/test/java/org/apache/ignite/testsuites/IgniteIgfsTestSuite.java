@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * Test suite for Hadoop file system over Ignite cache.
  * Contains platform independent tests only.
  */
-public class IgniteFsTestSuite extends TestSuite {
+public class IgniteIgfsTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
