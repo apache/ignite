@@ -22,7 +22,7 @@ import org.apache.ignite.lang.*;
 /**
  * Interface for those loggers and appenders that evaluate their file paths lazily.
  */
-interface IgniteLog4jFileAware {
+interface Log4jFileAware {
     /**
      * Sets closure that later evaluate file path.
      *

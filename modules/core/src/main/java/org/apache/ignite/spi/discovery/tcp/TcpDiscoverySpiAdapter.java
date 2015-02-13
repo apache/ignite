@@ -848,7 +848,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /**
      * Socket timeout object.
      */
-    protected static class SocketTimeoutObject {
+    private static class SocketTimeoutObject {
         /** */
         private static final AtomicLong idGen = new AtomicLong();
 
