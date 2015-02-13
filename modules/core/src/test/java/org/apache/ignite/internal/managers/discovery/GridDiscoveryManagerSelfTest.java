@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -123,6 +126,20 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
+        // Wait all nodes are on version 4.
+        for (;;) {
+            if (F.forAll(
+                Ignition.allGrids(),
+                new IgnitePredicate<Ignite>() {
+                    @Override public boolean apply(Ignite ignite) {
+                        return ignite.cluster().topologyVersion() == 4;
+                    }
+                }))
+                break;
+
+            Thread.sleep(1000);
+        }
+
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 3));
@@ -138,6 +155,20 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g2.context().discovery().hasNearCache(null, 4));
 
         stopGrid(2);
+
+        // Wait all nodes are on version 5.
+        for (;;) {
+            if (F.forAll(
+                Ignition.allGrids(),
+                new IgnitePredicate<Ignite>() {
+                    @Override public boolean apply(Ignite ignite) {
+                        return ignite.cluster().topologyVersion() == 5;
+                    }
+                }))
+                break;
+
+            Thread.sleep(1000);
+        }
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
