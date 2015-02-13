@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.cache.query.CacheQuerySqlField
+import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
@@ -97,6 +97,6 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
  * Object for queries.
  */
 private case class Foo(
-    @CacheQuerySqlField
+    @QuerySqlField
     value: Int
 )

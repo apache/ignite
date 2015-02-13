@@ -21,6 +21,7 @@ import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -229,11 +230,11 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     private static class EnemyCamp implements Serializable {
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private Geometry coords;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String name;
 
         /**

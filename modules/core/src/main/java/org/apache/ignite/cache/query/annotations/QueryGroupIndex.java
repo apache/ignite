@@ -15,35 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.cache.query.annotations;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.lang.annotation.*;
 
 /**
- * Query embedded value.
+ * Describes group index.
  */
-@SuppressWarnings("unused")
-public class GridCacheQueryEmbeddedValue implements Serializable {
-    /** Query embedded field. */
-    @QuerySqlField
-    private int embeddedField1 = 55;
-
-    /** Query embedded field. */
-    @QuerySqlField(groups = {"grp1"})
-    private int embeddedField2 = 11;
-
-    /** */
-    @QuerySqlField
-    private Val embeddedField3 = new Val();
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface QueryGroupIndex {
+    /**
+     * Group index name.
+     *
+     * @return Name.
+     */
+    String name();
 
     /**
+     * List of group indexes for type.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Val implements Serializable {
-        /** */
-        @QuerySqlField
-        private Long x = 3L;
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public static @interface List {
+        /**
+         * Gets array of group indexes.
+         *
+         * @return Array of group indexes.
+         */
+        QueryGroupIndex[] value();
     }
 }

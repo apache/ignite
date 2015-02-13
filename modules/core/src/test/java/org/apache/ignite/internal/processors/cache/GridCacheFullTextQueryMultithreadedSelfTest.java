@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -132,7 +133,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
      */
     private static class H2TextValue {
         /** */
-        @CacheQueryTextField
+        @QueryTextField
         private final String val;
 
         /**

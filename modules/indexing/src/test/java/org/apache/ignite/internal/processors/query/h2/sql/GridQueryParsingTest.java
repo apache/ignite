@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -265,19 +266,19 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Person implements Serializable {
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public Date date = new Date();
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public String name = "Ivan";
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public String parentName;
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public int addrId;
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public int old;
     }
 
@@ -285,13 +286,13 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Address implements Serializable {
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public int id;
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public int streetNumber;
 
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }
 }

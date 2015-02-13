@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -1245,7 +1246,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (Class<?> cls : idxCustomFuncClss) {
             for (Method m : cls.getDeclaredMethods()) {
-                CacheQuerySqlFunction ann = m.getAnnotation(CacheQuerySqlFunction.class);
+                QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
 
                 if (ann != null) {
                     int modifiers = m.getModifiers();

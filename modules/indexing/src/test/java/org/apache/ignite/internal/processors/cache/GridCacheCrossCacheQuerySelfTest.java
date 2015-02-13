@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -292,11 +293,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimProduct {
         /** Primary key. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int id;
 
         /** Product name. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String name;
 
         /**
@@ -335,11 +336,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimStore {
         /** Primary key. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int id;
 
         /** Store name. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String name;
 
         /**
@@ -378,18 +379,18 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class FactPurchase {
         /** Primary key. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int id;
 
         /** Foreign key to store at which purchase occurred. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int storeId;
 
         /** Foreign key to purchased product. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int productId;
 
-        @CacheQuerySqlField
+        @QuerySqlField
         private int price;
 
         /**

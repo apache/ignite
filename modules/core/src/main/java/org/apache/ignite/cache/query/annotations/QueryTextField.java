@@ -15,35 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.cache.query.annotations;
 
-import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cache.query.*;
 
-import java.io.*;
+import java.lang.annotation.*;
 
 /**
- * Query embedded value.
+ * Annotation for fields or getters to be indexed for full text
+ * search using Lucene. For more information
+ * refer to {@link CacheQuery} documentation.
+ * @see CacheQuery
  */
-@SuppressWarnings("unused")
-public class GridCacheQueryEmbeddedValue implements Serializable {
-    /** Query embedded field. */
-    @QuerySqlField
-    private int embeddedField1 = 55;
-
-    /** Query embedded field. */
-    @QuerySqlField(groups = {"grp1"})
-    private int embeddedField2 = 11;
-
-    /** */
-    @QuerySqlField
-    private Val embeddedField3 = new Val();
-
-    /**
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class Val implements Serializable {
-        /** */
-        @QuerySqlField
-        private Long x = 3L;
-    }
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE})
+public @interface QueryTextField {
+    // No-op.
 }

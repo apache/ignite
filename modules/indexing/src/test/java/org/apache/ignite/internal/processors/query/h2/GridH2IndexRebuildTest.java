@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -91,19 +92,19 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue1 {
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private long val1;
 
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private String val2;
 
         /** */
-        @CacheQuerySqlField(groups = "group1")
+        @QuerySqlField(groups = "group1")
         private int val3;
 
         /** */
-        @CacheQuerySqlField(groups = "group1")
+        @QuerySqlField(groups = "group1")
         private int val4;
 
         /**
@@ -122,11 +123,11 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue2 {
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private long val1;
 
         /** */
-        @CacheQueryTextField
+        @QueryTextField
         private String val2;
 
         /**
