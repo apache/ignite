@@ -1988,8 +1988,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (invokeMap != null)
                 transform = true;
 
-            assert !transform || retval;
-
             groupLockSanityCheck(cacheCtx, keys);
 
             for (K key : keys) {
