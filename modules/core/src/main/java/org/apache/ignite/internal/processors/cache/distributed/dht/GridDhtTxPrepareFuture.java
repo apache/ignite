@@ -311,7 +311,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         null,
                         null,
-                        null,
                         null);
 
                     if (retVal) {
