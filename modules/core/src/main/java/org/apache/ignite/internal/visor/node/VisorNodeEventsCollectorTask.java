@@ -49,8 +49,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) {
+    @Override protected Iterable<? extends VisorGridEvent> reduce0(List<ComputeJobResult> results) {
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
