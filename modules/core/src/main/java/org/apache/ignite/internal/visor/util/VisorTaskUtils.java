@@ -91,9 +91,7 @@ public class VisorTaskUtils {
     /** Only non task event types that Visor should collect. */
     private static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
 
-    /**
-     * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
-     */
+    /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
     public static final int MAX_FOLDER_DEPTH = 4;
 
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {

@@ -3182,56 +3182,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                 if (!F.eq(rmtBuildVer, locBuildVer)) {
-                    final String osFlag = "-os";
-                    final String entFlag = "-ent";
-
-                    assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
-                    assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
-
-                    // OS and ENT nodes cannot join one topology.
-                    if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
-                        locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
-                        String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
-                            "versions (node will not join, all nodes in topology should be of either " +
-                            "enterprise or open source version) " +
-                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                            ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                            ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                            ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                        LT.warn(log, null, errMsg);
-
-                        // Always output in debug.
-                        if (log.isDebugEnabled())
-                            log.debug(errMsg);
-
-                        try {
-                            String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
-                                "versions (node will not join, all nodes in topology should be of either " +
-                                "enterprise or open source version) " +
-                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
-                                ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                ", rmtNodeId=" + locNode.id() + ']';
-
-                            trySendMessageDirectly(node,
-                                new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send version check failed message to node " +
-                                    "[node=" + node + ", err=" + e.getMessage() + ']');
-                        }
-
-                        // Ignore join request.
-                        return;
-                    }
-
                     // OS nodes don't support rolling updates.
-                    if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
-                        !locBuildVer.equals(rmtBuildVer)) {
+                    if (!locBuildVer.equals(rmtBuildVer)) {
                         String errMsg = "Local node and remote node have different version numbers " +
-                            "(node will not join, open source version does not support rolling updates, " +
+                            "(node will not join, Ignite does not support rolling updates, " +
                             "so versions must be exactly the same) " +
                             "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                             ", locNodeAddrs=" + U.addressesAsString(locNode) +
@@ -3246,7 +3200,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         try {
                             String sndMsg = "Local node and remote node have different version numbers " +
-                                "(node will not join, open source version does not support rolling updates, " +
+                                "(node will not join, Ignite does not support rolling updates, " +
                                 "so versions must be exactly the same) " +
                                 "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
@@ -3254,7 +3208,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 ", rmtNodeId=" + locNode.id() + ']';
 
                             trySendMessageDirectly(node,
-                                new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                    new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3285,11 +3239,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     }
                     else {
                         String errMsg = "Local node's and remote node's build versions are not compatible " +
-                            (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                "(topologies built with different Ignite versions " +
-                                    "are supported in Enterprise version only) " :
-                                "(node will not join, all nodes in topology should have " +
-                                    "compatible build versions) ") +
+                            "(topologies built with different Ignite versions " +
+                            "are supported in Enterprise version only) "  +
                             "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                             ", locNodeAddrs=" + U.addressesAsString(locNode) +
                             ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3303,12 +3254,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         try {
                             String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                    "(topologies built with different Ignite versions " +
-                                        "are supported in Enterprise version only) " :
-                                    "(node will not join, all nodes in topology should have " +
-                                        "compatible build versions) ") +
-                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                "(topologies built with different Ignite versions " +
+                                "are supported in Enterprise version only) " +
+                                " [locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                 ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                 ", rmtNodeId=" + locNode.id() + ']';

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
@@ -50,7 +51,7 @@ public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFiel
      *
      */
     public void testUnsupportedOperations() {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery(
             "update Person set name = ?");
 
         try {

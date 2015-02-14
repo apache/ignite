@@ -97,7 +97,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     public void testQuery() throws Exception {
         CacheQueryFuture<Map.Entry<Object, Object>> fut =
-            grid(0).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
+            ((IgniteKernal)grid(0)).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
 
         testMessageSet(fut);
     }
