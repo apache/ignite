@@ -165,7 +165,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
         GridFuture<?> debugFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
-                Cache<Object, Object> cache = grid(0).cache(null);
+                Cache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
 
                 try {
                     Thread.sleep(15000);
