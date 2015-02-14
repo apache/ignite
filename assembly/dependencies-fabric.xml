@@ -69,19 +69,8 @@
 
     <fileSets>
         <fileSet>
-            <directory>modules/core/licenses</directory>
-            <outputDirectory>/licenses</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>modules/core/target/libs</directory>
+            <directory>target/core</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
-
-    <files>
-        <file>
-            <source>target/ignite-core-${ignite.version}.jar</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-    </files>
 </assembly>

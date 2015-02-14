@@ -402,8 +402,8 @@
                             <descriptors>
                                 <descriptor>${basedir}/assembly/core-jar.xml</descriptor>
                             </descriptors>
+                            <finalName>core</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>ignite-core-${ignite.version}</finalName>
                         </configuration>
                     </execution>
 
