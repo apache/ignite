@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
-
 /**
- * Group lock test for colocated cache.
+ *
  */
-public class GridCacheGroupLockColocatedSelfTest extends GridCacheGroupLockAbstractSelfTest {
+public class IgniteCacheContainsKeyNearAtomicSelfTest extends IgniteCacheContainsKeyAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        return false;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

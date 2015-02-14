@@ -735,8 +735,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @return Key with properties specified by the given mode.
      */
     private Integer key(Ignite ignite, int mode) {
-        IgniteCache<Integer, Integer> cache = ignite.jcache(null);
-
         CacheAffinity<Integer> aff = ignite.affinity(null);
 
         Integer key = null;

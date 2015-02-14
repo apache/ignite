@@ -3350,9 +3350,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.evict(k2);
         assert cache.evict(k3);
 
-        assert cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k3, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
 
         int cnt = 0;
 
@@ -3398,9 +3398,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.evict(k2);
         cache.evict(k3);
 
-        assert cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k3, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
 
         cache.promoteAll(F.asList(k2, k3));
 

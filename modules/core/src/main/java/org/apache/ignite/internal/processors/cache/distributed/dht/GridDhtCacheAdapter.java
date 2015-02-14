@@ -496,13 +496,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgnitePredicate[], IgniteCacheExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgniteCacheExpiryPolicy, boolean)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
      * @param forcePrimary {@inheritDoc}
      * @param skipTx {@inheritDoc}
-     * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
@@ -513,7 +512,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter
+        boolean skipVals
     ) {
         return getAllAsync(keys,
             true,
@@ -524,14 +523,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             deserializePortable,
             forcePrimary,
             null,
-            filter);
+            skipVals);
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter)
+    @Override public V reload(K key)
         throws IgniteCheckedException {
         try {
-            return super.reload(key, filter);
+            return super.reload(key);
         }
         catch (GridDhtInvalidPartitionException ignored) {
             return null;
@@ -544,7 +543,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
-     * @param filter Optional filter.
      * @param expiry Expiry policy.
      * @return Get future.
      */
@@ -553,8 +551,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
-        @Nullable IgniteCacheExpiryPolicy expiry
+        @Nullable IgniteCacheExpiryPolicy expiry,
+        boolean skipVals
         ) {
         return getAllAsync(keys,
             readThrough,
@@ -565,7 +563,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             deserializePortable,
             false,
             expiry,
-            filter);
+            skipVals);
     }
 
     /**
@@ -578,7 +576,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param deserializePortable Deserialize portable flag.
-     * @param filter Optional filter.
      * @param expiry Expiry policy.
      * @return DHT future.
      */
@@ -591,8 +588,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
-        @Nullable IgniteCacheExpiryPolicy expiry) {
+        @Nullable IgniteCacheExpiryPolicy expiry,
+        boolean skipVals) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
             reader,
@@ -601,11 +598,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             reload,
             /*tx*/null,
             topVer,
-            filter,
             subjId,
             taskNameHash,
             deserializePortable,
-            expiry);
+            expiry,
+            skipVals);
 
         fut.init();
 
@@ -623,17 +620,18 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
 
-        IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut = getDhtAsync(nodeId,
-            req.messageId(),
-            req.keys(),
-            req.readThrough(),
-            req.reload(),
-            req.topologyVersion(),
-            req.subjectId(),
-            req.taskNameHash(),
-            false,
-            req.filter(),
-            expiryPlc);
+        IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
+            getDhtAsync(nodeId,
+                req.messageId(),
+                req.keys(),
+                req.readThrough(),
+                req.reload(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                false,
+                expiryPlc,
+                req.skipValues());
 
         fut.listenAsync(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
