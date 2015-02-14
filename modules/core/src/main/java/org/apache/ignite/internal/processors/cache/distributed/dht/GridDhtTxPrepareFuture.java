@@ -464,8 +464,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 txEntry.cached(entry, txEntry.keyBytes());
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null)
-                lockKeys.add(txEntry.txKey());
+            if (tx.optimistic() && txEntry.explicitVersion() == null) {
+                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
+                    lockKeys.add(txEntry.txKey());
+            }
 
             while (true) {
                 try {

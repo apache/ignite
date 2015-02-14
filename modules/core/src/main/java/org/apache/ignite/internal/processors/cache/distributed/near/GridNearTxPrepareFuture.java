@@ -802,6 +802,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         entry.nodeId(primary.id());
 
         if (cacheCtx.isNear()) {
+            if (entry.explicitVersion() == null) {
+                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
+                    lockKeys.add(entry.txKey());
+            }
+
             while (true) {
                 try {
                     GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
