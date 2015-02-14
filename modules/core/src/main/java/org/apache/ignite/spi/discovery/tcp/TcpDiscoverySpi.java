@@ -3182,6 +3182,44 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                 if (!F.eq(rmtBuildVer, locBuildVer)) {
+                    // OS nodes don't support rolling updates.
+                    if (!locBuildVer.equals(rmtBuildVer)) {
+                        String errMsg = "Local node and remote node have different version numbers " +
+                            "(node will not join, Ignite does not support rolling updates, " +
+                            "so versions must be exactly the same) " +
+                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                            ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                            ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                            ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                        LT.warn(log, null, errMsg);
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug(errMsg);
+
+                        try {
+                            String sndMsg = "Local node and remote node have different version numbers " +
+                                "(node will not join, Ignite does not support rolling updates, " +
+                                "so versions must be exactly the same) " +
+                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                ", rmtNodeId=" + locNode.id() + ']';
+
+                            trySendMessageDirectly(node,
+                                    new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                        }
+                        catch (IgniteSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send version check failed message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']');
+                        }
+
+                        // Ignore join request.
+                        return;
+                    }
+
                     Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
                     Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
 
