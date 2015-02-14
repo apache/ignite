@@ -299,7 +299,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         else
             throw new IgniteException("Unsupported query predicate: " + filter);
 
-        return new org.apache.ignite.internal.processors.cache.QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
             /** */
             Map.Entry<K,V> cur;
 
@@ -447,7 +447,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private QueryCursor<Entry<K,V>> doLocalQuery(SqlQuery p) {
         return null; // TODO
-//            new org.apache.ignite.internal.processors.cache.QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
+//            new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
 //            ctx.name(), p.getType(), p.getSql(), p.getArgs()));
     }
 
@@ -457,7 +457,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
         return null; // TODO
-//            new org.apache.ignite.internal.processors.cache.QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
+//            new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
 //            ctx.name(), q.getSql(), q.getArgs()));
     }
 
