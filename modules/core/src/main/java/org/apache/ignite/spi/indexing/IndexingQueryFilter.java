@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Cache entry filter.
  */
-public interface GridIndexingQueryFilter {
+public interface IndexingQueryFilter {
     /**
      * Creates optional predicate for space.
      *

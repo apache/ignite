@@ -29,7 +29,7 @@ import java.util.*;
 public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
     /** {@inheritDoc} */
     @Override public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
-        @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException {
+        @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
         throw new IgniteSpiException("You have to configure custom GridIndexingSpi implementation.");
     }
 

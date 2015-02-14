@@ -419,7 +419,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String space, String clause,
-        Collection<Object> params, String resType, GridIndexingQueryFilter filters)
+        Collection<Object> params, String resType, IndexingQueryFilter filters)
         throws IgniteCheckedException {
         checkEnabled();
 
@@ -709,7 +709,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(String space, String clause, String resType,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -737,7 +737,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridQueryFieldsResult queryFields(@Nullable String space, String clause, Collection<Object> params,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())

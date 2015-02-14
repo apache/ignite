@@ -68,7 +68,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @throws IgniteSpiException If failed.
      */
     public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
-        @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException;
+        @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
