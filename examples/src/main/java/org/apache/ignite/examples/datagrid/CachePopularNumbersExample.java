@@ -18,12 +18,12 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 
 import javax.cache.processor.*;
 import java.util.*;
+
+import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Real time popular numbers counter.
@@ -113,37 +113,20 @@ public class CachePopularNumbersExample {
      */
     private static TimerTask scheduleQuery(final Ignite ignite, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private CacheQuery<List<?>> qry;
-
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = ignite.cache(CACHE_NAME);
-
-                if (qry == null)
-                    qry = cache.queries().
-                        createSqlFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
+                IgniteCache<Integer, Long> cache = ignite.jcache(CACHE_NAME);
 
                 try {
-                    List<List<?>> results = new ArrayList<>(qry.execute().get());
+                    List<List<?>> results = new ArrayList<>(cache.queryFields(
+                        sql("select _key, _val from Long order by _val desc limit ?").setArgs(cnt)).getAll());
 
-                    Collections.sort(results, new Comparator<List<?>>() {
-                        @Override public int compare(List<?> r1, List<?> r2) {
-                            long cnt1 = (Long)r1.get(1);
-                            long cnt2 = (Long)r2.get(1);
-
-                            return cnt1 < cnt2 ? 1 : cnt1 > cnt2 ? -1 : 0;
-                        }
-                    });
-
-                    for (int i = 0; i < cnt && i < results.size(); i++) {
-                        List<?> res = results.get(i);
-
+                    for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
-                    }
 
                     System.out.println("----------------");
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     e.printStackTrace();
                 }
             }
