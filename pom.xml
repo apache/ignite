@@ -393,21 +393,6 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <id>core-jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/core-jar.xml</descriptor>
-                            </descriptors>
-                            <finalName>core</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>dependencies</id>
                         <phase>prepare-package</phase>
                         <goals>
