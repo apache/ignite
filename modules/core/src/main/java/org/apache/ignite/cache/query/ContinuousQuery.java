@@ -150,9 +150,12 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * time continuous query is executed.
      *
      * @param initFilter Initial query.
+     * @return {@code this} for chaining.
      */
-    public void setInitialPredicate(Query initFilter) {
+    public ContinuousQuery<K, V> setInitialPredicate(Query initFilter) {
         this.initFilter = initFilter;
+
+        return this;
     }
 
     /**
@@ -177,9 +180,12 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * blocking the thread that called the callback. Otherwise, you can get deadlocks.
      *
      * @param locLsnr Local callback.
+     * @return {@code this} for chaining.
      */
-    public void setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
+    public ContinuousQuery<K, V> setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
         this.locLsnr = locLsnr;
+
+        return this;
     }
 
     /**
@@ -199,9 +205,12 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
      *
      * @param rmtFilter Key-value filter.
+     * @return {@code this} for chaining.
      */
-    public void setRemoteFilter(CacheEntryEventFilter<K, V> rmtFilter) {
+    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventFilter<K, V> rmtFilter) {
         this.rmtFilter = rmtFilter;
+
+        return this;
     }
 
     /**
@@ -224,12 +233,15 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * disabled).
      *
      * @param bufSize Buffer size.
+     * @return {@code this} for chaining.
      */
-    public void setBufferSize(int bufSize) {
+    public ContinuousQuery<K, V> setBufferSize(int bufSize) {
         if (bufSize <= 0)
             throw new IllegalArgumentException("Buffer size must be above zero.");
 
         this.bufSize = bufSize;
+
+        return this;
     }
 
     /**
@@ -252,12 +264,15 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * time check is disabled and entries will be sent only when buffer is full.
      *
      * @param timeInterval Time interval.
+     * @return {@code this} for chaining.
      */
-    public void setTimeInterval(long timeInterval) {
+    public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
         if (timeInterval < 0)
             throw new IllegalArgumentException("Time interval can't be negative.");
 
         this.timeInterval = timeInterval;
+
+        return this;
     }
 
     /**
@@ -280,9 +295,12 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * Default value for this flag is {@code true}.
      *
      * @param autoUnsubscribe Automatic unsubscription flag.
+     * @return {@code this} for chaining.
      */
-    public void setAutoUnsubscribe(boolean autoUnsubscribe) {
+    public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
         this.autoUnsubscribe = autoUnsubscribe;
+
+        return this;
     }
 
     /**
