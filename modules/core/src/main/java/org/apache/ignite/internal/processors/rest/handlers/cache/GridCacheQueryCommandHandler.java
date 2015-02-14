@@ -270,7 +270,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            CacheQueries<Object,Object> queries = g.cache(req.cacheName()).queries();
+            CacheQueries<Object,Object> queries = ((IgniteKernal)g).cache(req.cacheName()).queries();
 
             CacheQuery<?> qry;
 
@@ -405,9 +405,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             if (clsName == null)
-                g.cache(cacheName).queries().rebuildAllIndexes();
+                ((IgniteKernal)g).cache(cacheName).queries().rebuildAllIndexes();
             else
-                g.cache(cacheName).queries().rebuildIndexes(clsName);
+                ((IgniteKernal)g).cache(cacheName).queries().rebuildIndexes(clsName);
 
             return null;
         }

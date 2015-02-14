@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -468,7 +469,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().cache(cacheName).configuration()
+            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
                 .getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
