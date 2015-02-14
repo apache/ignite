@@ -314,7 +314,7 @@ public class IgniteConfiguration {
     private SwapSpaceSpi swapSpaceSpi;
 
     /** Indexing SPI. */
-    private GridIndexingSpi indexingSpi;
+    private IndexingSpi indexingSpi;
 
     /** Address resolver. */
     private AddressResolver addrRslvr;
@@ -1808,12 +1808,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * Sets fully configured instances of {@link IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * @param indexingSpi Fully configured instances of {@link IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
-    public void setIndexingSpi(GridIndexingSpi indexingSpi) {
+    public void setIndexingSpi(IndexingSpi indexingSpi) {
         this.indexingSpi = indexingSpi;
     }
 
@@ -1822,7 +1822,7 @@ public class IgniteConfiguration {
      *
      * @return Indexing SPI implementation.
      */
-    public GridIndexingSpi getIndexingSpi() {
+    public IndexingSpi getIndexingSpi() {
         return indexingSpi;
     }
 

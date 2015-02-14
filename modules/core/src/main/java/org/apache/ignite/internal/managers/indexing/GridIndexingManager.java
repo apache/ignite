@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Manages cache indexing.
  */
-public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
+public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 

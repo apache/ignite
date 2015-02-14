@@ -20,6 +20,7 @@ package org.apache.ignite.spi.indexing;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -57,17 +58,17 @@ import java.util.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public interface GridIndexingSpi extends IgniteSpi {
+public interface IndexingSpi extends IgniteSpi {
     /**
      * Executes query.
      *
      * @param spaceName Space name.
      * @param params Query parameters.
      * @param filters System filters.
-     * @return Query result.
+     * @return Query result. If the iterator implements {@link AutoCloseable} it will be correctly closed.
      * @throws IgniteSpiException If failed.
      */
-    public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
+    public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**

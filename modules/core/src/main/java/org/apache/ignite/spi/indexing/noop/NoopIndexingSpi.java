@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.indexing;
+package org.apache.ignite.spi.indexing.noop;
 
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
- * Default implementation of {@link GridIndexingSpi} which does not index cache.
+ * Default implementation of {@link IndexingSpi} which does not index cache.
  */
 @IgniteSpiNoop
-public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
+public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     /** {@inheritDoc} */
-    @Override public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
+    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
         throw new IgniteSpiException("You have to configure custom GridIndexingSpi implementation.");
     }

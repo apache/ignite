@@ -88,7 +88,7 @@ import static org.h2.result.SortOrder.*;
  *         different key types
  *     </li>
  * </ul>
- * @see GridIndexingSpi
+ * @see IndexingSpi
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
