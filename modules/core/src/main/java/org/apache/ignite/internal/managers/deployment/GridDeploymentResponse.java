@@ -122,8 +122,7 @@ public class GridDeploymentResponse extends MessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
-        MessageWriteState state = MessageWriteState.get();
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
         MessageWriter writer = state.writer();
 
         writer.setBuffer(buf);

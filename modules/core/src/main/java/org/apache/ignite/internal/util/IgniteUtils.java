@@ -9142,11 +9142,13 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer, MessageWriteState)} method.
+     * @param formatter Message formatter.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf,
+        MessageFormatter formatter) throws IOException {
         assert msg != null;
         assert out != null;
         assert buf != null;
@@ -9155,8 +9157,10 @@ public abstract class IgniteUtils {
         boolean finished = false;
         int cnt = 0;
 
+        MessageWriteState state = MessageWriteState.create(formatter);
+
         while (!finished) {
-            finished = msg.writeTo(buf);
+            finished = msg.writeTo(buf, state);
 
             out.write(buf.array(), 0, buf.position());
 

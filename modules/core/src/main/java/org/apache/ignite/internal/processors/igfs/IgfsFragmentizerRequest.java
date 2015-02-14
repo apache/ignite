@@ -96,13 +96,12 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
-        MessageWriteState state = MessageWriteState.get();
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
         MessageWriter writer = state.writer();
 
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, state))
             return false;
 
         if (!state.isTypeWritten()) {

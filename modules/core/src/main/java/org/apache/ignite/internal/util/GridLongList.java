@@ -505,8 +505,7 @@ public class GridLongList extends MessageAdapter implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
-        MessageWriteState state = MessageWriteState.get();
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
         MessageWriter writer = state.writer();
 
         writer.setBuffer(buf);

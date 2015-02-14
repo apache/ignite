@@ -834,6 +834,11 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
+            MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
+
+            if (state == null)
+                ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
+
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
@@ -883,7 +888,7 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf);
+                        finished = msg.writeTo(buf, state);
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -902,7 +907,7 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf);
+                        finished = msg.writeTo(buf, state);
                     }
 
                     buf.flip();
@@ -993,114 +998,107 @@ public class GridNioServer<T> {
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
-            try {
-                WritableByteChannel sockCh = (WritableByteChannel)key.channel();
+            WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
-                GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
-                ByteBuffer buf = ses.writeBuffer();
-                NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
+            GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+            ByteBuffer buf = ses.writeBuffer();
+            NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
+            MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
 
-                if (state == null)
-                    ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
-                else
-                    MessageWriteState.set(state);
+            if (state == null)
+                ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
 
-                List<NioOperationFuture<?>> doneFuts = null;
+            List<NioOperationFuture<?>> doneFuts = null;
 
-                while (true) {
-                    if (req == null) {
-                        req = (NioOperationFuture<?>)ses.pollFuture();
+            while (true) {
+                if (req == null) {
+                    req = (NioOperationFuture<?>)ses.pollFuture();
 
-                        if (req == null && buf.position() == 0) {
-                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                            break;
-                        }
-                    }
-
-                    MessageAdapter msg;
-                    boolean finished = false;
-
-                    if (req != null) {
-                        msg = req.directMessage();
-
-                        assert msg != null;
-
-                        finished = msg.writeTo(buf);
-
-                        if (finished)
-                            state.reset();
-                    }
-
-                    // Fill up as many messages as possible to write buffer.
-                    while (finished) {
-                        if (doneFuts == null)
-                            doneFuts = new ArrayList<>();
-
-                        doneFuts.add(req);
-
-                        req = (NioOperationFuture<?>)ses.pollFuture();
-
-                        if (req == null)
-                            break;
-
-                        msg = req.directMessage();
-
-                        assert msg != null;
-
-                        finished = msg.writeTo(buf);
-
-                        if (finished)
-                            state.reset();
-                    }
-
-                    buf.flip();
-
-                    assert buf.hasRemaining();
-
-                    if (!skipWrite) {
-                        int cnt = sockCh.write(buf);
-
-                        if (!F.isEmpty(doneFuts)) {
-                            for (int i = 0; i < doneFuts.size(); i++)
-                                doneFuts.get(i).onDone();
-
-                            doneFuts.clear();
-                        }
-
-                        if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                        if (metricsLsnr != null)
-                            metricsLsnr.onBytesSent(cnt);
-
-                        ses.bytesSent(cnt);
-                    }
-                    else {
-                        // For test purposes only (skipWrite is set to true in tests only).
-                        try {
-                            U.sleep(50);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IOException("Thread has been interrupted.", e);
-                        }
-                    }
-
-                    if (buf.hasRemaining()) {
-                        buf.compact();
-
-                        ses.addMeta(NIO_OPERATION.ordinal(), req);
+                    if (req == null && buf.position() == 0) {
+                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
                         break;
                     }
-                    else
-                        buf.clear();
                 }
-            }
-            finally {
-                MessageWriteState.clear();
+
+                MessageAdapter msg;
+                boolean finished = false;
+
+                if (req != null) {
+                    msg = req.directMessage();
+
+                    assert msg != null;
+
+                    finished = msg.writeTo(buf, state);
+
+                    if (finished)
+                        state.reset();
+                }
+
+                // Fill up as many messages as possible to write buffer.
+                while (finished) {
+                    if (doneFuts == null)
+                        doneFuts = new ArrayList<>();
+
+                    doneFuts.add(req);
+
+                    req = (NioOperationFuture<?>)ses.pollFuture();
+
+                    if (req == null)
+                        break;
+
+                    msg = req.directMessage();
+
+                    assert msg != null;
+
+                    finished = msg.writeTo(buf, state);
+
+                    if (finished)
+                        state.reset();
+                }
+
+                buf.flip();
+
+                assert buf.hasRemaining();
+
+                if (!skipWrite) {
+                    int cnt = sockCh.write(buf);
+
+                    if (!F.isEmpty(doneFuts)) {
+                        for (int i = 0; i < doneFuts.size(); i++)
+                            doneFuts.get(i).onDone();
+
+                        doneFuts.clear();
+                    }
+
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                    if (metricsLsnr != null)
+                        metricsLsnr.onBytesSent(cnt);
+
+                    ses.bytesSent(cnt);
+                }
+                else {
+                    // For test purposes only (skipWrite is set to true in tests only).
+                    try {
+                        U.sleep(50);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IOException("Thread has been interrupted.", e);
+                    }
+                }
+
+                if (buf.hasRemaining()) {
+                    buf.compact();
+
+                    ses.addMeta(NIO_OPERATION.ordinal(), req);
+
+                    break;
+                }
+                else
+                    buf.clear();
             }
         }
     }

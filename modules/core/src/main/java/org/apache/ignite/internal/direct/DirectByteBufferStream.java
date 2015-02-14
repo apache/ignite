@@ -602,7 +602,7 @@ public class DirectByteBufferStream {
                 try {
                     state.forward();
 
-                    lastFinished = msg.writeTo(buf);
+                    lastFinished = msg.writeTo(buf, state);
                 }
                 finally {
                     state.backward(lastFinished);

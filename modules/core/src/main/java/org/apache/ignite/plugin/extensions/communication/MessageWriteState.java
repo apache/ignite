@@ -23,8 +23,6 @@ import org.apache.ignite.internal.direct.*;
  * TODO
  */
 public final class MessageWriteState {
-    public static final ThreadLocal<MessageWriteState> WRITE_STATE = new ThreadLocal<>();
-
     public static MessageWriteState create(MessageFormatter formatter) {
         MessageWriter writer = formatter.writer();
 
@@ -33,27 +31,7 @@ public final class MessageWriteState {
         // TODO: rework
         ((DirectMessageWriter)writer).state(state);
 
-        WRITE_STATE.set(state);
-
         return state;
-    }
-
-    public static void set(MessageWriteState state) {
-        assert state != null;
-
-        WRITE_STATE.set(state);
-    }
-
-    public static MessageWriteState get() {
-        MessageWriteState state = WRITE_STATE.get();
-
-        assert state != null;
-
-        return state;
-    }
-
-    public static void clear() {
-        WRITE_STATE.remove();
     }
 
     private final MessageWriter writer;

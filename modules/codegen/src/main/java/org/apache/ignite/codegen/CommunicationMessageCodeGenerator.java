@@ -159,7 +159,7 @@ public class CommunicationMessageCodeGenerator {
                 if (!skip) {
                     src.add(line);
 
-                    if (line.contains("public boolean writeTo(ByteBuffer buf)")) {
+                    if (line.contains("public boolean writeTo(ByteBuffer buf, MessageWriteState state)")) {
                         src.addAll(write);
 
                         skip = true;
@@ -354,7 +354,6 @@ public class CommunicationMessageCodeGenerator {
         assert code != null;
 
         if (write) {
-            code.add(builder().a("MessageWriteState state = MessageWriteState.get();").toString());
             code.add(builder().a("MessageWriter writer = state.writer();").toString());
             code.add(EMPTY);
         }
@@ -363,7 +362,10 @@ public class CommunicationMessageCodeGenerator {
         code.add(EMPTY);
 
         if (superMtd != null) {
-            returnFalseIfFailed(code, "super." + superMtd, BUF_VAR);
+            if (write)
+                returnFalseIfFailed(code, "super." + superMtd, BUF_VAR, "state");
+            else
+                returnFalseIfFailed(code, "super." + superMtd, BUF_VAR);
 
             code.add(EMPTY);
         }

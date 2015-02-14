@@ -253,8 +253,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
-        MessageWriteState state = MessageWriteState.get();
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
         MessageWriter writer = state.writer();
 
         writer.setBuffer(buf);

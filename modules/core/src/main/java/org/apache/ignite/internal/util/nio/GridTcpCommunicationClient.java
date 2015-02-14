@@ -197,17 +197,12 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert writeBuf.hasArray();
 
         try {
-            MessageWriteState.create(formatter);
-
-            int cnt = U.writeMessageFully(msg, out, writeBuf);
+            int cnt = U.writeMessageFully(msg, out, writeBuf, formatter);
 
             metricsLsnr.onBytesSent(cnt);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to send message to remote node: " + sock.getRemoteSocketAddress(), e);
-        }
-        finally {
-            MessageWriteState.clear();
         }
 
         markUsed();

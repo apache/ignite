@@ -231,7 +231,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
             return true;
         }
 

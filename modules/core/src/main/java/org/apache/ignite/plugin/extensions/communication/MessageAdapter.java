@@ -44,9 +44,10 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      * Writes this message to provided byte buffer.
      *
      * @param buf Byte buffer.
+     * @param state Current state;
      * @return Whether message was fully written.
      */
-    public abstract boolean writeTo(ByteBuffer buf);
+    public abstract boolean writeTo(ByteBuffer buf, MessageWriteState state);
 
     /**
      * Reads this message from provided byte buffer.
