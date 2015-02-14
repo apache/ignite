@@ -41,12 +41,6 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>jdk8-backport</artifactId>
-            <version>${ignite.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
         </dependency>

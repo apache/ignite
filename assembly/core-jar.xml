@@ -21,10 +21,10 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>jar-with-dependencies</id>
+    <id>core-jar-with-dependencies</id>
 
     <formats>
-        <format>jar</format>
+        <format>dir</format>
     </formats>
 
     <includeBaseDirectory>false</includeBaseDirectory>
@@ -32,15 +32,33 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:jdk8-backport</include>
                 <include>org.apache.ignite:ignite-core</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
-                        <directory>target/classes</directory>
+                        <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/</outputDirectory>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>*.jar</include>
+                        </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
+                        </excludes>
                     </fileSet>
                 </fileSets>
             </sources>
