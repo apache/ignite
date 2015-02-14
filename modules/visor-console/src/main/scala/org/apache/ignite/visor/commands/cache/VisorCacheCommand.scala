@@ -467,7 +467,7 @@ class VisorCacheCommand {
             val nids = prj.nodes().map(_.id())
 
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
+                new IgniteBiTuple(JavaBoolean.valueOf(name.isEmpty), name.orNull))).toList
         }
         catch {
             case e: IgniteException => Nil

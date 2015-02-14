@@ -44,9 +44,6 @@ public class GridDataLoadCacheUpdaters {
     /** */
     private static final IgniteDataLoader.Updater BATCHED_SORTED = new BatchedSorted();
 
-    /** */
-    private static final IgniteDataLoader.Updater GROUP_LOCKED = new GroupLocked();
-
     /**
      * Updates cache using independent {@link org.apache.ignite.cache.GridCache#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} and
      * {@link org.apache.ignite.cache.GridCache#remove(Object, org.apache.ignite.lang.IgnitePredicate[])} operations. Thus it is safe from deadlocks but performance
@@ -78,17 +75,6 @@ public class GridDataLoadCacheUpdaters {
      */
     public static <K extends Comparable<?>, V> IgniteDataLoader.Updater<K, V> batchedSorted() {
         return BATCHED_SORTED;
-    }
-
-    /**
-     * Updates cache using batched methods {@link org.apache.ignite.cache.GridCache#putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} and
-     * {@link org.apache.ignite.cache.GridCache#removeAll(Collection, org.apache.ignite.lang.IgnitePredicate[])} in group lock transaction. Requires that there are no
-     * concurrent updates other than in group lock.
-     *
-     * @return Updater with group lock.
-     */
-    public static <K, V> IgniteDataLoader.Updater<K, V> groupLocked() {
-        return GROUP_LOCKED;
     }
 
     /**
@@ -215,73 +201,6 @@ public class GridDataLoadCacheUpdaters {
             }
 
             updateAll(cache, rmvAll, putAll);
-        }
-    }
-
-    /**
-     * Cache updater which uses group lock.
-     */
-    private static class GroupLocked<K, V> implements IgniteDataLoader.Updater<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
-            assert cache != null;
-            assert !F.isEmpty(entries);
-
-            assert cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC;
-
-            Map<Integer, Integer> partsCounts = new HashMap<>();
-
-            // Group by partition ID.
-            Map<Integer, Set<K>> rmvPartMap = null;
-            Map<Integer, Map<K, V>> putPartMap = null;
-
-            Ignite ignite = cache.unwrap(Ignite.class);
-
-            CacheAffinity<K> aff = ignite.<K, V>cache(cache.getName()).affinity();
-
-            for (Map.Entry<K, V> entry : entries) {
-                K key = entry.getKey();
-
-                assert key != null;
-
-                V val = entry.getValue();
-
-                int part = aff.partition(key);
-
-                Integer cnt = partsCounts.get(part);
-
-                partsCounts.put(part, cnt == null ? 1 : cnt + 1);
-
-                if (val == null) {
-                    if (rmvPartMap == null)
-                        rmvPartMap = new HashMap<>();
-
-                    F.addIfAbsent(rmvPartMap, part, F.<K>newSet()).add(key);
-                }
-                else {
-                    if (putPartMap == null)
-                        putPartMap = new HashMap<>();
-
-                    F.addIfAbsent(putPartMap, part, F.<K, V>newMap()).put(key, val);
-                }
-            }
-
-            IgniteTransactions txs = ignite.transactions();
-
-            for (Map.Entry<Integer, Integer> e : partsCounts.entrySet()) {
-                Integer part = e.getKey();
-                int cnt = e.getValue();
-
-                try (IgniteTx tx = txs.txStartPartition(cache.getName(), part, PESSIMISTIC, REPEATABLE_READ, 0, cnt)) {
-                    updateAll(cache, rmvPartMap == null ? null : rmvPartMap.get(part),
-                        putPartMap == null ? null : putPartMap.get(part));
-
-                    tx.commit();
-                }
-            }
         }
     }
 }

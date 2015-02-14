@@ -41,7 +41,6 @@ import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -1014,7 +1013,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             CU.subjectId(tx, ctx.shared()),
                                             null,
                                             tx != null ? tx.resolveTaskName() : null,
-                                            CU.<K, V>empty(),
                                             null);
 
                                     assert e.lockedBy(mappedVer) ||

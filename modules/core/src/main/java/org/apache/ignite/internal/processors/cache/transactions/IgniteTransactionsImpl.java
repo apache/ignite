@@ -17,18 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
@@ -130,46 +125,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartAffinity(GridCacheContext ctx,
-        Object affinityKey,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
-        long timeout,
-        int txSize)
-        throws IgniteCheckedException
-    {
-        return txStartGroupLock(ctx,
-            affinityKey,
-            concurrency,
-            isolation,
-            false,
-            timeout,
-            txSize,
-            ctx.system());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartPartitionEx(GridCacheContext ctx,
-        int partId,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
-        long timeout,
-        int txSize)
-        throws IgniteCheckedException
-    {
-        Object grpLockKey = ctx.affinity().partitionAffinityKey(partId);
-
-        return txStartGroupLock(ctx,
-            grpLockKey,
-            concurrency,
-            isolation,
-            true,
-            timeout,
-            txSize,
-            ctx.system());
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
@@ -225,115 +180,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         assert tx != null;
 
         return tx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException {
-        GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
-
-        if (cache == null)
-            throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
-                cacheName);
-
-        try {
-            return txStartGroupLock(cache.context(),
-                affinityKey,
-                concurrency,
-                isolation,
-                false,
-                timeout,
-                txSize,
-                false).proxy();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException {
-        GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
-
-        if (cache == null)
-            throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
-                cacheName);
-
-        Object grpLockKey = cache.context().affinity().partitionAffinityKey(partId);
-
-        try {
-            return txStartGroupLock(cache.context(),
-                grpLockKey,
-                concurrency,
-                isolation,
-                true,
-                timeout,
-                txSize,
-                false).proxy();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
-     * Internal method to start group-lock transaction.
-     *
-     * @param ctx Cache context.
-     * @param grpLockKey Group lock key.
-     * @param concurrency Transaction concurrency control.
-     * @param isolation Transaction isolation level.
-     * @param partLock {@code True} if this is a partition-lock transaction. In this case {@code grpLockKey}
-     *      should be a unique partition-specific key.
-     * @param timeout Tx timeout.
-     * @param txSize Expected transaction size.
-     * @param sys System flag.
-     * @return Started transaction.
-     * @throws IllegalStateException If other transaction was already started.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private IgniteInternalTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
-        throws IllegalStateException, IgniteCheckedException {
-        IgniteInternalTx tx = cctx.tm().userTx();
-
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
-
-        IgniteTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
-            false,
-            false,
-            sys,
-            concurrency,
-            isolation,
-            timeout,
-            ctx.hasFlag(INVALIDATE),
-            !ctx.hasFlag(SKIP_STORE),
-            txSize,
-            ctx.txKey(grpLockKey),
-            partLock
-        );
-
-        assert tx0 != null;
-
-        if (ctx.hasFlag(SYNC_COMMIT))
-            tx0.syncCommit(true);
-
-        IgniteInternalFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
-
-        try {
-            lockFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            tx0.rollback();
-
-            throw e;
-        }
-
-        return tx0;
     }
 
     /** {@inheritDoc} */

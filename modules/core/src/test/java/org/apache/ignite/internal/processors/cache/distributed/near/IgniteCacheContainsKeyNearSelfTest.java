@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.near;
+
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
- * Tests optimistic group lock transactions.
+ *
  */
-public class GridCacheGroupLockFailoverOptimisticTxSelfTest extends GridCacheGroupLockFailoverSelfTest {
+public class IgniteCacheContainsKeyNearSelfTest extends IgniteCacheContainsKeyAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean optimisticTx() {
-        return true;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 }
