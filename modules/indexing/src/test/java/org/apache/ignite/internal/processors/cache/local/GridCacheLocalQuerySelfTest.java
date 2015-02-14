@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 
@@ -41,10 +42,10 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
     }
 
     /**
-     * @throws IgniteCheckedException If test failed.
+     * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        GridCache<Integer, String> cache = ((IgniteKernal)ignite).cache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");

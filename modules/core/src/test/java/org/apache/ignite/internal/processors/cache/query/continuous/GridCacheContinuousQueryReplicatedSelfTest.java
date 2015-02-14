@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
@@ -48,9 +49,9 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      */
     @SuppressWarnings("unchecked")
     public void testRemoteNodeCallback() throws Exception {
-        GridCache<Integer, Integer> cache1 = grid(0).cache(null);
+        GridCache<Integer, Integer> cache1 = ((IgniteKernal)grid(0)).cache(null);
 
-        GridCache<Integer, Integer> cache2 = grid(1).cache(null);
+        GridCache<Integer, Integer> cache2 = ((IgniteKernal)grid(1)).cache(null);
 
         CacheContinuousQuery<Integer, Integer> qry = cache2.queries().createContinuousQuery();
 
@@ -90,8 +91,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
     @SuppressWarnings("unchecked")
     public void testCrossCallback() throws Exception {
         // Prepare.
-        GridCache<Integer, Integer> cache1 = grid(0).cache(null);
-        GridCache<Integer, Integer> cache2 = grid(1).cache(null);
+        GridCache<Integer, Integer> cache1 = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<Integer, Integer> cache2 = ((IgniteKernal)grid(1)).cache(null);
 
         final int key1 = primaryKey(jcache(0));
         final int key2 = primaryKey(jcache(1));
