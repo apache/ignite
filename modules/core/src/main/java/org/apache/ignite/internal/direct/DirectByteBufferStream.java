@@ -21,7 +21,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
 
@@ -317,7 +316,7 @@ public class DirectByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(@Nullable MessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 
@@ -597,11 +596,9 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      */
-    public void writeMessage(MessageAdapter msg) {
+    public void writeMessage(MessageAdapter msg, MessageWriteState state) {
         if (msg != null) {
             if (buf.hasRemaining()) {
-                MessageWriteState state = MessageWriteState.get();
-
                 try {
                     state.forward();
 
@@ -623,7 +620,7 @@ public class DirectByteBufferStream {
      * @param itemCls Component type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, Class<T> itemCls, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, Class<T> itemCls, MessageWriteState state) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -633,8 +630,6 @@ public class DirectByteBufferStream {
 
                 it = arrayIterator(arr);
             }
-
-            MessageWriteState state = MessageWriteState.get();
 
             Type itemType = type(itemCls);
 
@@ -668,7 +663,7 @@ public class DirectByteBufferStream {
      * @param itemCls Item type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, Class<T> itemCls, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, Class<T> itemCls, MessageWriteState state) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -678,8 +673,6 @@ public class DirectByteBufferStream {
 
                 it = col.iterator();
             }
-
-            MessageWriteState state = MessageWriteState.get();
 
             Type itemType = type(itemCls);
 
@@ -715,7 +708,7 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls, MessageWriteState state) {
         if (map != null) {
             if (it == null) {
                 writeInt(map.size());
@@ -725,8 +718,6 @@ public class DirectByteBufferStream {
 
                 it = map.entrySet().iterator();
             }
-
-            MessageWriteState state = MessageWriteState.get();
 
             Type keyType = type(keyCls);
             Type valType = type(valCls);
@@ -1469,7 +1460,7 @@ public class DirectByteBufferStream {
                     if (val != null)
                         state.forward();
 
-                    writeMessage((MessageAdapter)val);
+                    writeMessage((MessageAdapter)val, state);
                 }
                 finally {
                     if (val != null)

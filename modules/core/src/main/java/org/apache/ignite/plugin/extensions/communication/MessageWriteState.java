@@ -17,6 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.internal.direct.*;
+
 /**
  * TODO
  */
@@ -24,7 +26,12 @@ public final class MessageWriteState {
     public static final ThreadLocal<MessageWriteState> WRITE_STATE = new ThreadLocal<>();
 
     public static MessageWriteState create(MessageFormatter formatter) {
-        MessageWriteState state = new MessageWriteState(formatter.writer());
+        MessageWriter writer = formatter.writer();
+
+        MessageWriteState state = new MessageWriteState(writer);
+
+        // TODO: rework
+        ((DirectMessageWriter)writer).state(state);
 
         WRITE_STATE.set(state);
 
@@ -70,7 +77,7 @@ public final class MessageWriteState {
     public void setTypeWritten() {
         assert stack.current() == -1;
 
-        stack.setCurrent(0);
+        stack.incrementCurrent();
     }
 
     public int index() {
@@ -97,7 +104,7 @@ public final class MessageWriteState {
     }
 
     private static class Stack {
-        private final int[] arr = new int[32];
+        private final int[] arr = new int[10];
 
         private final int initVal;
 
@@ -116,10 +123,6 @@ public final class MessageWriteState {
 
         void incrementCurrent() {
             arr[pos]++;
-        }
-
-        void setCurrent(int val) {
-            arr[pos] = val;
         }
 
         void resetCurrent() {

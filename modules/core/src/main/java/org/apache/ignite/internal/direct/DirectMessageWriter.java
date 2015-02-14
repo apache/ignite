@@ -31,6 +31,12 @@ public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
     private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
+    private MessageWriteState state;
+
+    public void state(MessageWriteState state) {
+        this.state = state;
+    }
+
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
         stream.setBuffer(buf);
@@ -188,28 +194,28 @@ public class DirectMessageWriter implements MessageWriter {
 //        if (msg != null)
 //            msg.setWriter(this);
 
-        stream.writeMessage(msg);
+        stream.writeMessage(msg, state);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls) {
-        stream.writeObjectArray(arr, itemCls, this);
+        stream.writeObjectArray(arr, itemCls, state);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls) {
-        stream.writeCollection(col, itemCls, this);
+        stream.writeCollection(col, itemCls, state);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls) {
-        stream.writeMap(map, keyCls, valCls, this);
+        stream.writeMap(map, keyCls, valCls, state);
 
         return stream.lastFinished();
     }
