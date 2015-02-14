@@ -158,11 +158,7 @@ public class GridDeploymentRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDeploymentRequest _clone = new GridDeploymentRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -180,45 +176,48 @@ public class GridDeploymentRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeBoolean("isUndeploy", isUndeploy))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("ldrId", ldrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeCollection("nodeIds", nodeIds, UUID.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeString("rsrcName", rsrcName))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -230,14 +229,14 @@ public class GridDeploymentRequest extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 isUndeploy = reader.readBoolean("isUndeploy");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 ldrId = reader.readIgniteUuid("ldrId");
@@ -245,7 +244,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 nodeIds = reader.readCollection("nodeIds", UUID.class);
@@ -253,7 +252,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -261,7 +260,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 rsrcName = reader.readString("rsrcName");
@@ -269,7 +268,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

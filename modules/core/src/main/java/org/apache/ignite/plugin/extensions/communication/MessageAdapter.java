@@ -24,29 +24,11 @@ import java.nio.*;
  * Base class for all communication messages.
  */
 public abstract class MessageAdapter implements Serializable, Cloneable {
-    // TODO: remove
-    protected MessageWriter writer;
-
     /** Message reader. */
     protected MessageReader reader;
 
-    /** Whether message type is already written. */
-    protected boolean typeWritten;
-
-    /** Current write/read state. */
-    protected int state;
-
     /** Current read state. */
     protected int readState;
-
-//    /**
-//     * @param writer Message writer.
-//     */
-//    public final void setWriter(MessageWriter writer) {
-//        assert writer != null;
-//
-//        WRITER.set(writer);
-//    }
 
     /**
      * @param reader Message reader.

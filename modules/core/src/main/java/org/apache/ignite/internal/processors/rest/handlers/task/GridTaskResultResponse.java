@@ -119,11 +119,7 @@ public class GridTaskResultResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridTaskResultResponse _clone = new GridTaskResultResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -140,39 +136,42 @@ public class GridTaskResultResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeString("err", err))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeBoolean("finished", finished))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeBoolean("found", found))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -184,14 +183,14 @@ public class GridTaskResultResponse extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 err = reader.readString("err");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 finished = reader.readBoolean("finished");
@@ -199,7 +198,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 found = reader.readBoolean("found");
@@ -207,7 +206,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 resBytes = reader.readByteArray("resBytes");
@@ -215,7 +214,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

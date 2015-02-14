@@ -260,11 +260,13 @@ public class CommunicationMessageCodeGenerator {
         String clsName = cls.getSimpleName();
 
         if (!Modifier.isAbstract(cls.getModifiers())) {
-            clone.add(builder().a(clsName).a(" _clone = new ").a(clsName).a("();").toString());
-            clone.add(EMPTY);
-            clone.add(builder().a("clone0(_clone);").toString());
-            clone.add(EMPTY);
-            clone.add(builder().a("return _clone;").toString());
+            clone.add(builder().a("throw new UnsupportedOperationException();").toString());
+
+//            clone.add(builder().a(clsName).a(" _clone = new ").a(clsName).a("();").toString());
+//            clone.add(EMPTY);
+//            clone.add(builder().a("clone0(_clone);").toString());
+//            clone.add(EMPTY);
+//            clone.add(builder().a("return _clone;").toString());
         }
 
         if (hasSuper) {
@@ -383,7 +385,7 @@ public class CommunicationMessageCodeGenerator {
         }
 
         if (!fields.isEmpty())
-            code.add(builder().a("switch (state.index()) {").toString());
+            code.add(builder().a("switch (").a(write ? "state.index()" : "readState").a(") {").toString());
     }
 
     /**

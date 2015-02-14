@@ -659,33 +659,36 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeLong("msgId", msgId))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -697,14 +700,14 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 depInfo = reader.readMessage("depInfo");
@@ -712,7 +715,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 msgId = reader.readLong("msgId");
@@ -720,7 +723,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

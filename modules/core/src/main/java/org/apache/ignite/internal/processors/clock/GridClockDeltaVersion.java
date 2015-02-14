@@ -114,27 +114,30 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeLong("ver", ver))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -145,14 +148,14 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 ver = reader.readLong("ver");
@@ -160,7 +163,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
@@ -175,11 +178,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     /** {@inheritDoc} */
     @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
-        GridClockDeltaVersion _clone = new GridClockDeltaVersion();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

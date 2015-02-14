@@ -86,11 +86,7 @@ public class GridCheckpointRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridCheckpointRequest _clone = new GridCheckpointRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -105,33 +101,36 @@ public class GridCheckpointRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeString("key", key))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -143,14 +142,14 @@ public class GridCheckpointRequest extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 cpSpi = reader.readString("cpSpi");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 key = reader.readString("key");
@@ -158,7 +157,7 @@ public class GridCheckpointRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 sesId = reader.readIgniteUuid("sesId");
@@ -166,7 +165,7 @@ public class GridCheckpointRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

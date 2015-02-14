@@ -250,11 +250,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridNearGetRequest _clone = new GridNearGetRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -281,84 +277,87 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeObjectArray("filterBytes", filterBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeMap("keyBytes", keyBytes, byte[].class, boolean.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 8:
                 if (!writer.writeBoolean("readThrough", readThrough))
                     return false;
 
-                state++;
+                state.increment();
 
             case 9:
                 if (!writer.writeBoolean("reload", reload))
                     return false;
 
-                state++;
+                state.increment();
 
             case 10:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 11:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                state.increment();
 
             case 12:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                state.increment();
 
             case 13:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -373,14 +372,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 filterBytes = reader.readObjectArray("filterBytes", byte[].class);
@@ -388,7 +387,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 futId = reader.readIgniteUuid("futId");
@@ -396,7 +395,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 keyBytes = reader.readMap("keyBytes", byte[].class, boolean.class, true);
@@ -404,7 +403,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 miniId = reader.readIgniteUuid("miniId");
@@ -412,7 +411,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 readThrough = reader.readBoolean("readThrough");
@@ -420,7 +419,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 9:
                 reload = reader.readBoolean("reload");
@@ -428,7 +427,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 10:
                 subjId = reader.readUuid("subjId");
@@ -436,7 +435,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -444,7 +443,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 topVer = reader.readLong("topVer");
@@ -452,7 +451,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 13:
                 ver = reader.readMessage("ver");
@@ -460,7 +459,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

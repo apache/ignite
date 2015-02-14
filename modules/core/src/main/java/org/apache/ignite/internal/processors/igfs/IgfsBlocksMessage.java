@@ -86,11 +86,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        IgfsBlocksMessage _clone = new IgfsBlocksMessage();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -107,36 +103,39 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeMap("blocks", blocks, IgfsBlockKey.class, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeLong("id", id))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -151,14 +150,14 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 blocks = reader.readMap("blocks", IgfsBlockKey.class, byte[].class, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 fileId = reader.readIgniteUuid("fileId");
@@ -166,7 +165,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 id = reader.readLong("id");
@@ -174,7 +173,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

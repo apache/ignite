@@ -100,11 +100,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridTaskSessionRequest _clone = new GridTaskSessionRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -120,33 +116,36 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeByteArray("attrsBytes", attrsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -158,14 +157,14 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 attrsBytes = reader.readByteArray("attrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 jobId = reader.readIgniteUuid("jobId");
@@ -173,7 +172,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 sesId = reader.readIgniteUuid("sesId");
@@ -181,7 +180,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

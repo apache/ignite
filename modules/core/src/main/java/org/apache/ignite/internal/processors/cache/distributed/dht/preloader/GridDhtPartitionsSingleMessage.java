@@ -97,11 +97,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtPartitionsSingleMessage _clone = new GridDhtPartitionsSingleMessage();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -117,24 +113,27 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 5:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -149,14 +148,14 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 5:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

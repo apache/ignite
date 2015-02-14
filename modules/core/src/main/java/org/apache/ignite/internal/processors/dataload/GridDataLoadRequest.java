@@ -224,93 +224,96 @@ public class GridDataLoadRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeString("cacheName", cacheName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeByteArray("colBytes", colBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 7:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 8:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 9:
                 if (!writer.writeString("sampleClsName", sampleClsName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 10:
                 if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
-                state++;
+                state.increment();
 
             case 11:
                 if (!writer.writeByteArray("updaterBytes", updaterBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 12:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -321,14 +324,14 @@ public class GridDataLoadRequest extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 cacheName = reader.readString("cacheName");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
@@ -336,7 +339,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 colBytes = reader.readByteArray("colBytes");
@@ -344,7 +347,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 depMode = reader.readEnum("depMode", DeploymentMode.class);
@@ -352,7 +355,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -360,7 +363,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 ignoreDepOwnership = reader.readBoolean("ignoreDepOwnership");
@@ -368,7 +371,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
@@ -376,7 +379,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 reqId = reader.readLong("reqId");
@@ -384,7 +387,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -392,7 +395,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 9:
                 sampleClsName = reader.readString("sampleClsName");
@@ -400,7 +403,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 10:
                 skipStore = reader.readBoolean("skipStore");
@@ -408,7 +411,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
                 updaterBytes = reader.readByteArray("updaterBytes");
@@ -416,7 +419,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 userVer = reader.readString("userVer");
@@ -424,7 +427,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
@@ -438,11 +441,7 @@ public class GridDataLoadRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public MessageAdapter clone() {
-        GridDataLoadRequest _clone = new GridDataLoadRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

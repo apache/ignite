@@ -414,11 +414,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridJobExecuteRequest _clone = new GridJobExecuteRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -456,141 +452,144 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeBoolean("dynamicSiblings", dynamicSiblings))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeBoolean("internal", internal))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 7:
                 if (!writer.writeByteArray("jobBytes", jobBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 8:
                 if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 9:
                 if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 10:
                 if (!writer.writeByteArray("sesAttrsBytes", sesAttrsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 11:
                 if (!writer.writeBoolean("sesFullSup", sesFullSup))
                     return false;
 
-                state++;
+                state.increment();
 
             case 12:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 13:
                 if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 14:
                 if (!writer.writeLong("startTaskTime", startTaskTime))
                     return false;
 
-                state++;
+                state.increment();
 
             case 15:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 16:
                 if (!writer.writeString("taskClsName", taskClsName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 17:
                 if (!writer.writeString("taskName", taskName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state++;
+                state.increment();
 
             case 19:
                 if (!writer.writeCollection("top", top, UUID.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 20:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -602,14 +601,14 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 cpSpi = reader.readString("cpSpi");
@@ -617,7 +616,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 depMode = reader.readEnum("depMode", DeploymentMode.class);
@@ -625,7 +624,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 dynamicSiblings = reader.readBoolean("dynamicSiblings");
@@ -633,7 +632,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -641,7 +640,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 internal = reader.readBoolean("internal");
@@ -649,7 +648,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
@@ -657,7 +656,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 jobBytes = reader.readByteArray("jobBytes");
@@ -665,7 +664,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 jobId = reader.readIgniteUuid("jobId");
@@ -673,7 +672,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 9:
                 ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
@@ -681,7 +680,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 10:
                 sesAttrsBytes = reader.readByteArray("sesAttrsBytes");
@@ -689,7 +688,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
                 sesFullSup = reader.readBoolean("sesFullSup");
@@ -697,7 +696,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 sesId = reader.readIgniteUuid("sesId");
@@ -705,7 +704,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 13:
                 siblingsBytes = reader.readByteArray("siblingsBytes");
@@ -713,7 +712,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 14:
                 startTaskTime = reader.readLong("startTaskTime");
@@ -721,7 +720,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 15:
                 subjId = reader.readUuid("subjId");
@@ -729,7 +728,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 16:
                 taskClsName = reader.readString("taskClsName");
@@ -737,7 +736,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 17:
                 taskName = reader.readString("taskName");
@@ -745,7 +744,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 18:
                 timeout = reader.readLong("timeout");
@@ -753,7 +752,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 19:
                 top = reader.readCollection("top", UUID.class);
@@ -761,7 +760,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 20:
                 userVer = reader.readString("userVer");
@@ -769,7 +768,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

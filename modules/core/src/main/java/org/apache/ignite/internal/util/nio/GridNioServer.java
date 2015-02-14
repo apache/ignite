@@ -1883,7 +1883,7 @@ public class GridNioServer<T> {
         private void resetMessage(GridSelectorNioSessionImpl ses) {
             assert commMsg != null;
 
-            commMsg = commMsg.clone();
+//            commMsg = commMsg.clone();
 
             this.ses = ses;
         }

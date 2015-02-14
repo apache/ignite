@@ -74,11 +74,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridClockDeltaSnapshotMessage _clone = new GridClockDeltaSnapshotMessage();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -92,27 +88,30 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeMap("deltas", deltas, UUID.class, long.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeMessage("snapVer", snapVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -124,14 +123,14 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 deltas = reader.readMap("deltas", UUID.class, long.class, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 snapVer = reader.readMessage("snapVer");
@@ -139,7 +138,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

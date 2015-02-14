@@ -180,11 +180,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtAtomicUpdateResponse _clone = new GridDhtAtomicUpdateResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -205,42 +201,45 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeMessage("futVer", futVer))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -255,14 +254,14 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 failedKeysBytes = reader.readByteArray("failedKeysBytes");
@@ -270,7 +269,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 futVer = reader.readMessage("futVer");
@@ -278,7 +277,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 nearEvictedBytes = reader.readCollection("nearEvictedBytes", byte[].class);
@@ -286,7 +285,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

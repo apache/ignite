@@ -116,40 +116,40 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        writer.setBuffer(buf);
-
-        if (!typeWritten) {
-            if (!writer.writeByte(null, directType()))
-                return false;
-
-            typeWritten = true;
-        }
-
-        switch (state) {
-            case 0:
-                if (!writer.writeUuid(null, srcNodeId))
-                    return false;
-
-                state++;
-
-            case 1:
-                if (!writer.writeLong(null, msgId))
-                    return false;
-
-                state++;
-
-            case 2:
-                if (!writer.writeLong(null, resId))
-                    return false;
-
-                state++;
-
-            case 3:
-                if (!writer.writeByteArray(null, payload))
-                    return false;
-
-                state++;
-        }
+//        writer.setBuffer(buf);
+//
+//        if (!typeWritten) {
+//            if (!writer.writeByte(null, directType()))
+//                return false;
+//
+//            typeWritten = true;
+//        }
+//
+//        switch (state) {
+//            case 0:
+//                if (!writer.writeUuid(null, srcNodeId))
+//                    return false;
+//
+//                state++;
+//
+//            case 1:
+//                if (!writer.writeLong(null, msgId))
+//                    return false;
+//
+//                state++;
+//
+//            case 2:
+//                if (!writer.writeLong(null, resId))
+//                    return false;
+//
+//                state++;
+//
+//            case 3:
+//                if (!writer.writeByteArray(null, payload))
+//                    return false;
+//
+//                state++;
+//        }
 
         return true;
     }
@@ -157,41 +157,41 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        reader.setBuffer(buf);
-
-        switch (state) {
-            case 0:
-                srcNodeId = reader.readUuid(null);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 1:
-                msgId = reader.readLong(null);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 2:
-                resId = reader.readLong(null);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 3:
-                payload = reader.readByteArray(null);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-        }
+//        reader.setBuffer(buf);
+//
+//        switch (state) {
+//            case 0:
+//                srcNodeId = reader.readUuid(null);
+//
+//                if (!reader.isLastRead())
+//                    return false;
+//
+//                state++;
+//
+//            case 1:
+//                msgId = reader.readLong(null);
+//
+//                if (!reader.isLastRead())
+//                    return false;
+//
+//                state++;
+//
+//            case 2:
+//                resId = reader.readLong(null);
+//
+//                if (!reader.isLastRead())
+//                    return false;
+//
+//                state++;
+//
+//            case 3:
+//                payload = reader.readByteArray(null);
+//
+//                if (!reader.isLastRead())
+//                    return false;
+//
+//                state++;
+//        }
 
         return true;
     }

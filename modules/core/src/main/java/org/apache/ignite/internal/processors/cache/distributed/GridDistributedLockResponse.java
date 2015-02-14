@@ -280,11 +280,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
     @Override public MessageAdapter clone() {
-        GridDistributedLockResponse _clone = new GridDistributedLockResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -303,36 +299,39 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 8:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 9:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 10:
                 if (!writer.writeCollection("valBytes", valBytes, GridCacheValueBytes.class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -347,14 +346,14 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 8:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 9:
                 futId = reader.readIgniteUuid("futId");
@@ -362,7 +361,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 10:
                 valBytes = reader.readCollection("valBytes", GridCacheValueBytes.class);
@@ -370,7 +369,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

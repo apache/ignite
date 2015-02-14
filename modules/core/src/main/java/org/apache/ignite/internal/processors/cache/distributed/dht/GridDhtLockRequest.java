@@ -343,11 +343,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtLockRequest _clone = new GridDhtLockRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -372,72 +368,75 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 24:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state++;
+                state.increment();
 
             case 25:
                 if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
                     return false;
 
-                state++;
+                state.increment();
 
             case 26:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 27:
                 if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 28:
                 if (!writer.writeByteArray("ownedBytes", ownedBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 29:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
-                state++;
+                state.increment();
 
             case 30:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 31:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                state.increment();
 
             case 32:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -452,14 +451,14 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 24:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 25:
                 invalidateEntries = reader.readBitSet("invalidateEntries");
@@ -467,7 +466,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 26:
                 miniId = reader.readIgniteUuid("miniId");
@@ -475,7 +474,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 27:
                 nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
@@ -483,7 +482,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 28:
                 ownedBytes = reader.readByteArray("ownedBytes");
@@ -491,7 +490,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 29:
                 preloadKeys = reader.readBitSet("preloadKeys");
@@ -499,7 +498,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 30:
                 subjId = reader.readUuid("subjId");
@@ -507,7 +506,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 31:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -515,7 +514,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 32:
                 topVer = reader.readLong("topVer");
@@ -523,7 +522,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

@@ -207,11 +207,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtTxPrepareResponse _clone = new GridDhtTxPrepareResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -232,48 +228,51 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 10:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 11:
                 if (!writer.writeCollection("invalidParts", invalidParts, int.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 12:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 13:
                 if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 14:
                 if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -288,14 +287,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 10:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
                 invalidParts = reader.readCollection("invalidParts", int.class);
@@ -303,7 +302,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 miniId = reader.readIgniteUuid("miniId");
@@ -311,7 +310,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 13:
                 nearEvictedBytes = reader.readCollection("nearEvictedBytes", byte[].class);
@@ -319,7 +318,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 14:
                 preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", byte[].class);
@@ -327,7 +326,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

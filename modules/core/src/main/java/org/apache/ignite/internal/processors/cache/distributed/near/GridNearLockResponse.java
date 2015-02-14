@@ -183,11 +183,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridNearLockResponse _clone = new GridNearLockResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -206,48 +202,51 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 11:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, GridCacheVersion.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 12:
                 if (!writer.writeBooleanArray("filterRes", filterRes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 13:
                 if (!writer.writeObjectArray("mappedVers", mappedVers, GridCacheVersion.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 14:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 15:
                 if (!writer.writeCollection("pending", pending, GridCacheVersion.class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -262,14 +261,14 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 11:
                 dhtVers = reader.readObjectArray("dhtVers", GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 filterRes = reader.readBooleanArray("filterRes");
@@ -277,7 +276,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 13:
                 mappedVers = reader.readObjectArray("mappedVers", GridCacheVersion.class);
@@ -285,7 +284,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 14:
                 miniId = reader.readIgniteUuid("miniId");
@@ -293,7 +292,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 15:
                 pending = reader.readCollection("pending", GridCacheVersion.class);
@@ -301,7 +300,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

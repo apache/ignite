@@ -106,11 +106,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtUnlockRequest _clone = new GridDhtUnlockRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -126,24 +122,27 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 9:
                 if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -158,14 +157,14 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 9:
                 nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

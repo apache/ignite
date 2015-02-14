@@ -77,11 +77,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
     @Override public MessageAdapter clone() {
-        GridDistributedTxFinishResponse _clone = new GridDistributedTxFinishResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -97,30 +93,33 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeMessage("txId", txId))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -135,14 +134,14 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 txId = reader.readMessage("txId");
@@ -150,7 +149,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

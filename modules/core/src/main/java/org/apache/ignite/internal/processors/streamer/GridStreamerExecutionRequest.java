@@ -152,11 +152,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridStreamerExecutionRequest _clone = new GridStreamerExecutionRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -175,57 +171,60 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeByteArray("batchBytes", batchBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeString("sampleClsName", sampleClsName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -237,14 +236,14 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 batchBytes = reader.readByteArray("batchBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
@@ -252,7 +251,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 depMode = reader.readEnum("depMode", DeploymentMode.class);
@@ -260,7 +259,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -268,7 +267,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
@@ -276,7 +275,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 sampleClsName = reader.readString("sampleClsName");
@@ -284,7 +283,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 userVer = reader.readString("userVer");
@@ -292,7 +291,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

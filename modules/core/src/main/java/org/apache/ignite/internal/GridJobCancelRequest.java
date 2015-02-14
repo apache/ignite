@@ -112,11 +112,7 @@ public class GridJobCancelRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridJobCancelRequest _clone = new GridJobCancelRequest();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -131,33 +127,36 @@ public class GridJobCancelRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -169,14 +168,14 @@ public class GridJobCancelRequest extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 jobId = reader.readIgniteUuid("jobId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 sesId = reader.readIgniteUuid("sesId");
@@ -184,7 +183,7 @@ public class GridJobCancelRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 sys = reader.readBoolean("sys");
@@ -192,7 +191,7 @@ public class GridJobCancelRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

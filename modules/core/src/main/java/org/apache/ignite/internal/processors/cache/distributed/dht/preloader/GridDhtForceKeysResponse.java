@@ -167,11 +167,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDhtForceKeysResponse _clone = new GridDhtForceKeysResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -191,42 +187,45 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeByteArray("infosBytes", infosBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -241,14 +240,14 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 infosBytes = reader.readByteArray("infosBytes");
@@ -256,7 +255,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
@@ -264,7 +263,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 missedKeyBytes = reader.readCollection("missedKeyBytes", byte[].class);
@@ -272,7 +271,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

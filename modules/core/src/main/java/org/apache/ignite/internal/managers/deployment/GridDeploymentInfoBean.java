@@ -140,11 +140,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridDeploymentInfoBean _clone = new GridDeploymentInfoBean();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -161,45 +157,48 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeMap("participants", participants, UUID.class, IgniteUuid.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -211,14 +210,14 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 depMode = reader.readEnum("depMode", DeploymentMode.class);
@@ -226,7 +225,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 locDepOwner = reader.readBoolean("locDepOwner");
@@ -234,7 +233,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 participants = reader.readMap("participants", UUID.class, IgniteUuid.class, false);
@@ -242,7 +241,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 userVer = reader.readString("userVer");
@@ -250,7 +249,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

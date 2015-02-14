@@ -87,30 +87,33 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeMessage("exchId", exchId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -125,14 +128,14 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 lastVer = reader.readMessage("lastVer");
@@ -140,7 +143,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

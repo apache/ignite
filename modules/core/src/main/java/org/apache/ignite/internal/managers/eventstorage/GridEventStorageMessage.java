@@ -263,11 +263,7 @@ public class GridEventStorageMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridEventStorageMessage _clone = new GridEventStorageMessage();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -291,69 +287,72 @@ public class GridEventStorageMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                state.increment();
 
             case 1:
                 if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                state++;
+                state.increment();
 
             case 2:
                 if (!writer.writeByteArray("evtsBytes", evtsBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 3:
                 if (!writer.writeByteArray("exBytes", exBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeByteArray("filter", filter))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeString("filterClsName", filterClsName))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeMap("ldrParties", ldrParties, UUID.class, IgniteUuid.class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 7:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 8:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -365,14 +364,14 @@ public class GridEventStorageMessage extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 depMode = reader.readEnum("depMode", DeploymentMode.class);
@@ -380,7 +379,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 evtsBytes = reader.readByteArray("evtsBytes");
@@ -388,7 +387,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 exBytes = reader.readByteArray("exBytes");
@@ -396,7 +395,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 filter = reader.readByteArray("filter");
@@ -404,7 +403,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 filterClsName = reader.readString("filterClsName");
@@ -412,7 +411,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 ldrParties = reader.readMap("ldrParties", UUID.class, IgniteUuid.class, false);
@@ -420,7 +419,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -428,7 +427,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 userVer = reader.readString("userVer");
@@ -436,7 +435,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

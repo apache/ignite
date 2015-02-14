@@ -204,11 +204,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
-        GridCacheQueryResponse _clone = new GridCacheQueryResponse();
-
-        clone0(_clone);
-
-        return _clone;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -231,54 +227,57 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
+        MessageWriteState state = MessageWriteState.get();
+        MessageWriter writer = state.writer();
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!typeWritten) {
+        if (!state.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            state.setTypeWritten();
         }
 
-        switch (state) {
+        switch (state.index()) {
             case 3:
                 if (!writer.writeCollection("dataBytes", dataBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 4:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state++;
+                state.increment();
 
             case 5:
                 if (!writer.writeBoolean("fields", fields))
                     return false;
 
-                state++;
+                state.increment();
 
             case 6:
                 if (!writer.writeBoolean("finished", finished))
                     return false;
 
-                state++;
+                state.increment();
 
             case 7:
                 if (!writer.writeCollection("metaDataBytes", metaDataBytes, byte[].class))
                     return false;
 
-                state++;
+                state.increment();
 
             case 8:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
-                state++;
+                state.increment();
 
         }
 
@@ -293,14 +292,14 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 dataBytes = reader.readCollection("dataBytes", byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 errBytes = reader.readByteArray("errBytes");
@@ -308,7 +307,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 fields = reader.readBoolean("fields");
@@ -316,7 +315,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 finished = reader.readBoolean("finished");
@@ -324,7 +323,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 metaDataBytes = reader.readCollection("metaDataBytes", byte[].class);
@@ -332,7 +331,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 reqId = reader.readLong("reqId");
@@ -340,7 +339,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
