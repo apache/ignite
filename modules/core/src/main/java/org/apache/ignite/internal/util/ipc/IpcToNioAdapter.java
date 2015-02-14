@@ -152,7 +152,7 @@ public class IpcToNioAdapter<T> {
         assert writeBuf.hasArray();
 
         try {
-//            MessageAdapter.WRITER.set(formatter.writer());
+            MessageWriteState.create(formatter);
 
             int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf);
 
@@ -162,7 +162,7 @@ public class IpcToNioAdapter<T> {
             return new GridNioFinishedFuture<Object>(e);
         }
         finally {
-//            MessageAdapter.WRITER.remove();
+            MessageWriteState.clear();
         }
 
         return new GridNioFinishedFuture<>((Object)null);
