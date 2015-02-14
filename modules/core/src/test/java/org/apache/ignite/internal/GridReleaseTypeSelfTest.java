@@ -73,40 +73,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNodeJoinTopologyWithDifferentReleaseType() throws Exception {
-        firstNodeVer = "1.0.0-ent";
-        secondNodeVer = "1.0.0-os";
-
-        try {
-            startGrids(2);
-        }
-        catch (IgniteCheckedException e) {
-            StringWriter errors = new StringWriter();
-
-            e.printStackTrace(new PrintWriter(errors));
-
-            String stackTrace = errors.toString();
-
-            assertTrue(
-                "Caught exception does not contain specified string.",
-                stackTrace.contains("Topology cannot contain nodes of both enterprise and open source")
-            );
-
-            return;
-        }
-        finally {
-            stopAllGrids();
-        }
-
-        fail("Exception has not been thrown.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
-        firstNodeVer = "1.0.0-os";
-        secondNodeVer = "1.0.1-os";
+        firstNodeVer = "1.0.0";
+        secondNodeVer = "1.0.1";
 
         try {
             startGrids(2);
