@@ -302,7 +302,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     V val = cached.innerGet(
                         tx,
                         /*swap*/true,
-                        /*read through*/retVal || hasFilters,
+                        /*read through*/(retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue(),
                         /*fail fast*/false,
                         /*unmarshal*/true,
                         /*metrics*/retVal,
@@ -381,39 +381,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param t Error.
      */
     public void onError(Throwable t) {
-        if (err.compareAndSet(null, t)) {
-            tx.setRollbackOnly();
-
-            // TODO: GG-4005:
-            // TODO: as an improvement, at some point we must rollback right away.
-            // TODO: However, in this case need to make sure that reply is sent back
-            // TODO: even for non-existing transactions whenever finish request comes in.
-//            try {
-//                tx.rollback();
-//            }
-//            catch (IgniteCheckedException ex) {
-//                U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-//            }
-//
-            try {
-                // Send reply back to near node.
-                GridNearTxPrepareResponse<K, V> res = new GridNearTxPrepareResponse<>(
-                    tx.nearXidVersion(),
-                    tx.nearFutureId(),
-                    nearMiniId,
-                    tx.xidVersion(),
-                    Collections.<Integer>emptySet(),
-                    ret,
-                    t);
-
-                sendPrepareResponse(res);
-            }
-            catch (IgniteCheckedException ignore) {
-                tx.rollbackAsync();
-            }
-
-            onComplete();
-        }
+        onDone(tx, t);
     }
 
     /**
@@ -609,6 +577,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     private GridNearTxPrepareResponse<K, V> createPrepareResponse() {
         // Send reply back to originating near node.
+        Throwable prepErr = err.get();
+
         GridNearTxPrepareResponse<K, V> res = new GridNearTxPrepareResponse<>(
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
@@ -616,15 +586,17 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             tx.xidVersion(),
             tx.invalidPartitions(),
             ret,
-            err.get());
+            prepErr);
 
-        addDhtValues(res);
+        if (prepErr == null) {
+            addDhtValues(res);
 
-        GridCacheVersion min = tx.minVersion();
+            GridCacheVersion min = tx.minVersion();
 
-        res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
+            res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
 
-        res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+            res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+        }
 
         res.filterFailedKeys(filterFailedKeys);
 

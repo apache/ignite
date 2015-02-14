@@ -438,6 +438,28 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
+     * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     */
+    @SuppressWarnings({"CatchGenericClass"})
+    protected void uncommit() {
+        for (IgniteTxEntry<K, V> e : writeMap().values()) {
+            try {
+                GridCacheEntryEx<K, V> Entry = e.cached();
+
+                if (e.op() != NOOP)
+                    Entry.invalidate(null, xidVer);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                break;
+            }
+        }
+
+        cctx.tm().uncommitTx(this);
+    }
+
+    /**
      * This method uses unchecked assignment to cast group lock key entry to transaction generic signature.
      *
      * @return Group lock tx entry.
@@ -1269,7 +1291,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param newVer New version.
      * @param old Old entry.
      * @return Tuple with adjusted operation type and conflict context.
-     * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
+     * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(

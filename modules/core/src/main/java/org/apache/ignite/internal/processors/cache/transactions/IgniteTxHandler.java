@@ -25,12 +25,9 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -700,6 +697,10 @@ public class IgniteTxHandler<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + req);
             }
+            else if (e instanceof IgniteTxHeuristicCheckedException) {
+                U.warn(log, "Failed to commit transaction (all transaction entries were invalidated): " +
+                    CU.txString(dhtTx));
+            }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
 
@@ -838,7 +839,7 @@ public class IgniteTxHandler<K, V> {
     protected void finish(
         UUID nodeId,
         GridDistributedTxRemoteAdapter<K, V> tx,
-        GridDhtTxPrepareRequest<K, V> req) {
+        GridDhtTxPrepareRequest<K, V> req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
 
         try {
@@ -849,6 +850,10 @@ public class IgniteTxHandler<K, V> {
             tx.doneRemote(req.version(), null, null, null);
 
             tx.commit();
+        }
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Just rethrow this exception. Transaction was already uncommitted.
+            throw e;
         }
         catch (Throwable e) {
             U.error(log, "Failed committing transaction [tx=" + tx + ']', e);

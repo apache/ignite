@@ -449,28 +449,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /**
-     * Uncommits transaction by invalidating all of its entries.
-     */
-    @SuppressWarnings({"CatchGenericClass"})
-    private void uncommit() {
-        for (IgniteTxEntry<K, V> e : writeMap().values()) {
-            try {
-                GridCacheEntryEx<K, V> Entry = e.cached();
-
-                if (e.op() != NOOP)
-                    Entry.invalidate(null, xidVer);
-            }
-            catch (Throwable t) {
-                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
-
-                break;
-            }
-        }
-
-        cctx.tm().uncommitTx(this);
-    }
-
-    /**
      * Gets cache entry for given key.
      *
      * @param cacheCtx Cache context.
@@ -2239,7 +2217,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         if (missedForLoad != null) {
             IgniteInternalFuture<Boolean> fut = loadMissing(
                 cacheCtx,
-                /*read through*/true,
+                /*read through*/cacheCtx.config().isLoadPreviousValue(),
                 /*async*/true,
                 missedForLoad,
                 deserializePortables(cacheCtx),

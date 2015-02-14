@@ -126,10 +126,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
-        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
-        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
@@ -143,6 +139,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
+
+        // Heuristic exception handling. TODO IGNITE-257
+//        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
+//        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
+//        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
+//        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
 
         // Local cache.
         suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);

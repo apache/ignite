@@ -134,13 +134,15 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if ((entry.context().isNear() || entry.context().isLocal()) && owner != null && tx.hasWriteKey(entry.txKey())) {
-            lockKeys.remove(entry.txKey());
+        if (tx.optimistic()) {
+            if ((entry.context().isNear() || entry.context().isLocal()) && owner != null && tx.hasWriteKey(entry.txKey())) {
+                lockKeys.remove(entry.txKey());
 
-            // This will check for locks.
-            onDone();
+                // This will check for locks.
+                onDone();
 
-            return true;
+                return true;
+            }
         }
 
         return false;

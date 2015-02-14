@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -657,12 +658,14 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                             }
                         }
                         catch (Throwable ex) {
+                            uncommit();
+
                             state(UNKNOWN);
 
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
-                            err = ex instanceof IgniteCheckedException ? (IgniteCheckedException)ex :
-                                new IgniteCheckedException("Commit produced a runtime exception: " + this, ex);
+                            err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
+                                "(all transaction entries will be invalidated): " + CU.txString(this), ex);
                         }
                     }
                 }
@@ -733,7 +736,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         try {
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
-            if (state(ROLLING_BACK)) {
+            if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this);
 
                 state(ROLLED_BACK);

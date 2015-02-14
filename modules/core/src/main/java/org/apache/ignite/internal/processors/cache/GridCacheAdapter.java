@@ -3988,6 +3988,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
             final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
