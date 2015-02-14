@@ -17,11 +17,9 @@
 
 package org.apache.ignite.visor.commands
 
-import org.apache.ignite.internal.GridProductImpl
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
-
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
 
 import javax.swing.ImageIcon
@@ -29,12 +27,6 @@ import java.awt.Image
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util
-
-import org.apache.ignite.visor.visor
-
-import scala.tools.jline.console.ConsoleReader
-import scala.tools.jline.console.completer.Completer
-import scala.tools.jline.internal.Configuration
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -53,19 +45,24 @@ import org.apache.ignite.visor.commands.start.VisorStartCommand
 import org.apache.ignite.visor.commands.tasks.VisorTasksCommand
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand
 import org.apache.ignite.visor.commands.vvm.VisorVvmCommand
+import org.apache.ignite.visor.visor
+
+import scala.tools.jline.console.ConsoleReader
+import scala.tools.jline.console.completer.Completer
+import scala.tools.jline.internal.Configuration
 
 /**
  * Command line Visor.
  */
 object VisorConsole extends App {
     /** Version number. */
-    private final val VISOR_VER = GridProductImpl.VER
+    private final val VISOR_VER = VER_STR
 
     /** Release date. */
-    private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
+    private final val VISOR_RELEASE_DATE = RELEASE_DATE_STR
 
     /** Copyright. */
-    private final val VISOR_COPYRIGHT = GridProductImpl.COPYRIGHT
+    private final val VISOR_COPYRIGHT = COPYRIGHT
 
     /** Release date (another format). */
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)
@@ -94,7 +91,7 @@ object VisorConsole extends App {
     customizeUI()
 
     // Wrap line symbol for user input.
-    private val wrapLine = if (IgniteUtils.isWindows) "^" else "\\"
+    private val wrapLine = if (U.isWindows) "^" else "\\"
 
     private val emptyArg = "^([a-zA-z!?]+)$".r
     private val varArg = "^([a-zA-z!?]+)\\s+(.+)$".r
@@ -270,7 +267,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
             case emptyStr if emptyStr.trim == "" => ""
             case str =>
                 // replace wrong '/' on windows.
-                val translated = if (IgniteUtils.isWindows) str.replace('/', '\\') else str
+                val translated = if (U.isWindows) str.replace('/', '\\') else str
 
                 // line before cursor.
                 val left = translated.substring(0, cursor)

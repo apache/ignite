@@ -52,6 +52,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     public void testStartStop() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setConnectorConfiguration(null);
+
         info("Grid start-stop test count: " + COUNT);
 
         for (int i = 0; i < COUNT; i++) {
@@ -71,6 +73,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      */
     public void _testStopWhileInUse() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setConnectorConfiguration(null);
 
         cfg.setGridName(getTestGridName(0));
 
@@ -99,8 +103,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         Thread stopper = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    try (IgniteTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        g0.cache(null).get(1);
+                    try (IgniteTx ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        g0.jcache(null).get(1);
 
                         latch.countDown();
 
@@ -123,7 +127,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         info("Before remove.");
 
-        g1.cache(null).remove(1);
+        g1.jcache(null).remove(1);
     }
 
     /**
@@ -131,6 +135,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      */
     public void testStoppedState() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setConnectorConfiguration(null);
 
         Ignite ignite = G.start(cfg);
 

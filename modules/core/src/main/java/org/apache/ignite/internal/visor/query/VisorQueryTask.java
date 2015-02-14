@@ -34,6 +34,7 @@ import java.io.*;
 import java.sql.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
@@ -192,10 +193,10 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
-                String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" +
+                String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" +
                     UUID.randomUUID();
 
-                GridCache<Object, Object> c = g.cachex(arg.cacheName());
+                GridCache<Object, Object> c = ignite.cachex(arg.cacheName());
 
                 if (c == null)
                     return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " +
@@ -206,13 +207,13 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 if (scan) {
                     CacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
-                        .projection(g.forNodeIds(arg.proj()))
+                        .projection(ignite.forNodeIds(arg.proj()))
                         .execute();
 
                     long start = U.currentTimeMillis();
 
                     IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
-                        VisorQueryUtils.fetchScanQueryRows(fut, null, arg.pageSize());
+                        fetchScanQueryRows(fut, null, arg.pageSize());
 
                     long fetchDuration = U.currentTimeMillis() - start;
 
@@ -220,19 +221,19 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     Map.Entry<Object, Object> next = rows.get2();
 
-                    g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                    ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                         new VisorFutureResultSetHolder<>(fut, next, false));
 
                     scheduleResultSetHolderRemoval(qryId);
 
-                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
-                        VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
+                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
+                        SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
                     CacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
                         .createSqlFieldsQuery(arg.queryTxt(), true)
                         .pageSize(arg.pageSize())
-                        .projection(g.forNodeIds(arg.proj()))
+                        .projection(ignite.forNodeIds(arg.proj()))
                         .execute();
 
                     List<Object> firstRow = (List<Object>)fut.next();
@@ -254,18 +255,18 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         long start = U.currentTimeMillis();
 
                         IgniteBiTuple<List<Object[]>, List<?>> rows =
-                            VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+                            fetchSqlQueryRows(fut, firstRow, arg.pageSize());
 
                         long fetchDuration = U.currentTimeMillis() - start;
 
                         long duration = fut.duration() + fetchDuration; // Query duration + fetch duration.
 
-                        g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                        ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, rows.get2(), false));
 
                         scheduleResultSetHolderRemoval(qryId);
 
-                        return new IgniteBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
+                        return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
                             names, rows.get1(), rows.get2() != null, duration));
                     }
                 }
@@ -276,29 +277,27 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         }
 
         /**
-         *
-         * @param id Uniq query result id.
+         * @param id Unique query result id.
          */
         private void scheduleResultSetHolderRemoval(final String id) {
-            ((IgniteKernal)g).context().timeout()
-                .addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
-                    @Override public void onTimeout() {
-                        ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();
+            ((IgniteKernal)ignite).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
+                @Override public void onTimeout() {
+                    ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = ignite.nodeLocalMap();
 
-                        VisorFutureResultSetHolder<?> t = storage.get(id);
+                    VisorFutureResultSetHolder<?> t = storage.get(id);
 
-                        if (t != null) {
-                            // If future was accessed since last scheduling,  set access flag to false and reschedule.
-                            if (t.accessed()) {
-                                t.accessed(false);
+                    if (t != null) {
+                        // If future was accessed since last scheduling,  set access flag to false and reschedule.
+                        if (t.accessed()) {
+                            t.accessed(false);
 
-                                scheduleResultSetHolderRemoval(id);
-                            }
-                            else
-                                storage.remove(id); // Remove stored future otherwise.
+                            scheduleResultSetHolderRemoval(id);
                         }
+                        else
+                            storage.remove(id); // Remove stored future otherwise.
                     }
-                });
+                }
+            });
         }
 
         /** {@inheritDoc} */

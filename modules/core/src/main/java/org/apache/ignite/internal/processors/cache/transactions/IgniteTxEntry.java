@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -30,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -102,7 +102,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -217,7 +217,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         Object[] invokeArgs,
         long ttl,
         GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<CacheEntry<K, V>>[] filters,
+        IgnitePredicate<Cache.Entry<K, V>>[] filters,
         GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -725,14 +725,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] filters() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<CacheEntry<K, V>>[] filters) {
+    public void filters(IgnitePredicate<Cache.Entry<K, V>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -888,7 +888,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         else {
             key = (K)in.readObject();
             entryProcessorsCol = U.readCollection(in);
-            filters = U.readEntryFilterArray(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
         }
 
         cacheId = in.readInt();

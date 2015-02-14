@@ -663,7 +663,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 meta.deploymentMode(),
                 true,
                 ctx,
-                U.gridClassLoader(),
+                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                 meta.classLoaderId(),
                 meta.senderNodeId(),
                 comm,
@@ -965,7 +965,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 meta.deploymentMode(),
                 false,
                 ctx,
-                U.gridClassLoader(),
+                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                 meta.classLoaderId(),
                 meta.senderNodeId(),
                 comm,
@@ -1043,9 +1043,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      *
      */
     private class SharedDeployment extends GridDeployment {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Flag indicating whether this deployment was removed from cache. */
         private boolean rmv;
 

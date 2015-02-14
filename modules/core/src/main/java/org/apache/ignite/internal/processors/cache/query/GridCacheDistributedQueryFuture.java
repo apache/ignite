@@ -113,7 +113,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             });
 
             if (!nodes.isEmpty()) {
-                cctx.io().safeSend(nodes, req,
+                cctx.io().safeSend(nodes, req, cctx.ioPolicy(),
                     new P1<ClusterNode>() {
                         @Override public boolean apply(ClusterNode node) {
                             onNodeLeft(node.id());

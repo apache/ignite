@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.security.*;
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.AuthorizationEvent}.
+ * Lightweight counterpart for AuthorizationEvent.
  */
 public class VisorGridAuthorizationEvent extends VisorGridEvent {
     /** */

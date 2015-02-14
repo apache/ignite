@@ -485,7 +485,7 @@ public class IgniteTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, tx.ioPolicy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -1407,7 +1407,7 @@ public class IgniteTxHandler<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
@@ -1463,13 +1463,14 @@ public class IgniteTxHandler<K, V> {
                 }
 
                 GridCachePessimisticCheckCommittedTxResponse<K, V>
-                    res = new GridCachePessimisticCheckCommittedTxResponse<>(
-                    req.version(), req.futureId(), req.miniId(), info);
+                    res = new GridCachePessimisticCheckCommittedTxResponse<>(req.version(), req.futureId(),
+                    req.miniId(), info, req.system());
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for tx committed info [req=" + req + ", res=" + res + ']');
 
-                sendCheckCommittedResponse(nodeId, res);            }
+                sendCheckCommittedResponse(nodeId, res);
+            }
         });
     }
 
@@ -1507,7 +1508,7 @@ public class IgniteTxHandler<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending check committed transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, res.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())

@@ -169,8 +169,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         checkResult(entries, p1, p3, p4);
 
         // Now do the same filtering but using projection.
-        qry = cache0.projection(F.<UUID, Person>cachePrimary()).queries().createSqlQuery(Person.class,
-            "salary < 2000");
+        qry = cache0.queries().createSqlQuery(Person.class, "salary < 2000");
 
         qry.keepAll(true);
 
@@ -473,7 +472,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         for (Map.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 }

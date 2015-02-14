@@ -66,9 +66,6 @@ public class VisorBasicConfiguration implements Serializable {
     /** Network timeout. */
     private long netTimeout;
 
-    /** Node license URL */
-    private String licenseUrl;
-
     /** Logger used on node. */
     private String log;
 
@@ -120,7 +117,6 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.jmxRemote(g.isJmxRemoteEnabled());
         cfg.restart(g.isRestartEnabled());
         cfg.networkTimeout(c.getNetworkTimeout());
-        cfg.licenseUrl(c.getLicenseUrl());
         cfg.logger(compactClass(c.getGridLogger()));
         cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
         cfg.mBeanServer(compactClass(c.getMBeanServer()));
@@ -131,7 +127,6 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.quiet(boolValue(IGNITE_QUIET, true));
         cfg.successFile(getProperty(IGNITE_SUCCESS_FILE));
         cfg.updateNotifier(boolValue(IGNITE_UPDATE_NOTIFIER, true));
-        cfg.securityCredentialsProvider(compactClass(c.getSecurityCredentialsProvider()));
 
         return cfg;
     }
@@ -274,20 +269,6 @@ public class VisorBasicConfiguration implements Serializable {
      */
     public void networkTimeout(long netTimeout) {
         this.netTimeout = netTimeout;
-    }
-
-    /**
-     * @return Node license URL
-     */
-    @Nullable public String licenseUrl() {
-        return licenseUrl;
-    }
-
-    /**
-     * @param licenseUrl New node license URL
-     */
-    public void licenseUrl(@Nullable String licenseUrl) {
-        this.licenseUrl = licenseUrl;
     }
 
     /**

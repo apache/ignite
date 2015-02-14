@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
@@ -71,9 +72,9 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             Map<Integer, Collection<UUID>> mapping = new HashMap<>();
 
             for (int i = 0; i < 4; i++) {
-                GridCache<Object, Object> cache = grid(i).cache(null);
+                IgniteCache<Object, Object> cache = grid(i).jcache(null);
 
-                CacheAffinity<Object> aff = cache.affinity();
+                CacheAffinity<Object> aff = affinity(cache);
 
                 int parts = aff.partitions();
 

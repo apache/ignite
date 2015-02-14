@@ -121,7 +121,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -152,11 +152,11 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridCache<Integer, String> cache = txIgniteNode.cache(null);
+                IgniteCache<Integer, String> cache = txIgniteNode.jcache(null);
 
                 assertNotNull(cache);
 
-                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)cache.txStart();
+                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)txIgniteNode.transactions().txStart();
 
                 IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
 
@@ -212,11 +212,11 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.peek(key));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
@@ -229,7 +229,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.cache(null).get(e.getKey()));
+                    g.jcache(null).get(e.getKey()));
             }
         }
     }

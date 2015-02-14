@@ -57,6 +57,9 @@ public class CacheManager implements javax.cache.CacheManager {
     /** */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** */
+    private final AtomicInteger mgrIdx = new AtomicInteger();
+
     /**
      * @param uri Uri.
      * @param cachingProvider Caching provider.
@@ -101,22 +104,18 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        if (!(cacheCfg instanceof CompleteConfiguration))
-            throw new UnsupportedOperationException("Configuration is not supported: " + cacheCfg);
+        CacheConfiguration igniteCacheCfg;
 
-        if (cacheCfg instanceof CacheConfiguration) {
-            String cfgCacheName = ((CacheConfiguration)cacheCfg).getName();
+        if (cacheCfg instanceof CompleteConfiguration)
+            igniteCacheCfg = new CacheConfiguration((CompleteConfiguration)cacheCfg);
+        else {
+            igniteCacheCfg = new CacheConfiguration();
 
-            if (cfgCacheName != null) {
-                if (!cacheName.equals(cfgCacheName))
-                    throw new IllegalArgumentException();
-            }
-            else {
-                cacheCfg = (C)new CacheConfiguration((CompleteConfiguration)cacheCfg);
-
-                ((CacheConfiguration)cacheCfg).setName(cacheName);
-            }
+            igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
+            igniteCacheCfg.setStoreValueBytes(cacheCfg.isStoreByValue());
         }
+
+        igniteCacheCfg.setName(cacheName);
 
         IgniteCache<K, V> res;
 
@@ -128,11 +127,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
-                cfg.setGridName("grid-for-" + cacheName);
+                cfg.setGridName(mgrIdx.incrementAndGet() + "-grid-for-" + cacheName);
 
-                cfg.setCacheConfiguration(new CacheConfiguration((CompleteConfiguration)cacheCfg));
-
-                cfg.getCacheConfiguration()[0].setName(cacheName);
+                cfg.setCacheConfiguration(igniteCacheCfg);
 
                 try {
                     ignite = Ignition.start(cfg);
@@ -149,10 +146,10 @@ public class CacheManager implements javax.cache.CacheManager {
             igniteMap.put(cacheName, ignite);
         }
 
-        if (((CompleteConfiguration)cacheCfg).isManagementEnabled())
+        if (igniteCacheCfg.isManagementEnabled())
             enableManagement(cacheName, true);
 
-        if (((CompleteConfiguration)cacheCfg).isStatisticsEnabled())
+        if (igniteCacheCfg.isStatisticsEnabled())
             enableStatistics(cacheName, true);
 
         return res;
@@ -300,12 +297,12 @@ public class CacheManager implements javax.cache.CacheManager {
         if (enabled) {
             registerCacheObject(mBeanSrv, ignite.jcache(cacheName).mxBean(), cacheName, CACHE_CONFIGURATION);
 
-            ignite.cache(cacheName).configuration().setManagementEnabled(true);
+            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(true);
         }
         else {
             unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
 
-            ignite.cache(cacheName).configuration().setManagementEnabled(false);
+            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(false);
         }
     }
 
@@ -346,20 +343,20 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param name cache name.
      */
     public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, String objectName) {
-        ObjectName registeredObjectName = getObjectName(name, objectName);
+        ObjectName registeredObjName = getObjectName(name, objectName);
 
         try {
-            if (!isRegistered(mBeanServer, registeredObjectName))
+            if (!isRegistered(mBeanServer, registeredObjName))
                 if (objectName.equals(CACHE_CONFIGURATION))
                     mBeanServer.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
-                        registeredObjectName);
+                        registeredObjName);
                 else
                     mBeanServer.registerMBean(
                         new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class),
-                        registeredObjectName);
+                        registeredObjName);
         }
         catch (Exception e) {
-            throw new CacheException("Failed to register MBean: " + registeredObjectName, e);
+            throw new CacheException("Failed to register MBean: " + registeredObjName, e);
         }
     }
 
@@ -411,6 +408,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
             synchronized (igniteMap) {
                 ignites = igniteMap.values().toArray(new Ignite[igniteMap.values().size()]);
+
+                igniteMap.clear();
             }
 
             for (Ignite ignite : ignites) {

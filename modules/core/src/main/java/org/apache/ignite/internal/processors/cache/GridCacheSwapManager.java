@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -41,7 +40,6 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Handles all swap operations.
@@ -65,7 +63,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Swap listeners. */
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
         swapLsnrs = new ConcurrentHashMap8<>();
-
 
     /** Swap listeners. */
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
@@ -108,8 +105,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private void initOffHeap() {
         // Register big data usage.
-        GridLicenseUseRegistry.onUsage(DATA_GRID, GridOffHeapMapFactory.class);
-
         long max = cctx.config().getOffHeapMaxMemory();
 
         long init = max > 0 ? max / 1024 : 8L * 1024L * 1024L;
@@ -774,7 +769,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                         keyBytes,
                         part,
-                        ByteBuffer.wrap(entry.valueBytes()),
+                        entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
                         entry.valueIsByteArray(),
                         entry.version(), entry.ttl(),
                         entry.expireTime(),
@@ -821,7 +816,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                                 swapKey.keyBytes(),
                                 swapKey.partition(),
-                                ByteBuffer.wrap(entry.valueBytes()),
+                                entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
                                 entry.valueIsByteArray(),
                                 entry.version(),
                                 entry.ttl(),

@@ -46,7 +46,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
         visor.open(config("grid-visor"), "n/a")
 
         try {
-            val compute = visor.grid.compute().withAsync
+            val compute = visor.ignite.compute().withAsync
 
             compute.withName("TestTask1").execute(new TestTask1(), null)
 

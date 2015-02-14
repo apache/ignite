@@ -153,9 +153,9 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <R> R buildObject(String typeName, Collection<CacheTypeFieldMetadata> fields,
+    @Override protected <R> R buildObject(String cacheName, String typeName, Collection<CacheTypeFieldMetadata> fields,
         Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException {
-        PojoMethodsCache mc = mtdsCache.get(session().cacheName()).get(typeName);
+        PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);
 
         Object obj = mc.newInstance();
 
@@ -176,10 +176,10 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object extractField(String typeName, String fieldName, Object obj)
+    @Nullable @Override protected Object extractField(String cacheName, String typeName, String fieldName, Object obj)
         throws CacheException {
         try {
-            PojoMethodsCache mc = mtdsCache.get(session().cacheName()).get(typeName);
+            PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);
 
             return mc.getters.get(fieldName).invoke(obj);
         }

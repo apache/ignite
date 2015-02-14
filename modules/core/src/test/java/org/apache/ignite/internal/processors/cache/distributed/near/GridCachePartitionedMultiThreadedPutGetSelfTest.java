@@ -102,12 +102,12 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).cache(null).removeAll();
+            grid(0).jcache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).cache(null).clearLocally();
+            internalCache(i).clearLocally();
 
-            assert grid(i).cache(null).isEmpty();
+            assert internalCache(i).isEmpty();
         }
     }
 
@@ -178,20 +178,20 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> c = grid(0).cache(null);
+                IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    try (IgniteTx tx = c.txStart(concurrency, isolation)) {
+                    try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 
                         // Again.
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
@@ -56,14 +56,14 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** Exceptions caught during collecting caches from nodes. */
     private final Map<UUID, Throwable> cachesEx = new HashMap<>();
 
-    /** All GGFS collected from nodes. */
-    private final Map<UUID, Collection<VisorGgfs>> ggfss = new HashMap<>();
+    /** All IGFS collected from nodes. */
+    private final Map<UUID, Collection<VisorIgfs>> igfss = new HashMap<>();
 
-    /** All GGFS endpoints collected from nodes. */
-    private final Map<UUID, Collection<VisorGgfsEndpoint>> ggfsEndpoints = new HashMap<>();
+    /** All IGFS endpoints collected from nodes. */
+    private final Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints = new HashMap<>();
 
-    /** Exceptions caught during collecting GGFS from nodes. */
-    private final Map<UUID, Throwable> ggfssEx = new HashMap<>();
+    /** Exceptions caught during collecting IGFS from nodes. */
+    private final Map<UUID, Throwable> igfssEx = new HashMap<>();
 
     /** All streamers collected from nodes. */
     private final Map<UUID, Collection<VisorStreamer>> streamers = new HashMap<>();
@@ -84,9 +84,9 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
                 eventsEx.isEmpty() &&
                 caches.isEmpty() &&
                 cachesEx.isEmpty() &&
-                ggfss.isEmpty() &&
-                ggfsEndpoints.isEmpty() &&
-                ggfssEx.isEmpty() &&
+                igfss.isEmpty() &&
+                igfsEndpoints.isEmpty() &&
+                igfssEx.isEmpty() &&
                 streamers.isEmpty() &&
                 streamersEx.isEmpty();
     }
@@ -148,24 +148,24 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     }
 
     /**
-     * @return All GGFS collected from nodes.
+     * @return All IGFS collected from nodes.
      */
-    public Map<UUID, Collection<VisorGgfs>> ggfss() {
-        return ggfss;
+    public Map<UUID, Collection<VisorIgfs>> igfss() {
+        return igfss;
     }
 
     /**
-     * @return All GGFS endpoints collected from nodes.
+     * @return All IGFS endpoints collected from nodes.
      */
-    public Map<UUID, Collection<VisorGgfsEndpoint>> ggfsEndpoints() {
-        return ggfsEndpoints;
+    public Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints() {
+        return igfsEndpoints;
     }
 
     /**
-     * @return Exceptions caught during collecting GGFS from nodes.
+     * @return Exceptions caught during collecting IGFS from nodes.
      */
-    public Map<UUID, Throwable> ggfssEx() {
-        return ggfssEx;
+    public Map<UUID, Throwable> igfssEx() {
+        return igfssEx;
     }
 
     /**

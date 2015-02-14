@@ -97,12 +97,6 @@ public class Ignition {
     public static final int KILL_EXIT_CODE = 130;
 
     /**
-     * Default License file name. This file will be tried if no
-     * license provided in configuration.
-     */
-    public static final String DFLT_LIC_FILE_NAME = "gridgain-license.xml";
-
-    /**
      * Enforces singleton.
      */
     protected Ignition() {

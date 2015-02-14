@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -69,7 +70,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -78,7 +79,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Person> cache = grid(0).cache(null);
+        IgniteCache<String, Person> cache = grid(0).jcache(null);
 
         assert cache != null;
 

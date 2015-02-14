@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.marshaller.*;
-import org.apache.ignite.client.marshaller.optimized.*;
+import org.apache.ignite.internal.client.marshaller.*;
+import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.logger.java.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.logger.java.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -570,22 +571,6 @@ final class TestBinaryClient {
 
         msg.includeAttributes(includeAttrs);
         msg.includeMetrics(includeMetrics);
-
-        return makeRequest(msg).getObject();
-    }
-
-    /**
-     * @param path Log file path.
-     * @return Log file contents.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public List<String> log(@Nullable String path, int from, int to) throws IgniteCheckedException {
-        GridClientLogRequest msg = new GridClientLogRequest();
-
-        msg.requestId(idCntr.getAndIncrement());
-        msg.path(path);
-        msg.from(from);
-        msg.to(to);
 
         return makeRequest(msg).getObject();
     }

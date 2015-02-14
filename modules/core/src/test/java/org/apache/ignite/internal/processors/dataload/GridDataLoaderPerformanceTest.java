@@ -52,9 +52,6 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
     private boolean useCache;
 
     /** */
-    private boolean useGrpLock;
-
-    /** */
     private String[] vals = new String[2048];
 
     /** {@inheritDoc} */
@@ -70,6 +67,8 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
         cfg.setIncludeProperties();
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
+
+        cfg.setConnectorConfiguration(null);
 
         cfg.setPeerClassLoadingEnabled(true);
 
@@ -118,17 +117,6 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPerformance() throws Exception {
-        useGrpLock = false;
-
-        doTest();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPerformanceGroupLock() throws Exception {
-        useGrpLock = true;
-
         doTest();
     }
 
@@ -152,8 +140,7 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
             final IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(null);
 
             ldr.perNodeBufferSize(8192);
-            ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, String>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, String>batchedSorted());
+            ldr.updater(GridDataLoadCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
             final LongAdder cnt = new LongAdder();

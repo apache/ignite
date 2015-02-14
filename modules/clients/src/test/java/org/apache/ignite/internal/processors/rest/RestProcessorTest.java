@@ -110,14 +110,14 @@ public class RestProcessorTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         // Ensure - no authentication.
-        clientCfg.setRestSecretKey(null);
+        clientCfg.setSecretKey(null);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 
@@ -135,7 +135,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void populateCache() throws IgniteCheckedException {
-        GridCache<String, Object> cache = G.ignite().cache(null);
+        IgniteCache<String, Object> cache = G.ignite().jcache(null);
 
         cache.put("int", intValue());
         cache.put("string", "cacheString");

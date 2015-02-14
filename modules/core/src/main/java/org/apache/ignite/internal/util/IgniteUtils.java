@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -1285,31 +1284,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads array from input stream.
-     *
-     * @param in Input stream.
-     * @return Deserialized array.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If class not found.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        int len = in.readInt();
-
-        IgnitePredicate<CacheEntry<K, V>>[] arr = null;
-
-        if (len > 0) {
-            arr = new IgnitePredicate[len];
-
-            for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
-        }
-
-        return arr;
-    }
-
-    /**
      *
      * @param out Output.
      * @param col Set to write.
@@ -2132,8 +2106,6 @@ public abstract class IgniteUtils {
                                 Thread.sleep(10);
                             }
                             catch (InterruptedException ignored) {
-                                U.log(null, "Timer thread has been interrupted.");
-
                                 break;
                             }
                         }
@@ -5692,15 +5664,16 @@ public abstract class IgniteUtils {
 
     /**
      * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
-     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.}, {@code org.apache.ignite.visor.} with {@code o.a.i.v.} and
+     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
+     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
      * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
      */
     public static String compact(String s) {
-        return s.replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.visor.", "o.a.i.v.").
+        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
+            replace("org.apache.ignite.internal.", "o.a.i.i.").
             replace("org.apache.ignite.scalar.", "o.a.i.s.").
             replace("org.apache.ignite.", "o.a.i.");
     }
@@ -8576,7 +8549,7 @@ public abstract class IgniteUtils {
     /**
      * Nullifies Ignite home directory. For test purposes only.
      */
-    static void nullifyHomeDirectory() {
+    public static void nullifyHomeDirectory() {
         ggHome = null;
     }
 
@@ -9193,5 +9166,17 @@ public abstract class IgniteUtils {
         }
 
         return cnt;
+    }
+
+    /**
+     * Throws exception with uniform error message if given parameter's assertion condition
+     * is {@code false}.
+     *
+     * @param cond Assertion condition to check.
+     * @param condDesc Description of failed condition.
+     */
+    public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
+        if (!cond)
+            throw new IgniteException("Parameter failed condition check: " + condDesc);
     }
 }

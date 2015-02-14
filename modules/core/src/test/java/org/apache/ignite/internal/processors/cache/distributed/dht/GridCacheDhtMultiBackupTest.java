@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
@@ -55,14 +54,14 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
                     @Override public void applyx() throws IgniteCheckedException {
                         X.println("Checking whether cache is empty.");
 
-                        GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
+                        IgniteCache<SampleKey, SampleValue> cache = g.jcache("partitioned");
 
-                        assert cache.isEmpty();
+                        assert cache.localSize() == 0;
                     }
                 }
             );
 
-            GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
+            IgniteCache<SampleKey, SampleValue> cache = g.jcache("partitioned");
 
             int cnt = 0;
 

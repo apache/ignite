@@ -65,7 +65,7 @@ public class GridMarshallerTestBean extends GridMarshallerResourceBean {
      *
      * @return Object field.
      */
-    Object getObjectField() {
+    public Object getObjectField() {
         return objField;
     }
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
@@ -40,27 +41,27 @@ public class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfT
      * @throws Exception If failed.
      */
     public void testUpdateNearOnlyReader() throws Exception {
-        GridCache<Object, Object> dhtCache = dhtCache();
+        IgniteCache<Object, Object> dhtCache = dhtCache();
 
         final int keyCnt = 100;
 
         for (int i = 0; i < keyCnt; i++)
             dhtCache.put(i, i);
 
-        GridCache<Object, Object> nearOnlyCache = nearOnlyCache();
+        IgniteCache<Object, Object> nearOnlyCache = nearOnlyCache();
 
         for (int i = 0; i < keyCnt; i++) {
-            assertNull(nearOnlyCache.peek(i));
+            assertNull(nearOnlyCache.localPeek(i, CachePeekMode.ONHEAP));
 
             assertEquals(i, nearOnlyCache.get(i));
-            assertEquals(i, nearOnlyCache.peek(i));
+            assertEquals(i, nearOnlyCache.localPeek(i, CachePeekMode.ONHEAP));
         }
 
         for (int i = 0; i < keyCnt; i++)
             dhtCache.put(i, i * i);
 
         for (int i = 0; i < keyCnt; i++) {
-            assertEquals(i * i, nearOnlyCache.peek(i));
+            assertEquals(i * i, nearOnlyCache.localPeek(i, CachePeekMode.ONHEAP));
 
             assertEquals(i * i, nearOnlyCache.get(i));
         }

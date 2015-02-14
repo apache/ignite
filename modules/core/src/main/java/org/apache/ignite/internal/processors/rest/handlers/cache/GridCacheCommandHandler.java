@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
@@ -43,7 +42,6 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -131,8 +129,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         assert SUPPORTED_COMMANDS.contains(req.command());
 
-        GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
-
         if (log.isDebugEnabled())
             log.debug("Handling cache REST request: " + req);
 
@@ -169,10 +165,17 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("keys"));
 
                     // HashSet wrapping for correct serialization
-                    keys = new HashSet<>(keys);
+                    HashSet<Object> keys0 = new HashSet<>();
+
+                    for (Object getKey : keys) {
+                        if (getKey == null)
+                            throw new IgniteCheckedException("Failing getAll operation (null keys are not allowed).");
+
+                        keys0.add(getKey);
+                    }
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetAllCommand(keys), req.portableMode());
+                        new GetAllCommand(keys0), req.portableMode());
 
                     break;
                 }
@@ -557,7 +560,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(

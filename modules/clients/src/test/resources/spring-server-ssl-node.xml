@@ -64,16 +64,16 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <!-- Client configuration. -->
-        <property name="clientConnectionConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration">
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
                 <!-- Configure TCP+SSL rest protocol. -->
-                <property name="restTcpSslEnabled" value="true"/>
+                <property name="sslEnabled" value="true"/>
 
                 <!-- Sets flag indicating whether or not SSL client authentication is required. -->
-                <property name="restTcpSslClientAuth" value="true"/>
+                <property name="sslClientAuth" value="true"/>
 
-                <property name="restTcpSslContextFactory">
-                    <bean class="org.apache.ignite.client.ssl.GridSslBasicContextFactory">
+                <property name="sslContextFactory">
+                    <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
                         <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
@@ -81,7 +81,7 @@
                     </bean>
                 </property>
 
-                <property name="restTcpPort" value="10443"/>
+                <property name="port" value="10443"/>
             </bean>
         </property>
 
@@ -133,57 +133,53 @@
                     <!-- Enable queries for partitioned cache -->
                     <property name="queryIndexEnabled" value="true"/>
 
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
-                            <property name="typeMetadata">
-                                <list>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                        <property name="textFields">
-                                            <list>
-                                                <value>address</value>
-                                            </list>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridImplicitPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                        <property name="type" value="GridNoDefPortablePerson"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="age" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                </list>
-                            </property>
-                        </bean>
+                    <property name="typeMetadata">
+                        <list>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                                <property name="textFields">
+                                    <list>
+                                        <value>address</value>
+                                    </list>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridImplicitPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="GridNoDefPortablePerson"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
                     </property>
                 </bean>
 
@@ -218,34 +214,10 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.apache.ignite.client.HashMapStore"/>
+                        <bean class="org.apache.ignite.internal.client.HashMapStore"/>
                     </property>
                 </bean>
             </list>
-        </property>
-
-        <!--
-            Use passcode authentication SPI.
-        - ->
-        <property name="authenticationSpi">
-            <bean class="org.apache.ignite.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
-                <property name="passcodes">
-                    <map>
-                        <entry key="REMOTE_NODE" value="s3cret"/>
-                        <entry key="REMOTE_CLIENT" value="s3cret"/>
-                    </map>
-                </property>
-            </bean>
-        </property>
-
-        <!- -
-            Use remember me secure session SPI.
-        -->
-        <property name="secureSessionSpi">
-            <bean class="org.apache.ignite.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
-                <!-- Session TTL = 1 hour -->
-                <property name="ttl" value="3600000"/>
-            </bean>
         </property>
 
         <!--

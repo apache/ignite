@@ -17,11 +17,10 @@
 
 package org.apache.ignite.visor.commands.config
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.lang.IgniteBiTuple
 
 import java.lang.System._
@@ -29,7 +28,7 @@ import java.lang.System._
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -104,7 +103,7 @@ class VisorConfigurationCommand {
      * @return String.
      */
     private def arr2Str[T: ClassTag](arr: Array[T]): String = {
-        if (arr != null && arr.length > 0) IgniteUtils.compact(arr.mkString(", ")) else DFLT
+        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else DFLT
     }
 
     /**
@@ -190,7 +189,7 @@ class VisorConfigurationCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(java.util.UUID.fromString(id.get))
+                    node = ignite.node(java.util.UUID.fromString(id.get))
 
                     if (node == null) {
                         scold("'id' does not match any node: " + id.get)
@@ -208,7 +207,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                grid.compute(grid.forNode(node))
+                ignite.compute(ignite.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
@@ -232,7 +231,6 @@ class VisorConfigurationCommand {
             cmnT += ("Remote JMX", bool2Str(cfg.basic().jmxRemote()))
             cmnT += ("Restart", bool2Str(cfg.basic().restart()))
             cmnT += ("Network timeout", cfg.basic().networkTimeout() + "ms")
-            cmnT += ("License URL", safe(cfg.basic().licenseUrl(), DFLT))
             cmnT += ("Grid logger", safe(cfg.basic().logger(), DFLT))
             cmnT += ("Discovery startup delay", cfg.basic().discoStartupDelay() + "ms")
             cmnT += ("MBean server", safe(cfg.basic().mBeanServer(), DFLT))
@@ -348,7 +346,7 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(IgniteUtils.gridEventName)))
+            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(U.gridEventName)))
 
             evtsT += ("Included event types", inclEvtTypes)
 

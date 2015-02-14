@@ -53,6 +53,9 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     /** Flag indicating that this is near-only check. */
     private boolean nearOnlyCheck;
 
+    /** System transaction flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -74,6 +77,8 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         nearXidVer = tx.nearXidVersion();
         originatingNodeId = tx.eventNodeId();
+        sys = tx.system();
+
         this.originatingThreadId = originatingThreadId;
     }
 
@@ -127,6 +132,13 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
         return nearOnlyCheck;
     }
 
+    /**
+     * @return System transaction flag.
+     */
+    public boolean system() {
+        return sys;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public MessageAdapter clone() {
@@ -149,6 +161,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
         _clone.originatingNodeId = originatingNodeId;
         _clone.originatingThreadId = originatingThreadId;
         _clone.nearOnlyCheck = nearOnlyCheck;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -199,6 +212,12 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
             case 13:
                 if (!writer.writeLong("originatingThreadId", originatingThreadId))
+                    return false;
+
+                state++;
+
+            case 14:
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 state++;
@@ -259,6 +278,14 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
             case 13:
                 originatingThreadId = reader.readLong("originatingThreadId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 14:
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;

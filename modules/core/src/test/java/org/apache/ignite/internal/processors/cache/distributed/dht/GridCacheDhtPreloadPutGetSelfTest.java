@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -190,17 +191,13 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
 
-                            GridCache<Integer, Integer> cache = g2.cache(null);
+                            IgniteCache<Integer, Integer> cache = g2.jcache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                CacheEntry<Integer, Integer> entry = cache.entry(j);
-
-                                assert entry != null;
-
-                                Integer val = entry.getValue();
+                                Integer val = cache.get(j);
 
                                 if (j % FREQUENCY == 0)
-                                    info("Read entry: " + entry.getKey() + " -> " + val);
+                                    info("Read entry: " + j + " -> " + val);
 
                                 if (done.get())
                                     assert val != null && val == j;
@@ -221,38 +218,41 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        writeLatch.await();
+                        try {
+                            writeLatch.await(10, TimeUnit.SECONDS);
 
-                        Ignite g1 = startGrid(1);
+                            Ignite g1 = startGrid(1);
 
-                        GridCache<Integer, Integer> cache = g1.cache(null);
+                            IgniteCache<Integer, Integer> cache = g1.jcache(null);
 
-                        for (int j = 0; j < KEY_CNT; j++) {
-                            cache.put(j, j);
+                            for (int j = 0; j < KEY_CNT; j++) {
+                                cache.put(j, j);
 
-                            if (j % FREQUENCY == 0)
-                                info("Stored value in cache: " + j);
+                                if (j % FREQUENCY == 0)
+                                    info("Stored value in cache: " + j);
+                            }
+
+                            done.set(true);
+
+                            for (int j = 0; j < KEY_CNT; j++) {
+                                Cache.Entry<Integer, Integer> entry = internalCache(cache).entry(j);
+
+                                assert entry != null;
+
+                                Integer val = entry.getValue();
+
+                                if (j % FREQUENCY == 0)
+                                    info("Read entry: " + entry.getKey() + " -> " + val);
+
+                                assert val != null && val == j;
+                            }
+
+                            if (backups > 0)
+                                stopGrid(1);
                         }
-
-                        done.set(true);
-
-                        for (int j = 0; j < KEY_CNT; j++) {
-                            CacheEntry<Integer, Integer> entry = cache.entry(j);
-
-                            assert entry != null;
-
-                            Integer val = entry.getValue();
-
-                            if (j % FREQUENCY == 0)
-                                info("Read entry: " + entry.getKey() + " -> " + val);
-
-                            assert val != null && val == j;
+                        finally {
+                            readLatch.countDown();
                         }
-
-                        if (backups > 0)
-                            stopGrid(1);
-
-                        readLatch.countDown();
 
                         return null;
                     }

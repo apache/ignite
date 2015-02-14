@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.websession;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -64,7 +64,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleRequestMetaInf() throws Exception {
-        testSingleRequest("gg-config.xml");
+        testSingleRequest("ignite-webapp-config.xml");
     }
 
     /**
@@ -79,14 +79,14 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         try {
             srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet());
 
-            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ggtest/test").openConnection();
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test").openConnection();
 
             conn.connect();
 
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                GridCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+                IgniteCache<String, HttpSession> cache = G.ignite().jcache(getCacheName());
 
                 assertNotNull(cache);
 
@@ -177,7 +177,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 int port = TEST_JETTY_PORT + idx;
 
-                URLConnection conn = new URL("http://localhost:" + port + "/ggtest/test").openConnection();
+                URLConnection conn = new URL("http://localhost:" + port + "/ignitetest/test").openConnection();
 
                 String sesId = sesIdRef.get();
 
@@ -222,7 +222,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String gridName, HttpServlet servlet) {
         WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/core/src/test/webapp").getAbsolutePath(),
-            "/ggtest");
+            "/ignitetest");
 
         ctx.setInitParameter("IgniteConfigurationFilePath", cfg);
         ctx.setInitParameter("IgniteWebSessionsGridName", gridName);

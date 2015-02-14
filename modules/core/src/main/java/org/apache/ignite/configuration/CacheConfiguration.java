@@ -20,7 +20,6 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
@@ -294,9 +293,6 @@ public class CacheConfiguration extends MutableConfiguration {
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
-    private CacheCloner cloner;
-
-    /** */
     private CacheAffinityKeyMapper affMapper;
 
     /** */
@@ -353,7 +349,6 @@ public class CacheConfiguration extends MutableConfiguration {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
-        cloner = cc.getCloner();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
@@ -408,8 +403,8 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String) Grid.cache(null)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * cache which can be accessed via {@link Ignite#jcache(String)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link Ignite#jcache(String)} method.
      *
      * @return Cache name.
      */
@@ -692,8 +687,8 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets eviction filter to specify which entries should not be evicted
-     * (except explicit evict by calling {@link CacheEntry#evict()}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(CacheEntry)} method returns
+     * (except explicit evict by calling {@link Entry#evict()}).
+     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(Entry)} method returns
      * {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -723,7 +718,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link CacheEntry#timeToLive()} value and should not be confused with entry
+     * {@link Entry#timeToLive()} value and should not be confused with entry
      * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.
@@ -1294,35 +1289,6 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
-    }
-
-    /**
-     * Cloner to be used for cloning values that are returned to user only if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE}
-     * is set on {@link CacheProjection}. Cloning values is useful when it is needed to get value from
-     * cache, change it and put it back (if the value was not cloned, then user would be updating the
-     * cached reference which would violate cache integrity).
-     * <p>
-     * <b>NOTE:</b> by default, cache uses {@link org.apache.ignite.cache.cloner.CacheBasicCloner} implementation which will clone only objects
-     * implementing {@link Cloneable} interface. You can also configure cache to use
-     * {@link org.apache.ignite.cache.cloner.CacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
-     * regardless of the {@link Cloneable} interface. If none of the above cloners fit your
-     * logic, you can also provide your own implementation of {@link org.apache.ignite.cache.cloner.CacheCloner} interface.
-     *
-     * @return Cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on cache projection.
-     */
-    @SuppressWarnings({"unchecked"})
-    public CacheCloner getCloner() {
-        return cloner;
-    }
-
-    /**
-     * Sets cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on projection.
-     *
-     * @param cloner Cloner to use.
-     * @see #getCloner()
-     */
-    public void setCloner(CacheCloner cloner) {
-        this.cloner = cloner;
     }
 
     /**

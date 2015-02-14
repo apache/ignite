@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -34,6 +35,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -424,6 +427,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridIoPolicy ioPolicy() {
+        return sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean storeUsed() {
         return storeEnabled() && store() != null;
     }
@@ -496,7 +504,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markPreparing() {
+    @Override
+    public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -1198,7 +1207,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                         resolveTaskName(),
-                        CU.<K, V>empty(),
                         null);
 
                 boolean modified = false;
@@ -1221,6 +1229,22 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 }
 
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+                if (op == NOOP) {
+                    ExpiryPolicy expiry = txEntry.expiry();
+
+                    if (expiry == null)
+                        expiry = cacheCtx.expiry();
+
+                    if (expiry != null) {
+                        long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                        txEntry.ttl(ttl);
+
+                        if (ttl == CU.TTL_ZERO)
+                            op = DELETE;
+                    }
+                }
 
                 return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }
@@ -1257,7 +1281,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>> conflictResolve(
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
         GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
         GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -1271,9 +1295,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
 
         GridCacheVersionedEntryEx<K, V> newEntry =
-            new GridCachePlainVersionedEntry<K, V>(key, newVal, newTtl, newExpireTime, newVer);
+            new GridCachePlainVersionedEntry<>(key, newVal, newTtl, newExpireTime, newVer);
 
-        GridCacheVersionConflictContextImpl<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 
         if (ctx.isMerge()) {
             V resVal = ctx.mergeValue();
@@ -1437,9 +1461,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * Transaction shadow class to be used for deserialization.
      */
     private static class TxShadow implements IgniteInternalTx {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Xid. */
         private final IgniteUuid xid;
 
@@ -1619,6 +1640,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean system() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        @Override public GridIoPolicy ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

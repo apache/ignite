@@ -45,7 +45,7 @@ public class GridCachePutRemoveLoadTest {
     private final Arguments args;
 
     /** */
-    private GridCache<Object, Object> cache;
+    private IgniteCache<Object, Object> cache;
 
     /**
      * @param args Arguments.
@@ -134,7 +134,7 @@ public class GridCachePutRemoveLoadTest {
 
         assert g != null;
 
-        cache = g.cache("cache");
+        cache = g.jcache("cache");
 
         assert cache != null;
     }
@@ -188,7 +188,7 @@ public class GridCachePutRemoveLoadTest {
                         for (long i = 0; i < Long.MAX_VALUE; i++) {
                             Long key = queue.take();
 
-                            cache.removex(key);
+                            cache.remove(key);
 
                             rmvNum.set(key);
                         }
@@ -203,7 +203,7 @@ public class GridCachePutRemoveLoadTest {
         }
 
         for (long i = 0; i < Long.MAX_VALUE; i++) {
-            cache.putx(i, i);
+            cache.put(i, i);
 
             putNum.set(i);
 

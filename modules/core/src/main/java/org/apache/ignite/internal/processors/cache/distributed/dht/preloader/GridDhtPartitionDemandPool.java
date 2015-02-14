@@ -492,9 +492,9 @@ public class GridDhtPartitionDemandPool<K, V> {
                     if (log.isDebugEnabled())
                         log.debug("Preloading key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
 
-                    if (cctx.dht().isGgfsDataCache() &&
-                        cctx.dht().ggfsDataSpaceUsed() > cctx.dht().ggfsDataSpaceMax()) {
-                        LT.error(log, null, "Failed to preload GGFS data cache (GGFS space size exceeded maximum " +
+                    if (cctx.dht().isIgfsDataCache() &&
+                        cctx.dht().igfsDataSpaceUsed() > cctx.dht().igfsDataSpaceMax()) {
+                        LT.error(log, null, "Failed to preload IGFS data cache (IGFS space size exceeded maximum " +
                             "value, will ignore preload entries): " + name());
 
                         if (cached.markObsoleteIfEmpty(null))
@@ -614,7 +614,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Sending demand message [node=" + node.id() + ", demand=" + d + ']');
 
                     // Send demand message.
-                    cctx.io().send(node, d);
+                    cctx.io().send(node, d, cctx.ioPolicy());
 
                     // While.
                     // =====

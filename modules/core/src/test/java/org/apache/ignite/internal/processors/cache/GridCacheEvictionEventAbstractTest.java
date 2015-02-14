@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -108,11 +109,11 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_ENTRY_EVICTED);
 
-        GridCache<String, String> c = g.cache(null);
+        IgniteCache<String, String> c = g.jcache(null);
 
         c.put("1", "val1");
 
-        c.evict("1");
+        c.localEvict(Collections.singleton("1"));
 
         latch.await();
 

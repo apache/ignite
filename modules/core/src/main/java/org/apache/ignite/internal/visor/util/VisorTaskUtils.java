@@ -24,7 +24,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.event.*;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
@@ -85,24 +85,13 @@ public class VisorTaskUtils {
     /** Only non task event types that Visor should collect. */
     private static final int[] VISOR_NON_TASK_EVTS = {
         EVT_CLASS_DEPLOY_FAILED,
-        EVT_TASK_DEPLOY_FAILED,
-
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED,
-
-        EVT_AUTHORIZATION_FAILED,
-        EVT_AUTHENTICATION_FAILED,
-
-        EVT_SECURE_SESSION_VALIDATION_FAILED
+        EVT_TASK_DEPLOY_FAILED
     };
 
     /** Only non task event types that Visor should collect. */
     private static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
 
-    /**
-     * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
-     */
+    /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
     public static final int MAX_FOLDER_DEPTH = 4;
 
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
@@ -315,11 +304,11 @@ public class VisorTaskUtils {
     /**
      * Checks for explicit events configuration.
      *
-     * @param g Grid instance.
+     * @param ignite Grid instance.
      * @return {@code true} if all task events explicitly specified in configuration.
      */
-    public static boolean checkExplicitTaskMonitoring(Ignite g) {
-        int[] evts = g.configuration().getIncludeEventTypes();
+    public static boolean checkExplicitTaskMonitoring(Ignite ignite) {
+        int[] evts = ignite.configuration().getIncludeEventTypes();
 
         if (F.isEmpty(evts))
             return false;
@@ -342,17 +331,17 @@ public class VisorTaskUtils {
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
-     * @param g Target grid.
+     * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
      * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite g, String evtOrderKey, String evtThrottleCntrKey,
+    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        assert g != null;
+        assert ignite != null;
 
-        ClusterNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -377,7 +366,7 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<Event> evts = g.events().localQuery(p);
+        Collection<Event> evts = ignite.events().localQuery(p);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -395,7 +384,7 @@ public class VisorTaskUtils {
         Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
-            res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
+            res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
 
         for (Event e : evts) {
             int tid = e.type();
@@ -422,29 +411,6 @@ public class VisorTaskUtils {
                 DeploymentEvent de = (DeploymentEvent)e;
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
-            }
-            else if (e instanceof LicenseEvent) {
-                LicenseEvent le = (LicenseEvent)e;
-
-                res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
-            }
-            else if (e instanceof AuthorizationEvent) {
-                AuthorizationEvent ae = (AuthorizationEvent)e;
-
-                res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
-                    ae.subject()));
-            }
-            else if (e instanceof AuthenticationEvent) {
-                AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                    ae.subjectId(), ae.login()));
-            }
-            else if (e instanceof SecureSessionEvent) {
-                SecureSessionEvent se = (SecureSessionEvent)e;
-
-                res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
-                    se.subjectId()));
             }
         }
 
@@ -606,23 +572,23 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Resolve GGFS profiler logs directory.
+     * Resolve IGFS profiler logs directory.
      *
-     * @param ggfs GGFS instance to resolve logs dir for.
+     * @param igfs IGFS instance to resolve logs dir for.
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
+    public static Path resolveIgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
         String logsDir;
 
-        if (ggfs instanceof GridGgfsEx)
-            logsDir = ((GridGgfsEx)ggfs).clientLogDirectory();
-        else if (ggfs == null)
-            throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
+        if (igfs instanceof IgfsEx)
+            logsDir = ((IgfsEx)igfs).clientLogDirectory();
+        else if (igfs == null)
+            throw new IgniteCheckedException("Failed to get profiler log folder (IGFS instance not found)");
         else
-            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected IGFS instance type)");
 
-        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
+        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_IGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }

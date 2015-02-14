@@ -24,88 +24,55 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
-
-import java.lang.reflect.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
 
 /**
- * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} operations in multinode environment with nodes having caches with different names.
+ * Test {@link IgniteCache#clear()} operation in multinode environment with nodes
+ * having caches with different names.
  */
 public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
-    /** Local cache. */
-    private static final String CACHE_LOCAL = "cache_local";
-
-    /** Partitioned cache. */
-    private static final String CACHE_PARTITIONED = "cache_partitioned";
-
-    /** Co-located cache. */
-    private static final String CACHE_COLOCATED = "cache_colocated";
-
-    /** Replicated cache. */
-    private static final String CACHE_REPLICATED = "cache_replicated";
-
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
+
+    /** Amount of keys stored in the default cache. */
+    private static final int KEY_CNT = 20;
+
+    /** Amount of keys stored in cache other than default. */
+    private static final int KEY_CNT_OTHER = 10;
+
+    /** Default cache name. */
+    private static final String CACHE_NAME = "cache_name";
+
+    /** Cache name which differs from the default one. */
+    private static final String CACHE_NAME_OTHER = "cache_name_other";
 
     /** VM IP finder for TCP discovery SPI. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Local caches. */
-    private GridCache<Integer, Integer>[] cachesLoc;
+    /** Cache name which will be passed to grid configuration. */
+    private CacheMode cacheMode = PARTITIONED;
 
-    /** Partitioned caches. */
-    private GridCache<Integer, Integer>[] cachesPartitioned;
-
-    /** Colocated caches. */
-    private GridCache<Integer, Integer>[] cachesColocated;
-
-    /** Replicated caches. */
-    private GridCache<Integer, Integer>[] cachesReplicated;
+    /** Cache mode which will be passed to grid configuration. */
+    private String cacheName = CACHE_NAME;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        ccfgLoc.setName(CACHE_LOCAL);
-        ccfgLoc.setCacheMode(LOCAL);
-        ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgLoc.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setName(cacheName);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setDistributionMode(NEAR_PARTITIONED);
 
-        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
+        if (cacheMode == PARTITIONED)
+            ccfg.setBackups(1);
 
-        ccfgPartitioned.setName(CACHE_PARTITIONED);
-        ccfgPartitioned.setCacheMode(PARTITIONED);
-        ccfgPartitioned.setBackups(1);
-        ccfgPartitioned.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgPartitioned.setDistributionMode(gridName.equals(getTestGridName(0)) ? NEAR_PARTITIONED :
-            gridName.equals(getTestGridName(1)) ? NEAR_ONLY : CLIENT_ONLY);
-        ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
-
-        CacheConfiguration ccfgColocated = new CacheConfiguration();
-
-        ccfgColocated.setName(CACHE_COLOCATED);
-        ccfgColocated.setCacheMode(PARTITIONED);
-        ccfgColocated.setBackups(1);
-        ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgColocated.setDistributionMode(PARTITIONED_ONLY);
-        ccfgColocated.setAtomicityMode(TRANSACTIONAL);
-
-        CacheConfiguration ccfgReplicated = new CacheConfiguration();
-
-        ccfgReplicated.setName(CACHE_REPLICATED);
-        ccfgReplicated.setCacheMode(REPLICATED);
-        ccfgReplicated.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgReplicated.setAtomicityMode(TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(ccfgLoc, ccfgPartitioned, ccfgColocated, ccfgReplicated);
+        cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -119,217 +86,83 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        cachesLoc = null;
-        cachesPartitioned = null;
-        cachesColocated = null;
-        cachesReplicated = null;
     }
 
     /**
-     * Startup routine.
+     * Start GRID_CNT nodes. All nodes except the last one will have one cache with particular name, while the last
+     * one will have one cache of the same type, but with different name.
      *
-     * @throws Exception If failed.
-     */
-    private void startUp() throws Exception {
-        cachesLoc = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesPartitioned = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesColocated = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesReplicated = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-
-        for (int i = 0; i < GRID_CNT; i++) {
-            Ignite ignite = startGrid(i);
-
-            cachesLoc[i] = ignite.cache(CACHE_LOCAL);
-            cachesPartitioned[i] = ignite.cache(CACHE_PARTITIONED);
-            cachesColocated[i] = ignite.cache(CACHE_COLOCATED);
-            cachesReplicated[i] = ignite.cache(CACHE_REPLICATED);
-        }
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with no split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testLocalNoSplit() throws Exception {
-        test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD / 2);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testLocalSplit() throws Exception {
-        test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD + 1);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with no split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedNoSplit() throws Exception {
-        test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedSplit() throws Exception {
-        test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with no split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testColocatedNoSplit() throws Exception {
-        test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testColocatedSplit() throws Exception {
-        test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with no split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testReplicatedNoSplit() throws Exception {
-        test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
-    }
-
-    /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with split.
-     *
-     * @throws Exception If failed.
-     */
-    public void testReplicatedSplit() throws Exception {
-        test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
-    }
-
-    /**
-     * Internal method for all tests.
-     *
-     * @param mode Test mode
-     * @param keysCnt Keys count.
      * @throws Exception In case of exception.
      */
-    private void test(Mode mode, int keysCnt) throws Exception {
-        startUp();
+    private void startNodes() throws Exception {
+        cacheName = CACHE_NAME;
 
-        switch (mode) {
-            case TEST_LOCAL: {
-                // Check on only one node.
-                GridCache<Integer, Integer> cache = cachesLoc[0];
+        for (int i = 0; i < GRID_CNT - 1; i++)
+            startGrid(i);
 
-                fillCache(cache, keysCnt);
+        cacheName = CACHE_NAME_OTHER;
 
-                cache.clear();
-
-                assert cache.isEmpty();
-
-                break;
-            }
-            case TEST_PARTITIONED: {
-                // Take in count special case for near-only cache as well.
-                fillCache(cachesPartitioned[0], keysCnt);
-
-                // Ensure correct no-op clean of CLIENT_ONLY cache.
-                warmCache(cachesPartitioned[2], keysCnt);
-                assert cachesPartitioned[2].isEmpty();
-                cachesPartitioned[2].clearLocally();
-                assert cachesPartitioned[2].isEmpty();
-
-                stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
-
-                // Ensure correct clearLocally of NEA_ONLY cache.
-                warmCache(cachesPartitioned[1], keysCnt);
-                assert !cachesPartitioned[1].isEmpty();
-                cachesPartitioned[1].clearLocally();
-                assert cachesPartitioned[1].isEmpty();
-                fillCache(cachesPartitioned[1], keysCnt);
-
-                stopGrid(1); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
-
-                // Ensure correct clearLocally of NEAR_PARTITIONED cache.
-                assert !cachesPartitioned[0].isEmpty();
-                cachesPartitioned[0].clearLocally();
-                assert cachesPartitioned[0].isEmpty();
-
-                break;
-            }
-            default: {
-                assert mode == Mode.TEST_COLOCATED || mode == Mode.TEST_REPLICATED;
-
-                GridCache<Integer, Integer>[] caches = mode == Mode.TEST_COLOCATED ? cachesColocated : cachesReplicated;
-
-                fillCache(caches[0], keysCnt);
-
-                for (GridCache<Integer, Integer> cache : caches) {
-                    assert !cache.isEmpty();
-
-                    cache.clearLocally();
-
-                    assert cache.isEmpty();
-                }
-            }
-        }
+        startGrid(GRID_CNT - 1);
     }
 
     /**
-     * Fill cache with values.
+     * Test for partitioned cache.
      *
-     * @param cache Cache.
-     * @param keysCnt Amount of keys to put.
+     * @throws Exception In case of exception.
+     */
+    public void testGlobalClearAllPartitioned() throws Exception {
+        cacheMode = PARTITIONED;
+
+        startNodes();
+
+        performTest();
+    }
+
+    /**
+     * Test for replicated cache.
+     *
+     * @throws Exception In case of exception.
+     */
+    public void testGlobalClearAllReplicated() throws Exception {
+        cacheMode = REPLICATED;
+
+        startNodes();
+
+        performTest();
+    }
+
+    /**
+     * Ensure that clear() clears correct cache and is only executed on nodes with the cache excluding
+     * master-node where it is executed locally.
+     *
      * @throws Exception If failed.
      */
-    private void fillCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        try (IgniteTx tx = cache.txStart()) {
-            for (int i = 0; i < keysCnt; i++)
-                cache.put(i, i);
+    public void performTest() throws Exception {
+        // Put values into normal replicated cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            grid(0).jcache(CACHE_NAME).put(i, "val" + i);
 
-            tx.commit();
+        // Put values into a cache with another name.
+        for (int i = 0; i < KEY_CNT_OTHER; i++)
+            grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).put(i, "val" + i);
+
+        // Check cache sizes.
+        for (int i = 0; i < GRID_CNT - 1; i++) {
+            IgniteCache<Object, Object> cache = grid(i).jcache(CACHE_NAME);
+
+            assertEquals("Key set [i=" + i + ']', KEY_CNT, cache.localSize());
         }
-    }
 
-    /**
-     * Warm cache up.
-     *
-     * @param cache Cache.
-     * @param keysCnt Amount of keys to get.
-     * @throws Exception If failed.
-     */
-    private void warmCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        for (int i = 0; i < keysCnt; i++)
-            cache.get(i);
-    }
+        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
 
-    /**
-     * Test mode.
-     */
-    private enum Mode {
-        /** Local cache. */
-        TEST_LOCAL,
+        // Perform clear.
+        grid(0).jcache(CACHE_NAME).clear();
 
-        /** Partitioned cache. */
-        TEST_PARTITIONED,
+        // Expect caches with the given name to be clear on all nodes.
+        for (int i = 0; i < GRID_CNT - 1; i++)
+            assert grid(i).jcache(CACHE_NAME).localSize() == 0;
 
-        /** Co-located cache. */
-        TEST_COLOCATED,
-
-        /** Replicated cache. */
-        TEST_REPLICATED
+        // ... but cache with another name should remain untouched.
+        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
     }
 }

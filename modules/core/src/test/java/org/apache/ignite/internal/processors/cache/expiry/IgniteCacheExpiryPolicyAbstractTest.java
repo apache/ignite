@@ -30,8 +30,10 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -68,6 +70,125 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         stopAllGrids();
 
         storeMap.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnCreate() throws Exception {
+        factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on create, key: " + key);
+
+            zeroOnCreate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnCreate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create with zero duration, should not create cache entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnUpdate() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return Duration.ZERO;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on update, key: " + key);
+
+            zeroOnUpdate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnUpdate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key));
+
+        cache.put(key, 2); // Update should expire entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccess() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return Duration.ZERO;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return null;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on access, key: " + key);
+
+            zeroOnAccess(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnAccess(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
+
+        waitExpired(F.asList(key));
     }
 
     /**
@@ -187,6 +308,25 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 txGetAll(txMode);
             }
         }
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        Collection<Integer> putKeys = keys();
+
+        for (final Integer key : putKeys)
+            cache.put(key, key);
+
+        Iterator<Cache.Entry<Integer, Integer>> it = cache.iterator();
+
+        List<Integer> itKeys = new ArrayList<>();
+
+        while (it.hasNext())
+            itKeys.add(it.next().getKey());
+
+        assertTrue(itKeys.size() >= putKeys.size());
+
+        for (Integer key : itKeys)
+            checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -266,11 +406,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+        IgniteCache<Integer, Integer> cache0 = cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE));
+
+        assertEquals((Integer)1, cache0.get(key));
 
         checkTtl(key, TTL_FOR_EXPIRE, true);
 
         waitExpired(key);
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        Integer res = cache.invoke(key, new GetEntryProcessor());
+
+        assertEquals((Integer)1, res);
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -810,6 +962,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
+        checkNoValue(keys);
+    }
+
+    /**
+     * @param keys Keys.
+     * @throws Exception If failed.
+     */
+    private void checkNoValue(Collection<Integer> keys) throws Exception {
         IgniteCache<Integer, Object> cache = jcache(0);
 
         for (int i = 0; i < gridCount(); i++) {
@@ -886,7 +1046,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }, 3000);
                 }
 
-                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
+                assertEquals("Unexpected ttl [node=" + i + ", key=" + key +']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);
@@ -908,6 +1068,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cfg.setExpiryPolicyFactory(factory);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private static class GetEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+            return e.getValue();
+        }
     }
 
     /**

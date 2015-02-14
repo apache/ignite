@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -79,9 +79,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -100,6 +97,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
+    /** Skip values flag. */
+    private boolean skipVals;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -116,11 +116,11 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param reload Reload flag.
      * @param tx Transaction.
      * @param topVer Topology version.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      */
     public GridDhtGetFuture(
         GridCacheContext<K, V> cctx,
@@ -131,11 +131,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals
+    ) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -147,13 +148,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.keys = keys;
         this.readThrough = readThrough;
         this.reload = reload;
-        this.filters = filters;
         this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
+        this.skipVals = skipVals;
 
         futId = IgniteUuid.randomUuid();
 
@@ -322,7 +323,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     // TODO: To fix, check that reader is contained in the list of readers once
                     // TODO: again after the returned future completes - if not, try again.
                     // TODO: Also, why is info read before transactions are complete, and not after?
-                    IgniteInternalFuture<Boolean> f = (!e.deleted() && k.getValue()) ? e.addReader(reader, msgId, topVer) : null;
+                    IgniteInternalFuture<Boolean> f = (!e.deleted() && k.getValue() && !skipVals) ?
+                        e.addReader(reader, msgId, topVer) : null;
 
                     if (f != null) {
                         if (txFut == null)
@@ -354,9 +356,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (reload && cctx.readThrough() && cctx.store().configured()) {
                 fut = cache().reloadAllAsync(keys.keySet(),
                     true,
+                    skipVals,
                     subjId,
-                    taskName,
-                    filters);
+                    taskName);
             }
             else {
                 if (tx == null) {
@@ -365,15 +367,15 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         subjId,
                         taskName,
                         deserializePortable,
-                        filters,
-                        expiryPlc);
+                        expiryPlc,
+                        skipVals);
                 }
                 else {
                     fut = tx.getAllAsync(cctx,
                         keys.keySet(),
                         null,
                         deserializePortable,
-                        filters);
+                        skipVals);
                 }
             }
         }
@@ -391,9 +393,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (reload && cctx.readThrough() && cctx.store().configured()) {
                             return cache().reloadAllAsync(keys.keySet(),
                                 true,
+                                skipVals,
                                 subjId,
-                                taskName,
-                                filters);
+                                taskName);
                         }
                         else {
                             if (tx == null) {
@@ -402,15 +404,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     subjId,
                                     taskName,
                                     deserializePortable,
-                                    filters,
-                                    expiryPlc);
+                                    expiryPlc, skipVals);
                             }
                             else {
                                 return tx.getAllAsync(cctx,
                                     keys.keySet(),
                                     null,
                                     deserializePortable,
-                                    filters);
+                                    skipVals);
                             }
                         }
                     }

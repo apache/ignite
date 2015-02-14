@@ -18,21 +18,18 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -41,12 +38,14 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
 
 import javax.management.*;
+import javax.cache.processor.*;
+import javax.cache.expiry.*;
+import javax.cache.integration.*;
+import javax.cache.event.*;
 import java.lang.management.*;
-import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
@@ -158,12 +157,6 @@ public class IgniteConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
-    /** Default keep alive time for REST thread pool. */
-    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
-
-    /** Default max queue capacity of REST thread pool. */
-    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
-
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
 
@@ -184,18 +177,6 @@ public class IgniteConfiguration {
 
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
-
-    /** Default TCP_NODELAY flag. */
-    public static final boolean DFLT_TCP_NODELAY = true;
-
-    /** Default TCP direct buffer flag. */
-    public static final boolean DFLT_REST_TCP_DIRECT_BUF = false;
-
-    /** Default REST idle timeout. */
-    public static final int DFLT_REST_IDLE_TIMEOUT = 7000;
-
-    /** Default rest port range. */
-    public static final int DFLT_REST_PORT_RANGE = 100;
 
     /** Default marshal local jobs flag. */
     public static final boolean DFLT_MARSHAL_LOCAL_JOBS = false;
@@ -221,8 +202,8 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS pool size. */
-    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
+    /** IGFS pool size. */
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -250,9 +231,6 @@ public class IgniteConfiguration {
 
     /** Daemon flag. */
     private boolean daemon;
-
-    /** Jetty XML configuration path. */
-    private String jettyPath;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -319,12 +297,6 @@ public class IgniteConfiguration {
 
     /** Collision SPI. */
     private CollisionSpi colSpi;
-
-    /** Authentication SPI. */
-    private AuthenticationSpi authSpi;
-
-    /** Secure session SPI. */
-    private SecureSessionSpi sesSpi;
 
     /** Deployment SPI. */
     private DeploymentSpi deploySpi;
@@ -401,14 +373,8 @@ public class IgniteConfiguration {
     /** Port number range for time server. */
     private int timeSrvPortRange = DFLT_TIME_SERVER_PORT_RANGE;
 
-    /** REST secret key. */
-    private String restSecretKey;
-
     /** Property names to include into node attributes. */
     private String[] includeProps;
-
-    /** License custom URL. */
-    private String licUrl;
 
     /** Frequency of metrics log print out. */
     @SuppressWarnings("RedundantFieldInitialization")
@@ -417,59 +383,11 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** TCP host. */
-    private String restTcpHost;
-
-    /** TCP port. */
-    private int restTcpPort = DFLT_TCP_PORT;
-
-    /** TCP no delay flag. */
-    private boolean restTcpNoDelay = DFLT_TCP_NODELAY;
-
-    /** REST TCP direct buffer flag. */
-    private boolean restTcpDirectBuf = DFLT_REST_TCP_DIRECT_BUF;
-
-    /** REST TCP send buffer size. */
-    private int restTcpSndBufSize;
-
-    /** REST TCP receive buffer size. */
-    private int restTcpRcvBufSize;
-
-    /** REST TCP send queue limit. */
-    private int restTcpSndQueueLimit;
-
-    /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
-
-    /** Idle timeout. */
-    private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;
-
-    /** SSL enable flag, default is disabled. */
-    private boolean restTcpSslEnabled;
-
-    /** SSL need client auth flag. */
-    private boolean restTcpSslClientAuth;
-
-    /** SSL context factory for rest binary server. */
-    private GridSslContextFactory restTcpSslCtxFactory;
-
-    /** Port range */
-    private int restPortRange = DFLT_REST_PORT_RANGE;
-
-    /** Folders accessible by REST. */
-    private String[] restAccessibleFolders;
-
-    /** GGFS configuration. */
-    private IgniteFsConfiguration[] ggfsCfg;
-
-    /** Client message interceptor. */
-    private ClientMessageInterceptor clientMsgInterceptor;
+    /** IGFS configuration. */
+    private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
-
-    /** Security credentials. */
-    private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
@@ -478,7 +396,7 @@ public class IgniteConfiguration {
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private ClientConnectionConfiguration clientCfg;
+    private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
@@ -488,6 +406,9 @@ public class IgniteConfiguration {
 
     /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
+
+    /** User's class loader. */
+    private ClassLoader classLdr;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -514,8 +435,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        authSpi = cfg.getAuthenticationSpi();
-        sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
@@ -530,8 +449,8 @@ public class IgniteConfiguration {
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
-        clientCfg = cfg.getClientConnectionConfiguration();
-        clientMsgInterceptor = cfg.getClientMessageInterceptor();
+        connectorCfg = cfg.getConnectorConfiguration();
+        classLdr = cfg.getClassLoader();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
@@ -540,13 +459,11 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
+        igfsCfg = cfg.getIgfsConfiguration();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        jettyPath = cfg.getRestJettyPath();
-        licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
@@ -567,23 +484,6 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
-        restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restIdleTimeout = cfg.getRestIdleTimeout();
-        restPortRange = cfg.getRestPortRange();
-        restSecretKey = cfg.getRestSecretKey();
-        restTcpHost = cfg.getRestTcpHost();
-        restTcpNoDelay = cfg.isRestTcpNoDelay();
-        restTcpDirectBuf = cfg.isRestTcpDirectBuffer();
-        restTcpSndBufSize = cfg.getRestTcpSendBufferSize();
-        restTcpRcvBufSize = cfg.getRestTcpReceiveBufferSize();
-        restTcpSndQueueLimit = cfg.getRestTcpSendQueueLimit();
-        restTcpSelectorCnt = cfg.getRestTcpSelectorCount();
-        restTcpPort = cfg.getRestTcpPort();
-        restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
-        restTcpSslEnabled = cfg.isRestTcpSslEnabled();
-        restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
-        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -620,16 +520,6 @@ public class IgniteConfiguration {
      */
     public boolean isLifeCycleEmailNotification() {
         return lifeCycleEmailNtf;
-    }
-
-    /**
-     * Gets custom license file URL to be used instead of default license file location.
-     *
-     * @return Custom license file URL or {@code null} to use the default
-     *      {@code $IGNITE_HOME}-related location.
-     */
-    public String getLicenseUrl() {
-        return licUrl;
     }
 
     /**
@@ -771,15 +661,6 @@ public class IgniteConfiguration {
      */
     public String getSmtpFromEmail() {
         return smtpFromEmail;
-    }
-
-    /**
-     * Sets license URL different from the default location of the license file.
-     *
-     * @param licUrl License URl to set.
-     */
-    public void setLicenseUrl(String licUrl) {
-        this.licUrl = licUrl;
     }
 
     /**
@@ -1025,7 +906,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.apache.ignite.logger.log4j.IgniteLog4jLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j.Log4JLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -1097,14 +978,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing GGFS messages.
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
      * <p>
      * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool size to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for IGFS outgoing message sending.
      */
-    public int getGgfsThreadPoolSize() {
-        return ggfsPoolSize;
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
     }
 
     /**
@@ -1148,13 +1029,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Set thread pool size that will be used to process outgoing GGFS messages.
+     * Set thread pool size that will be used to process outgoing IGFS messages.
      *
-     * @param poolSize Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsThreadPoolSize()
+     * @param poolSize Executor service to use for outgoing IGFS messages.
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
-    public void setGgfsThreadPoolSize(int poolSize) {
-        this.ggfsPoolSize = poolSize;
+    public void setIgfsThreadPoolSize(int poolSize) {
+        this.igfsPoolSize = poolSize;
     }
 
     /**
@@ -1789,48 +1670,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} will be used.
-     *
-     * @return Grid authentication SPI implementation or {@code null} to use default implementation.
-     */
-    public AuthenticationSpi getAuthenticationSpi() {
-        return authSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi}.
-     *
-     * @param authSpi Fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getAuthenticationSpi()
-     */
-    public void setAuthenticationSpi(AuthenticationSpi authSpi) {
-        this.authSpi = authSpi;
-    }
-
-    /**
-     * Should return fully configured secure session SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} will be used.
-     *
-     * @return Grid secure session SPI implementation or {@code null} to use default implementation.
-     */
-    public SecureSessionSpi getSecureSessionSpi() {
-        return sesSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi}.
-     *
-     * @param sesSpi Fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getSecureSessionSpi()
-     */
-    public void setSecureSessionSpi(SecureSessionSpi sesSpi) {
-        this.sesSpi = sesSpi;
-    }
-
-    /**
      * Should return fully configured deployment SPI implementation. If not provided,
      * {@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi} will be used.
      *
@@ -2126,389 +1965,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
-     * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
-     * accessing Ignite APIs remotely.
-     *
-     * @param jettyPath Path to {@code JETTY} XML configuration file.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestJettyPath(String)}.
-     */
-    @Deprecated
-    public void setRestJettyPath(String jettyPath) {
-        this.jettyPath = jettyPath;
-    }
-
-    /**
-     * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
-     * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
-     * accessing Ignite APIs remotely.
-     * <p>
-     * If not provided, Jetty instance with default configuration will be started picking
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT}
-     * as host and port respectively.
-     *
-     * @return Path to {@code JETTY} XML configuration file.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestJettyPath()}.
-     */
-    @Deprecated
-    public String getRestJettyPath() {
-        return jettyPath;
-    }
-
-    /**
-     * Gets host for TCP binary protocol server. This can be either an
-     * IP address or a domain name.
-     * <p>
-     * If not defined, system-wide local address will be used
-     * (see {@link #getLocalHost()}.
-     * <p>
-     * You can also use {@code 0.0.0.0} value to bind to all
-     * locally-available IP addresses.
-     *
-     * @return TCP host.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpHost()}.
-     */
-    @Deprecated
-    public String getRestTcpHost() {
-        return restTcpHost;
-    }
-
-    /**
-     * Sets host for TCP binary protocol server.
-     *
-     * @param restTcpHost TCP host.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpHost(String)}.
-     */
-    @Deprecated
-    public void setRestTcpHost(String restTcpHost) {
-        this.restTcpHost = restTcpHost;
-    }
-
-    /**
-     * Gets port for TCP binary protocol server.
-     * <p>
-     * Default is {@link #DFLT_TCP_PORT}.
-     *
-     * @return TCP port.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpPort()}.
-     */
-    @Deprecated
-    public int getRestTcpPort() {
-        return restTcpPort;
-    }
-
-    /**
-     * Sets port for TCP binary protocol server.
-     *
-     * @param restTcpPort TCP port.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpPort(int)}.
-     */
-    @Deprecated
-    public void setRestTcpPort(int restTcpPort) {
-        this.restTcpPort = restTcpPort;
-    }
-
-    /**
-     * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
-     * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
-     *
-     * @return Whether {@code TCP_NODELAY} option should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpNoDelay()}.
-     */
-    @Deprecated
-    public boolean isRestTcpNoDelay() {
-        return restTcpNoDelay;
-    }
-
-    /**
-     * Sets whether {@code TCP_NODELAY} option should be set for all accepted client connections.
-     *
-     * @param restTcpNoDelay {@code True} if option should be enabled.
-     * @see #isRestTcpNoDelay()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpNoDelay(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpNoDelay(boolean restTcpNoDelay) {
-        this.restTcpNoDelay = restTcpNoDelay;
-    }
-
-    /**
-     * Gets flag indicating whether REST TCP server should use direct buffers. A direct buffer is a buffer
-     * that is allocated and accessed using native system calls, without using JVM heap. Enabling direct
-     * buffer <em>may</em> improve performance and avoid memory issues (long GC pauses due to huge buffer
-     * size).
-     *
-     * @return Whether direct buffer should be used.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpDirectBuffer()}.
-     */
-    @Deprecated
-    public boolean isRestTcpDirectBuffer() {
-        return restTcpDirectBuf;
-    }
-
-    /**
-     * Sets whether to use direct buffer for REST TCP server.
-     *
-     * @param restTcpDirectBuf {@code True} if option should be enabled.
-     * @see #isRestTcpDirectBuffer()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpDirectBuffer(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpDirectBuffer(boolean restTcpDirectBuf) {
-        this.restTcpDirectBuf = restTcpDirectBuf;
-    }
-
-    /**
-     * Gets REST TCP server send buffer size.
-     *
-     * @return REST TCP server send buffer size (0 for default).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendBufferSize()}.
-     */
-    @Deprecated
-    public int getRestTcpSendBufferSize() {
-        return restTcpSndBufSize;
-    }
-
-    /**
-     * Sets REST TCP server send buffer size.
-     *
-     * @param restTcpSndBufSize Send buffer size.
-     * @see #getRestTcpSendBufferSize()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendBufferSize(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSendBufferSize(int restTcpSndBufSize) {
-        this.restTcpSndBufSize = restTcpSndBufSize;
-    }
-
-    /**
-     * Gets REST TCP server receive buffer size.
-     *
-     * @return REST TCP server receive buffer size (0 for default).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpReceiveBufferSize()}.
-     */
-    @Deprecated
-    public int getRestTcpReceiveBufferSize() {
-        return restTcpRcvBufSize;
-    }
-
-    /**
-     * Sets REST TCP server receive buffer size.
-     *
-     * @param restTcpRcvBufSize Receive buffer size.
-     * @see #getRestTcpReceiveBufferSize()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpReceiveBufferSize(int)}.
-     */
-    @Deprecated
-    public void setRestTcpReceiveBufferSize(int restTcpRcvBufSize) {
-        this.restTcpRcvBufSize = restTcpRcvBufSize;
-    }
-
-    /**
-     * Gets REST TCP server send queue limit. If the limit exceeds, all successive writes will
-     * block until the queue has enough capacity.
-     *
-     * @return REST TCP server send queue limit (0 for unlimited).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendQueueLimit()}.
-     */
-    @Deprecated
-    public int getRestTcpSendQueueLimit() {
-        return restTcpSndQueueLimit;
-    }
-
-    /**
-     * Sets REST TCP server send queue limit.
-     *
-     * @param restTcpSndQueueLimit REST TCP server send queue limit (0 for unlimited).
-     * @see #getRestTcpSendQueueLimit()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendQueueLimit(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSendQueueLimit(int restTcpSndQueueLimit) {
-        this.restTcpSndQueueLimit = restTcpSndQueueLimit;
-    }
-
-    /**
-     * Gets number of selector threads in REST TCP server. Higher value for this parameter
-     * may increase throughput, but also increases context switching.
-     *
-     * @return Number of selector threads for REST TCP server.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSelectorCount()}.
-     */
-    @Deprecated
-    public int getRestTcpSelectorCount() {
-        return restTcpSelectorCnt;
-    }
-
-    /**
-     * Sets number of selector threads for REST TCP server.
-     *
-     * @param restTcpSelectorCnt Number of selector threads for REST TCP server.
-     * @see #getRestTcpSelectorCount()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSelectorCount(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSelectorCount(int restTcpSelectorCnt) {
-        this.restTcpSelectorCnt = restTcpSelectorCnt;
-    }
-
-    /**
-     * Gets idle timeout for REST server.
-     * <p>
-     * This setting is used to reject half-opened sockets. If no packets
-     * come within idle timeout, the connection is closed.
-     *
-     * @return Idle timeout in milliseconds.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestIdleTimeout()}.
-     */
-    @Deprecated
-    public long getRestIdleTimeout() {
-        return restIdleTimeout;
-    }
-
-    /**
-     * Sets idle timeout for REST server.
-     *
-     * @param restIdleTimeout Idle timeout in milliseconds.
-     * @see #getRestIdleTimeout()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestIdleTimeout(long)}.
-     */
-    @Deprecated
-    public void setRestIdleTimeout(long restIdleTimeout) {
-        this.restIdleTimeout = restIdleTimeout;
-    }
-
-    /**
-     * Whether secure socket layer should be enabled on binary rest server.
-     * <p>
-     * Note that if this flag is set to {@code true}, an instance of {@link GridSslContextFactory}
-     * should be provided, otherwise binary rest protocol will fail to start.
-     *
-     * @return {@code True} if SSL should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslEnabled()}.
-     */
-    @Deprecated
-    public boolean isRestTcpSslEnabled() {
-        return restTcpSslEnabled;
-    }
-
-    /**
-     * Sets whether Secure Socket Layer should be enabled for REST TCP binary protocol.
-     * <p/>
-     * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
-     * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
-     *
-     * @param restTcpSslEnabled {@code True} if SSL should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslEnabled(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpSslEnabled(boolean restTcpSslEnabled) {
-        this.restTcpSslEnabled = restTcpSslEnabled;
-    }
-
-    /**
-     * Gets a flag indicating whether or not remote clients will be required to have a valid SSL certificate which
-     * validity will be verified with trust manager.
-     *
-     * @return Whether or not client authentication is required.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslClientAuth()}.
-     */
-    @Deprecated
-    public boolean isRestTcpSslClientAuth() {
-        return restTcpSslClientAuth;
-    }
-
-    /**
-     * Sets flag indicating whether or not SSL client authentication is required.
-     *
-     * @param needClientAuth Whether or not client authentication is required.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslClientAuth(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpSslClientAuth(boolean needClientAuth) {
-        restTcpSslClientAuth = needClientAuth;
-    }
-
-    /**
-     * Gets context factory that will be used for creating a secure socket layer of rest binary server.
-     *
-     * @return SslContextFactory instance.
-     * @see GridSslContextFactory
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSslContextFactory()}.
-     */
-    @Deprecated
-    public GridSslContextFactory getRestTcpSslContextFactory() {
-        return restTcpSslCtxFactory;
-    }
-
-    /**
-     * Sets instance of {@link GridSslContextFactory} that will be used to create an instance of {@code SSLContext}
-     * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
-     * {@link #setRestTcpSslEnabled(boolean)} is set to {@code true}.
-     *
-     * @param restTcpSslCtxFactory Instance of {@link GridSslContextFactory}
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslContextFactory(GridSslContextFactory)}.
-     */
-    @Deprecated
-    public void setRestTcpSslContextFactory(GridSslContextFactory restTcpSslCtxFactory) {
-        this.restTcpSslCtxFactory = restTcpSslCtxFactory;
-    }
-
-    /**
-     * Gets number of ports to try if configured port is already in use.
-     *
-     * @return Number of ports to try.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestPortRange()}.
-     */
-    @Deprecated
-    public int getRestPortRange() {
-        return restPortRange;
-    }
-
-    /**
-     * Sets number of ports to try if configured one is in use.
-     *
-     * @param restPortRange Port range.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestPortRange(int)}.
-     */
-    @Deprecated
-    public void setRestPortRange(int restPortRange) {
-        this.restPortRange = restPortRange;
-    }
-
-    /**
-     * Gets list of folders that are accessible for log reading command. When remote client requests
-     * a log file, file path is checked against this list. If requested file is not located in any
-     * sub-folder of these folders, request is not processed.
-     * <p>
-     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
-     * could not be detected and property is not specified, no restrictions applied.
-     *
-     * @return Array of folders that are allowed be read by remote clients.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestAccessibleFolders()}.
-     */
-    @Deprecated
-    public String[] getRestAccessibleFolders() {
-        return restAccessibleFolders;
-    }
-
-    /**
-     * Sets array of folders accessible by REST processor for log reading command.
-     *
-     * @param restAccessibleFolders Array of folder paths.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestAccessibleFolders(String...)}.
-     */
-    @Deprecated
-    public void setRestAccessibleFolders(String... restAccessibleFolders) {
-        this.restAccessibleFolders = restAccessibleFolders;
-    }
-
-    /**
      * Sets system-wide local address or host for all Ignite components to bind to. If provided it will
      * override all default local bind settings within Ignite or any of its SPIs.
      *
@@ -2575,30 +2031,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
-     *
-     * @param restSecretKey REST secret key.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestSecretKey(String)}.
-     */
-    @Deprecated
-    public void setRestSecretKey(String restSecretKey) {
-        this.restSecretKey = restSecretKey;
-    }
-
-    /**
-     * Gets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
-     *
-     * @return Secret key.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestSecretKey()}.
-     */
-    @Deprecated
-    public String getRestSecretKey() {
-        return restSecretKey;
-    }
-
-    /**
      * Gets array of system or environment properties to include into node attributes.
      * If this array is {@code null}, which is default, then all system and environment
      * properties will be included. If this array is empty, then none will be included.
@@ -2648,57 +2080,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets interceptor for objects, moving to and from remote clients.
-     * If this method returns {@code null} then no interception will be applied.
-     * <p>
-     * Setting interceptor allows to transform all objects exchanged via REST protocol.
-     * For example if you use custom serialisation on client you can write interceptor
-     * to transform binary representations received from client to Java objects and later
-     * access them from java code directly.
-     * <p>
-     * Default value is {@code null}.
+     * Gets IGFS configurations.
      *
-     * @see ClientMessageInterceptor
-     * @return Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#getClientMessageInterceptor()}.
+     * @return IGFS configurations.
      */
-    @Deprecated
-    public ClientMessageInterceptor getClientMessageInterceptor() {
-        return clientMsgInterceptor;
+    public IgfsConfiguration[] getIgfsConfiguration() {
+        return igfsCfg;
     }
 
     /**
-     * Sets client message interceptor.
-     * <p>
-     * Setting interceptor allows to transform all objects exchanged via REST protocol.
-     * For example if you use custom serialisation on client you can write interceptor
-     * to transform binary representations received from client to Java objects and later
-     * access them from java code directly.
+     * Sets IGFS configurations.
      *
-     * @param interceptor Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(ClientMessageInterceptor)}.
+     * @param igfsCfg IGFS configurations.
      */
-    @Deprecated
-    public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {
-        clientMsgInterceptor = interceptor;
-    }
-
-    /**
-     * Gets GGFS configurations.
-     *
-     * @return GGFS configurations.
-     */
-    public IgniteFsConfiguration[] getGgfsConfiguration() {
-        return ggfsCfg;
-    }
-
-    /**
-     * Sets GGFS configurations.
-     *
-     * @param ggfsCfg GGFS configurations.
-     */
-    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
-        this.ggfsCfg = ggfsCfg;
+    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
     }
 
     /**
@@ -2738,35 +2134,17 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets security credentials.
-     *
-     * @return Security credentials.
+     * @return Connector configuration.
      */
-    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
-        return securityCred;
+    public ConnectorConfiguration getConnectorConfiguration() {
+        return connectorCfg;
     }
 
     /**
-     * Sets security credentials.
-     *
-     * @param securityCred Security credentials.
+     * @param connectorCfg Connector configuration.
      */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
-        this.securityCred = securityCred;
-    }
-
-    /**
-     * @return Client connection configuration.
-     */
-    public ClientConnectionConfiguration getClientConnectionConfiguration() {
-        return clientCfg;
-    }
-
-    /**
-     * @param clientCfg Client connection configuration.
-     */
-    public void setClientConnectionConfiguration(ClientConnectionConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
+    public void setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
+        this.connectorCfg = connectorCfg;
     }
 
     /**
@@ -2886,6 +2264,24 @@ public class IgniteConfiguration {
      */
     public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;
+    }
+
+    /**
+     * Sets loader which will be used for instantiating execution context ({@link EntryProcessor EntryProcessors},
+     * {@link CacheEntryListener CacheEntryListeners}, {@link CacheLoader CacheLoaders} and
+     * {@link ExpiryPolicy ExpiryPolicys}).
+     *
+     * @param classLdr Class loader.
+     */
+    public void setClassLoader(ClassLoader classLdr) {
+        this.classLdr = classLdr;
+    }
+
+    /**
+     * @return User's class loader.
+     */
+    public ClassLoader getClassLoader() {
+        return classLdr;
     }
 
     /** {@inheritDoc} */

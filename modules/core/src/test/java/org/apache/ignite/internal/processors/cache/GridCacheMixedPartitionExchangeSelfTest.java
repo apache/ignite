@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -91,9 +92,9 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         int key = rnd.nextInt(keys);
 
-                        GridCache<Integer, Integer> prj = grid(g).cache(null);
+                        IgniteCache<Integer, Integer> prj = grid(g).jcache(null);
 
-                        try (IgniteTx tx = prj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = grid(g).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             Integer val = prj.get(key);
 
                             val = val == null ? 1 : val + 1;

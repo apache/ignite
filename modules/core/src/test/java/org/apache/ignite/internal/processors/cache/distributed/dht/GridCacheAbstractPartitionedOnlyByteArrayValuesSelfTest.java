@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -42,13 +43,13 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     protected static final String CACHE_ATOMIC_OFFHEAP_TIERED = "cache_atomic_offheap_tiered";
 
     /** Atomic caches. */
-    private static GridCache<Integer, Object>[] cachesAtomic;
+    private static IgniteCache<Integer, Object>[] cachesAtomic;
 
     /** Atomic offheap caches. */
-    private static GridCache<Integer, Object>[] cachesAtomicOffheap;
+    private static IgniteCache<Integer, Object>[] cachesAtomicOffheap;
 
     /** Atomic offheap caches. */
-    private static GridCache<Integer, Object>[] cachesAtomicOffheapTiered;
+    private static IgniteCache<Integer, Object>[] cachesAtomicOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -98,14 +99,14 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         int gridCnt = gridCount();
 
-        cachesAtomic = new GridCache[gridCnt];
-        cachesAtomicOffheap = new GridCache[gridCnt];
-        cachesAtomicOffheapTiered = new GridCache[gridCnt];
+        cachesAtomic = new IgniteCache[gridCnt];
+        cachesAtomicOffheap = new IgniteCache[gridCnt];
+        cachesAtomicOffheapTiered = new IgniteCache[gridCnt];
 
         for (int i = 0; i < gridCount(); i++) {
-            cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
-            cachesAtomicOffheap[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP);
-            cachesAtomicOffheapTiered[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
+            cachesAtomic[i] = ignites[i].jcache(CACHE_ATOMIC);
+            cachesAtomicOffheap[i] = ignites[i].jcache(CACHE_ATOMIC_OFFHEAP);
+            cachesAtomicOffheapTiered[i] = ignites[i].jcache(CACHE_ATOMIC_OFFHEAP_TIERED);
         }
     }
 
@@ -151,13 +152,13 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
      * @param caches Caches.
      * @throws Exception If failed.
      */
-    private void testAtomic0(GridCache<Integer, Object>[] caches) throws Exception {
+    private void testAtomic0(IgniteCache<Integer, Object>[] caches) throws Exception {
         byte[] val = wrap(1);
 
-        for (GridCache<Integer, Object> cache : caches) {
+        for (IgniteCache<Integer, Object> cache : caches) {
             cache.put(KEY_1, val);
 
-            for (GridCache<Integer, Object> cacheInner : caches)
+            for (IgniteCache<Integer, Object> cacheInner : caches)
                 assertArrayEquals(val, (byte[])cacheInner.get(KEY_1));
 
             cache.remove(KEY_1);

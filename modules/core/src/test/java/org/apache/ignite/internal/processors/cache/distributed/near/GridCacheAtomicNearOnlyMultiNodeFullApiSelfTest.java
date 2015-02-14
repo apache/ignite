@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -71,7 +71,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
 
         super.afterTest();
     }
@@ -115,8 +115,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     }
 
     /** {@inheritDoc} */
-    // TODO: IGNITE-206: Enable when fixed.
-    @Override public void _testEvictExpired() throws Exception {
+    @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
@@ -133,7 +132,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        cache.localEvict(Collections.<String>singleton(key));
+        cache.localEvict(Collections.singleton(key));
 
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
@@ -143,15 +142,13 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         assertTrue(cache.localSize() == 0);
 
-        // Force reload on primary node.
-        for (int i = 0; i < gridCount(); i++) {
-            if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
-                load(jcache(i), key, true);
-        }
-
-        // Will do near get request.
         load(cache, key, true);
 
-        assertEquals((Integer)1, cache.localPeek(key, CachePeekMode.ONHEAP));
+        CacheAffinity<String> aff = ignite(0).affinity(null);
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
+        }
     }
 }

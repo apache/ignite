@@ -68,11 +68,11 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(LOC_HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -92,8 +92,9 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache.
      */
+    @Deprecated
     @Override protected <K, V> GridCache<K, V> cache() {
-        return grid(0).cache(null);
+        throw new UnsupportedOperationException();
     }
 
     /**

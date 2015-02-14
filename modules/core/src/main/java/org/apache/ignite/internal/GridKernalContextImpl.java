@@ -28,8 +28,6 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.failover.*;
 import org.apache.ignite.internal.managers.indexing.*;
 import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.managers.securesession.*;
-import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -42,11 +40,10 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
@@ -56,6 +53,8 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.schedule.*;
+import org.apache.ignite.internal.processors.securesession.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
@@ -63,7 +62,6 @@ import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -127,11 +125,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityManager authMgr;
+    private GridSecurityProcessor authProc;
 
     /** */
     @GridToStringExclude
-    private GridSecureSessionManager sesMgr;
+    private GridSecureSessionProcessor secProc;
 
     /** */
     @GridToStringExclude
@@ -216,11 +214,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgniteFsProcessorAdapter ggfsProc;
+    private IgfsProcessorAdapter igfsProc;
 
     /** */
     @GridToStringInclude
-    private IgniteFsHelper ggfsHelper;
+    private IgfsHelper igfsHelper;
 
     /** */
     @GridToStringInclude
@@ -229,10 +227,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridAffinityProcessor affProc;
-
-    /** */
-    @GridToStringInclude
-    private GridLicenseProcessor licProc;
 
     /** */
     @GridToStringInclude
@@ -284,7 +278,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private ExecutorService ggfsExecSvc;
+    private ExecutorService igfsExecSvc;
 
     /** */
     @GridToStringExclude
@@ -296,9 +290,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     private ExecutorService utilityCachePool;
-
-    /** */
-    private IgniteProduct product;
 
     /** */
     private IgniteConfiguration cfg;
@@ -314,9 +305,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
-
-    /** Enterprise release flag. */
-    private boolean ent;
 
     /**
      * No-arg constructor is required by externalization.
@@ -337,9 +325,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      *  @param sysExecSvc System executor service.
      *  @param p2pExecSvc P2P executor service.
      *  @param mgmtExecSvc Management executor service.
-     *  @param ggfsExecSvc GGFS executor service.
+     *  @param igfsExecSvc IGFS executor service.
      *  @param restExecSvc REST executor service.
-     *  @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -352,9 +339,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService ggfsExecSvc,
-        ExecutorService restExecSvc,
-        boolean ent) {
+        ExecutorService igfsExecSvc,
+        ExecutorService restExecSvc) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -362,13 +348,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.ent = ent;
         this.utilityCachePool = utilityCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
-        this.ggfsExecSvc = ggfsExecSvc;
+        this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
 
         try {
@@ -416,10 +401,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridSecurityManager)
-            authMgr = (GridSecurityManager)comp;
-        else if (comp instanceof GridSecureSessionManager)
-            sesMgr = (GridSecureSessionManager)comp;
+        else if (comp instanceof GridSecurityProcessor)
+            authProc = (GridSecurityProcessor)comp;
+        else if (comp instanceof GridSecureSessionProcessor)
+            secProc = (GridSecureSessionProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridSwapSpaceManager)
@@ -466,12 +451,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof IgniteFsProcessorAdapter)
-            ggfsProc = (IgniteFsProcessorAdapter)comp;
+        else if (comp instanceof IgfsProcessorAdapter)
+            igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridLicenseProcessor)
-            licProc = (GridLicenseProcessor)comp;
         else if (comp instanceof GridStreamProcessor)
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
@@ -498,15 +481,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     public void addHelper(Object helper) {
         assert helper != null;
 
-        if (helper instanceof IgniteFsHelper)
-            ggfsHelper = (IgniteFsHelper)helper;
+        if (helper instanceof IgfsHelper)
+            igfsHelper = (IgfsHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<String> compatibleVersions() {
-        return grid.compatibleVersions();
     }
 
     /** {@inheritDoc} */
@@ -652,13 +630,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityManager security() {
-        return authMgr;
+    @Override public GridSecurityProcessor security() {
+        return authProc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecureSessionManager secureSession() {
-        return sesMgr;
+    @Override public GridSecureSessionProcessor secureSession() {
+        return secProc;
     }
 
     /** {@inheritDoc} */
@@ -674,11 +652,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridLicenseProcessor license() {
-        return licProc;
     }
 
     /** {@inheritDoc} */
@@ -703,13 +676,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsProcessorAdapter ggfs() {
-        return ggfsProc;
+    @Override public IgfsProcessorAdapter igfs() {
+        return igfsProc;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsHelper ggfsHelper() {
-        return ggfsHelper;
+    @Override public IgfsHelper igfsHelper() {
+        return igfsHelper;
     }
 
     /** {@inheritDoc} */
@@ -768,18 +741,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /**
-     * @param product Product.
-     */
-    public void product(IgniteProduct product) {
-        this.product = product;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
-        return product;
-    }
-
-    /**
      * Sets time source. For test purposes only.
      *
      * @param clockSrc Time source.
@@ -791,11 +752,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEnterprise() {
-        return ent;
     }
 
     /** {@inheritDoc} */
@@ -828,6 +784,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
         T res = pluginProc.createComponent(cls);
 
@@ -900,8 +857,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getGgfsExecutorService() {
-        return ggfsExecSvc;
+    @Override public ExecutorService getIgfsExecutorService() {
+        return igfsExecSvc;
     }
 
     /** {@inheritDoc} */

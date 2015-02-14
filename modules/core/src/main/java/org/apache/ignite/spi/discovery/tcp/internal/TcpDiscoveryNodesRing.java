@@ -548,8 +548,6 @@ public class TcpDiscoveryNodesRing {
                 return true;
             }
 
-            U.debug("KARAMBA [old=" + this.topVer + ", new=" + topVer + ']');
-
             return false;
         }
         finally {

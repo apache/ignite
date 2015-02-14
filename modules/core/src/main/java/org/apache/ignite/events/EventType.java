@@ -36,13 +36,10 @@ import java.util.*;
  * <li>{@link #EVTS_DISCOVERY_ALL}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
- * <li>{@link #EVTS_LICENSE}</li>
  * <li>{@link #EVTS_CACHE}</li>
  * <li>{@link #EVTS_CACHE_PRELOAD}</li>
  * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_SWAPSPACE}</li>
- * <li>{@link #EVTS_AUTHENTICATION}</li>
- * <li>{@link #EVTS_SECURE_SESSION}</li>
  * </ul>
  * <p>
  * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -621,88 +618,6 @@ public interface EventType {
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
     /**
-     * Built-in event type: license violation detected.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_VIOLATION = 108;
-
-    /**
-     * Built-in event type: license violation cleared.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_CLEARED = 109;
-
-    /**
-     * Built-in event type: license violation grace period is expired.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int EVT_LIC_GRACE_EXPIRED = 110;
-
-    /**
-     * Built-in event type: authentication succeed.
-     * <p>
-     * Authentication procedure succeed. This event is triggered every time
-     * an authentication procedure finished without exception.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int EVT_AUTHENTICATION_SUCCEEDED = 111;
-
-    /**
-     * Built-in event type: authentication failed.
-     * <p>
-     * Authentication procedure failed. This means that  there was some error event
-     * during authentication procedure and authentication procedure was not successful.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int EVT_AUTHENTICATION_FAILED = 112;
-
-    /**
-     * Built-in event type: secure session validation succeed.
-     * <p>
-     * Secure session validation succeed. This event is triggered every time
-     * a validation of secure session procedure finished without exception.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SecureSessionEvent
-     */
-    public static final int EVT_SECURE_SESSION_VALIDATION_SUCCEEDED = 113;
-
-    /**
-     * Built-in event type: secure session validation failed.
-     * <br>
-     * Secure session validation failed. This means that  there was some error event
-     * during secure session validation procedure and validation was not succeed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SecureSessionEvent
-     */
-    public static final int EVT_SECURE_SESSION_VALIDATION_FAILED = 114;
-
-    /**
      * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -711,187 +626,148 @@ public interface EventType {
     public static final int EVT_VISOR_EVENTS_LOST = 115;
 
     /**
-     * Built-in event type: GGFS file created.
+     * Built-in event type: IGFS file created.
      * <p>
-     * Fired when GGFS component creates new file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgniteFsEvent
-     */
-    public static final int EVT_GGFS_FILE_CREATED = 116;
-
-    /**
-     * Built-in event type: GGFS file renamed.
-     * <p>
-     * Fired when GGFS component renames an existing file.
+     * Fired when IGFS component creates new file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_RENAMED = 117;
+    public static final int EVT_IGFS_FILE_CREATED = 116;
 
     /**
-     * Built-in event type: GGFS file deleted.
+     * Built-in event type: IGFS file renamed.
      * <p>
-     * Fired when GGFS component deletes a file.
+     * Fired when IGFS component renames an existing file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_DELETED = 118;
+    public static final int EVT_IGFS_FILE_RENAMED = 117;
 
     /**
-     * Built-in event type: GGFS file opened for reading.
+     * Built-in event type: IGFS file deleted.
      * <p>
-     * Fired when GGFS file is opened for reading.
+     * Fired when IGFS component deletes a file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_OPENED_READ = 119;
+    public static final int EVT_IGFS_FILE_DELETED = 118;
 
     /**
-     * Built-in event type: GGFS file opened for writing.
+     * Built-in event type: IGFS file opened for reading.
      * <p>
-     * Fired when GGFS file is opened for writing.
+     * Fired when IGFS file is opened for reading.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_OPENED_WRITE = 120;
+    public static final int EVT_IGFS_FILE_OPENED_READ = 119;
 
     /**
-     * Built-in event type: GGFS file or directory metadata updated.
+     * Built-in event type: IGFS file opened for writing.
      * <p>
-     * Fired when GGFS file or directory metadata is updated.
+     * Fired when IGFS file is opened for writing.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_META_UPDATED = 121;
+    public static final int EVT_IGFS_FILE_OPENED_WRITE = 120;
 
     /**
-     * Built-in event type: GGFS file closed.
+     * Built-in event type: IGFS file or directory metadata updated.
      * <p>
-     * Fired when GGFS file is closed.
+     * Fired when IGFS file or directory metadata is updated.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_CLOSED_WRITE = 122;
+    public static final int EVT_IGFS_META_UPDATED = 121;
 
     /**
-     * Built-in event type: GGFS file closed.
+     * Built-in event type: IGFS file closed.
      * <p>
-     * Fired when GGFS file is closed.
+     * Fired when IGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_CLOSED_READ = 123;
+    public static final int EVT_IGFS_FILE_CLOSED_WRITE = 122;
 
     /**
-     * Built-in event type: GGFS directory created.
+     * Built-in event type: IGFS file closed.
      * <p>
-     * Fired when GGFS component creates new directory.
+     * Fired when IGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_CREATED = 124;
+    public static final int EVT_IGFS_FILE_CLOSED_READ = 123;
 
     /**
-     * Built-in event type: GGFS directory renamed.
+     * Built-in event type: IGFS directory created.
      * <p>
-     * Fired when GGFS component renames an existing directory.
+     * Fired when IGFS component creates new directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_RENAMED = 125;
+    public static final int EVT_IGFS_DIR_CREATED = 124;
 
     /**
-     * Built-in event type: GGFS directory deleted.
+     * Built-in event type: IGFS directory renamed.
      * <p>
-     * Fired when GGFS component deletes a directory.
+     * Fired when IGFS component renames an existing directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_DIR_DELETED = 126;
+    public static final int EVT_IGFS_DIR_RENAMED = 125;
 
     /**
-     * Built-in event type: GGFS file purged.
+     * Built-in event type: IGFS directory deleted.
      * <p>
-     * Fired when GGFS file data was actually removed from cache.
+     * Fired when IGFS component deletes a directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see IgniteFsEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_GGFS_FILE_PURGED = 127;
+    public static final int EVT_IGFS_DIR_DELETED = 126;
 
     /**
-     * Built-in event type: authorization succeed.
+     * Built-in event type: IGFS file purged.
      * <p>
-     * Authorization procedure succeed. This event is triggered every time
-     * an authorization procedure finished without exception.
+     * Fired when IGFS file data was actually removed from cache.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see AuthorizationEvent
+     * @see IgfsEvent
      */
-    public static final int EVT_AUTHORIZATION_SUCCEEDED = 128;
-
-    /**
-     * Built-in event type: authorization failed.
-     * <p>
-     * Authorization procedure failed. This means that  there was some error event
-     * during authorization procedure and authorization procedure was not successful.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see AuthorizationEvent
-     */
-    public static final int EVT_AUTHORIZATION_FAILED = 129;
-
-    /**
-     * All license events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all license events.
-     *
-     * @see LicenseEvent
-     */
-    public static final int[] EVTS_LICENSE = {
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED
-    };
+    public static final int EVT_IGFS_FILE_PURGED = 127;
 
     /**
      * All checkpoint events. This array can be directly passed into
@@ -938,9 +814,6 @@ public interface EventType {
         EVT_TASK_DEPLOY_FAILED,
         EVT_TASK_DEPLOYED,
         EVT_TASK_UNDEPLOYED,
-        EVT_LIC_CLEARED,
-        EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED,
         EVT_CACHE_PRELOAD_STARTED,
         EVT_CACHE_PRELOAD_STOPPED
     };
@@ -1077,61 +950,25 @@ public interface EventType {
     };
 
     /**
-     * All authentication events. This array can be directly passed into
+     * All Igfs events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see AuthenticationEvent
+     * @see IgfsEvent
      */
-    public static final int[] EVTS_AUTHENTICATION = {
-        EVT_AUTHENTICATION_SUCCEEDED,
-        EVT_AUTHENTICATION_FAILED
-    };
-
-    /**
-     * All authorization events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see AuthenticationEvent
-     */
-    public static final int[] EVTS_AUTHORIZATION = {
-        EVT_AUTHORIZATION_SUCCEEDED,
-        EVT_AUTHORIZATION_FAILED
-    };
-
-    /**
-     * All secure session events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all GGFS events.
-     *
-     * @see IgniteFsEvent
-     */
-    public static final int[] EVTS_SECURE_SESSION = {
-        EVT_SECURE_SESSION_VALIDATION_SUCCEEDED,
-        EVT_SECURE_SESSION_VALIDATION_FAILED
-    };
-
-    /**
-     * All GGFS events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see SecureSessionEvent
-     */
-    public static final int[] EVTS_GGFS = {
-        EVT_GGFS_FILE_CREATED,
-        EVT_GGFS_FILE_RENAMED,
-        EVT_GGFS_FILE_DELETED,
-        EVT_GGFS_FILE_OPENED_READ,
-        EVT_GGFS_FILE_OPENED_WRITE,
-        EVT_GGFS_FILE_CLOSED_WRITE,
-        EVT_GGFS_FILE_CLOSED_READ,
-        EVT_GGFS_FILE_PURGED,
-        EVT_GGFS_META_UPDATED,
-        EVT_GGFS_DIR_CREATED,
-        EVT_GGFS_DIR_RENAMED,
-        EVT_GGFS_DIR_DELETED,
+    public static final int[] EVTS_IGFS = {
+        EVT_IGFS_FILE_CREATED,
+        EVT_IGFS_FILE_RENAMED,
+        EVT_IGFS_FILE_DELETED,
+        EVT_IGFS_FILE_OPENED_READ,
+        EVT_IGFS_FILE_OPENED_WRITE,
+        EVT_IGFS_FILE_CLOSED_WRITE,
+        EVT_IGFS_FILE_CLOSED_READ,
+        EVT_IGFS_FILE_PURGED,
+        EVT_IGFS_META_UPDATED,
+        EVT_IGFS_DIR_CREATED,
+        EVT_IGFS_DIR_RENAMED,
+        EVT_IGFS_DIR_DELETED,
     };
 
     /**

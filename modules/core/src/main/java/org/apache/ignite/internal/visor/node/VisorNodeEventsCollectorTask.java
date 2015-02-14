@@ -49,8 +49,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) {
+    @Override protected Iterable<? extends VisorGridEvent> reduce0(List<ComputeJobResult> results) {
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
@@ -117,8 +116,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         public static VisorNodeEventsCollectorTaskArg createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable IgniteUuid taskSessionId) {
             return new VisorNodeEventsCollectorTaskArg(null,
-                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
-                    EVTS_SECURE_SESSION),
+                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION),
                 timeArg, taskName, taskSessionId);
         }
 
@@ -263,18 +261,18 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();
+            final ClusterNodeLocalMap<String, Long> nl = ignite.nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
 
-            Collection<Event> evts = g.events().localQuery(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event event) {
-                    return event.localOrder() > startEvtOrder &&
-                        (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                        event.timestamp() >= startEvtTime &&
-                        (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
-                        (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
+            Collection<Event> evts = ignite.events().localQuery(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    return evt.localOrder() > startEvtOrder &&
+                        (arg.typeArgument() == null || F.contains(arg.typeArgument(), evt.type())) &&
+                        evt.timestamp() >= startEvtTime &&
+                        (arg.taskName() == null || filterByTaskName(evt, arg.taskName())) &&
+                        (arg.taskSessionId() == null || filterByTaskSessionId(evt, arg.taskSessionId()));
                 }
             });
 
@@ -310,11 +308,6 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
                 }
-                else if (e instanceof LicenseEvent) {
-                    LicenseEvent le = (LicenseEvent)e;
-
-                    res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
-                }
                 else if (e instanceof DiscoveryEvent) {
                     DiscoveryEvent de = (DiscoveryEvent)e;
 
@@ -324,24 +317,6 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
                         node.id(), addr, node.isDaemon()));
-                }
-                else if (e instanceof AuthenticationEvent) {
-                    AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                        ae.subjectId(), ae.login()));
-                }
-                else if (e instanceof AuthorizationEvent) {
-                    AuthorizationEvent ae = (AuthorizationEvent)e;
-
-                    res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
-                        ae.subject()));
-                }
-                else if (e instanceof SecureSessionEvent) {
-                    SecureSessionEvent se = (SecureSessionEvent) e;
-
-                    res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
-                        se.subjectId()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));

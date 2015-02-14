@@ -49,7 +49,7 @@ public class MemcacheRestExampleNodeStartup {
     }
 
     /**
-     * Create Ignite configuration with IgniteFs and enabled IPC.
+     * Create Ignite configuration with IGFS and enabled IPC.
      *
      * @return Ignite configuration.
      * @throws IgniteException If configuration creation failed.
@@ -61,7 +61,7 @@ public class MemcacheRestExampleNodeStartup {
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
-        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 

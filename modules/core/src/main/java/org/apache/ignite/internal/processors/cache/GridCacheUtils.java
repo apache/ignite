@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -36,6 +37,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -58,10 +60,10 @@ import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
  */
 public class GridCacheUtils {
     /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
+    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
     /** System cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
@@ -71,6 +73,12 @@ public class GridCacheUtils {
 
     /** Peek flags. */
     private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
+
+    /** */
+    public static final long TTL_NOT_CHANGED = -1L;
+
+    /** */
+    public static final long TTL_ZERO = -2L;
 
     /** Per-thread generated UID store. */
     private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
@@ -334,11 +342,11 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
-            @Override public IgnitePredicate<CacheEntry<K, V>>[] apply(Integer len) {
-                return (IgnitePredicate<CacheEntry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
+            @Override public IgnitePredicate<Cache.Entry<K, V>>[] apply(Integer len) {
+                return (IgnitePredicate<Cache.Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
         };
     }
@@ -378,19 +386,19 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key.
+     * Gets closure which returns {@code Entry} given cache key.
      * If current cache is DHT and key doesn't belong to current partition,
      * {@code null} is returned.
      *
      * @param ctx Cache context.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key or {@code null} if partition is invalid.
+     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
      */
-    public static <K, V> IgniteClosure<K, CacheEntry<K, V>> cacheKey2Entry(
+    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, CacheEntry<K, V>>() {
-            @Nullable @Override public CacheEntry<K, V> apply(K k) {
+        return new IgniteClosure<K, Cache.Entry<K, V>>() {
+            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
                 try {
                     return ctx.cache().entry(k);
                 }
@@ -745,16 +753,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] empty() {
-        return (IgnitePredicate<CacheEntry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
+        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<CacheEntry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] alwaysFalse() {
+        return (IgnitePredicate<Cache.Entry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**
@@ -1189,6 +1197,18 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param val Value.
+     * @param skip Skip value flag.
+     * @return Value.
+     */
+    public static Object skipValue(Object val, boolean skip) {
+        if (skip)
+            return val != null ? true : null;
+        else
+            return val;
+    }
+
+    /**
      * @param ctx Context.
      * @param prj Projection.
      * @param concurrency Concurrency.
@@ -1573,16 +1593,16 @@ public class GridCacheUtils {
     /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
-     * @return {@code True} in this is GGFS data or meta cache.
+     * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isGgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
-                // GGFS config probably has not been validated yet => possible NPE, so we check for null.
-                if (ggfsCfg != null &&
-                    (F.eq(cacheName, ggfsCfg.getDataCacheName()) || F.eq(cacheName, ggfsCfg.getMetaCacheName())))
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null &&
+                    (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))
                     return true;
             }
         }
@@ -1678,7 +1698,7 @@ public class GridCacheUtils {
      */
     public static long toTtl(Duration duration) {
         if (duration == null)
-            return -1;
+            return TTL_NOT_CHANGED;
 
         if (duration.getDurationAmount() == 0) {
             if (duration.isEternal())
@@ -1686,11 +1706,52 @@ public class GridCacheUtils {
 
             assert duration.isZero();
 
-            return 1L;
+            return TTL_ZERO;
         }
 
-        assert duration.getTimeUnit() != null;
+        assert duration.getTimeUnit() != null : duration;
 
         return duration.getTimeUnit().toMillis(duration.getDurationAmount());
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        IgnitePredicate<Cache.Entry<K, V>>[] arr = null;
+
+        if (len > 0) {
+            arr = new IgnitePredicate[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (IgnitePredicate<Cache.Entry<K, V>>)in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param n Node.
+     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     */
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary(
+        final CacheAffinity<K> aff,
+        final ClusterNode n
+    ) {
+        return new IgnitePredicate<Cache.Entry<K, V>>() {
+            @Override public boolean apply(Cache.Entry<K, V> e) {
+                return aff.isPrimary(n, e.getKey());
+            }
+        };
     }
 }
