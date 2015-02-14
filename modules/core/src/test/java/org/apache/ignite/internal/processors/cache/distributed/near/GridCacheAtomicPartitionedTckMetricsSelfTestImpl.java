@@ -175,6 +175,8 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
 
         result = cache.putIfAbsent(1, 1);
 
+        cache.containsKey(123);
+
         assertFalse(result);
         assertEquals(hitCount, cache.metrics().getCacheHits());
         assertEquals(putCount, cache.metrics().getCachePuts());
