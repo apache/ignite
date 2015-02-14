@@ -450,6 +450,24 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public boolean containsKeys(Set<? extends K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync()) {
+                setFuture(delegate.containsKeysAsync(keys));
+
+                return false;
+            }
+            else
+                return delegate.containsKeys(keys);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadAll(
         Set<? extends K> keys,
         boolean replaceExisting,

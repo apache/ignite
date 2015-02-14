@@ -313,16 +313,16 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
+        UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
             reload,
             /*force primary*/false,
-            filter,
             subjId,
             taskName,
             true,
-            null).get().get(key);
+            null,
+            false).get().get(key);
     }
 
     /**

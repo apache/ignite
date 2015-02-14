@@ -294,6 +294,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
+    @IgniteAsyncSupported
+    public boolean containsKeys(Set<? extends K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public void put(K key, V val);

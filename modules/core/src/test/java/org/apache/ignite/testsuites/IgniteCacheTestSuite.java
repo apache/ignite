@@ -310,9 +310,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
         suite.addTestSuite(GridCacheReloadSelfTest.class);
 
-        // Group locking.
-        suite.addTest(IgniteCacheGroupLockSelfTestSuite.suite());
-
         // Full API.
         suite.addTest(IgniteCacheFullApiSelfTestSuite.suite());
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
