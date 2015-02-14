@@ -63,12 +63,6 @@ public class CommunicationMessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final String STATE_VAR = "state";
-
-    /** */
-    private static final String TYPE_WRITTEN_VAR = "typeWritten";
-
-    /** */
     private final Collection<String> write = new ArrayList<>();
 
     /** */
@@ -358,7 +352,8 @@ public class CommunicationMessageCodeGenerator {
         assert code != null;
 
         if (write) {
-            code.add(builder().a("MessageWriter writer = WRITER.get();").toString());
+            code.add(builder().a("MessageWriteState state = MessageWriteState.get();").toString());
+            code.add(builder().a("MessageWriter writer = state.writer();").toString());
             code.add(EMPTY);
         }
 
@@ -372,14 +367,14 @@ public class CommunicationMessageCodeGenerator {
         }
 
         if (write) {
-            code.add(builder().a("if (!").a(TYPE_WRITTEN_VAR).a(") {").toString());
+            code.add(builder().a("if (!state.isTypeWritten()) {").toString());
 
             indent++;
 
             returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
 
             code.add(EMPTY);
-            code.add(builder().a(TYPE_WRITTEN_VAR).a(" = true;").toString());
+            code.add(builder().a("state.setTypeWritten();").toString());
 
             indent--;
 
@@ -388,7 +383,7 @@ public class CommunicationMessageCodeGenerator {
         }
 
         if (!fields.isEmpty())
-            code.add(builder().a("switch (").a(STATE_VAR).a(") {").toString());
+            code.add(builder().a("switch (state.index()) {").toString());
     }
 
     /**
@@ -446,7 +441,7 @@ public class CommunicationMessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false);
 
         write.add(EMPTY);
-        write.add(builder().a(STATE_VAR).a("++;").toString());
+        write.add(builder().a("state.increment();").toString());
         write.add(EMPTY);
 
         indent--;
@@ -471,7 +466,7 @@ public class CommunicationMessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null);
 
         read.add(EMPTY);
-        read.add(builder().a(STATE_VAR).a("++;").toString());
+        read.add(builder().a("readState++;").toString());
         read.add(EMPTY);
 
         indent--;

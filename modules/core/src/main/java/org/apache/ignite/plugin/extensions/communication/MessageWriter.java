@@ -263,6 +263,4 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls);
-
-    public void reset();
 }

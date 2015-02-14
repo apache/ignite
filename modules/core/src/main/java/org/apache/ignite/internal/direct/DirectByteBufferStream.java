@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -599,8 +598,22 @@ public class DirectByteBufferStream {
      * @param msg Message.
      */
     public void writeMessage(MessageAdapter msg) {
-        if (msg != null)
-            lastFinished = buf.hasRemaining() && msg.writeTo(buf);
+        if (msg != null) {
+            if (buf.hasRemaining()) {
+                MessageWriteState state = MessageWriteState.get();
+
+                try {
+                    state.forward();
+
+                    lastFinished = msg.writeTo(buf);
+                }
+                finally {
+                    state.backward(lastFinished);
+                }
+            }
+            else
+                lastFinished = false;
+        }
         else
             writeByte(Byte.MIN_VALUE);
     }
@@ -621,20 +634,22 @@ public class DirectByteBufferStream {
                 it = arrayIterator(arr);
             }
 
+            MessageWriteState state = MessageWriteState.get();
+
             Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG) {
-                        cur = ((MessageAdapter)cur).clone();
-
-                        ((MessageAdapter)cur).setWriter(writer);
-                    }
+//                    if (cur != null && itemType == Type.MSG) {
+//                        cur = ((MessageAdapter)cur).clone();
+//
+//                        ((MessageAdapter)cur).setWriter(writer);
+//                    }
                 }
 
-                write(itemType, cur);
+                write(itemType, cur, state);
 
                 if (!lastFinished)
                     return;
@@ -664,20 +679,22 @@ public class DirectByteBufferStream {
                 it = col.iterator();
             }
 
+            MessageWriteState state = MessageWriteState.get();
+
             Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG) {
-                        cur = ((MessageAdapter)cur).clone();
-
-                        ((MessageAdapter)cur).setWriter(writer);
-                    }
+//                    if (cur != null && itemType == Type.MSG) {
+//                        cur = ((MessageAdapter)cur).clone();
+//
+//                        ((MessageAdapter)cur).setWriter(writer);
+//                    }
                 }
 
-                write(itemType, cur);
+                write(itemType, cur, state);
 
                 if (!lastFinished)
                     return;
@@ -709,6 +726,8 @@ public class DirectByteBufferStream {
                 it = map.entrySet().iterator();
             }
 
+            MessageWriteState state = MessageWriteState.get();
+
             Type keyType = type(keyCls);
             Type valType = type(valCls);
 
@@ -720,30 +739,30 @@ public class DirectByteBufferStream {
 
                     e = (Map.Entry<K, V>)cur;
 
-                    if (keyType == Type.MSG || valType == Type.MSG) {
-                        K k = e.getKey();
-                        V v = e.getValue();
-
-                        if (k != null && keyType == Type.MSG) {
-                            k = (K)((MessageAdapter)k).clone();
-
-                            ((MessageAdapter)k).setWriter(writer);
-                        }
-
-                        if (v != null && valType == Type.MSG) {
-                            v = (V)((MessageAdapter)v).clone();
-
-                            ((MessageAdapter)v).setWriter(writer);
-                        }
-
-                        cur = e = F.t(k, v);
-                    }
+//                    if (keyType == Type.MSG || valType == Type.MSG) {
+//                        K k = e.getKey();
+//                        V v = e.getValue();
+//
+//                        if (k != null && keyType == Type.MSG) {
+//                            k = (K)((MessageAdapter)k).clone();
+//
+//                            ((MessageAdapter)k).setWriter(writer);
+//                        }
+//
+//                        if (v != null && valType == Type.MSG) {
+//                            v = (V)((MessageAdapter)v).clone();
+//
+//                            ((MessageAdapter)v).setWriter(writer);
+//                        }
+//
+//                        cur = e = F.t(k, v);
+//                    }
                 }
                 else
                     e = (Map.Entry<K, V>)cur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey());
+                    write(keyType, e.getKey(), state);
 
                     if (!lastFinished)
                         return;
@@ -751,7 +770,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue());
+                write(valType, e.getValue(), state);
 
                 if (!lastFinished)
                     return;
@@ -1343,7 +1362,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param val Value.
      */
-    private void write(Type type, Object val) {
+    private void write(Type type, Object val, MessageWriteState state) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1446,7 +1465,16 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
-                writeMessage((MessageAdapter)val);
+                try {
+                    if (val != null)
+                        state.forward();
+
+                    writeMessage((MessageAdapter)val);
+                }
+                finally {
+                    if (val != null)
+                        state.backward(lastFinished);
+                }
 
                 break;
 

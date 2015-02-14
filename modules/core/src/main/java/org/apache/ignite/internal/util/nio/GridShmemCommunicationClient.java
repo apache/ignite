@@ -116,7 +116,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(formatter.writer());
+//            MessageAdapter.WRITER.set(formatter.writer());
 
             int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
 
@@ -124,6 +124,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to send message to remote node: " + shmem, e);
+        }
+        finally {
+//            MessageAdapter.WRITER.remove();
         }
 
         markUsed();

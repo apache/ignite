@@ -197,7 +197,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(formatter.writer());
+//            msg.setWriter(formatter.writer());
 
             int cnt = U.writeMessageFully(msg, out, writeBuf);
 

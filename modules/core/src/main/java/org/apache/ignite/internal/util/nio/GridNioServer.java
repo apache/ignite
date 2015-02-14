@@ -1000,13 +1000,12 @@ public class GridNioServer<T> {
                 ByteBuffer buf = ses.writeBuffer();
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                MessageWriter writer = ses.meta(WRITER.ordinal());
+                MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
 
-                if (writer == null) {
-                    ses.addMeta(WRITER.ordinal(), writer = formatter.writer());
-
-                    MessageAdapter.WRITER.set(writer);
-                }
+                if (state == null)
+                    ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
+                else
+                    MessageWriteState.set(state);
 
                 List<NioOperationFuture<?>> doneFuts = null;
 
@@ -1032,7 +1031,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf);
 
                         if (finished)
-                            writer.reset();
+                            state.reset();
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -1054,7 +1053,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf);
 
                         if (finished)
-                            writer.reset();
+                            state.reset();
                     }
 
                     buf.flip();
@@ -1101,7 +1100,7 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                MessageAdapter.WRITER.remove();
+                MessageWriteState.clear();
             }
         }
     }
