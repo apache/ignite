@@ -257,6 +257,6 @@ public class GridCacheAffinityProxy<K, V> implements CacheAffinity<K>, Externali
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        return cctx.grid().cache(cctx.cache().name()).affinity();
+        return cctx.grid().affinity(cctx.cache().name());
     }
 }
