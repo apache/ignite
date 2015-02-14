@@ -775,19 +775,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
-        if (cacheCtx.isNear()) {
+        if (cacheCtx.isNear())
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
-
-            if (waitLock && entry.explicitVersion() == null)
-                lockKeys.add(entry.txKey());
-        }
         else if (!cacheCtx.isLocal())
             entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
-        else {
+        else
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
 
-            if (waitLock && entry.explicitVersion() == null)
-                lockKeys.add(entry.txKey());
+        if (cacheCtx.isNear() || cacheCtx.isLocal()) {
+            if (waitLock && entry.explicitVersion() == null) {
+                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
+                    lockKeys.add(entry.txKey());
+            }
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
@@ -802,11 +801,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         entry.nodeId(primary.id());
 
         if (cacheCtx.isNear()) {
-            if (entry.explicitVersion() == null) {
-                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
-                    lockKeys.add(entry.txKey());
-            }
-
             while (true) {
                 try {
                     GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
