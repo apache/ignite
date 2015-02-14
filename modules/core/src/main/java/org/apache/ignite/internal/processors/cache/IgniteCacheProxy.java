@@ -250,7 +250,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    private IgniteBiPredicate<K,V> accepAll() {
+    private IgniteBiPredicate<K,V> acceptAll() {
         return new IgniteBiPredicate<K,V>() {
             @Override public boolean apply(K k, V v) {
                 return true;
@@ -271,7 +271,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K,V> p = ((ScanQuery)filter).getFilter();
 
-            qry = delegate.queries().createScanQuery(p != null ? p : accepAll());
+            qry = delegate.queries().createScanQuery(p != null ? p : acceptAll());
 
             if (grp != null)
                 qry.projection(grp);
