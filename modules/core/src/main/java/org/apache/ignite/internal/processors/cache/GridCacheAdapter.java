@@ -3785,20 +3785,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return ctx.kernalContext().cache().transactions().txStartAffinity(name(), affinityKey, concurrency, isolation,
-            timeout, txSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
-            timeout, txSize);
-    }
-
-    /** {@inheritDoc} */
     @Override public long overflowSize() throws IgniteCheckedException {
         return ctx.swap().swapSize();
     }
