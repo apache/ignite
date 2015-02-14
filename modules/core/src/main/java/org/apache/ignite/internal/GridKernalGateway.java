@@ -127,5 +127,12 @@ public interface GridKernalGateway {
      * Gets user stack trace through the first call of grid public API.
      */
     public String userStackTrace();
+
+    /**
+     * @param timeout Timeout.
+     * @return {@code True} if write lock has been acquired.
+     * @throws InterruptedException If interrupted.
+     */
+    public boolean tryWriteLock(long timeout) throws InterruptedException;
 }
 

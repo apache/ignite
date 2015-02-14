@@ -1689,6 +1689,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Cancel all user operations.
+     */
+    public void cancelUserOperations() {
+        for (GridCacheAdapter<?, ?> cache : caches.values())
+            cache.ctx.mvcc().cancelClientFutures();
+    }
+
+    /**
      * @return All internal cache instances.
      */
     public Collection<GridCacheAdapter<?, ?>> internalCaches() {
