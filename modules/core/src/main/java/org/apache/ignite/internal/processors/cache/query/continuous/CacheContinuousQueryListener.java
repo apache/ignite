@@ -17,17 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.lang.*;
-
 /**
- * Extended continuous query filter.
+ * Continuous query listener.
  */
-public interface GridCacheContinuousQueryFilterEx<K, V> extends
-        IgnitePredicate<CacheContinuousQueryEntry<K, V>> {
+interface CacheContinuousQueryListener<K, V> {
     /**
-     * Callback for query unregister event.
+     * Query execution callback.
      */
-    public void onQueryUnregister();
+    public void onExecution();
+
+    /**
+     * Entry update callback.
+     *
+     * @param evt Event
+     * @param primary Primary flag.
+     * @param recordIgniteEvt Whether to record event.
+     */
+    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
+
+    /**
+     * Listener unregistered callback.
+     */
+    public void onUnregister();
+
+    /**
+     * @return Whether old value is required.
+     */
+    public boolean oldValueRequired();
 }

@@ -151,18 +151,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createContinuousQuery();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <R> CacheQuery<R> createSpiQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

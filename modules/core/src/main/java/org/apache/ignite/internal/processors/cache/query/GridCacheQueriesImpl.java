@@ -182,11 +182,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
-        return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
         A.notNull(cls, "cls");
 

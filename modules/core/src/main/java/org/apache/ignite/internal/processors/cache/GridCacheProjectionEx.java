@@ -454,4 +454,9 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
+
+    /**
+     * @return Context.
+     */
+    public GridCacheContext<K, V> context();
 }

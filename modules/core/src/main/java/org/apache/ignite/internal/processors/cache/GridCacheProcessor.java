@@ -625,7 +625,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg));
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
-            GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
+            CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
@@ -761,7 +761,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * 2. GridCacheIoManager
                  * 3. GridCacheDeploymentManager
                  * 4. GridCacheQueryManager (note, that we start it for DHT cache though).
-                 * 5. GridCacheContinuousQueryManager (note, that we start it for DHT cache though).
+                 * 5. CacheContinuousQueryManager (note, that we start it for DHT cache though).
                  * 6. GridCacheDgcManager
                  * 7. GridCacheTtlManager.
                  * ===============================================
@@ -1587,8 +1587,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache.
      */
-    public <K, V> GridCache<K, V> utilityCache() {
-        return cache(CU.UTILITY_CACHE_NAME);
+    public <K, V> GridCacheAdapter<K, V> utilityCache() {
+        return internalCache(CU.UTILITY_CACHE_NAME);
     }
 
     /**

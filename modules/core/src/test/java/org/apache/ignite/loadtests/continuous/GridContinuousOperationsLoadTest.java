@@ -18,18 +18,18 @@
 package org.apache.ignite.loadtests.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -79,17 +79,17 @@ public class GridContinuousOperationsLoadTest {
         dumpProperties(System.out);
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
-            final GridCache<Object, Object> cache = ignite.cache(cacheName);
+            final IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);
 
             // Continuous query manager, used to monitor queue size.
-            final GridCacheContinuousQueryManager contQryMgr =
+            final CacheContinuousQueryManager contQryMgr =
                 ((GridCacheAdapter)((GridCacheProxyImpl)cache).cache()).context().continuousQueries();
 
             if (contQryMgr == null)
-                throw new IgniteCheckedException("Could not access GridCacheContinuousQueryManager");
+                throw new IgniteCheckedException("Could not access CacheContinuousQueryManager");
 
             final AtomicBoolean stop = new AtomicBoolean(); // Stop flag.
             final AtomicLong cbCntr = new AtomicLong();     // Callback counter.
@@ -97,33 +97,43 @@ public class GridContinuousOperationsLoadTest {
 
             for (int i = 0; i < parallelCnt; i++) {
                 if (useQry) {
-                    CacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();
+                    ContinuousQuery<Object, Object> qry = Query.continuous();
 
-                    qry.localCallback(new PX2<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>>() {
-                        @Override public boolean applyx(UUID uuid, Collection<CacheContinuousQueryEntry<Object, Object>> entries)
-                            throws IgniteInterruptedCheckedException {
-                            if (cbSleepMs > 0)
-                                U.sleep(cbSleepMs);
+                    qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                            if (cbSleepMs > 0) {
+                                try {
+                                    U.sleep(cbSleepMs);
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
+                            }
 
-                            cbCntr.addAndGet(entries.size());
-
-                            return true; // Continue listening.
+                            for (CacheEntryEvent<?, ?> ignored : evts)
+                                cbCntr.incrementAndGet();
                         }
                     });
 
-                    qry.remoteFilter(new IgnitePredicateX<CacheContinuousQueryEntry<Object, Object>>() {
-                        @Override public boolean applyx(CacheContinuousQueryEntry e) throws IgniteInterruptedCheckedException {
-                            if (filterSleepMs > 0)
-                                U.sleep(filterSleepMs);
+                    qry.setRemoteFilter(new CacheEntryEventFilter<Object, Object>() {
+                        @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
+                            if (filterSleepMs > 0) {
+                                try {
+                                    U.sleep(filterSleepMs);
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
+                            }
 
                             return Math.random() * 100 >= filterSkipProb;
                         }
                     });
 
-                    qry.bufferSize(bufSize);
-                    qry.timeInterval(timeInterval);
+                    qry.setBufferSize(bufSize);
+                    qry.setTimeInterval(timeInterval);
 
-                    qry.execute();
+                    cache.query(qry);
                 }
                 else {
                     ignite.events().remoteListen(
@@ -188,7 +198,7 @@ public class GridContinuousOperationsLoadTest {
                     while (!stop.get() && !Thread.currentThread().isInterrupted()) {
                         Integer key = rnd.nextInt(keyRange);
 
-                        cache.putx(key, val);
+                        cache.put(key, val);
 
                         updCntr.incrementAndGet();
 

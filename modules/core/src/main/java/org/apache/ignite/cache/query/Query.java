@@ -106,6 +106,15 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
+     * Factory method for continuous queries.
+     *
+     * @return Continuous query.
+     */
+    public static <K, V> ContinuousQuery<K, V> continuous() {
+        return new ContinuousQuery<>();
+    }
+
+    /**
      * Gets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
      *
      * @return Optional page size.

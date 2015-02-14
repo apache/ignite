@@ -325,6 +325,64 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * Executes continuous query.
+     *
+     * @param qry Query.
+     * @param loc Local flag.
+     * @return Initial iteration cursor.
+     */
+    private QueryCursor<Entry<K,V>> queryContinuous(ContinuousQuery<K, V> qry, boolean loc) {
+        if (qry.getInitialPredicate() instanceof ContinuousQuery)
+            throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
+                "continuous query. Use SCAN or SQL query for initial iteration.");
+
+        if (qry.getLocalListener() == null)
+            throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+
+        try {
+            final UUID routineId = ctx.continuousQueries().executeQuery(
+                qry.getLocalListener(),
+                qry.getRemoteFilter(),
+                qry.getBufferSize(),
+                qry.getTimeInterval(),
+                qry.isAutoUnsubscribe(),
+                loc ? ctx.grid().forLocal() : null);
+
+            final QueryCursor<Cache.Entry<K, V>> cur;
+
+            if (qry.getInitialPredicate() != null)
+                cur = loc ? localQuery(qry.getInitialPredicate()) : query(qry.getInitialPredicate());
+            else
+                cur = null;
+
+            return new QueryCursor<Cache.Entry<K, V>>() {
+                @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
+                }
+
+                @Override public List<Cache.Entry<K, V>> getAll() {
+                    return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
+                }
+
+                @Override public void close() {
+                    if (cur != null)
+                        cur.close();
+
+                    try {
+                        ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
      * @param local Enforce local.
      * @return Local node cluster group.
      */
@@ -333,6 +391,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> query(Query qry) {
         A.notNull(qry, "qry");
 
@@ -344,6 +403,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (qry instanceof SqlQuery) {
                 return null; // TODO
             }
+            else if (qry instanceof ContinuousQuery)
+                return queryContinuous((ContinuousQuery<K, V>)qry, false);
 
             return query(qry, projection(false));
         }
@@ -407,11 +468,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @throws CacheException If query indexing disabled for sql query.
      */
     private void validate(Query qry) {
-        if (!(qry instanceof ScanQuery) && !ctx.config().isQueryIndexEnabled())
+        if (!(qry instanceof ScanQuery) && !(qry instanceof ContinuousQuery) && !ctx.config().isQueryIndexEnabled())
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> localQuery(Query qry) {
         A.notNull(qry, "qry");
 
@@ -422,6 +484,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             if (qry instanceof SqlQuery)
                 return doLocalQuery((SqlQuery)qry);
+            else if (qry instanceof ContinuousQuery)
+                return queryContinuous((ContinuousQuery<K, V>)qry, true);
 
             return query(qry, projection(true));
         }
@@ -1108,7 +1172,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            ctx.continuousQueries().registerCacheEntryListener(lsnrCfg, true);
+            ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -1119,11 +1183,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            ctx.continuousQueries().deregisterCacheEntryListener(lsnrCfg);
+            ctx.continuousQueries().cancelJCacheQuery(lsnrCfg);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
