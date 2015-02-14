@@ -618,17 +618,27 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        return cache.containsKey(key, entryFilter(true));
+        return cache.containsKey(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
-        return cache.containsKeyAsync(key, entryFilter(false));
+        return cache.containsKeyAsync(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsKeys(Collection<? extends K> keys) {
+        return cache.containsKeys(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
+        return cache.containsKeysAsync(keys);
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsValue(V val) {
-        return cache.containsValue(val, entryFilter(true));
+        return cache.containsValue(val);
     }
 
     /** {@inheritDoc} */
@@ -643,37 +653,37 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V reload(K key) throws IgniteCheckedException {
-        return cache.reload(key, entryFilter(false));
+        return cache.reload(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> reloadAsync(K key) {
-        return cache.reloadAsync(key, entryFilter(false));
+        return cache.reloadAsync(key);
     }
 
     /** {@inheritDoc} */
     @Override public void reloadAll() throws IgniteCheckedException {
-        cache.reloadAll(entryFilter(false));
+        cache.reloadAll();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> reloadAllAsync() {
-        return cache.reloadAllAsync(entryFilter(false));
+        return cache.reloadAllAsync();
     }
 
     /** {@inheritDoc} */
     @Override public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        cache.reloadAll(keys, entryFilter(false));
+        cache.reloadAll(keys);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.reloadAllAsync(keys, entryFilter(false));
+        return cache.reloadAllAsync(keys);
     }
 
     /** {@inheritDoc} */
     @Override public V get(K key) throws IgniteCheckedException {
-        return cache.get(key, deserializePortables(), entryFilter(false));
+        return cache.get(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -684,7 +694,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(K key) {
-        return cache.getAsync(key, deserializePortables(), entryFilter(false));
+        return cache.getAsync(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -734,12 +744,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        return cache.getAll(keys, deserializePortables(), entryFilter(false));
+        return cache.getAll(keys, deserializePortables());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, deserializePortables(), entryFilter(false));
+        return cache.getAllAsync(keys, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -1291,18 +1301,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return cache.txStartAffinity(affinityKey, concurrency, isolation, timeout, txSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return cache.txStartPartition(partId, concurrency, isolation, timeout, txSize);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteTx tx() {
         return cache.tx();
     }
@@ -1318,7 +1316,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable ExpiryPolicy expiry() {
+    @Nullable @Override public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 

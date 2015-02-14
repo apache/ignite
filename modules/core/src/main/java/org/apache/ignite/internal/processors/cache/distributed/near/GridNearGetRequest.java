@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -60,20 +59,16 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /** Read through flag. */
     private boolean readThrough;
 
+    /** Skip values flag. Used for {@code containsKey} method. */
+    private boolean skipVals;
+
     /** */
     @GridToStringExclude
     @GridDirectMap(keyType = byte[].class, valueType = boolean.class)
     private LinkedHashMap<byte[], Boolean> keyBytes;
 
-    /** Filter bytes. */
-    private byte[][] filterBytes;
-
     /** Topology version. */
     private long topVer;
-
-    /** Filters. */
-    @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Subject ID. */
     private UUID subjId;
@@ -99,8 +94,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param keys Keys.
      * @param readThrough Read through flag.
      * @param reload Reload flag.
+     * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
+     *      cache entry has a value.
      * @param topVer Topology version.
-     * @param filter Filter.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
@@ -114,10 +110,10 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         boolean readThrough,
         boolean reload,
         long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipVals
     ) {
         assert futId != null;
         assert miniId != null;
@@ -132,10 +128,10 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         this.readThrough = readThrough;
         this.reload = reload;
         this.topVer = topVer;
-        this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
+        this.skipVals = skipVals;
     }
 
     /**
@@ -195,17 +191,18 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     }
 
     /**
+     * @return Skip values flag. If true, boolean values indicating whether cache entry has a value will be
+     *      returned as future result.
+     */
+    public boolean skipValues() {
+        return skipVals;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @return Filters.
-     */
-    public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
-        return filter;
     }
 
     /**
@@ -227,9 +224,6 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
         if (keyBytes == null)
             keyBytes = marshalBooleanLinkedMap(keys, ctx);
-
-        if (filterBytes == null)
-            filterBytes = marshalFilter(filter, ctx);
     }
 
     /**
@@ -242,9 +236,6 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
         if (keys == null)
             keys = unmarshalBooleanLinkedMap(keyBytes, ctx, ldr);
-
-        if (filter == null && filterBytes != null)
-            filter = unmarshalFilter(filterBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -269,10 +260,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         _clone.keys = keys;
         _clone.reload = reload;
         _clone.readThrough = readThrough;
+        _clone.skipVals = skipVals;
         _clone.keyBytes = keyBytes;
-        _clone.filterBytes = filterBytes;
         _clone.topVer = topVer;
-        _clone.filter = filter;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
         _clone.accessTtl = accessTtl;
@@ -301,65 +291,64 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 state++;
 
             case 4:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, byte[].class))
-                    return false;
-
-                state++;
-
-            case 5:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 state++;
 
-            case 6:
+            case 5:
                 if (!writer.writeMap("keyBytes", keyBytes, byte[].class, boolean.class))
                     return false;
 
                 state++;
 
-            case 7:
+            case 6:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 state++;
 
-            case 8:
+            case 7:
                 if (!writer.writeBoolean("readThrough", readThrough))
                     return false;
 
                 state++;
 
-            case 9:
+            case 8:
                 if (!writer.writeBoolean("reload", reload))
                     return false;
 
                 state++;
 
-            case 10:
+            case 9:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 state++;
 
-            case 11:
+            case 10:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 state++;
 
-            case 12:
+            case 11:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 state++;
 
-            case 13:
+            case 12:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
                 state++;
 
+            case 13:
+                if (!writer.writeBoolean("skipVals", skipVals))
+                    return false;
+
+                state++;
         }
 
         return true;
@@ -383,14 +372,6 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 state++;
 
             case 4:
-                filterBytes = reader.readObjectArray("filterBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 5:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -398,7 +379,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 6:
+            case 5:
                 keyBytes = reader.readMap("keyBytes", byte[].class, boolean.class, true);
 
                 if (!reader.isLastRead())
@@ -406,7 +387,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 7:
+            case 6:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -414,7 +395,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 8:
+            case 7:
                 readThrough = reader.readBoolean("readThrough");
 
                 if (!reader.isLastRead())
@@ -422,7 +403,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 9:
+            case 8:
                 reload = reader.readBoolean("reload");
 
                 if (!reader.isLastRead())
@@ -430,7 +411,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 10:
+            case 9:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -438,7 +419,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 11:
+            case 10:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -446,7 +427,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 12:
+            case 11:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
@@ -454,7 +435,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
-            case 13:
+            case 12:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -462,6 +443,13 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 state++;
 
+            case 13:
+                skipVals = reader.readBoolean("skipVals");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
         }
 
         return true;

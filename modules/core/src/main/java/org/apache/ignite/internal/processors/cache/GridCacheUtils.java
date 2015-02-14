@@ -1182,6 +1182,18 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param val Value.
+     * @param skip Skip value flag.
+     * @return Value.
+     */
+    public static Object skipValue(Object val, boolean skip) {
+        if (skip)
+            return val != null ? true : null;
+        else
+            return val;
+    }
+
+    /**
      * @param ctx Context.
      * @param prj Projection.
      * @param concurrency Concurrency.

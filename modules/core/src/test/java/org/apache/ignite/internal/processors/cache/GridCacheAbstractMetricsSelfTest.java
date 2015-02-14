@@ -641,6 +641,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.getAndPut(key, key); // +1 read, +1 miss.
 
+        assertEquals("Expected 2 reads", 2, cache.metrics().getCacheGets());
+
         cache.get(key);
 
         assertEquals("Expected 1 write", 1, cache.metrics().getCachePuts());
@@ -868,7 +870,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
-            @Override public boolean applyx() throws IgniteCheckedException {
+            @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)
                         return false;

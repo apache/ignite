@@ -285,15 +285,16 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
+        boolean skipVals,
         final IgniteBiInClosure<K, V> c
     ) {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
                 keys,
                 readThrough,
-                CU.<K, V>empty(),
                 deserializePortable,
-                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
                     try {
                         Map<K, V> map = f.get();
@@ -322,8 +323,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 CU.subjectId(this, cctx),
                 resolveTaskName(),
                 deserializePortable,
-                null,
-                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
                     @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
                         try {
                             Map<K, V> map = f.get();
@@ -346,7 +347,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, c);
+            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, skipVals, c);
         }
     }
 
@@ -1166,10 +1167,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
+    @Override protected IgniteCacheExpiryPolicy accessPolicy(
+        GridCacheContext ctx,
         IgniteTxKey<K> key,
-        @Nullable ExpiryPolicy expiryPlc)
-    {
+        @Nullable ExpiryPolicy expiryPlc
+    ) {
         assert optimistic();
 
         IgniteCacheExpiryPolicy plc = ctx.cache().expiryPolicy(expiryPlc);

@@ -69,7 +69,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param cached Cached entry if this method is called from entry wrapper.
      *      Cached entry is passed if and only if there is only one key in collection of keys.
      * @param deserializePortable Deserialize portable flag.
-     * @param filter Entry filter.
      * @return Future for this get.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(
@@ -77,7 +76,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean deserializePortable,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        boolean skipVals);
 
     /**
      * @param cacheCtx Cache context.
@@ -175,6 +174,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param keys Keys.
      * @param c Closure.
      * @param deserializePortable Deserialize portable flag.
+     * @param skipVals Skip values flag.
      * @return Future with {@code True} value if loading took place.
      */
     public IgniteInternalFuture<Boolean> loadMissing(
@@ -183,5 +183,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
         boolean async,
         Collection<? extends K> keys,
         boolean deserializePortable,
+        boolean skipVals,
         IgniteBiInClosure<K, V> c);
 }

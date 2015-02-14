@@ -337,12 +337,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public ConcurrentMap<K, V> toMap();
 
     /**
-     * Returns {@code true} if this cache contains a mapping for the specified
-     * key.
-     *
-     * @param key key whose presence in this map is to be tested.
-     * @return {@code true} if this map contains a mapping for the specified key.
-     * @throws NullPointerException if the key is {@code null}.
+     * @param key Key.
+     * @return {@code True} if cache contains mapping for a given key.
      */
     public boolean containsKey(K key);
 
@@ -351,6 +347,18 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public IgniteInternalFuture<Boolean> containsKeyAsync(K key);
+
+    /**
+     * @param keys Keys,
+     * @return {@code True} if cache contains all keys.
+     */
+    public boolean containsKeys(Collection<? extends K> keys);
+
+    /**
+     * @param keys Keys to check.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys);
 
     /**
      * Returns {@code true} if this cache contains given value.
@@ -1222,78 +1230,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      */
     public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
         int txSize);
-
-    /**
-     * Starts {@code affinity-group-locked} transaction based on affinity key. In this mode only affinity key
-     * is locked and all other entries in transaction are written without locking. However,
-     * all keys in such transaction must have the same affinity key. Node on which transaction
-     * is started must be primary for the given affinity key (an exception is thrown otherwise).
-     * <p>
-     * Since only affinity key is locked, and no individual keys, it is user's responsibility to make sure
-     * there are no other concurrent explicit updates directly on individual keys participating in the
-     * transaction. All updates to the keys involved should always go through {@code affinity-group-locked}
-     * transaction, otherwise cache may be left in inconsistent state.
-     * <p>
-     * If cache sanity check is enabled ({@link org.apache.ignite.configuration.IgniteConfiguration#isCacheSanityCheckEnabled()}),
-     * the following checks are performed:
-     * <ul>
-     *     <li>
-     *         An exception will be thrown if affinity key differs from one specified on transaction start.
-     *     </li>
-     *     <li>
-     *         An exception is thrown if entry participating in transaction is externally locked at commit.
-     *     </li>
-     * </ul>
-     *
-     * @param affinityKey Affinity key for all entries updated by transaction. This node
-     *      must be primary for this key.
-     * @param timeout Timeout ({@code 0} for default).
-     * @param txSize Number of entries participating in transaction (may be approximate), {@code 0} for default.
-     * @param concurrency Transaction concurrency control.
-     * @param isolation Cache transaction isolation level.
-     * @return Started transaction.
-     * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
-     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
-     */
-    public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
-
-    /**
-     * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
-     * is locked and all other entries in transaction are written without locking. However,
-     * all keys in such transaction must belong to the same partition. Node on which transaction
-     * is started must be primary for the given partition (an exception is thrown otherwise).
-     * <p>
-     * Since only partition is locked, and no individual keys, it is user's responsibility to make sure
-     * there are no other concurrent explicit updates directly on individual keys participating in the
-     * transaction. All updates to the keys involved should always go through {@code partition-group-locked}
-     * transaction, otherwise, cache may be left in inconsistent state.
-     * <p>
-     * If cache sanity check is enabled ({@link org.apache.ignite.configuration.IgniteConfiguration#isCacheSanityCheckEnabled()}),
-     * the following checks are performed:
-     * <ul>
-     *     <li>
-     *         An exception will be thrown if key partition differs from one specified on transaction start.
-     *     </li>
-     *     <li>
-     *         An exception is thrown if entry participating in transaction is externally locked at commit.
-     *     </li>
-     * </ul>
-     *
-     * @param partId Partition id for which transaction is started. This node
-     *      must be primary for this partition.
-     * @param timeout Timeout ({@code 0} for default).
-     * @param txSize Number of entries participating in transaction (may be approximate), {@code 0} for default.
-     * @param concurrency Transaction concurrency control.
-     * @param isolation Cache transaction isolation level.
-     * @return Started transaction.
-     * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
-     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
-     */
-    public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does

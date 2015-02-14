@@ -590,10 +590,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             nearCached.updateOrEvict(xidVer, null, null, 0, 0, nodeId);
                                     }
                                     else if (op == RELOAD) {
-                                        V reloaded = cached.innerReload(CU.<K, V>empty());
+                                        V reloaded = cached.innerReload();
 
                                         if (nearCached != null) {
-                                            nearCached.innerReload(CU.<K, V>empty());
+                                            nearCached.innerReload();
 
                                             nearCached.updateOrEvict(cached.version(), reloaded, null,
                                                 cached.expireTime(), cached.ttl(), nodeId);
