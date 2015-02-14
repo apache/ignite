@@ -819,9 +819,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 }
 
                 tx.needsCompletedVersions(hasRemoteNodes);
-
-                tx.addDhtMapping(futDhtMap);
-                tx.addNearMapping(futNearMap);
             }
 
             if (isDone())
@@ -847,7 +844,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
-                    MiniFuture fut = new MiniFuture(n.id(), dhtMap.get(n.id()), nearMap.get(n.id()));
+                    MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
                     add(fut); // Append new future.
 

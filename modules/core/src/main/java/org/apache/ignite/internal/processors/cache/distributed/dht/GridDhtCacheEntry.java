@@ -368,7 +368,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // If remote node has no near cache, don't add it.
-        if (!U.hasNearCache(node, cacheName()) && !(key instanceof GridCacheInternal)) {
+        if (!U.hasNearCache(node, cacheName())) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
 
