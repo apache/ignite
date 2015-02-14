@@ -60,7 +60,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     private AtomicBoolean suspended = new AtomicBoolean(false);
 
     /** */
-    private AtomicBoolean blocked = new AtomicBoolean(false);
+    private CountDownLatch blocked;
 
     /** */
     protected AtomicReference<Class> bannedMessage = new AtomicReference<>();
@@ -127,6 +127,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         startGrid(SRV_GRD);
 
         startGrid(CLN_GRD);
+
+        blocked = new CountDownLatch(1);
 
         for (int i = 0; i < 10; ++i) {
             if (clientNode().cluster().nodes().size() == 2)
@@ -242,9 +244,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         Thread stopThread = new Thread(new StopRunnable());
 
-        while (!blocked.get());
-
-        blocked.set(false);
+        blocked.await();
 
         stopThread.start();
 
@@ -291,7 +291,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         Thread stopThread = new Thread(new StopRunnable());
 
-        U.sleep(100);
+        blocked.await();
 
         stopThread.start();
 
@@ -355,7 +355,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
                 if (msg instanceof GridIoMessage
                     && ((GridIoMessage)msg).message().getClass().equals(bannedMessage.get())) {
-                    blocked.set(true);
+                    blocked.countDown();
 
                     return;
                 }
