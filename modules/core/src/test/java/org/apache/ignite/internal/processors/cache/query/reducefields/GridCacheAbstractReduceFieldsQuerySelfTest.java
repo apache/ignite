@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -113,14 +114,14 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).cache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        GridCache<CacheAffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).cache(null);
 
         assert personCache != null;
 
@@ -167,7 +168,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery("select age from Person");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -178,7 +179,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery(
             "select age from Person where orgId = ?");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
@@ -190,7 +191,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //     * @throws Exception If failed.
 //     */
 //    public void testFilters() throws Exception {
-//        GridCacheReduceFieldsQuery<Object, Object, GridBiTuple<Integer, Integer>, Integer> qry = grid(0).cache(null)
+//        GridCacheReduceFieldsQuery<Object, Object, GridBiTuple<Integer, Integer>, Integer> qry = ((IgniteKernal)grid(0)).cache(null)
 //            .queries().createReduceFieldsQuery("select age from Person");
 //
 //        qry = qry.remoteKeyFilter(

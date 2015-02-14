@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -322,7 +323,7 @@ public class GridCacheConcurrentMap<K, V> {
      */
     private static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] nonInternal(
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        return F.asArray(F0.and((IgnitePredicate<Cache.Entry<K, V>>[]) NON_INTERNAL_ARR, filter));
+        return F.asArray(F0.and((IgnitePredicate<Cache.Entry<K, V>>[])NON_INTERNAL_ARR, filter));
     }
 
     /**
@@ -1732,7 +1733,7 @@ public class GridCacheConcurrentMap<K, V> {
             curVal = null;
 
             try {
-                ctx.grid().cache(ctx.name()).remove(e.key(), CU.<K, V>empty());
+                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key(), CU.<K, V>empty());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1907,7 +1908,7 @@ public class GridCacheConcurrentMap<K, V> {
          */
         boolean removeKey(K k) {
             try {
-                return ctx.grid().cache(ctx.name()).remove(k, CU.<K, V>empty());
+                return ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(k, CU.<K, V>empty());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to remove cache entry for key: " + k, e);

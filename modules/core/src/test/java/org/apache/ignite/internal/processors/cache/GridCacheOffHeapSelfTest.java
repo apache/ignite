@@ -287,7 +287,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);

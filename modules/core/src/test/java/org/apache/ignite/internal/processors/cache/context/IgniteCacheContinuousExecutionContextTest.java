@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.context;
 
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Multi-node test for group lock in near cache.
+ *
  */
-public class GridCacheGroupLockMultiNodeNearSelfTest extends GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest {
+public class IgniteCacheContinuousExecutionContextTest extends IgniteCacheAtomicExecutionContextTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        return true;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
+
+        return cfg;
     }
 }

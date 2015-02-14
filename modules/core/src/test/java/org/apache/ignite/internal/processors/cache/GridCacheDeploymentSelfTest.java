@@ -412,46 +412,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** @throws Exception If failed. */
-    public void _testDeploymentGroupLock() throws Exception {
-        ClassLoader ldr = getExternalClassLoader();
-
-        Class<?> keyCls = ldr.loadClass(TEST_KEY);
-
-        try {
-            depMode = SHARED;
-
-            Ignite g1 = startGrid(1);
-            startGrid(2);
-
-            Constructor<?> constructor = keyCls.getDeclaredConstructor(String.class);
-
-            Object affKey;
-
-            int i = 0;
-
-            do {
-                affKey = constructor.newInstance(String.valueOf(i));
-
-                i++;
-            }
-            while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
-
-            IgniteCache<Object, Object> cache = g1.jcache(null);
-
-            try (IgniteTx tx = g1.transactions().txStartAffinity(null, affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                cache.put(new CacheAffinityKey<>("key1", affKey), "val1");
-
-                tx.commit();
-            }
-
-            assertEquals("val1", cache.get(new CacheAffinityKey<>("key1", affKey)));
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
     /**
      * Looks for next key starting from {@code start} for which primary node is {@code primary} and backup is {@code
      * backup}.

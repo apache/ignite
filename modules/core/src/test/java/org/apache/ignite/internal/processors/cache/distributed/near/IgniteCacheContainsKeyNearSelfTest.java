@@ -20,19 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
-
 /**
- * Group lock test for near cache.
+ *
  */
-public class GridCacheGroupLockNearSelfTest extends GridCacheGroupLockAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        return true;
-    }
-
+public class IgniteCacheContainsKeyNearSelfTest extends IgniteCacheContainsKeyAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+        return CacheMode.PARTITIONED;
     }
 }

@@ -121,6 +121,22 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             Thread.currentThread().interrupt();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean tryWriteLock(long timeout) throws InterruptedException {
+        boolean acquired = rwLock.tryWriteLock(timeout, TimeUnit.MILLISECONDS);
+
+        if (acquired) {
+            if (stackTrace == null)
+                stackTrace = stackTrace();
+
+            enterThreadLocals();
+
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Retrieves user stack trace.
      *

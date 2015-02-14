@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.context;
+
+import org.apache.ignite.configuration.*;
 
 /**
- * Tests optimistic group lock transactions.
+ *
  */
-public class GridCacheGroupLockFailoverOptimisticTxSelfTest extends GridCacheGroupLockFailoverSelfTest {
+public class IgniteCacheIsolatedExecutionContextTest extends IgniteCacheP2PDisableExecutionContextTest {
     /** {@inheritDoc} */
-    @Override protected boolean optimisticTx() {
-        return true;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDeploymentMode(DeploymentMode.ISOLATED);
+
+        return cfg;
     }
 }

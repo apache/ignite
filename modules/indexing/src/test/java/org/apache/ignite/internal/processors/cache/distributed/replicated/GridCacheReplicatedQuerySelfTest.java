@@ -112,7 +112,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid("client");
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            GridCache<Integer, Integer> c = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < 10; i++)
                 c.putx(i, i);
@@ -379,7 +379,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        GridCache<Integer, Integer> cache = ((IgniteKernal)ignite).cache(null);
 
         for (int i = 0; i < 1000; i++)
             assertTrue(cache.putx(i, i));
@@ -424,7 +424,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < 1000; i++)
                 assertTrue(cache.putx(i, i));

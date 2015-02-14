@@ -296,7 +296,6 @@ public interface GridCacheEntryEx<K, V> {
      * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
-     * @param filter Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
      * @param expiryPlc Expiry policy.
      * @return Cached value.
@@ -315,19 +314,17 @@ public interface GridCacheEntryEx<K, V> {
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
      * Reloads entry from underlying storage.
      *
-     * @param filter Filter for entries.
      * @return Reloaded value.
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V innerReload(IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException,
+    @Nullable public V innerReload() throws IgniteCheckedException,
         GridCacheEntryRemovedException;
 
     /**

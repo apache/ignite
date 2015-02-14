@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.context;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Single-node test for replicated cache.
+ *
  */
-public class GridCacheGroupLockReplicatedSelfTest extends GridCacheGroupLockAbstractSelfTest {
+public class IgniteCachePrivateExecutionContextTest extends IgniteCacheP2PDisableExecutionContextTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        // Near cache is not defined for replicated cache.
-        return false;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+        cfg.setDeploymentMode(DeploymentMode.PRIVATE);
+
+        return cfg;
     }
 }

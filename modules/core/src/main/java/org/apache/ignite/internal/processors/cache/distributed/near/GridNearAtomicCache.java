@@ -371,7 +371,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter
+        boolean skipVals
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -387,11 +387,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             keys,
             false,
             forcePrimary,
-            filter,
             subjId,
             taskName,
             deserializePortable,
-            prj != null ? prj.expiry() : null);
+            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals);
     }
 
     /** {@inheritDoc} */

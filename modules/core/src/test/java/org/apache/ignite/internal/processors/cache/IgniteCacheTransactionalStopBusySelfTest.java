@@ -17,12 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+
 /**
- * Abstract test for multi-node group lock tests.
+ * Stopped node when client operations are executing.
  */
-public abstract class GridCacheGroupLockMultiNodeAbstractSelfTest extends GridCacheGroupLockAbstractSelfTest {
+public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstractStopBusySelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    @Override public void testPut() throws Exception {
+        bannedMessage.set(GridNearLockRequest.class);
+
+        super.testPut();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testPutBatch() throws Exception {
+        bannedMessage.set(GridNearLockRequest.class);
+
+        super.testPut();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testPutAsync() throws Exception {
+        bannedMessage.set(GridNearLockRequest.class);
+
+        super.testPut();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRemove() throws Exception {
+        bannedMessage.set(GridNearLockRequest.class);
+
+        super.testPut();
     }
 }

@@ -68,7 +68,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @SuppressWarnings("unchecked")
     public void testInternalKeysPreloading() throws Exception {
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);
@@ -86,7 +86,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                     assertNotNull(g);
 
                     assertTrue("Affinity node doesn't contain internal key [key=" + internalKey + ", node=" + n + ']',
-                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht().containsKey(internalKey, null));
+                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht().containsKey(internalKey));
                 }
             }
         }

@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -63,9 +64,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean useCache;
-
-    /** */
-    private boolean useGrpLock;
 
     /** */
     private TestStore store;
@@ -141,28 +139,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedGroupLock() throws Exception {
-        mode = PARTITIONED;
-        useGrpLock = true;
-
-        checkDataLoader();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplicated() throws Exception {
         mode = REPLICATED;
-
-        checkDataLoader();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedGroupLock() throws Exception {
-        mode = REPLICATED;
-        useGrpLock = true;
 
         checkDataLoader();
     }
@@ -195,12 +173,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             useCache = true;
 
             Ignite g2 = startGrid(2);
-            Ignite g3 = startGrid(3);
+            startGrid(3);
 
             final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
-            ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -242,8 +219,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
 
-            rmvLdr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -327,28 +303,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedMultiThreadedGroupLock() throws Exception {
-        mode = REPLICATED;
-        useGrpLock = true;
-
-        checkLoaderMultithreaded(1, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPartitionedMultiThreaded() throws Exception {
         mode = PARTITIONED;
-
-        checkLoaderMultithreaded(1, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionedMultiThreadedGroupLock() throws Exception {
-        mode = PARTITIONED;
-        useGrpLock = true;
 
         checkLoaderMultithreaded(1, 3);
     }
@@ -379,8 +335,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             // Get and configure loader.
             final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
-            ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>individual());
+            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.
@@ -862,14 +817,14 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class TestStore extends CacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return storeMap.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<?, ?> entry) {
+        @Override public void write(Cache.Entry<?, ?> entry) {
             storeMap.put(entry.getKey(), entry.getValue());
         }
 

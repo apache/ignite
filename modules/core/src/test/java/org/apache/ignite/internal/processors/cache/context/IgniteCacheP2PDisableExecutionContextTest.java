@@ -15,24 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.context;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Group lock test for colocated cache.
+ *
  */
-public class GridCacheGroupLockColocatedSelfTest extends GridCacheGroupLockAbstractSelfTest {
+public class IgniteCacheP2PDisableExecutionContextTest extends IgniteCacheAtomicExecutionContextTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        return false;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+        cfg.setPeerClassLoadingEnabled(false);
+
+        return cfg;
     }
 }

@@ -72,6 +72,11 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePartitionedExecutionContextTest.class);
         suite.addTestSuite(IgniteCacheReplicatedExecutionContextTest.class);
         suite.addTestSuite(IgniteCacheTxExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheContinuousExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheIsolatedExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheP2PDisableExecutionContextTest.class);
+        suite.addTestSuite(IgniteCachePrivateExecutionContextTest.class);
+        suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
@@ -110,6 +115,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridCacheStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
+        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
@@ -309,9 +316,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Memory leak tests.
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
         suite.addTestSuite(GridCacheReloadSelfTest.class);
-
-        // Group locking.
-        suite.addTest(IgniteCacheGroupLockSelfTestSuite.suite());
 
         // Full API.
         suite.addTest(IgniteCacheFullApiSelfTestSuite.suite());

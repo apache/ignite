@@ -1732,6 +1732,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             }
 
             IgniteEmailProcessorAdapter email = ctx.email();
+            GridCacheProcessor cacheProcessor = ctx.cache();
 
             List<GridComponent> comps = ctx.components();
 
@@ -1761,7 +1762,27 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             if (metricsLogTimer != null)
                 metricsLogTimer.cancel();
 
-            gw.writeLock();
+            boolean interrupted = false;
+
+            while (true) {
+                try {
+                    if (gw.tryWriteLock(10))
+                        break;
+                }
+                catch (InterruptedException e) {
+                    // Preserve interrupt status & ignore.
+                    // Note that interrupted flag is cleared.
+                    interrupted = true;
+                }
+                finally {
+                    // Cleanup even on successful acquire.
+                    if (cacheProcessor != null)
+                        cacheProcessor.cancelUserOperations();
+                }
+            }
+
+            if (interrupted)
+                Thread.currentThread().interrupt();
 
             try {
                 assert gw.getState() == STARTED || gw.getState() == STARTING;

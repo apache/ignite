@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
+
 /**
- * Multi node group lock test for colocated cache.
+ *
  */
-public class GridCacheGroupLockMultiNodeColocatedSelfTest extends
-    GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest {
+public class IgniteCacheContainsKeyColocatedSelfTest extends IgniteCacheContainsKeyAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearEnabled() {
-        return false;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 }
