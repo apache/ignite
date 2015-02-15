@@ -304,7 +304,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            qry.pageSize(q.getPageSize());
+            if (q.getPageSize() > 0)
+                qry.pageSize(q.getPageSize());
 
             qry.enableDedup(false);
             qry.includeBackups(false);
@@ -424,7 +425,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             CacheQuery<List<?>> q = ((GridCacheQueriesEx<K,V>)delegate.queries()).createSqlFieldsQuery(qry.getSql(), false);
 
-            q.pageSize(qry.getPageSize());
+            if (qry.getPageSize() > 0)
+                q.pageSize(qry.getPageSize());
 
             CacheQueryFuture<List<?>> fut = q.execute(qry.getArgs());
 
