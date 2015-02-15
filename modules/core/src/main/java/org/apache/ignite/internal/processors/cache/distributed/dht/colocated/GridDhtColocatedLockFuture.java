@@ -441,30 +441,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         err.compareAndSet(null, t instanceof GridCacheLockTimeoutException ? null : t);
     }
 
-    /**
-     * @param cached Entry to check.
-     * @return {@code True} if filter passed.
-     */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
-        try {
-            if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-
-                onFailed(true);
-
-                return false;
-            }
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            onError(e);
-
-            return false;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
@@ -752,18 +728,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                                 distributedKeys.add(key);
 
-                                if (inTx() && implicitTx() && mappings.size() == 1 && !cctx.writeThrough()) {
-                                    tx.onePhaseCommit(true);
-
-                                    req.onePhaseCommit(true);
-                                }
-
-                                IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
-
-                                if (writeEntry != null)
-                                    // We are sending entry to remote node, clear transfer flag.
-                                    writeEntry.transferRequired(false);
-
                                 if (tx != null)
                                     tx.addKeyMapping(txKey, mapping.node());
 
@@ -772,8 +736,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     node.isLocal() ? null : entry.getOrMarshalKeyBytes(),
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
-                                    writeEntry,
-                                    inTx() ? tx.entry(txKey).drVersion() : null,
                                     cctx);
                             }
 
@@ -1013,9 +975,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (tx != null) {
                 for (K key : distributedKeys)
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
-
-                if (tx.implicit() && !cctx.writeThrough())
-                    tx.onePhaseCommit(true);
             }
 
             lockLocally(distributedKeys, topVer, null);

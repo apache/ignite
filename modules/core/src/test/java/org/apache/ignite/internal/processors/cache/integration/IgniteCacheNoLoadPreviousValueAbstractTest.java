@@ -83,7 +83,7 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
 
             storeMap.put(key, key);
 
-            assertNull(cache.getAndPut(key, -1));
+            assertNull("Invalid for key: " + key, cache.getAndPut(key, -1));
 
             assertEquals(-1, storeMap.get(key));
 
@@ -153,7 +153,8 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
                         storeMap.put(key, key);
 
                         try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            assertNull(cache.getAndPut(key, -1));
+                            assertNull("Invalid value [concurrency=" + concurrency + ", isolation=" + isolation + ']',
+                                cache.getAndPut(key, -1));
 
                             tx.commit();
                         }

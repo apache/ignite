@@ -147,13 +147,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transfer required predicate. */
-    private static final IgnitePredicate TRANSFER_REQUIRED_PREDICATE = new P1<IgniteTxEntry>() {
-        @Override public boolean apply(IgniteTxEntry e) {
-            return e.transferRequired();
-        }
-    };
-
     /** Transaction entry to key. */
     private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
         @Override public Object apply(IgniteTxEntry e) {
@@ -835,14 +828,6 @@ public class GridCacheUtils {
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> writes() {
         return WRITE_FILTER;
-    }
-
-    /**
-     * @return Transfer required predicate.
-     */
-    @SuppressWarnings("unchecked")
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> transferRequired() {
-        return TRANSFER_REQUIRED_PREDICATE;
     }
 
     /**

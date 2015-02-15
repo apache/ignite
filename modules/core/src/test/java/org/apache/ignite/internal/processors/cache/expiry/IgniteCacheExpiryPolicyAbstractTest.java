@@ -1046,7 +1046,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }, 3000);
                 }
 
-                assertEquals("Unexpected ttl [node=" + i + ", key=" + key +']', ttl, e.ttl());
+                boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
+                boolean backup = cache.affinity().isBackup(grid.localNode(), key);
+
+                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key + ", e=" + e +
+                    ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);

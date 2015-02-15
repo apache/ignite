@@ -51,9 +51,6 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
-    /** Transaction nodes mapping (primary node -> related backup nodes). */
-    private Map<UUID, Collection<UUID>> txNodes;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -207,11 +204,6 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         return nearXidVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return txNodes;
-    }
-
     /**
      * @return Near node ID.
      */
@@ -290,7 +282,6 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param keyBytes Key bytes.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param drVer Data center replication version.
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
      */
@@ -301,7 +292,6 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         @Nullable V val,
         @Nullable byte[] valBytes,
         @Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors,
-        @Nullable GridCacheVersion drVer,
         long ttl) {
         checkInternal(key);
 
@@ -317,7 +307,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
             ttl,
             -1L,
             cached,
-            drVer);
+            null);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);

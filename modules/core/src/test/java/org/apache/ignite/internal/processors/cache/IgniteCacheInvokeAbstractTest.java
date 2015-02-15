@@ -339,7 +339,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             switch (key % 4) {
                 case 0: {
-                    assertNotNull("No result for " + key);
+                    assertNotNull("No result for " + key, res);
 
                     assertEquals(62, (int)res.get());
 
@@ -357,7 +357,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 }
 
                 case 2: {
-                    assertNotNull("No result for " + key);
+                    assertNotNull("No result for " + key, res);
 
                     assertEquals(3, (int)res.get());
 
@@ -367,7 +367,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 }
 
                 case 3: {
-                    assertNotNull("No result for " + key);
+                    assertNotNull("No result for " + key, res);
 
                     GridTestUtils.assertThrows(log, new Callable<Void>() {
                         @Override public Void call() throws Exception {

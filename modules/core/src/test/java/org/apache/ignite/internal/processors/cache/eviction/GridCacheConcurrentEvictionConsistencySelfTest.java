@@ -60,7 +60,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     private int keyCnt;
 
     /** Number of threads. */
-    private int threadCnt = 50;
+    private int threadCnt = Runtime.getRuntime().availableProcessors();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -104,7 +104,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         plc = new CacheFifoEvictionPolicy<Object, Object>(1);
 
         keyCnt = 2;
-        threadCnt = 10;
+        threadCnt = Runtime.getRuntime().availableProcessors() / 2;
 
         checkPolicyConsistency();
     }
@@ -116,7 +116,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         plc = new CacheLruEvictionPolicy<Object, Object>(1);
 
         keyCnt = 2;
-        threadCnt = 10;
+        threadCnt = Runtime.getRuntime().availableProcessors() / 2;
 
         checkPolicyConsistency();
     }
@@ -196,7 +196,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
                                 tx.commit();
                             }
 
-                            if (i != 0 && i % 10000 == 0)
+                            if (i != 0 && i % 5000 == 0)
                                 info("Stats [iterCnt=" + i + ", size=" + cache.size() + ']');
                         }
 

@@ -67,7 +67,6 @@ public class CacheDataLoaderExample {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);
-                ldr.isolated(true);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
                     ldr.addData(i, Integer.toString(i));

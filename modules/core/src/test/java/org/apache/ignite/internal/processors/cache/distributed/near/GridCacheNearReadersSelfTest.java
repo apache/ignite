@@ -188,7 +188,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // Node 1 still has node2 in readers map.
         assertTrue(e1.readers().contains(n2.id()));
 
-        assertNotNull((cache1.getAndPut(1, "z1")));
+        assertNotNull(cache1.getAndPut(1, "z1"));
 
         // Node 1 still has node2 in readers map.
         assertFalse(e1.readers().contains(n2.id()));

@@ -26,18 +26,17 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
@@ -94,8 +93,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
-
-        assert cctx != null;
 
         this.cctx = cctx;
         this.tx = tx;
@@ -286,6 +283,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     private boolean finish(Map<UUID, GridDistributedTxMapping<K, V>> dhtMap,
         Map<UUID, GridDistributedTxMapping<K, V>> nearMap) {
+        if (tx.onePhaseCommit())
+            return false;
+
         boolean res = false;
 
         boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
@@ -326,30 +326,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.pessimistic() ? dhtMapping.writes() : null,
-                tx.pessimistic() && nearMapping != null ? nearMapping.writes() : null,
-                tx.recoveryWrites(),
-                tx.onePhaseCommit(),
                 tx.groupLockKey(),
                 tx.subjectId(),
                 tx.taskNameHash());
-
-            if (!tx.pessimistic()) {
-                int idx = 0;
-
-                for (IgniteTxEntry<K, V> e : dhtMapping.writes())
-                    req.ttl(idx++, e.ttl());
-
-                if (nearMapping != null) {
-                    idx = 0;
-
-                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
-                        req.nearTtl(idx++, e.ttl());
-                }
-            }
-
-            if (tx.onePhaseCommit())
-                req.writeVersion(tx.writeVersion());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -398,20 +377,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.rolledbackVersions(),
                     tx.pendingVersions(),
                     tx.size(),
-                    null,
-                    tx.pessimistic() ? nearMapping.writes() : null,
-                    tx.recoveryWrites(),
-                    tx.onePhaseCommit(),
                     tx.groupLockKey(),
                     tx.subjectId(),
                     tx.taskNameHash());
-
-                if (!tx.pessimistic()) {
-                    int idx = 0;
-
-                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
-                        req.nearTtl(idx++, e.ttl());
-                }
 
                 if (tx.onePhaseCommit())
                     req.writeVersion(tx.writeVersion());
