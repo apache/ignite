@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Writer state.
  */
-public class MessageWriterState {
+public class DirectMessageWriterState {
     /** Initial array size. */
     private static final int INIT_SIZE = 10;
 
@@ -35,7 +35,7 @@ public class MessageWriterState {
     /** Current position. */
     private int pos;
 
-    public MessageWriterState() {
+    public DirectMessageWriterState() {
         stack = new int[INIT_SIZE];
 
         Arrays.fill(stack, INIT_VAL);

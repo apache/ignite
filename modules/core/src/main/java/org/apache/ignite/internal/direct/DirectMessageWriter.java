@@ -32,7 +32,7 @@ public class DirectMessageWriter implements MessageWriter {
     private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
     /** State. */
-    private final MessageWriterState state = new MessageWriterState();
+    private final DirectMessageWriterState state = new DirectMessageWriterState();
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
