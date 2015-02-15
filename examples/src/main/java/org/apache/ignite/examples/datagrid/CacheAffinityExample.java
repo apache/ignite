@@ -69,8 +69,8 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link IgniteCompute#affinityRun(String, Object, Runnable)}
-     * method.
+     * Collocates jobs with keys they need to work on using
+     * {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)} method.
      */
     private static void visitUsingAffinityRun() {
         Ignite ignite = Ignition.ignite();
