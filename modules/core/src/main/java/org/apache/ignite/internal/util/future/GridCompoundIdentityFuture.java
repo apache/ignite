@@ -51,16 +51,6 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
         super(ctx, rdc);
     }
 
-    /**
-     * @param ctx Context.
-     * @param rdc  Reducer to add.
-     * @param futs Futures to add.
-     */
-    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc,
-        @Nullable Iterable<IgniteInternalFuture<T>> futs) {
-        super(ctx, rdc, futs);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCompoundIdentityFuture.class, this, super.toString());
