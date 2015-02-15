@@ -48,9 +48,6 @@ public class VisorStreamerConfiguration implements Serializable {
     /** Maximum number of concurrent events to be processed. */
     private int maxConcurrentSessions;
 
-    /** Flag indicating whether streamer executor service should be shut down on Ignite stop. */
-    private boolean executorSrvcShutdown;
-
     /**
      * @param scfg Streamer configuration.
      * @return Data transfer object for streamer configuration properties.
@@ -63,7 +60,6 @@ public class VisorStreamerConfiguration implements Serializable {
         cfg.atLeastOnce(scfg.isAtLeastOnce());
         cfg.maximumFailoverAttempts(scfg.getMaximumFailoverAttempts());
         cfg.maximumConcurrentSessions(scfg.getMaximumConcurrentSessions());
-        cfg.executorServiceShutdown(scfg.isExecutorServiceShutdown());
 
         return cfg;
     }
@@ -154,21 +150,6 @@ public class VisorStreamerConfiguration implements Serializable {
      */
     public void maximumConcurrentSessions(int maxConcurrentSessions) {
         this.maxConcurrentSessions = maxConcurrentSessions;
-    }
-
-    /**
-     * @return Flag indicating whether streamer executor service should be shut down on Ignite stop.
-     */
-    public boolean executorServiceShutdown() {
-        return executorSrvcShutdown;
-    }
-
-    /**
-     * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shutdown
-     *      on Ignite stop.
-     */
-    public void executorServiceShutdown(boolean executorSrvcShutdown) {
-        this.executorSrvcShutdown = executorSrvcShutdown;
     }
 
     /** {@inheritDoc} */
