@@ -384,8 +384,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args);
+        EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
      * Gets snapshot metrics (statistics) for this cache.

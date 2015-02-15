@@ -110,6 +110,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
 
+        getSpi().setParallelJobsNumber(30);
+
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
         for (CollisionJobContext ctx : passiveJobs) {
