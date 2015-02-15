@@ -39,16 +39,16 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private final Map<UUID, String> gridNames = new HashMap<>();
 
     /** Nodes topology versions. */
-    private final Map<UUID, Long> topologyVersions = new HashMap<>();
+    private final Map<UUID, Long> topVersions = new HashMap<>();
 
     /** All task monitoring state collected from nodes. */
     private final Map<UUID, Boolean> taskMonitoringEnabled = new HashMap<>();
 
     /** All events collected from nodes. */
-    private final List<VisorGridEvent> events = new ArrayList<>();
+    private final List<VisorGridEvent> evts = new ArrayList<>();
 
     /** Exceptions caught during collecting events from nodes. */
-    private final Map<UUID, Throwable> eventsEx = new HashMap<>();
+    private final Map<UUID, Throwable> evtsEx = new HashMap<>();
 
     /** All caches collected from nodes. */
     private final Map<UUID, Collection<VisorCache>> caches = new HashMap<>();
@@ -77,11 +77,11 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     public boolean isEmpty() {
         return
             gridNames.isEmpty() &&
-                topologyVersions.isEmpty() &&
+                topVersions.isEmpty() &&
                 unhandledEx.isEmpty() &&
                 taskMonitoringEnabled.isEmpty() &&
-                events.isEmpty() &&
-                eventsEx.isEmpty() &&
+                evts.isEmpty() &&
+                evtsEx.isEmpty() &&
                 caches.isEmpty() &&
                 cachesEx.isEmpty() &&
                 igfss.isEmpty() &&
@@ -109,7 +109,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      * @return Nodes topology versions.
      */
     public Map<UUID, Long> topologyVersions() {
-        return topologyVersions;
+        return topVersions;
     }
 
     /**
@@ -123,14 +123,14 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      * @return All events collected from nodes.
      */
     public List<VisorGridEvent> events() {
-        return events;
+        return evts;
     }
 
     /**
      * @return Exceptions caught during collecting events from nodes.
      */
     public Map<UUID, Throwable> eventsEx() {
-        return eventsEx;
+        return evtsEx;
     }
 
     /**

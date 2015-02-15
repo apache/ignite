@@ -34,7 +34,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     public static final Comparator<VisorIgfsProfilerEntry> ENTRY_TIMESTAMP_COMPARATOR =
         new Comparator<VisorIgfsProfilerEntry>() {
             @Override public int compare(VisorIgfsProfilerEntry a, VisorIgfsProfilerEntry b) {
-                return Long.compare(a.timestamp, b.timestamp);
+                return Long.compare(a.ts, b.ts);
         }
     };
 
@@ -42,7 +42,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     private final String path;
 
     /** Timestamp of last file operation. */
-    private final long timestamp;
+    private final long ts;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -83,7 +83,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     /** Create data transfer object with given parameters. */
     public VisorIgfsProfilerEntry(
         String path,
-        long timestamp,
+        long ts,
         IgfsMode mode,
         long size,
         long bytesRead,
@@ -97,7 +97,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
         assert counters != null;
 
         this.path = path;
-        this.timestamp = timestamp;
+        this.ts = ts;
         this.mode = mode;
         this.size = size;
         this.bytesRead = bytesRead;
@@ -141,7 +141,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
      * @return Timestamp of last file operation.
      */
     public long timestamp() {
-        return timestamp;
+        return ts;
     }
 
     /**

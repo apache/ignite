@@ -68,7 +68,7 @@ public class VisorCache implements Serializable {
     private long offHeapAllocatedSize;
 
     /** Number of cache entries stored in off-heap memory. */
-    private long offHeapEntriesCount;
+    private long offHeapEntriesCnt;
 
     /** Size in bytes for swap space. */
     private long swapSize;
@@ -243,7 +243,7 @@ public class VisorCache implements Serializable {
         c.dhtSize(dhtSize);
         c.primarySize(primarySize);
         c.offHeapAllocatedSize(offHeapAllocatedSize);
-        c.offHeapEntriesCount(offHeapEntriesCount);
+        c.offHeapEntriesCount(offHeapEntriesCnt);
         c.swapSize(swapSize);
         c.swapKeys(swapKeys);
         c.partitions(partsCnt);
@@ -370,14 +370,14 @@ public class VisorCache implements Serializable {
      * @return Number of cache entries stored in off-heap memory.
      */
     public long offHeapEntriesCount() {
-        return offHeapEntriesCount;
+        return offHeapEntriesCnt;
     }
 
     /**
      * @param offHeapEntriesCnt New number of cache entries stored in off-heap memory.
      */
     public void offHeapEntriesCount(long offHeapEntriesCnt) {
-        offHeapEntriesCount = offHeapEntriesCnt;
+        this.offHeapEntriesCnt = offHeapEntriesCnt;
     }
 
     /**

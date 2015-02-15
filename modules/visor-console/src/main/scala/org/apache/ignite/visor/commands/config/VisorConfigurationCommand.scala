@@ -323,10 +323,12 @@ class VisorConfigurationCommand {
 
             val execCfg = cfg.executeService()
 
-            execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
+            execSvcT += ("Public thread pool size", safe(execCfg.publicThreadPoolSize(), DFLT))
+            execSvcT += ("System thread pool size", safe(execCfg.systemThreadPoolSize(), DFLT))
+            execSvcT += ("Management thread pool size", safe(execCfg.managementThreadPoolSize(), DFLT))
+            execSvcT += ("IGFS thread pool size", safe(execCfg.igfsThreadPoolSize(), DFLT))
+            execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.peerClassLoadingThreadPoolSize(), DFLT))
+            execSvcT += ("REST thread pool size", safe(execCfg.restThreadPoolSize(), DFLT))
 
             execSvcT.render()
 

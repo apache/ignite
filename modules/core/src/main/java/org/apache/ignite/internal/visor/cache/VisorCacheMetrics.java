@@ -102,7 +102,7 @@ public class VisorCacheMetrics implements Serializable {
     private VisorCacheQueryMetrics qryMetrics;
 
     /** Current size of evict queue used to batch up evictions. */
-    private int dhtEvictQueueCurrentSize;
+    private int dhtEvictQueueCurrSize;
 
     /** Gets transaction per-thread map size. */
     private int txThreadMapSize;
@@ -117,7 +117,7 @@ public class VisorCacheMetrics implements Serializable {
     private int txPrepareQueueSize;
 
     /** Start version counts map size. */
-    private int txStartVersionCountsSize;
+    private int txStartVerCountsSize;
 
     /** Number of cached committed transaction IDs. */
     private int txCommittedVersionsSize;
@@ -138,7 +138,7 @@ public class VisorCacheMetrics implements Serializable {
     private int txDhtPrepareQueueSize;
 
     /** DHT start version counts map size. */
-    private int txDhtStartVersionCountsSize;
+    private int txDhtStartVerCountsSize;
 
     /** Number of cached committed DHT transaction IDs. */
     private int txDhtCommittedVersionsSize;
@@ -193,19 +193,19 @@ public class VisorCacheMetrics implements Serializable {
 
         cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
 
-        cm.dhtEvictQueueCurrentSize = m.getDhtEvictQueueCurrentSize();
+        cm.dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         cm.txThreadMapSize = m.getTxThreadMapSize();
         cm.txXidMapSize = m.getTxXidMapSize();
         cm.txCommitQueueSize = m.getTxCommitQueueSize();
         cm.txPrepareQueueSize = m.getTxPrepareQueueSize();
-        cm.txStartVersionCountsSize = m.getTxStartVersionCountsSize();
+        cm.txStartVerCountsSize = m.getTxStartVersionCountsSize();
         cm.txCommittedVersionsSize = m.getTxCommittedVersionsSize();
         cm.txRolledbackVersionsSize = m.getTxRolledbackVersionsSize();
         cm.txDhtThreadMapSize = m.getTxDhtThreadMapSize();
         cm.txDhtXidMapSize = m.getTxDhtXidMapSize();
         cm.txDhtCommitQueueSize = m.getTxDhtCommitQueueSize();
         cm.txDhtPrepareQueueSize = m.getTxDhtPrepareQueueSize();
-        cm.txDhtStartVersionCountsSize = m.getTxDhtStartVersionCountsSize();
+        cm.txDhtStartVerCountsSize = m.getTxDhtStartVersionCountsSize();
         cm.txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
         cm.txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
 
@@ -377,7 +377,7 @@ public class VisorCacheMetrics implements Serializable {
      * @return Current size of evict queue used to batch up evictions.
      */
     public int dhtEvictQueueCurrentSize() {
-        return dhtEvictQueueCurrentSize;
+        return dhtEvictQueueCurrSize;
     }
 
     /**
@@ -411,7 +411,7 @@ public class VisorCacheMetrics implements Serializable {
      * @return Start version counts map size.
      */
     public int txStartVersionCountsSize() {
-        return txStartVersionCountsSize;
+        return txStartVerCountsSize;
     }
 
     /**
@@ -460,7 +460,7 @@ public class VisorCacheMetrics implements Serializable {
      * @return DHT start version counts map size.
      */
     public int txDhtStartVersionCountsSize() {
-        return txDhtStartVersionCountsSize;
+        return txDhtStartVerCountsSize;
     }
 
     /**

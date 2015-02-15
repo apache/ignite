@@ -62,6 +62,9 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /**
+         * @param arg Job argument.
+         */
         private VisorNopJob(@Nullable Object arg) {
             super(arg);
         }

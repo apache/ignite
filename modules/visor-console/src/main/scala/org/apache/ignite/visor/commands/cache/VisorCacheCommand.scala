@@ -775,7 +775,6 @@ object VisorCacheCommand {
         val preloadCfg = cfg.preloadConfiguration()
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
-        val dgcCfg = cfg.dgcConfiguration()
         val storeCfg = cfg.storeConfiguration()
         val writeBehind = cfg.writeBehind()
 
@@ -839,10 +838,6 @@ object VisorCacheCommand {
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
         cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
         cacheT += ("Cache Interceptor", cfg.interceptor())
-
-        cacheT += ("DGC Frequency", dgcCfg.frequency())
-        cacheT += ("DGC Remove Locks Flag", dgcCfg.removedLocks())
-        cacheT += ("DGC Suspect Lock Timeout", dgcCfg.suspectLockTimeout())
 
         cacheT += ("Store Enabled", storeCfg.enabled())
         cacheT += ("Store", storeCfg.store())

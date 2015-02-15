@@ -65,9 +65,8 @@ public class VisorIgfs implements Serializable {
     /**
      * @param igfs Source IGFS.
      * @return Data transfer object for given IGFS.
-     * @throws IgniteCheckedException
      */
-    public static VisorIgfs from(IgniteFs igfs) throws IgniteCheckedException {
+    public static VisorIgfs from(IgniteFs igfs) {
         assert igfs != null;
 
         return new VisorIgfs(

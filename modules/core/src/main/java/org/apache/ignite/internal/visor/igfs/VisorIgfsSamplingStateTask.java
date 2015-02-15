@@ -45,7 +45,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        public VisorIgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+        private VisorIgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
             super(arg, debug);
         }
 

@@ -126,7 +126,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         /** Next record from future. */
         private final R next;
 
-        /** Flag indicating that this furure was read from last check. */
+        /** Flag indicating that this future was read from last check. */
         private Boolean accessed;
 
         /**
@@ -155,7 +155,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         }
 
         /**
-         * @return Flag indicating that this furure was read from last check..
+         * @return Flag indicating that this future was read from last check..
          */
         public Boolean accessed() {
             return accessed;

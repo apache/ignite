@@ -33,7 +33,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     private final String cacheName;
 
     /** Node IDs with cache metrics. */
-    private Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
+    private final Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
 
     /** Minimum number of elements in the cache. */
     private transient Integer minSize;
@@ -403,7 +403,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
             execsQry = 0;
 
             for (VisorCacheMetrics metric : metrics.values())
-                execsQry = execsQry + metric.queryMetrics().executions();
+                execsQry += metric.queryMetrics().executions();
         }
 
         return execsQry;
@@ -417,7 +417,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
             failsQry = 0;
 
             for (VisorCacheMetrics metric : metrics.values())
-                failsQry = failsQry + metric.queryMetrics().fails();
+                failsQry += metric.queryMetrics().fails();
         }
 
         return failsQry;

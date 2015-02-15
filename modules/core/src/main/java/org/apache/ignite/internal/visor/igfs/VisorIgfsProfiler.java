@@ -48,7 +48,7 @@ public class VisorIgfsProfiler {
 
             Collections.sort(entries, VisorIgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
 
-            long timestamp = 0;
+            long ts = 0;
             long size = 0;
             long bytesRead = 0;
             long readTime = 0;
@@ -61,7 +61,7 @@ public class VisorIgfsProfiler {
 
             for (VisorIgfsProfilerEntry entry : entries) {
                 // Take last timestamp.
-                timestamp = entry.timestamp();
+                ts = entry.timestamp();
 
                 // Take last size.
                 size = entry.size();
@@ -80,7 +80,7 @@ public class VisorIgfsProfiler {
                 counters.aggregate(entry.counters());
             }
 
-            return new VisorIgfsProfilerEntry(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
+            return new VisorIgfsProfilerEntry(path, ts, mode, size, bytesRead, readTime, userReadTime,
                 bytesWritten, writeTime, userWriteTime, counters);
         }
     }

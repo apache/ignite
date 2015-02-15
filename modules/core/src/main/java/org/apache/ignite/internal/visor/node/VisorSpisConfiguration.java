@@ -76,7 +76,7 @@ public class VisorSpisConfiguration implements Serializable {
      * Methods with {@code Deprecated} annotation are skipped.
      *
      * @param spi SPI to collect information on.
-     * @return Tuple where first component is SPI name and
+     * @return Tuple where first component is SPI name and map with properties as second.
      */
     private static IgniteBiTuple<String, Map<String, Object>> collectSpiInfo(IgniteSpi spi) {
         Class<? extends IgniteSpi> spiCls = spi.getClass();
@@ -127,6 +127,10 @@ public class VisorSpisConfiguration implements Serializable {
         return new IgniteBiTuple<String, Map<String, Object>>(spi.getName(), res);
     }
 
+    /**
+     * @param spis Array of spi to process.
+     * @return Tuple where first component is SPI name and map with properties as second.
+     */
     private static IgniteBiTuple<String, Map<String, Object>>[] collectSpiInfo(IgniteSpi[] spis) {
         IgniteBiTuple[] res = new IgniteBiTuple[spis.length];
 
@@ -321,7 +325,8 @@ public class VisorSpisConfiguration implements Serializable {
     /**
      * @param indexingSpis New indexing SPIs.
      */
-    public void indexingSpis(IgniteBiTuple<String, Map<String, Object>>... indexingSpis) {
+    @SafeVarargs
+    public final void indexingSpis(IgniteBiTuple<String, Map<String, Object>>... indexingSpis) {
         this.indexingSpis = indexingSpis;
     }
 

@@ -35,14 +35,14 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
     /**
      * Create thread monitor info with given parameters.
      *
-     * @param className Fully qualified name of the class of the lock object.
+     * @param clsName Fully qualified name of the class of the lock object.
      * @param identityHashCode Identity hash code of the lock object.
      * @param stackDepth Depth in the stack trace where the object monitor was locked.
      * @param stackFrame Stack frame that locked the object monitor.
      */
-    public VisorThreadMonitorInfo(String className, Integer identityHashCode, Integer stackDepth,
+    public VisorThreadMonitorInfo(String clsName, Integer identityHashCode, Integer stackDepth,
         StackTraceElement stackFrame) {
-        super(className, identityHashCode);
+        super(clsName, identityHashCode);
 
         this.stackDepth = stackDepth;
         this.stackFrame = stackFrame;
