@@ -21,10 +21,15 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 
+import java.io.*;
+
 /**
  * Data transfer object for transaction configuration.
  */
-public class VisorTransactionConfiguration {
+public class VisorTransactionConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default cache concurrency. */
     private IgniteTxConcurrency dfltConcurrency;
 
