@@ -595,11 +595,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
 
             res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+
+            tx.implicitSingleResult(ret);
         }
 
         res.filterFailedKeys(filterFailedKeys);
-
-        tx.implicitSingleResult(ret);
 
         return res;
     }
