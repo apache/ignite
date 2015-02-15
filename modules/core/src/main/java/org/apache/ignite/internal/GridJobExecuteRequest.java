@@ -478,7 +478,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -538,7 +538,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeCollection("top", top, Type.UUID))
+                if (!writer.writeCollection("top", top, MessageFieldType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -636,7 +636,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 readState++;
 
             case 9:
-                ldrParticipants = reader.readMap("ldrParticipants", Type.UUID, Type.IGNITE_UUID, false);
+                ldrParticipants = reader.readMap("ldrParticipants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -716,7 +716,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 readState++;
 
             case 19:
-                top = reader.readCollection("top", Type.UUID);
+                top = reader.readCollection("top", MessageFieldType.UUID);
 
                 if (!reader.isLastRead())
                     return false;

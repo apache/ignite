@@ -180,7 +180,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
+                if (!writer.writeCollection("nodeIds", nodeIds, MessageFieldType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -224,7 +224,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", Type.UUID);
+                nodeIds = reader.readCollection("nodeIds", MessageFieldType.UUID);
 
                 if (!reader.isLastRead())
                     return false;

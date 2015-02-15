@@ -196,7 +196,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -208,7 +208,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeObjectArray("mappedVers", mappedVers, Type.MSG))
+                if (!writer.writeObjectArray("mappedVers", mappedVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -220,7 +220,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("pending", pending, Type.MSG))
+                if (!writer.writeCollection("pending", pending, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -239,7 +239,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
         switch (readState) {
             case 11:
-                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageFieldType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -255,7 +255,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 readState++;
 
             case 13:
-                mappedVers = reader.readObjectArray("mappedVers", Type.MSG, GridCacheVersion.class);
+                mappedVers = reader.readObjectArray("mappedVers", MessageFieldType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,7 +271,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 readState++;
 
             case 15:
-                pending = reader.readCollection("pending", Type.MSG);
+                pending = reader.readCollection("pending", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

@@ -99,7 +99,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("blocks", blocks, Type.MSG, Type.BYTE_ARR))
+                if (!writer.writeMap("blocks", blocks, MessageFieldType.MSG, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -130,7 +130,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                blocks = reader.readMap("blocks", Type.MSG, Type.BYTE_ARR, false);
+                blocks = reader.readMap("blocks", MessageFieldType.MSG, MessageFieldType.BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;

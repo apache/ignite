@@ -387,7 +387,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -399,7 +399,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeCollection("pendingVers", pendingVers, Type.MSG))
+                if (!writer.writeCollection("pendingVers", pendingVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -490,7 +490,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 readState++;
 
             case 25:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", Type.BYTE_ARR);
+                nearWritesBytes = reader.readCollection("nearWritesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -506,7 +506,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 readState++;
 
             case 27:
-                pendingVers = reader.readCollection("pendingVers", Type.MSG);
+                pendingVers = reader.readCollection("pendingVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

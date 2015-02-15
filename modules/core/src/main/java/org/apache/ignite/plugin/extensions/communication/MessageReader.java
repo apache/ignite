@@ -211,7 +211,7 @@ public interface MessageReader {
      * @param itemCls Array component class.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls);
+    public <T> T[] readObjectArray(String name, MessageFieldType itemType, Class<T> itemCls);
 
     /**
      * Reads collection.
@@ -220,7 +220,7 @@ public interface MessageReader {
      * @param itemType Collection item type.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(String name, MessageAdapter.Type itemType);
+    public <C extends Collection<?>> C readCollection(String name, MessageFieldType itemType);
 
     /**
      * Reads map.
@@ -231,7 +231,7 @@ public interface MessageReader {
      * @param linked Whether {@link LinkedHashMap} should be created.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(String name, MessageAdapter.Type keyType, MessageAdapter.Type valType,
+    public <M extends Map<?, ?>> M readMap(String name, MessageFieldType keyType, MessageFieldType valType,
         boolean linked);
 
     /**

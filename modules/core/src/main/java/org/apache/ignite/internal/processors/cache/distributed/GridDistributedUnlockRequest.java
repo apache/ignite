@@ -130,7 +130,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -149,7 +149,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
         switch (readState) {
             case 8:
-                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

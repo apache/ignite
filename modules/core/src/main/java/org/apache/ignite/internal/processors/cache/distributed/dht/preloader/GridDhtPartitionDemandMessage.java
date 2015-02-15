@@ -205,7 +205,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("parts", parts, Type.INT))
+                if (!writer.writeCollection("parts", parts, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
@@ -254,7 +254,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
         switch (readState) {
             case 3:
-                parts = reader.readCollection("parts", Type.INT);
+                parts = reader.readCollection("parts", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
