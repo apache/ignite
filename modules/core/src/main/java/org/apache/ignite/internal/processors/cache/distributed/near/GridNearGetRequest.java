@@ -239,33 +239,6 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearGetRequest _clone = (GridNearGetRequest)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.ver = ver != null ? (GridCacheVersion)ver.clone() : null;
-        _clone.keys = keys;
-        _clone.reload = reload;
-        _clone.readThrough = readThrough;
-        _clone.skipVals = skipVals;
-        _clone.keyBytes = keyBytes;
-        _clone.topVer = topVer;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -352,7 +325,6 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

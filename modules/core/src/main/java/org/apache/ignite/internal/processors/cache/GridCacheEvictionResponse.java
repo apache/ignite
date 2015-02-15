@@ -129,25 +129,6 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheEvictionResponse _clone = (GridCacheEvictionResponse)_msg;
-
-        _clone.futId = futId;
-        _clone.rejectedKeys = rejectedKeys;
-        _clone.rejectedKeyBytes = rejectedKeyBytes;
-        _clone.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -186,7 +167,6 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

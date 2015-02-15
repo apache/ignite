@@ -110,26 +110,6 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheOptimisticCheckPreparedTxRequest _clone = (GridCacheOptimisticCheckPreparedTxRequest)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
-        _clone.txNum = txNum;
-        _clone.sys = sys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -180,7 +160,6 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

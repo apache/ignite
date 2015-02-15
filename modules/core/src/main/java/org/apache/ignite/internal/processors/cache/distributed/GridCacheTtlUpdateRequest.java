@@ -187,12 +187,6 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -307,22 +301,6 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheTtlUpdateRequest _clone = (GridCacheTtlUpdateRequest)_msg;
-
-        _clone.keys = keys;
-        _clone.keysBytes = keysBytes;
-        _clone.vers = vers;
-        _clone.nearKeys = nearKeys;
-        _clone.nearKeysBytes = nearKeysBytes;
-        _clone.nearVers = nearVers;
-        _clone.ttl = ttl;
-        _clone.topVer = topVer;
     }
 
     /** {@inheritDoc} */

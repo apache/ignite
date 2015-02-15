@@ -165,27 +165,6 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtForceKeysResponse _clone = (GridDhtForceKeysResponse)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.missedKeyBytes = missedKeyBytes;
-        _clone.missedKeys = missedKeys;
-        _clone.infos = infos;
-        _clone.infosBytes = infosBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -230,7 +209,6 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

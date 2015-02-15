@@ -331,34 +331,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearLockRequest _clone = (GridNearLockRequest)_msg;
-
-        _clone.topVer = topVer;
-        _clone.miniId = miniId;
-        _clone.filterBytes = filterBytes;
-        _clone.filter = filter;
-        _clone.implicitTx = implicitTx;
-        _clone.implicitSingleTx = implicitSingleTx;
-        _clone.onePhaseCommit = onePhaseCommit;
-        _clone.dhtVers = dhtVers;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.hasTransforms = hasTransforms;
-        _clone.syncCommit = syncCommit;
-        _clone.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -451,7 +423,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

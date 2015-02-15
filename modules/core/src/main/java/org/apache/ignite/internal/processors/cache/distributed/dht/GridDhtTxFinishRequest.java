@@ -348,35 +348,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxFinishRequest _clone = (GridDhtTxFinishRequest)_msg;
-
-        _clone.nearNodeId = nearNodeId;
-        _clone.isolation = isolation;
-        _clone.nearWrites = nearWrites;
-        _clone.nearWritesBytes = nearWritesBytes;
-        _clone.miniId = miniId;
-        _clone.sysInvalidate = sysInvalidate;
-        _clone.topVer = topVer;
-        _clone.pendingVers = pendingVers;
-        _clone.onePhaseCommit = onePhaseCommit;
-        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
-        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -475,7 +446,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

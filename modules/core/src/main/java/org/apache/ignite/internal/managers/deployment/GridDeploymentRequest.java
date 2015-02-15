@@ -156,25 +156,6 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDeploymentRequest _clone = (GridDeploymentRequest)_msg;
-
-        _clone.resTopic = resTopic;
-        _clone.resTopicBytes = resTopicBytes;
-        _clone.rsrcName = rsrcName;
-        _clone.ldrId = ldrId;
-        _clone.isUndeploy = isUndeploy;
-        _clone.nodeIds = nodeIds;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -222,7 +203,6 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

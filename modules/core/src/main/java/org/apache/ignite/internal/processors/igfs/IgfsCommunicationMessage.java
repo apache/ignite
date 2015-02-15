@@ -31,10 +31,6 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-    }
-
     /**
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.

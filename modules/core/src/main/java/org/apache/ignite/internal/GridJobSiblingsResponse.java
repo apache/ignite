@@ -77,21 +77,6 @@ public class GridJobSiblingsResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridJobSiblingsResponse _clone = (GridJobSiblingsResponse)_msg;
-
-        _clone.siblings = siblings;
-        _clone.siblingsBytes = siblingsBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -115,7 +100,6 @@ public class GridJobSiblingsResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

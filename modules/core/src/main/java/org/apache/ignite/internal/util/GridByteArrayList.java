@@ -467,20 +467,6 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridByteArrayList _clone = (GridByteArrayList)_msg;
-
-        _clone.data = data;
-        _clone.size = size;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridByteArrayList.class, this);
     }

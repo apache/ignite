@@ -402,41 +402,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedTxPrepareRequest _clone = (GridDistributedTxPrepareRequest)_msg;
-
-        _clone.threadId = threadId;
-        _clone.concurrency = concurrency;
-        _clone.isolation = isolation;
-        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
-        _clone.timeout = timeout;
-        _clone.invalidate = invalidate;
-        _clone.reads = reads;
-        _clone.readsBytes = readsBytes;
-        _clone.writes = writes;
-        _clone.writesBytes = writesBytes;
-        _clone.dhtVers = dhtVers;
-        _clone.dhtVersBytes = dhtVersBytes;
-        _clone.grpLockKey = grpLockKey;
-        _clone.grpLockKeyBytes = grpLockKeyBytes;
-        _clone.partLock = partLock;
-        _clone.txSize = txSize;
-        _clone.txNodes = txNodes;
-        _clone.txNodesBytes = txNodesBytes;
-        _clone.sys = sys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -541,7 +506,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

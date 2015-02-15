@@ -426,42 +426,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "OverriddenMethodCallDuringObjectConstruction",
-        "CloneDoesntCallSuperClone"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedLockRequest _clone = (GridDistributedLockRequest)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
-        _clone.threadId = threadId;
-        _clone.futId = futId;
-        _clone.timeout = timeout;
-        _clone.isInTx = isInTx;
-        _clone.isInvalidate = isInvalidate;
-        _clone.isRead = isRead;
-        _clone.isolation = isolation;
-        _clone.keyBytes = keyBytes;
-        _clone.keys = keys;
-        _clone.writeEntries = writeEntries;
-        _clone.writeEntriesBytes = writeEntriesBytes;
-        _clone.retVals = retVals;
-        _clone.idx = idx;
-        _clone.txSize = txSize;
-        _clone.grpLockKey = grpLockKey;
-        _clone.grpLockKeyBytes = grpLockKeyBytes;
-        _clone.partLock = partLock;
-        _clone.drVersByIdx = drVersByIdx;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -578,7 +542,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

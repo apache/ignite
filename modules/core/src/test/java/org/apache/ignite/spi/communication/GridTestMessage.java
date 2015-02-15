@@ -94,27 +94,6 @@ public class GridTestMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridTestMessage msg = new GridTestMessage();
-
-        clone0(msg);
-
-        return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridTestMessage _clone = (GridTestMessage)_msg;
-
-        _clone.srcNodeId = srcNodeId;
-        _clone.msgId = msgId;
-        _clone.resId = resId;
-        _clone.payload = payload;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
 //        writer.setBuffer(buf);
 //
@@ -155,7 +134,6 @@ public class GridTestMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
 //        reader.setBuffer(buf);
 //

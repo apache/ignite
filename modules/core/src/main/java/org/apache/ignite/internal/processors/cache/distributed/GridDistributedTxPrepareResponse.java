@@ -149,26 +149,6 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedTxPrepareResponse _clone = (GridDistributedTxPrepareResponse)_msg;
-
-        _clone.cands = cands;
-        _clone.candsBytes = candsBytes;
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -201,7 +181,6 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

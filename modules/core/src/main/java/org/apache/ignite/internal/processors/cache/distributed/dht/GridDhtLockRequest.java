@@ -341,32 +341,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtLockRequest _clone = (GridDhtLockRequest)_msg;
-
-        _clone.nearKeys = nearKeys;
-        _clone.nearKeyBytes = nearKeyBytes;
-        _clone.invalidateEntries = invalidateEntries;
-        _clone.miniId = miniId;
-        _clone.owned = owned;
-        _clone.ownedBytes = ownedBytes;
-        _clone.topVer = topVer;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.preloadKeys = preloadKeys;
-        _clone.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -441,7 +415,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

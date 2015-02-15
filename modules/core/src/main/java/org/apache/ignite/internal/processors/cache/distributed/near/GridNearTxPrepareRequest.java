@@ -216,29 +216,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearTxPrepareRequest _clone = (GridNearTxPrepareRequest)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.near = near;
-        _clone.topVer = topVer;
-        _clone.last = last;
-        _clone.lastBackups = lastBackups;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -307,7 +284,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

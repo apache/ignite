@@ -138,24 +138,6 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDeploymentInfoBean _clone = (GridDeploymentInfoBean)_msg;
-
-        _clone.clsLdrId = clsLdrId;
-        _clone.depMode = depMode;
-        _clone.userVer = userVer;
-        _clone.locDepOwner = locDepOwner;
-        _clone.participants = participants;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -203,7 +185,6 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

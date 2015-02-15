@@ -341,22 +341,6 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridCacheVersion _clone = (GridCacheVersion)_msg;
-
-        _clone.topVer = topVer;
-        _clone.nodeOrderDrId = nodeOrderDrId;
-        _clone.globalTime = globalTime;
-        _clone.order = order;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheVersion.class, this);
     }

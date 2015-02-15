@@ -273,30 +273,6 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtPartitionSupplyMessage _clone = (GridDhtPartitionSupplyMessage)_msg;
-
-        _clone.workerId = workerId;
-        _clone.updateSeq = updateSeq;
-        _clone.ack = ack;
-        _clone.last = last;
-        _clone.missed = missed;
-        _clone.infos = infos;
-        _clone.infoBytesMap = infoBytesMap;
-        _clone.infoBytes = infoBytes;
-        _clone.msgSize = msgSize;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -353,7 +329,6 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

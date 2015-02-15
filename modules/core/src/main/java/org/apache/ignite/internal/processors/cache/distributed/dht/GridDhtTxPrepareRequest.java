@@ -312,35 +312,6 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxPrepareRequest _clone = (GridDhtTxPrepareRequest)_msg;
-
-        _clone.nearNodeId = nearNodeId;
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.topVer = topVer;
-        _clone.invalidateNearEntries = invalidateNearEntries;
-        _clone.nearWrites = nearWrites;
-        _clone.nearWritesBytes = nearWritesBytes;
-        _clone.owned = owned;
-        _clone.ownedBytes = ownedBytes;
-        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
-        _clone.last = last;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.preloadKeys = preloadKeys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -433,7 +404,6 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

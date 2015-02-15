@@ -84,22 +84,6 @@ public class GridCheckpointRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridCheckpointRequest _clone = (GridCheckpointRequest)_msg;
-
-        _clone.sesId = sesId;
-        _clone.key = key;
-        _clone.cpSpi = cpSpi;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -135,7 +119,6 @@ public class GridCheckpointRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

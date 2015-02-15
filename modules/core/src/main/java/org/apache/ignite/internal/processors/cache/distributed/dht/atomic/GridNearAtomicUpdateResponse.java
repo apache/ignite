@@ -418,38 +418,6 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearAtomicUpdateResponse _clone = (GridNearAtomicUpdateResponse)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-        _clone.retVal = retVal;
-        _clone.retValBytes = retValBytes;
-        _clone.failedKeys = failedKeys;
-        _clone.failedKeysBytes = failedKeysBytes;
-        _clone.remapKeys = remapKeys;
-        _clone.remapKeysBytes = remapKeysBytes;
-        _clone.nearValsIdxs = nearValsIdxs;
-        _clone.nearSkipIdxs = nearSkipIdxs;
-        _clone.nearVals = nearVals;
-        _clone.nearValBytes = nearValBytes;
-        _clone.nearVer = nearVer != null ? (GridCacheVersion)nearVer.clone() : null;
-        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
-        _clone.nearExpireTimes = nearExpireTimes != null ? (GridLongList)nearExpireTimes.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -536,7 +504,6 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

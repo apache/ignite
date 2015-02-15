@@ -69,22 +69,6 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxFinishResponse _clone = (GridDhtTxFinishResponse)_msg;
-
-        _clone.miniId = miniId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -111,7 +95,6 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

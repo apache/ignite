@@ -72,21 +72,6 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridClockDeltaSnapshotMessage _clone = (GridClockDeltaSnapshotMessage)_msg;
-
-        _clone.snapVer = snapVer != null ? (GridClockDeltaVersion)snapVer.clone() : null;
-        _clone.deltas = deltas;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -116,7 +101,6 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

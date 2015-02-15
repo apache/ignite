@@ -114,25 +114,6 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearTxFinishResponse _clone = (GridNearTxFinishResponse)_msg;
-
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-        _clone.miniId = miniId;
-        _clone.nearThreadId = nearThreadId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -171,7 +152,6 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

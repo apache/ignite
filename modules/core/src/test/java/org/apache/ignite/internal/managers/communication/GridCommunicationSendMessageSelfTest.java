@@ -144,17 +144,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /** */
     private static class TestMessage extends MessageAdapter {
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter _msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
 //            writer.setBuffer(buf);
 //

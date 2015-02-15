@@ -74,24 +74,6 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedTxFinishResponse _clone = (GridDistributedTxFinishResponse)_msg;
-
-        _clone.txId = txId != null ? (GridCacheVersion)txId.clone() : null;
-        _clone.futId = futId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -124,7 +106,6 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

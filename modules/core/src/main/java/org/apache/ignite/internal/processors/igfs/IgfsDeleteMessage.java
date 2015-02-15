@@ -107,24 +107,6 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        IgfsDeleteMessage _clone = (IgfsDeleteMessage)_msg;
-
-        _clone.id = id;
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -157,7 +139,6 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

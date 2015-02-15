@@ -439,28 +439,4 @@ public class GridDataLoadRequest extends MessageAdapter {
     @Override public byte directType() {
         return 62;
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDataLoadRequest _clone = (GridDataLoadRequest)_msg;
-
-        _clone.reqId = reqId;
-        _clone.resTopicBytes = resTopicBytes;
-        _clone.cacheName = cacheName;
-        _clone.updaterBytes = updaterBytes;
-        _clone.colBytes = colBytes;
-        _clone.ignoreDepOwnership = ignoreDepOwnership;
-        _clone.skipStore = skipStore;
-        _clone.depMode = depMode;
-        _clone.sampleClsName = sampleClsName;
-        _clone.userVer = userVer;
-        _clone.ldrParticipants = ldrParticipants;
-        _clone.clsLdrId = clsLdrId;
-        _clone.forceLocDep = forceLocDep;
-    }
 }

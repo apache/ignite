@@ -173,20 +173,6 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridClockDeltaVersion _clone = (GridClockDeltaVersion)_msg;
-
-        _clone.ver = ver;
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridClockDeltaVersion.class, this);
     }

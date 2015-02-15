@@ -75,17 +75,6 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtPartitionsAbstractMessage _clone = (GridDhtPartitionsAbstractMessage)_msg;
-
-        _clone.exchId = exchId != null ? (GridDhtPartitionExchangeId)exchId.clone() : null;
-        _clone.lastVer = lastVer != null ? (GridCacheVersion)lastVer.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -118,7 +107,6 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

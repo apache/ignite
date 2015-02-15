@@ -116,24 +116,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtPartitionsFullMessage _clone = (GridDhtPartitionsFullMessage)_msg;
-
-        _clone.parts = parts;
-        _clone.partsBytes = partsBytes;
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -166,7 +148,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

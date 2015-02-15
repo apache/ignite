@@ -277,27 +277,6 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedLockResponse _clone = (GridDistributedLockResponse)_msg;
-
-        _clone.futId = futId;
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-        _clone.valBytes = valBytes;
-        _clone.vals = vals;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -336,7 +315,6 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

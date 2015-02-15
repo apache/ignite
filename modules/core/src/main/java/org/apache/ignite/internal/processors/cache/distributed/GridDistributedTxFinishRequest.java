@@ -344,38 +344,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedTxFinishRequest _clone = (GridDistributedTxFinishRequest)_msg;
-
-        _clone.futId = futId;
-        _clone.threadId = threadId;
-        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
-        _clone.invalidate = invalidate;
-        _clone.commit = commit;
-        _clone.syncCommit = syncCommit;
-        _clone.syncRollback = syncRollback;
-        _clone.baseVer = baseVer != null ? (GridCacheVersion)baseVer.clone() : null;
-        _clone.writeEntries = writeEntries;
-        _clone.writeEntriesBytes = writeEntriesBytes;
-        _clone.recoveryWrites = recoveryWrites;
-        _clone.recoveryWritesBytes = recoveryWritesBytes;
-        _clone.txSize = txSize;
-        _clone.grpLockKey = grpLockKey;
-        _clone.grpLockKeyBytes = grpLockKeyBytes;
-        _clone.sys = sys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -474,7 +442,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

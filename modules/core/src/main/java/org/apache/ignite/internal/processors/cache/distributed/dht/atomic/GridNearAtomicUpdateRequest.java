@@ -543,46 +543,6 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearAtomicUpdateRequest _clone = (GridNearAtomicUpdateRequest)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
-        _clone.fastMap = fastMap;
-        _clone.updateVer = updateVer != null ? (GridCacheVersion)updateVer.clone() : null;
-        _clone.topVer = topVer;
-        _clone.syncMode = syncMode;
-        _clone.op = op;
-        _clone.keys = keys;
-        _clone.keyBytes = keyBytes;
-        _clone.vals = vals;
-        _clone.valBytes = valBytes;
-        _clone.invokeArgs = invokeArgs;
-        _clone.invokeArgsBytes = invokeArgsBytes;
-        _clone.drVers = drVers;
-        _clone.drTtls = drTtls != null ? (GridLongList)drTtls.clone() : null;
-        _clone.drExpireTimes = drExpireTimes != null ? (GridLongList)drExpireTimes.clone() : null;
-        _clone.retval = retval;
-        _clone.expiryPlc = expiryPlc;
-        _clone.expiryPlcBytes = expiryPlcBytes;
-        _clone.filter = filter;
-        _clone.filterBytes = filterBytes;
-        _clone.hasPrimary = hasPrimary;
-        _clone.forceTransformBackups = forceTransformBackups;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -717,7 +677,6 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

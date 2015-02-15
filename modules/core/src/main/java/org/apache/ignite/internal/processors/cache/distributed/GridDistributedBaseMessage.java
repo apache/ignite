@@ -240,23 +240,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedBaseMessage _clone = (GridDistributedBaseMessage)_msg;
-
-        _clone.ver = ver != null ? (GridCacheVersion)ver.clone() : null;
-        _clone.candsByIdx = candsByIdx;
-        _clone.candsByIdxBytes = candsByIdxBytes;
-        _clone.candsByKey = candsByKey;
-        _clone.candsByKeyBytes = candsByKeyBytes;
-        _clone.committedVers = committedVers;
-        _clone.rolledbackVers = rolledbackVers;
-        _clone.cnt = cnt;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -307,7 +290,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

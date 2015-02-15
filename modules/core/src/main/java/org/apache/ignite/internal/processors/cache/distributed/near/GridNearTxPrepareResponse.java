@@ -224,28 +224,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearTxPrepareResponse _clone = (GridNearTxPrepareResponse)_msg;
-
-        _clone.pending = pending;
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.dhtVer = dhtVer != null ? (GridCacheVersion)dhtVer.clone() : null;
-        _clone.invalidParts = invalidParts;
-        _clone.ownedVals = ownedVals;
-        _clone.ownedValsBytes = ownedValsBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -302,7 +280,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

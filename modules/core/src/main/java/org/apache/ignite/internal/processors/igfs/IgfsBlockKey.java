@@ -158,23 +158,6 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        IgfsBlockKey _clone = (IgfsBlockKey)_msg;
-
-        _clone.fileId = fileId;
-        _clone.blockId = blockId;
-        _clone.affKey = affKey;
-        _clone.evictExclude = evictExclude;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -216,7 +199,6 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

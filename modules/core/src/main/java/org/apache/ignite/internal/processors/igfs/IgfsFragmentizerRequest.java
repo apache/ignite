@@ -79,23 +79,6 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        IgfsFragmentizerRequest _clone = (IgfsFragmentizerRequest)_msg;
-
-        _clone.fileId = fileId;
-        _clone.fragmentRanges = fragmentRanges;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -128,7 +111,6 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

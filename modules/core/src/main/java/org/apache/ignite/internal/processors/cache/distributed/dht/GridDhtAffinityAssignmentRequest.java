@@ -67,21 +67,6 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAffinityAssignmentRequest _clone = (GridDhtAffinityAssignmentRequest)_msg;
-
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

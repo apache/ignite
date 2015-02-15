@@ -681,48 +681,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAtomicUpdateRequest _clone = (GridDhtAtomicUpdateRequest)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
-        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
-        _clone.topVer = topVer;
-        _clone.keys = keys;
-        _clone.keyBytes = keyBytes;
-        _clone.vals = vals;
-        _clone.valBytes = valBytes;
-        _clone.drVers = drVers;
-        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
-        _clone.drExpireTimes = drExpireTimes != null ? (GridLongList)drExpireTimes.clone() : null;
-        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
-        _clone.nearExpireTimes = nearExpireTimes != null ? (GridLongList)nearExpireTimes.clone() : null;
-        _clone.syncMode = syncMode;
-        _clone.nearKeys = nearKeys;
-        _clone.nearKeyBytes = nearKeyBytes;
-        _clone.nearVals = nearVals;
-        _clone.nearValBytes = nearValBytes;
-        _clone.forceTransformBackups = forceTransformBackups;
-        _clone.entryProcessors = entryProcessors;
-        _clone.entryProcessorsBytes = entryProcessorsBytes;
-        _clone.nearEntryProcessors = nearEntryProcessors;
-        _clone.nearEntryProcessorsBytes = nearEntryProcessorsBytes;
-        _clone.invokeArgs = invokeArgs;
-        _clone.invokeArgsBytes = invokeArgsBytes;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -863,7 +821,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

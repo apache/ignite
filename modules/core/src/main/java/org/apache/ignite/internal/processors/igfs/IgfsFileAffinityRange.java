@@ -263,24 +263,6 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        IgfsFileAffinityRange _clone = (IgfsFileAffinityRange)_msg;
-
-        _clone.affKey = affKey;
-        _clone.status = status;
-        _clone.startOff = startOff;
-        _clone.endOff = endOff;
-        _clone.done = done;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -328,7 +310,6 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

@@ -84,24 +84,6 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        IgfsBlocksMessage _clone = (IgfsBlocksMessage)_msg;
-
-        _clone.fileId = fileId;
-        _clone.id = id;
-        _clone.blocks = blocks;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -140,7 +122,6 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

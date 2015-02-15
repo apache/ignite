@@ -178,28 +178,6 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAtomicUpdateResponse _clone = (GridDhtAtomicUpdateResponse)_msg;
-
-        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
-        _clone.failedKeys = failedKeys;
-        _clone.failedKeysBytes = failedKeysBytes;
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-        _clone.nearEvicted = nearEvicted;
-        _clone.nearEvictedBytes = nearEvictedBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -244,7 +222,6 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

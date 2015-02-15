@@ -88,25 +88,9 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         return 29;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAffinityAssignmentResponse _clone = (GridDhtAffinityAssignmentResponse)_msg;
-
-        _clone.topVer = topVer;
-        _clone.affAssignment = affAssignment;
-        _clone.affAssignmentBytes = affAssignmentBytes;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
+    /**
+     * @param ctx Context.
+     */
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

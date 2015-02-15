@@ -150,26 +150,6 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridStreamerExecutionRequest _clone = (GridStreamerExecutionRequest)_msg;
-
-        _clone.forceLocDep = forceLocDep;
-        _clone.batchBytes = batchBytes;
-        _clone.depMode = depMode;
-        _clone.sampleClsName = sampleClsName;
-        _clone.userVer = userVer;
-        _clone.ldrParticipants = ldrParticipants;
-        _clone.clsLdrId = clsLdrId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -229,7 +209,6 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

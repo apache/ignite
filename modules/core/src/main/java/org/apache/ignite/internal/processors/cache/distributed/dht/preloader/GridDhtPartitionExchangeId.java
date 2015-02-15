@@ -220,21 +220,6 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDhtPartitionExchangeId _clone = (GridDhtPartitionExchangeId)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.evt = evt;
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionExchangeId.class, this,
             "nodeId", U.id8(nodeId),

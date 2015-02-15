@@ -441,45 +441,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheQueryRequest _clone = (GridCacheQueryRequest)_msg;
-
-        _clone.id = id;
-        _clone.cacheName = cacheName;
-        _clone.type = type;
-        _clone.fields = fields;
-        _clone.clause = clause;
-        _clone.clsName = clsName;
-        _clone.keyValFilter = keyValFilter;
-        _clone.keyValFilterBytes = keyValFilterBytes;
-        _clone.prjFilter = prjFilter;
-        _clone.prjFilterBytes = prjFilterBytes;
-        _clone.rdc = rdc;
-        _clone.rdcBytes = rdcBytes;
-        _clone.trans = trans;
-        _clone.transBytes = transBytes;
-        _clone.args = args;
-        _clone.argsBytes = argsBytes;
-        _clone.pageSize = pageSize;
-        _clone.incBackups = incBackups;
-        _clone.cancel = cancel;
-        _clone.incMeta = incMeta;
-        _clone.all = all;
-        _clone.keepPortable = keepPortable;
-        _clone.subjId = subjId;
-        _clone.taskHash = taskHash;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -614,7 +575,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

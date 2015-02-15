@@ -131,24 +131,6 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridContinuousMessage _clone = (GridContinuousMessage)_msg;
-
-        _clone.type = type;
-        _clone.routineId = routineId;
-        _clone.data = data;
-        _clone.dataBytes = dataBytes;
-        _clone.futId = futId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -190,7 +172,6 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

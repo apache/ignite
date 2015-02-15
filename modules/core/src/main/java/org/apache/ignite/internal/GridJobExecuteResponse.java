@@ -205,30 +205,6 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridJobExecuteResponse _clone = (GridJobExecuteResponse)_msg;
-
-        _clone.nodeId = nodeId;
-        _clone.sesId = sesId;
-        _clone.jobId = jobId;
-        _clone.gridExBytes = gridExBytes;
-        _clone.gridEx = gridEx;
-        _clone.resBytes = resBytes;
-        _clone.res = res;
-        _clone.jobAttrsBytes = jobAttrsBytes;
-        _clone.jobAttrs = jobAttrs;
-        _clone.isCancelled = isCancelled;
-        _clone.fakeEx = fakeEx;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -288,7 +264,6 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

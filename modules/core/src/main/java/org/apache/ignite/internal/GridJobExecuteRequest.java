@@ -412,45 +412,6 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridJobExecuteRequest _clone = (GridJobExecuteRequest)_msg;
-
-        _clone.subjId = subjId;
-        _clone.sesId = sesId;
-        _clone.jobId = jobId;
-        _clone.jobBytes = jobBytes;
-        _clone.job = job;
-        _clone.startTaskTime = startTaskTime;
-        _clone.timeout = timeout;
-        _clone.taskName = taskName;
-        _clone.userVer = userVer;
-        _clone.taskClsName = taskClsName;
-        _clone.ldrParticipants = ldrParticipants;
-        _clone.sesAttrsBytes = sesAttrsBytes;
-        _clone.sesAttrs = sesAttrs;
-        _clone.jobAttrsBytes = jobAttrsBytes;
-        _clone.jobAttrs = jobAttrs;
-        _clone.cpSpi = cpSpi;
-        _clone.siblings = siblings;
-        _clone.siblingsBytes = siblingsBytes;
-        _clone.createTime = createTime;
-        _clone.clsLdrId = clsLdrId;
-        _clone.depMode = depMode;
-        _clone.dynamicSiblings = dynamicSiblings;
-        _clone.forceLocDep = forceLocDep;
-        _clone.sesFullSup = sesFullSup;
-        _clone.internal = internal;
-        _clone.top = top;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -594,7 +555,6 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

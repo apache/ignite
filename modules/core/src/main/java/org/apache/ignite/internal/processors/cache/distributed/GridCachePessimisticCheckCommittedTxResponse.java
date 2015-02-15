@@ -128,26 +128,6 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCachePessimisticCheckCommittedTxResponse _clone = (GridCachePessimisticCheckCommittedTxResponse)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.committedTxInfo = committedTxInfo;
-        _clone.committedTxInfoBytes = committedTxInfoBytes;
-        _clone.sys = sys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -192,7 +172,6 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

@@ -179,28 +179,6 @@ public class GridIoMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("RedundantCast")
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridIoMessage _clone = (GridIoMessage)_msg;
-
-        _clone.plc = plc;
-        _clone.topic = topic;
-        _clone.topicBytes = topicBytes;
-        _clone.topicOrd = topicOrd;
-        _clone.ordered = ordered;
-        _clone.timeout = timeout;
-        _clone.skipOnTimeout = skipOnTimeout;
-        _clone.msg = msg != null ? (MessageAdapter)msg.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -260,7 +238,6 @@ public class GridIoMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

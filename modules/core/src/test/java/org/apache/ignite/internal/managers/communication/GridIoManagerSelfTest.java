@@ -220,17 +220,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static class Message extends MessageAdapter implements Serializable {
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter _msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             return true;
         }

@@ -180,20 +180,6 @@ public class GridCacheValueBytes extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridCacheValueBytes _clone = (GridCacheValueBytes)_msg;
-
-        _clone.bytes = bytes;
-        _clone.plain = plain;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheValueBytes.class, this, "len", bytes != null ? bytes.length : -1);
     }

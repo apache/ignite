@@ -3079,17 +3079,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(HandshakeMessage.class, this);
         }
@@ -3152,17 +3141,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return RECOVERY_LAST_ID_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter msg) {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -3236,17 +3214,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return NODE_ID_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter _msg) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

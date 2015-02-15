@@ -261,31 +261,6 @@ public class GridEventStorageMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridEventStorageMessage _clone = (GridEventStorageMessage)_msg;
-
-        _clone.resTopic = resTopic;
-        _clone.resTopicBytes = resTopicBytes;
-        _clone.filter = filter;
-        _clone.evts = evts;
-        _clone.evtsBytes = evtsBytes;
-        _clone.ex = ex;
-        _clone.exBytes = exBytes;
-        _clone.clsLdrId = clsLdrId;
-        _clone.depMode = depMode;
-        _clone.filterClsName = filterClsName;
-        _clone.userVer = userVer;
-        _clone.ldrParties = ldrParties;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -357,7 +332,6 @@ public class GridEventStorageMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 

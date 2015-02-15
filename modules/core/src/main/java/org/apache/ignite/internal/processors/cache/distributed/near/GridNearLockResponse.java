@@ -181,26 +181,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearLockResponse _clone = (GridNearLockResponse)_msg;
-
-        _clone.pending = pending;
-        _clone.miniId = miniId;
-        _clone.dhtVers = dhtVers;
-        _clone.mappedVers = mappedVers;
-        _clone.filterRes = filterRes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -251,7 +231,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
