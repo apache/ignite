@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.*;
 
 /**
- * Tests for partitioned cache queries.
+ * Tests replicated query.
  */
-public class GridCachePartitionedQueryP2PDisabledSelfTest extends GridCachePartitionedQuerySelfTest {
+public class GridCacheReplicatedQueryP2PEnabledSelfTest extends GridCacheReplicatedQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(false);
+        c.setPeerClassLoadingEnabled(true);
 
         return c;
     }
