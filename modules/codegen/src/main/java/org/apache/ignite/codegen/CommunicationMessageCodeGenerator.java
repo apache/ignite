@@ -674,8 +674,12 @@ public class CommunicationMessageCodeGenerator {
         }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfReadFailed(name, "reader.readMessage", field);
-        else if (type.isArray())
-            returnFalseIfReadFailed(name, "reader.readObjectArray", field, "Type." + typeEnum(type.getComponentType()));
+        else if (type.isArray()) {
+            Class<?> compType = type.getComponentType();
+
+            returnFalseIfReadFailed(name, "reader.readObjectArray", field, "Type." + typeEnum(compType),
+                compType.getSimpleName() + ".class");
+        }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 

@@ -208,9 +208,10 @@ public interface MessageReader {
      *
      * @param name Field name.
      * @param itemType Array component type.
+     * @param itemCls Array component class.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType);
+    public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls);
 
     /**
      * Reads collection.

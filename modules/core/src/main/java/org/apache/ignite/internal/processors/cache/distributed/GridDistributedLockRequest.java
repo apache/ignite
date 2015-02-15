@@ -589,7 +589,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         switch (readState) {
             case 8:
-                drVersByIdx = reader.readObjectArray("drVersByIdx", Type.MSG);
+                drVersByIdx = reader.readObjectArray("drVersByIdx", Type.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;

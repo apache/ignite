@@ -967,10 +967,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemType Component type.
+     * @param itemCls Component class.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageAdapter.Type itemType) {
+    public <T> T[] readObjectArray(MessageAdapter.Type itemType, Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -982,7 +983,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = (Object[])Array.newInstance(itemType.clazz(), readSize);
+                objArr = (Object[])Array.newInstance(itemCls, readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);

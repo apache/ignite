@@ -262,7 +262,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
         switch (readState) {
             case 11:
-                dhtVers = reader.readObjectArray("dhtVers", Type.MSG);
+                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -278,7 +278,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 readState++;
 
             case 13:
-                mappedVers = reader.readObjectArray("mappedVers", Type.MSG);
+                mappedVers = reader.readObjectArray("mappedVers", Type.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;

@@ -17,11 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.lang.*;
-
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Base class for all communication messages.
@@ -91,56 +88,46 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      * TODO
      */
     public enum Type {
-        BYTE(Byte.class),
+        BYTE,
 
-        SHORT(Short.class),
+        SHORT,
 
-        INT(Integer.class),
+        INT,
 
-        LONG(Long.class),
+        LONG,
 
-        FLOAT(Float.class),
+        FLOAT,
 
-        DOUBLE(Double.class),
+        DOUBLE,
 
-        CHAR(Character.class),
+        CHAR,
 
-        BOOLEAN(Boolean.class),
+        BOOLEAN,
 
-        BYTE_ARR(byte[].class),
+        BYTE_ARR,
 
-        SHORT_ARR(short[].class),
+        SHORT_ARR,
 
-        INT_ARR(int[].class),
+        INT_ARR,
 
-        LONG_ARR(long[].class),
+        LONG_ARR,
 
-        FLOAT_ARR(float[].class),
+        FLOAT_ARR,
 
-        DOUBLE_ARR(double[].class),
+        DOUBLE_ARR,
 
-        CHAR_ARR(char[].class),
+        CHAR_ARR,
 
-        BOOLEAN_ARR(boolean[].class),
+        BOOLEAN_ARR,
 
-        STRING(String.class),
+        STRING,
 
-        BIT_SET(BitSet.class),
+        BIT_SET,
 
-        UUID(UUID.class),
+        UUID,
 
-        IGNITE_UUID(IgniteUuid.class),
+        IGNITE_UUID,
 
-        MSG(MessageAdapter.class);
-
-        private final Class<?> cls;
-
-        private Type(Class<?> cls) {
-            this.cls = cls;
-        }
-
-        public Class<?> clazz() {
-            return cls;
-        }
+        MSG
     }
 }

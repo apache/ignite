@@ -236,8 +236,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType) {
-        T[] msg = stream.readObjectArray(itemType);
+    @Override public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls) {
+        T[] msg = stream.readObjectArray(itemType, itemCls);
 
         lastRead = stream.lastFinished();
 
