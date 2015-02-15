@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -123,7 +124,7 @@ public class QueryConfiguration {
     }
 
     /**
-     * Sets classes with methods annotated by {@link org.apache.ignite.cache.query.CacheQuerySqlFunction}
+     * Sets classes with methods annotated by {@link QuerySqlFunction}
      * to be used as user-defined functions from SQL queries.
      *
      * @param idxCustomFuncClss List of classes.

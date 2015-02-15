@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.spi.indexing;
 
-
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Extended continuous query filter.
+ * Cache entry filter.
  */
-public interface GridCacheContinuousQueryFilterEx<K, V> extends
-        IgnitePredicate<CacheContinuousQueryEntry<K, V>> {
+public interface IndexingQueryFilter {
     /**
-     * Callback for query unregister event.
+     * Creates optional predicate for space.
+     *
+     * @param spaceName Space name.
+     * @return Predicate or {@code null} if no filtering is needed.
      */
-    public void onQueryUnregister();
+    @Nullable public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName);
 }

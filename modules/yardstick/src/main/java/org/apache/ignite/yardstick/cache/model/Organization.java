@@ -17,7 +17,7 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
 
@@ -26,11 +26,11 @@ import java.io.*;
  */
 public class Organization implements Externalizable {
     /** Organization ID. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Organization name. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private String name;
 
     /**

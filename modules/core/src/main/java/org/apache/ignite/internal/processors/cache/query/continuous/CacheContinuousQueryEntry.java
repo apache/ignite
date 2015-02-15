@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -26,34 +25,16 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
-import javax.cache.event.*;
 import java.io.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheValueBytes.*;
 
 /**
- * Entry implementation.
+ * Continuous query entry.
  */
-@SuppressWarnings("TypeParameterHidesVisibleType")
-public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, GridCacheDeployable, Externalizable,
-    CacheContinuousQueryEntry<K, V> {
+class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Event type enum values. */
-    private static final EventType[] EVT_TYPE_VALS = EventType.values();
-
-    /** Cache context. */
-    @SuppressWarnings("TransientFieldNotInitialized")
-    @GridToStringExclude
-    private final transient GridCacheContext<K, V> ctx;
-
-    /** Cache entry. */
-    @SuppressWarnings("TransientFieldNotInitialized")
-    @GridToStringExclude
-    private final transient Cache.Entry<K, V> impl;
 
     /** Key. */
     @GridToStringInclude
@@ -68,6 +49,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
     private V oldVal;
 
     /** Serialized key. */
+    @GridToStringExclude
     private byte[] keyBytes;
 
     /** Serialized value. */
@@ -85,111 +67,32 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
     @GridToStringExclude
     private GridDeploymentInfo depInfo;
 
-    /** */
-    private EventType evtType;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheContinuousQueryEntry() {
-        ctx = null;
-        impl = null;
+    public CacheContinuousQueryEntry() {
+        // No-op.
     }
 
-    /**
-     * @param ctx Cache context.
-     * @param impl Cache entry.
-     * @param key Key.
-     * @param newVal Value.
-     * @param newValBytes Value bytes.
-     * @param oldVal Old value.
-     * @param oldValBytes Old value bytes.
-     * @param evtType Event type.
-     */
-    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
-        Cache.Entry<K, V> impl,
-        K key,
-        @Nullable V newVal,
-        @Nullable GridCacheValueBytes newValBytes,
-        @Nullable V oldVal,
-        @Nullable GridCacheValueBytes oldValBytes,
-        EventType evtType) {
-        assert ctx != null;
-        assert impl != null;
-        assert key != null;
-        assert evtType != null;
+    CacheContinuousQueryEntry(K key, @Nullable V newVal, @Nullable GridCacheValueBytes newValBytes, @Nullable V oldVal,
+        @Nullable GridCacheValueBytes oldValBytes) {
 
-        this.ctx = ctx;
-        this.impl = impl;
         this.key = key;
         this.newVal = newVal;
         this.newValBytes = newValBytes;
         this.oldVal = oldVal;
         this.oldValBytes = oldValBytes;
-        this.evtType = evtType;
     }
 
     /**
-     * @return Cache entry.
-     */
-    Cache.Entry<K, V> entry() {
-        return impl;
-    }
-
-    /**
-     * @return Cache context.
-     */
-    GridCacheContext<K, V> context() {
-        return ctx;
-    }
-
-    /**
-     * @return New value bytes.
-     */
-    GridCacheValueBytes newValueBytes() {
-        return newValBytes;
-    }
-
-    /**
-     * @return {@code True} if old value is set.
-     */
-    boolean hasOldValue() {
-        return oldVal != null || (oldValBytes != null && !oldValBytes.isNull());
-    }
-
-    /**
-     * @return {@code True} if entry expired.
-     */
-    public EventType eventType() {
-        return evtType;
-    }
-
-    /**
-     * Unmarshals value from bytes if needed.
-     *
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void initValue(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        assert marsh != null;
-
-        if (newVal == null && newValBytes != null && !newValBytes.isNull())
-            newVal = newValBytes.isPlain() ? (V)newValBytes.get() : marsh.<V>unmarshal(newValBytes.get(), ldr);
-    }
-
-    /**
-     * @return Cache name.
-     */
-    String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @param cacheName New cache name.
+     * @param cacheName Cache name.
      */
     void cacheName(String cacheName) {
         this.cacheName = cacheName;
+    }
+
+    /**
+     * @return cache name.
+     */
+    String cacheName() {
+        return cacheName;
     }
 
     /**
@@ -234,26 +137,25 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
             oldVal = oldValBytes.isPlain() ? (V)oldValBytes.get() : marsh.<V>unmarshal(oldValBytes.get(), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public K getKey() {
+    /**
+     * @return Key.
+     */
+    K key() {
         return key;
     }
 
-    /** {@inheritDoc} */
-    @Override public V getValue() {
+    /**
+     * @return New value.
+     */
+    V value() {
         return newVal;
     }
 
-    /** {@inheritDoc} */
-    @Override public V getOldValue() {
+    /**
+     * @return Old value.
+     */
+    V oldValue() {
         return oldVal;
-    }
-
-    /** {@inheritDoc} */
-    @Override public V setValue(V val) {
-        ctx.denyOnFlag(READ);
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -264,14 +166,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
     /** {@inheritDoc} */
     @Override public GridDeploymentInfo deployInfo() {
         return depInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T unwrap(Class<T> clazz) {
-        if(clazz.isAssignableFrom(getClass()))
-            return clazz.cast(this);
-
-        throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */
@@ -307,8 +201,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
             out.writeObject(newVal);
             out.writeObject(oldVal);
         }
-
-        out.writeByte((byte)evtType.ordinal());
     }
 
     /** {@inheritDoc} */
@@ -333,12 +225,10 @@ public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, G
             newVal = (V)in.readObject();
             oldVal = (V)in.readObject();
         }
-
-        evtType = EVT_TYPE_VALS[in.readByte()];
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheContinuousQueryEntry.class, this);
+        return S.toString(CacheContinuousQueryEntry.class, this);
     }
 }

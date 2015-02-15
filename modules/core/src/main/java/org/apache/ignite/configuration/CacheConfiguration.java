@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.indexing.*;
@@ -1434,7 +1433,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1448,7 +1447,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;
@@ -1593,7 +1592,6 @@ public class CacheConfiguration extends MutableConfiguration {
      * Sets query configuration.
      *
      * @param qryCfg Query configuration.
-     * @see org.apache.ignite.cache.query.CacheQueryConfiguration
      */
     public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;

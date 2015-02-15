@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
 
+import javax.cache.*;
+import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -47,40 +47,38 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testRemoteNodeCallback() throws Exception {
-        GridCache<Integer, Integer> cache1 = ((IgniteKernal)grid(0)).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache2 = grid(1).jcache(null);
 
-        GridCache<Integer, Integer> cache2 = ((IgniteKernal)grid(1)).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry = cache2.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final AtomicReference<Integer> val = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID uuid, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                assertEquals(1, entries.size());
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                Iterator<CacheEntryEvent<? extends Integer, ? extends Integer>> it = evts.iterator();
 
-                Map.Entry<Integer, Integer> e = entries.iterator().next();
+                CacheEntryEvent<? extends Integer, ? extends Integer> e = it.next();
 
-                log.info("Entry: " + e);
+                assert !it.hasNext();
+
+                log.info("Event: " + e);
 
                 val.set(e.getValue());
 
                 latch.countDown();
-
-                return false;
             }
         });
 
-        qry.execute();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache2.query(qry)) {
+            cache1.put(1, 10);
 
-        cache1.put(1, 10);
+            latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
-        latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-        assertEquals(10, val.get().intValue());
+            assertEquals(10, val.get().intValue());
+        }
     }
 
     /**
@@ -88,61 +86,49 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testCrossCallback() throws Exception {
         // Prepare.
-        GridCache<Integer, Integer> cache1 = ((IgniteKernal)grid(0)).cache(null);
-        GridCache<Integer, Integer> cache2 = ((IgniteKernal)grid(1)).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache2 = grid(1).jcache(null);
 
-        final int key1 = primaryKey(jcache(0));
-        final int key2 = primaryKey(jcache(1));
+        final int key1 = primaryKey(cache1);
+        final int key2 = primaryKey(cache2);
 
         final CountDownLatch latch1 = new CountDownLatch(2);
         final CountDownLatch latch2 = new CountDownLatch(2);
 
+        ContinuousQuery<Integer, Integer> qry1 = Query.continuous();
 
-        // Start query on the first node.
-        CacheContinuousQuery<Integer, Integer> qry1 = cache1.queries().createContinuousQuery();
+        qry1.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
+                    log.info("Update in cache 1: " + evt);
 
-        qry1.localCallback(new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeID,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (CacheContinuousQueryEntry entry : entries) {
-                    log.info("Update in cache 1: " + entry);
-
-                    if (entry.getKey() == key1 || entry.getKey() == key2)
-                        latch1.countDown();
+                    if (evt.getKey() == key1 || evt.getKey() == key2) latch1.countDown();
                 }
-
-                return latch1.getCount() != 0;
             }
         });
 
-        qry1.execute();
+        ContinuousQuery<Integer, Integer> qry2 = Query.continuous();
 
-        // Start query on the second node.
-        CacheContinuousQuery<Integer, Integer> qry2 = cache2.queries().createContinuousQuery();
+        qry2.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
+                    log.info("Update in cache 2: " + evt);
 
-        qry2.localCallback(new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeID,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (CacheContinuousQueryEntry entry : entries) {
-                    log.info("Update in cache 2: " + entry);
-
-                    if (entry.getKey() == key1 || entry.getKey() == key2)
+                    if (evt.getKey() == key1 || evt.getKey() == key2)
                         latch2.countDown();
                 }
-
-                return latch2.getCount() != 0;
             }
         });
 
-        qry2.execute();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache2.query(qry1);
+             QueryCursor<Cache.Entry<Integer, Integer>> ignore = cache2.query(qry2)) {
+            cache1.put(key1, key1);
+            cache1.put(key2, key2);
 
-        cache1.put(key1, key1);
-        cache1.put(key2, key2);
-
-        assert latch1.await(LATCH_TIMEOUT, MILLISECONDS);
-        assert latch2.await(LATCH_TIMEOUT, MILLISECONDS);
+            assert latch1.await(LATCH_TIMEOUT, MILLISECONDS);
+            assert latch2.await(LATCH_TIMEOUT, MILLISECONDS);
+        }
     }
 }

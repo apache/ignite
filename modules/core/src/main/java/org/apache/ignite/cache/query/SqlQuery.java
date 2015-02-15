@@ -17,57 +17,50 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.*;
-
 /**
- * Query SQL predicate to use with any of the {@code JCache.query(...)} and
- * {@code JCache.queryFields(...)} methods.
+ * SQL Query.
  *
- * @author @java.author
- * @version @java.version
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
  */
-public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
+public final class SqlQuery extends Query<SqlQuery> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private String type;
 
     /** SQL clause. */
     private String sql;
 
     /** Arguments. */
+    @GridToStringInclude
     private Object[] args;
 
     /**
-     * Empty constructor.
+     * Constructs query for the given SQL query.
+     *
+     * @param sql SQL Query.
      */
-    public QuerySqlPredicate() {
-        // No-op.
+    public SqlQuery(String sql) {
+        setSql(sql);
     }
 
     /**
-     * Constructs SQL predicate with given SQL clause and arguments.
+     * Constructs query for the given type and SQL query.
      *
-     * @param sql SQL clause.
-     * @param args Arguments.
+     * @param type Type.
+     * @param sql SQL Query.
      */
-    public QuerySqlPredicate(String sql, Object... args) {
-        this.sql = sql;
-        this.args = args;
-    }
+    public SqlQuery(Class<?> type, String sql) {
+        this(sql);
 
-    /**
-     * Constructs SQL predicate with given SQL clause, page size, and arguments.
-     *
-     * @param sql SQL clause.
-     * @param pageSize Optional page size, if {@code 0}, then {@link QueryConfiguration#getPageSize()} is used.
-     * @param args Arguments.
-     */
-    public QuerySqlPredicate(String sql, int pageSize, Object[] args) {
-        super(pageSize);
-
-        this.sql = sql;
-        this.args = args;
+        setType(type);
     }
 
     /**
@@ -83,9 +76,14 @@ public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
      * Sets SQL clause.
      *
      * @param sql SQL clause.
+     * @return {@code this} For chaining.
      */
-    public void setSql(String sql) {
+    public SqlQuery setSql(String sql) {
+        A.notNull(sql, "sql");
+
         this.sql = sql;
+
+        return this;
     }
 
     /**
@@ -101,18 +99,44 @@ public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
      * Sets SQL arguments.
      *
      * @param args SQL arguments.
+     * @return {@code this} For chaining.
      */
-    public void setArgs(Object... args) {
+    public SqlQuery setArgs(Object... args) {
         this.args = args;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
-        return false; // Not used.
+    /**
+     * Gets type for query.
+     *
+     * @return Type.
+     */
+    public String getType() {
+        return type;
+    }
+
+    /**
+     * Sets type for query.
+     *
+     * @param type Type.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery setType(String type) {
+        this.type = type;
+
+        return this;
+    }
+
+    /**
+     * @param type Type.
+     */
+    public SqlQuery setType(Class<?> type) {
+        return setType(GridQueryProcessor.typeName(type));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QuerySqlPredicate.class, this);
+        return S.toString(SqlQuery.class, this);
     }
 }

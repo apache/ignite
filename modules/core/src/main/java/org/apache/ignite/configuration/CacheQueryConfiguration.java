@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.configuration;
+
+import org.apache.ignite.cache.query.*;
 
 import java.io.*;
 
@@ -27,7 +29,7 @@ public class CacheQueryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Query type resolver. */
-    private CacheQueryTypeResolver typeRslvr;
+    private QueryTypeResolver typeRslvr;
 
     /** */
     private boolean idxPrimitiveKey;
@@ -64,7 +66,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @return Query type resolver.
      */
-    public CacheQueryTypeResolver getTypeResolver() {
+    public QueryTypeResolver getTypeResolver() {
         return typeRslvr;
     }
 
@@ -73,7 +75,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @param typeRslvr Query type resolver.
      */
-    public void setTypeResolver(CacheQueryTypeResolver typeRslvr) {
+    public void setTypeResolver(QueryTypeResolver typeRslvr) {
         this.typeRslvr = typeRslvr;
     }
 

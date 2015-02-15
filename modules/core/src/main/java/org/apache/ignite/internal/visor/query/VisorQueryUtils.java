@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 
