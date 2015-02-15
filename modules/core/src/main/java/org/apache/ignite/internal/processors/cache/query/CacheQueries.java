@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -92,16 +93,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Creates new continuous query.
-     * <p>
-     * For more information refer to {@link CacheContinuousQuery} documentation.
-     *
-     * @return Created continuous query.
-     * @see CacheContinuousQuery
-     */
-    public CacheContinuousQuery<K, V> createContinuousQuery();
-
-    /**
      * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
      * may hold references to objects that have already been removed from cache. Although
      * not affecting query results, these objects may consume extra memory. Rebuilding
@@ -143,7 +134,7 @@ public interface CacheQueries<K, V> {
      *
      * @return Cache query metrics.
      */
-    public CacheQueryMetrics metrics();
+    public QueryMetrics metrics();
 
     /**
      * Resets accumulated metrics.

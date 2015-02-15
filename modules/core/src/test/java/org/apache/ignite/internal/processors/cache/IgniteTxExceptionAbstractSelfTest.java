@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.testframework.*;
@@ -594,7 +593,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -606,7 +605,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<?> query(@Nullable String spaceName, Collection<Object> params, @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException {
+        @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
+            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }
 

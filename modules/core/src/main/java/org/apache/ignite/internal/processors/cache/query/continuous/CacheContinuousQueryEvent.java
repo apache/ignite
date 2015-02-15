@@ -15,49 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 
 /**
- * Implementation of {@link javax.cache.event.CacheEntryEvent}.
+ * Continuous query event.
  */
-public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
-    /** */
+class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
+    /** Entry. */
+    @GridToStringExclude
     private final CacheContinuousQueryEntry<K, V> e;
 
     /**
-     * @param src Cache.
-     * @param type Event type.
-     * @param e Ignite event.
+     * @param source Source cache.
+     * @param eventType Event type.
+     * @param e Entry.
      */
-    public CacheEntryEvent(IgniteCache src, EventType type, CacheContinuousQueryEntry<K, V> e) {
-        super(src, type);
+    CacheContinuousQueryEvent(Cache source, EventType eventType, CacheContinuousQueryEntry<K, V> e) {
+        super(source, eventType);
+
+        assert e != null;
 
         this.e = e;
     }
 
-    /** {@inheritDoc} */
-    @Override public V getOldValue() {
-        return e.getOldValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isOldValueAvailable() {
-        return e.getOldValue() != null;
+    /**
+     * @return Entry.
+     */
+    CacheContinuousQueryEntry<K, V> entry() {
+        return e;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        return e.getKey();
+        return e.key();
     }
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        return e.getValue();
+        return e.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getOldValue() {
+        return e.oldValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOldValueAvailable() {
+        return e.oldValue() != null;
     }
 
     /** {@inheritDoc} */
@@ -70,9 +81,7 @@ public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheEntryEvent [evtType=" + getEventType() +
-            ", key=" + getKey() +
-            ", val=" + getValue() +
-            ", oldVal=" + getOldValue() + ']';
+        return S.toString(CacheContinuousQueryEvent.class, this, "key", e.key(), "newVal", e.value(), "oldVal",
+            e.oldValue(), "cacheName", e.cacheName());
     }
 }

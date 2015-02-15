@@ -393,21 +393,6 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <id>core-jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/core-jar.xml</descriptor>
-                            </descriptors>
-                            <finalName>core</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>dependencies</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -743,7 +728,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -938,7 +923,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>

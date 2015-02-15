@@ -50,6 +50,7 @@ import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.spi.indexing.noop.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
@@ -1448,7 +1449,7 @@ public class IgnitionEx {
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            GridIndexingSpi indexingSpi = cfg.getIndexingSpi();
+            IndexingSpi indexingSpi = cfg.getIndexingSpi();
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub-" + cfg.getGridName(),
@@ -1635,7 +1636,7 @@ public class IgnitionEx {
             }
 
             if (indexingSpi == null)
-                indexingSpi = new GridNoopIndexingSpi();
+                indexingSpi = new NoopIndexingSpi();
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);

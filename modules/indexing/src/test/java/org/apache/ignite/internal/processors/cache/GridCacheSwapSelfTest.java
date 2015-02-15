@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -653,7 +653,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     private static class CacheValue {
         /** Value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int val;
 
         /**

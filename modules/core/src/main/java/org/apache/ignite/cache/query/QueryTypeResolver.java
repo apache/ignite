@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.cache.query;
 
 /**
- * Continuous query listener.
+ * Interface allowing to override table name for portable objects stored in cache.
  */
-interface GridCacheContinuousQueryListener<K, V> {
+public interface QueryTypeResolver {
     /**
-     * Query execution callback.
-     */
-    public void onExecution();
-
-    /**
-     * Entry update callback.
+     * Allows to override type name for portable objects being stored in cache.
      *
-     * @param e Entry.
-     * @param recordEvt Whether to record event.
+     * @param key Key.
+     * @param val Value.
+     * @return Type name.
      */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
-
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
+    public String resolveTypeName(Object key, Object val);
 }

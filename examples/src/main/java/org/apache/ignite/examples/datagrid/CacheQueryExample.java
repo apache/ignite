@@ -18,13 +18,15 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cache.query.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
+
+import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
@@ -80,7 +82,7 @@ public class CacheQueryExample {
             System.out.println(">>> Cache query example started.");
 
             // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).removeAll();
 
             // Populate cache.
             initialize();
@@ -93,14 +95,6 @@ public class CacheQueryExample {
 
             // Example for TEXT-based querying for a given string in peoples resumes.
             textQuery();
-
-            // Example for SQL-based querying with custom remote and local reducers
-            // to calculate average salary among all employees within a company.
-            sqlQueryWithReducers();
-
-            // Example for SQL-based querying with custom remote transformer to make sure
-            // that only required data without any overhead is returned to caller.
-            sqlQueryWithTransformer();
 
             // Example for SQL-based fields queries that return only required
             // fields instead of whole key-value pairs.
@@ -119,18 +113,20 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQuery() throws IgniteCheckedException {
-        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        // Create query which selects salaries based on range.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
-            cache.queries().createSqlQuery(Person.class, "salary > ? and salary <= ?");
+        // SQL clause which selects salaries based on range.
+        String sql = "salary > ? and salary <= ?";
 
         // Execute queries for salary ranges.
-        print("People with salaries between 0 and 1000: ", qry.execute(0, 1000).get());
+        print("People with salaries between 0 and 1000: ",
+            cache.query(sql(Person.class, sql).setArgs(0, 1000)).getAll());
 
-        print("People with salaries between 1000 and 2000: ", qry.execute(1000, 2000).get());
+        print("People with salaries between 1000 and 2000: ",
+            cache.query(sql(Person.class, sql).setArgs(1000, 2000)).getAll());
 
-        print("People with salaries greater than 2000: ", qry.execute(2000, Integer.MAX_VALUE).get());
+        print("People with salaries greater than 2000: ",
+            cache.query(sql(Person.class, sql).setArgs(2000, Integer.MAX_VALUE)).getAll());
     }
 
     /**
@@ -139,17 +135,19 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithJoin() throws IgniteCheckedException {
-        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        // Create query which joins on 2 types to select people for a specific organization.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
-            cache.queries().createSqlQuery(Person.class, "from Person, Organization " +
-                "where Person.orgId = Organization.id " +
-                "and lower(Organization.name) = lower(?)");
+        // SQL clause query which joins on 2 types to select people for a specific organization.
+        String joinSql =
+            "from Person, Organization "
+            + "where Person.orgId = Organization.id "
+            + "and lower(Organization.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'Ignite' employees: ", qry.execute("Ignite").get());
-        print("Following people are 'Other' employees: ", qry.execute("Other").get());
+        print("Following people are 'GridGain' employees: ",
+            cache.query(sql(Person.class, joinSql).setArgs("GridGain")).getAll());
+        print("Following people are 'Other' employees: ",
+            cache.query(sql(Person.class, joinSql).setArgs("Other")).getAll());
     }
 
     /**
@@ -158,96 +156,18 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void textQuery() throws IgniteCheckedException {
-        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> masters =
-            cache.queries().createFullTextQuery(Person.class, "Master");
+        QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> masters =
+            cache.query(text(Person.class, "Master"));
 
-        // Query for all people with "Bachelor Degree"in their resumes.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> bachelors =
-            cache.queries().createFullTextQuery(Person.class, "Bachelor");
+        // Query for all people with "Bachelor Degree" in their resumes.
+        QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> bachelors =
+            cache.query(text(Person.class, "Bachelor"));
 
-        print("Following people have 'Master Degree' in their resumes: ", masters.execute().get());
-        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.execute().get());
-    }
-
-    /**
-     * Example for SQL queries with custom remote and local reducers to calculate
-     * average salary for a specific organization.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    private static void sqlQueryWithReducers() throws IgniteCheckedException {
-        CacheProjection<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
-
-        // Calculate average of salary of all persons in Ignite.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
-            Person.class,
-            "from Person, Organization where Person.orgId = Organization.id and " +
-                "lower(Organization.name) = lower(?)");
-
-        Collection<IgniteBiTuple<Double, Integer>> res = qry.execute(
-            new IgniteReducer<Map.Entry<CacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
-                private double sum;
-
-                private int cnt;
-
-                @Override public boolean collect(Map.Entry<CacheAffinityKey<UUID>, Person> e) {
-                    sum += e.getValue().salary;
-
-                    cnt++;
-
-                    // Continue collecting.
-                    return true;
-                }
-
-                @Override public IgniteBiTuple<Double, Integer> reduce() {
-                    return new IgniteBiTuple<>(sum, cnt);
-                }
-            }, "Ignite").get();
-
-        double sum = 0.0d;
-        int cnt = 0;
-
-        for (IgniteBiTuple<Double, Integer> t : res) {
-            sum += t.get1();
-            cnt += t.get2();
-        }
-
-        double avg = sum / cnt;
-
-        // Calculate average salary for a specific organization.
-        print("Average salary for 'Ignite' employees: " + avg);
-    }
-
-    /**
-     * Example for SQL queries with custom transformer to allow passing
-     * only the required set of fields back to caller.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    private static void sqlQueryWithTransformer() throws IgniteCheckedException {
-        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
-
-        // Create query to get names of all employees working for some company.
-        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
-            cache.queries().createSqlQuery(Person.class,
-                "from Person, Organization " +
-                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
-
-        // Transformer to convert Person objects to String.
-        // Since caller only needs employee names, we only
-        // send names back.
-        IgniteClosure<Map.Entry<CacheAffinityKey<UUID>, Person>, String> trans =
-            new IgniteClosure<Map.Entry<CacheAffinityKey<UUID>, Person>, String>() {
-                @Override public String apply(Map.Entry<CacheAffinityKey<UUID>, Person> e) {
-                    return e.getValue().lastName;
-                }
-            };
-
-        // Query all nodes for names of all Ignite employees.
-        print("Names of all 'Ignite' employees: " + qry.execute(trans, "Ignite").get());
+        print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
+        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
     }
 
     /**
@@ -257,15 +177,15 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQuery() throws IgniteCheckedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Create query to get names of all employees.
-        CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
-            "select concat(firstName, ' ', lastName) from Person");
+        QueryCursor<List<?>> cursor = cache.queryFields(
+                sql("select concat(firstName, ' ', lastName) from Person"));
 
         // Execute query to get collection of rows. In this particular
         // case each row will have one element with full name of an employees.
-        Collection<List<?>> res = qry1.execute().get();
+        List<List<?>> res = cursor.getAll();
 
         // Print names.
         print("Names of all employees:", res);
@@ -278,16 +198,15 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        // Create query to get names of all employees.
-        CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
-            "select concat(firstName, ' ', lastName), Organization.name from Person, Organization where " +
-                "Person.orgId = Organization.id");
+        // Execute query to get names of all employees.
+        QueryCursor<List<?>> cursor = cache.queryFields(sql("select concat(firstName, ' ', lastName), "
+                + "Organization.name from Person, Organization where "
+                + "Person.orgId = Organization.id"));
 
-        // Execute query to get collection of rows. In this particular
-        // case each row will have one element with full name of an employees.
-        Collection<List<?>> res = qry1.execute().get();
+        // In this particular case each row will have one element with full name of an employees.
+        List<List<?>> res = cursor.getAll();
 
         // Print persons' names and organizations' names.
         print("Names of all employees and organizations they belong to:", res);
@@ -300,17 +219,10 @@ public class CacheQueryExample {
      * @throws InterruptedException In case of error.
      */
     private static void initialize() throws IgniteCheckedException, InterruptedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
-
-        // Organization projection.
-        CacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);
-
-        // Person projection.
-        CacheProjection<CacheAffinityKey<UUID>, Person> personCache =
-            cache.projection(CacheAffinityKey.class, Person.class);
+        IgniteCache cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.
-        Organization org1 = new Organization("Ignite");
+        Organization org1 = new Organization("GridGain");
         Organization org2 = new Organization("Other");
 
         // People.
@@ -319,18 +231,15 @@ public class CacheQueryExample {
         Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
         Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
 
-        orgCache.put(org1.id, org1);
-        orgCache.put(org2.id, org2);
+        cache.put(org1.id, org1);
+        cache.put(org2.id, org2);
 
         // Note that in this example we use custom affinity key for Person objects
         // to ensure that all persons are collocated with their organizations.
-        personCache.put(p1.key(), p1);
-        personCache.put(p2.key(), p2);
-        personCache.put(p3.key(), p3);
-        personCache.put(p4.key(), p4);
-
-        // Wait 1 second to be sure that all nodes processed put requests.
-        Thread.sleep(1000);
+        cache.put(p1.key(), p1);
+        cache.put(p2.key(), p2);
+        cache.put(p3.key(), p3);
+        cache.put(p4.key(), p4);
     }
 
     /**
@@ -374,27 +283,27 @@ public class CacheQueryExample {
      */
     private static class Person implements Serializable {
         /** Person ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID id;
 
         /** Organization ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID orgId;
 
         /** First name (not-indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String firstName;
 
         /** Last name (not indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String lastName;
 
         /** Resume text (create LUCENE-based TEXT index for this field). */
-        @CacheQueryTextField
+        @QueryTextField
         private String resume;
 
         /** Salary (indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private double salary;
 
         /** Custom cache key to guarantee that person is always collocated with its organization. */
@@ -450,11 +359,11 @@ public class CacheQueryExample {
      */
     private static class Organization implements Serializable {
         /** Organization ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID id;
 
         /** Organization name (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private String name;
 
         /**

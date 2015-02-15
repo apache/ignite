@@ -118,7 +118,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -167,7 +167,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -214,7 +214,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -243,7 +243,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>

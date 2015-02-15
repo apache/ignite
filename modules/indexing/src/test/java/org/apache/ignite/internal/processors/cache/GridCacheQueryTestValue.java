@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
 
@@ -27,29 +27,29 @@ import java.io.*;
 @SuppressWarnings("unused")
 public class GridCacheQueryTestValue implements Serializable {
     /** */
-    @CacheQueryTextField
-    @CacheQuerySqlField(name = "fieldname")
+    @QueryTextField
+    @QuerySqlField(name = "fieldname")
     private String field1;
 
     /** */
     private int field2;
 
     /** */
-    @CacheQuerySqlField
+    @QuerySqlField
     private long field3;
 
     /** */
-    @CacheQuerySqlField(orderedGroups = {
-        @CacheQuerySqlField.Group(name = "grp1", order = 1),
-        @CacheQuerySqlField.Group(name = "grp2", order = 2)})
+    @QuerySqlField(orderedGroups = {
+        @QuerySqlField.Group(name = "grp1", order = 1),
+        @QuerySqlField.Group(name = "grp2", order = 2)})
     private long field4;
 
     /** */
-    @CacheQuerySqlField(orderedGroups = {@CacheQuerySqlField.Group(name = "grp1", order = 2)})
+    @QuerySqlField(orderedGroups = {@QuerySqlField.Group(name = "grp1", order = 2)})
     private long field5;
 
     /** */
-    @CacheQuerySqlField(orderedGroups = {@CacheQuerySqlField.Group(name = "grp1", order = 3)})
+    @QuerySqlField(orderedGroups = {@QuerySqlField.Group(name = "grp1", order = 3)})
     private GridCacheQueryEmbeddedValue field6 = new GridCacheQueryEmbeddedValue();
 
     /**
@@ -72,7 +72,7 @@ public class GridCacheQueryTestValue implements Serializable {
      *
      * @return Field.
      */
-    @CacheQuerySqlField
+    @QuerySqlField
     public int getField2() {
         return field2;
     }

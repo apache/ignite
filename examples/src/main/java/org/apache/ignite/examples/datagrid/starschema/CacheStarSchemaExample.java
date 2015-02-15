@@ -22,8 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.examples.datagrid.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
@@ -148,19 +151,18 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryStorePurchases() throws IgniteCheckedException {
-        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        CacheQuery<Map.Entry<Integer, FactPurchase>> storePurchases = factCache.queries().createSqlQuery(
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(sql(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
-                "where DimStore.id=FactPurchase.storeId and DimStore.name=?");
+            "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
+                + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
 
-        printQueryResults("All purchases made at store1:",
-            storePurchases.execute("Store1").get());
+        printQueryResults("All purchases made at store1:", storePurchases.getAll());
     }
 
     /**
@@ -172,30 +174,27 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryProductPurchases() throws IgniteCheckedException {
-        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
-
-        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for certain product made at store2.
         // =================================================
 
-        DimProduct p1 = rand(prods.values());
-        DimProduct p2 = rand(prods.values());
-        DimProduct p3 = rand(prods.values());
+        DimProduct p1 = rand(dataProduct.values());
+        DimProduct p2 = rand(dataProduct.values());
+        DimProduct p3 = rand(dataProduct.values());
 
         System.out.println("IDs of products [p1=" + p1.getId() + ", p2=" + p2.getId() + ", p3=" + p3.getId() + ']');
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        CacheQuery<Map.Entry<Integer, FactPurchase>> prodPurchases = factCache.queries().createSqlQuery(
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(sql(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
-                "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId " +
-                "and DimStore.name=? and DimProduct.id in(?, ?, ?)");
+            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase "
+                + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
+                + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
+            .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));
 
-        printQueryResults("All purchases made at store2 for 3 specific products:",
-            prodPurchases.execute("Store2", p1.getId(), p2.getId(), p3.getId()).get());
+        printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases.getAll());
     }
 
     /**
@@ -204,10 +203,10 @@ public class CacheStarSchemaExample {
      * @param msg Initial message.
      * @param res Results to print.
      */
-    private static <V> void printQueryResults(String msg, Iterable<Map.Entry<Integer, V>> res) {
+    private static <V> void printQueryResults(String msg, Iterable<Cache.Entry<Integer, V>> res) {
         System.out.println(msg);
 
-        for (Map.Entry<?, ?> e : res)
+        for (Cache.Entry<?, ?> e : res)
             System.out.println("    " + e.getValue().toString());
     }
 
