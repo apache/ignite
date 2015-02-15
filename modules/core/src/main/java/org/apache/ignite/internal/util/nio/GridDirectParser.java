@@ -31,9 +31,6 @@ public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Message reader key. */
-    private static final int MSG_READER_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
     /** */
     private final MessageFactory msgFactory;
 
@@ -55,16 +52,8 @@ public class GridDirectParser implements GridNioParser {
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
         MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
-        if (msg == null && buf.hasRemaining()) {
-            MessageReader reader = ses.meta(MSG_READER_KEY);
-
-            if (reader == null)
-                ses.addMeta(MSG_READER_KEY, reader = formatter.reader());
-
+        if (msg == null && buf.hasRemaining())
             msg = msgFactory.create(buf.get());
-
-            msg.setReader(reader);
-        }
 
         boolean finished = false;
 

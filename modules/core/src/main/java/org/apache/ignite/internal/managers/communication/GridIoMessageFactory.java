@@ -52,13 +52,20 @@ public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
     private static final Map<Byte, IgniteOutClosure<MessageAdapter>> CUSTOM = new ConcurrentHashMap8<>();
 
+    /** Message reader factory. */
+    private final MessageFormatter formatter;
+
     /** Extensions. */
     private final MessageFactory[] ext;
 
     /**
+     * @param formatter Message formatter.
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFactory[] ext) {
+    public GridIoMessageFactory(MessageFormatter formatter, MessageFactory[] ext) {
+        assert formatter != null;
+
+        this.formatter = formatter;
         this.ext = ext;
     }
 
@@ -516,6 +523,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
         if (msg == null)
             throw new IgniteException("Invalid message type: " + type);
+
+        msg.setReader(formatter.reader());
 
         return msg;
     }

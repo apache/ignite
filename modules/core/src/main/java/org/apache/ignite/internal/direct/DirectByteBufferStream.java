@@ -936,7 +936,7 @@ public class DirectByteBufferStream {
      * @return Message.
      */
     @SuppressWarnings("unchecked")
-    public <T extends MessageAdapter> T readMessage(MessageReader reader) {
+    public <T extends MessageAdapter> T readMessage() {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -947,9 +947,6 @@ public class DirectByteBufferStream {
             byte type = readByte();
 
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
-
-            if (msg != null)
-                msg.setReader(reader);
 
             msgTypeDone = true;
         }
@@ -970,11 +967,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemType Component type.
-     * @param reader Reader.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageAdapter.Type itemType, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageAdapter.Type itemType) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -989,7 +985,7 @@ public class DirectByteBufferStream {
                 objArr = (Object[])Array.newInstance(itemType.clazz(), readSize);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(itemType);
 
                 if (!lastFinished)
                     return null;
@@ -1013,11 +1009,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemType Item type.
-     * @param reader Reader.
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType, MessageReader reader) {
+    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1032,7 +1027,7 @@ public class DirectByteBufferStream {
                 col = new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(itemType);
 
                 if (!lastFinished)
                     return null;
@@ -1057,13 +1052,11 @@ public class DirectByteBufferStream {
     /**
      * @param keyType Key type.
      * @param valType Value type.
-     * @param reader Reader.
      * @param linked Whether linked map should be created.
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType,
-        MessageReader reader, boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType, boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1079,7 +1072,7 @@ public class DirectByteBufferStream {
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(keyType, reader);
+                    Object key = read(keyType);
 
                     if (!lastFinished)
                         return null;
@@ -1088,7 +1081,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(valType, reader);
+                Object val = read(valType);
 
                 if (!lastFinished)
                     return null;
@@ -1384,10 +1377,9 @@ public class DirectByteBufferStream {
 
     /**
      * @param type Type.
-     * @param reader Reader.
      * @return Value.
      */
-    private Object read(MessageAdapter.Type type, MessageReader reader) {
+    private Object read(MessageAdapter.Type type) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1450,7 +1442,7 @@ public class DirectByteBufferStream {
                 return readIgniteUuid();
 
             case MSG:
-                return readMessage(reader);
+                return readMessage();
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
