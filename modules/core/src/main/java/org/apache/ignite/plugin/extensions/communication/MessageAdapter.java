@@ -74,7 +74,7 @@ public abstract class MessageAdapter implements Serializable {
     }
 
     /**
-     * Enum representing possible field types.
+     * Enum representing possible types of collection items.
      */
     public enum Type {
         /** Byte. */
