@@ -232,7 +232,7 @@ public interface MessageWriter {
      * @param itemType Array component type.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, MessageFieldType itemType);
+    public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType);
 
     /**
      * Writes collection.
@@ -242,7 +242,7 @@ public interface MessageWriter {
      * @param itemType Collection item type.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, MessageFieldType itemType);
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType);
 
     /**
      * Writes map.
@@ -253,8 +253,8 @@ public interface MessageWriter {
      * @param valType Map value type.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageFieldType keyType,
-        MessageFieldType valType);
+    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType);
 
     public boolean isTypeWritten();
 

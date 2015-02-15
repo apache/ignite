@@ -236,7 +236,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(String name, MessageFieldType itemType, Class<T> itemCls) {
+    @Override public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls) {
         T[] msg = stream.readObjectArray(itemType, itemCls);
 
         lastRead = stream.lastFinished();
@@ -245,7 +245,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollection(String name, MessageFieldType itemType) {
+    @Override public <C extends Collection<?>> C readCollection(String name, MessageAdapter.Type itemType) {
         C col = stream.readCollection(itemType);
 
         lastRead = stream.lastFinished();
@@ -254,8 +254,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMap(String name, MessageFieldType keyType,
-        MessageFieldType valType, boolean linked) {
+    @Override public <M extends Map<?, ?>> M readMap(String name, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType, boolean linked) {
         M map = stream.readMap(keyType, valType, linked);
 
         lastRead = stream.lastFinished();

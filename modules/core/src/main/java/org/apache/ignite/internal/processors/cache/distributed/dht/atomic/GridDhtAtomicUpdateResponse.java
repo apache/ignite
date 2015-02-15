@@ -211,7 +211,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -254,7 +254,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 6:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageFieldType.BYTE_ARR);
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

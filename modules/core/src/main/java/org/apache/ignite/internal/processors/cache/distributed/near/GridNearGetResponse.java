@@ -233,7 +233,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageFieldType.INT))
+                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 writer.incrementState();
@@ -294,7 +294,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 readState++;
 
             case 6:
-                invalidParts = reader.readCollection("invalidParts", MessageFieldType.INT);
+                invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;

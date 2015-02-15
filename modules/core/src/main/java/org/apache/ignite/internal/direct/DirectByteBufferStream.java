@@ -553,7 +553,7 @@ public class DirectByteBufferStream {
      * @param itemType Component type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageFieldType itemType, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriter writer) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -587,7 +587,7 @@ public class DirectByteBufferStream {
      * @param itemType Item type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageFieldType itemType, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -623,7 +623,7 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, MessageFieldType keyType, MessageFieldType valType,
+    public <K, V> void writeMap(Map<K, V> map, MessageAdapter.Type keyType, MessageAdapter.Type valType,
         MessageWriter writer) {
         if (map != null) {
             if (it == null) {
@@ -935,7 +935,7 @@ public class DirectByteBufferStream {
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageFieldType itemType, Class<T> itemCls) {
+    public <T> T[] readObjectArray(MessageAdapter.Type itemType, Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -977,7 +977,7 @@ public class DirectByteBufferStream {
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<?>> C readCollection(MessageFieldType itemType) {
+    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1021,7 +1021,7 @@ public class DirectByteBufferStream {
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<?, ?>> M readMap(MessageFieldType keyType, MessageFieldType valType, boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType, boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1220,7 +1220,7 @@ public class DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    private void write(MessageFieldType type, Object val, MessageWriter writer) {
+    private void write(MessageAdapter.Type type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1345,7 +1345,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @return Value.
      */
-    private Object read(MessageFieldType type) {
+    private Object read(MessageAdapter.Type type) {
         switch (type) {
             case BYTE:
                 return readByte();

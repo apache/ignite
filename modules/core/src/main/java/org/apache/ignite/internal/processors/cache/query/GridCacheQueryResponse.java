@@ -217,7 +217,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("dataBytes", dataBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("dataBytes", dataBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -241,7 +241,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("metaDataBytes", metaDataBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("metaDataBytes", metaDataBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -266,7 +266,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
         switch (readState) {
             case 3:
-                dataBytes = reader.readCollection("dataBytes", MessageFieldType.BYTE_ARR);
+                dataBytes = reader.readCollection("dataBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -298,7 +298,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 7:
-                metaDataBytes = reader.readCollection("metaDataBytes", MessageFieldType.BYTE_ARR);
+                metaDataBytes = reader.readCollection("metaDataBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

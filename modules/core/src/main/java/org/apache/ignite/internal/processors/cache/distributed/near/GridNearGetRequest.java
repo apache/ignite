@@ -266,7 +266,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMap("keyBytes", keyBytes, MessageFieldType.BYTE_ARR, MessageFieldType.BOOLEAN))
+                if (!writer.writeMap("keyBytes", keyBytes, Type.BYTE_ARR, Type.BOOLEAN))
                     return false;
 
                 writer.incrementState();
@@ -349,7 +349,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 readState++;
 
             case 5:
-                keyBytes = reader.readMap("keyBytes", MessageFieldType.BYTE_ARR, MessageFieldType.BOOLEAN, true);
+                keyBytes = reader.readMap("keyBytes", Type.BYTE_ARR, Type.BOOLEAN, true);
 
                 if (!reader.isLastRead())
                     return false;

@@ -457,7 +457,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, MessageFieldType.INT))
+                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, Type.INT))
                     return false;
 
                 writer.incrementState();
@@ -469,13 +469,13 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("nearValBytes", nearValBytes, MessageFieldType.MSG))
+                if (!writer.writeCollection("nearValBytes", nearValBytes, Type.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, MessageFieldType.INT))
+                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, Type.INT))
                     return false;
 
                 writer.incrementState();
@@ -544,7 +544,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 7:
-                nearSkipIdxs = reader.readCollection("nearSkipIdxs", MessageFieldType.INT);
+                nearSkipIdxs = reader.readCollection("nearSkipIdxs", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -560,7 +560,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 9:
-                nearValBytes = reader.readCollection("nearValBytes", MessageFieldType.MSG);
+                nearValBytes = reader.readCollection("nearValBytes", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -568,7 +568,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 10:
-                nearValsIdxs = reader.readCollection("nearValsIdxs", MessageFieldType.INT);
+                nearValsIdxs = reader.readCollection("nearValsIdxs", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;

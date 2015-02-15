@@ -304,7 +304,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("valBytes", valBytes, MessageFieldType.MSG))
+                if (!writer.writeCollection("valBytes", valBytes, Type.MSG))
                     return false;
 
                 writer.incrementState();
@@ -339,7 +339,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 readState++;
 
             case 10:
-                valBytes = reader.readCollection("valBytes", MessageFieldType.MSG);
+                valBytes = reader.readCollection("valBytes", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

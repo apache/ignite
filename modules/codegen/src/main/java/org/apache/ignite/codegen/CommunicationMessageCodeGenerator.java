@@ -57,50 +57,50 @@ public class CommunicationMessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final Map<Class<?>, MessageFieldType> TYPES = U.newHashMap(30);
+    private static final Map<Class<?>, MessageAdapter.Type> TYPES = U.newHashMap(30);
 
     static {
-        TYPES.put(byte.class, MessageFieldType.BYTE);
-        TYPES.put(Byte.class, MessageFieldType.BYTE);
-        TYPES.put(short.class, MessageFieldType.SHORT);
-        TYPES.put(Short.class, MessageFieldType.SHORT);
-        TYPES.put(int.class, MessageFieldType.INT);
-        TYPES.put(Integer.class, MessageFieldType.INT);
-        TYPES.put(long.class, MessageFieldType.LONG);
-        TYPES.put(Long.class, MessageFieldType.LONG);
-        TYPES.put(float.class, MessageFieldType.FLOAT);
-        TYPES.put(Float.class, MessageFieldType.FLOAT);
-        TYPES.put(double.class, MessageFieldType.DOUBLE);
-        TYPES.put(Double.class, MessageFieldType.DOUBLE);
-        TYPES.put(char.class, MessageFieldType.CHAR);
-        TYPES.put(Character.class, MessageFieldType.CHAR);
-        TYPES.put(boolean.class, MessageFieldType.BOOLEAN);
-        TYPES.put(Boolean.class, MessageFieldType.BOOLEAN);
-        TYPES.put(byte[].class, MessageFieldType.BYTE_ARR);
-        TYPES.put(short[].class, MessageFieldType.SHORT_ARR);
-        TYPES.put(int[].class, MessageFieldType.INT_ARR);
-        TYPES.put(long[].class, MessageFieldType.LONG_ARR);
-        TYPES.put(float[].class, MessageFieldType.FLOAT_ARR);
-        TYPES.put(double[].class, MessageFieldType.DOUBLE_ARR);
-        TYPES.put(char[].class, MessageFieldType.CHAR_ARR);
-        TYPES.put(boolean[].class, MessageFieldType.BOOLEAN_ARR);
-        TYPES.put(String.class, MessageFieldType.STRING);
-        TYPES.put(BitSet.class, MessageFieldType.BIT_SET);
-        TYPES.put(UUID.class, MessageFieldType.UUID);
-        TYPES.put(IgniteUuid.class, MessageFieldType.IGNITE_UUID);
+        TYPES.put(byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(Byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(Short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(int.class, MessageAdapter.Type.INT);
+        TYPES.put(Integer.class, MessageAdapter.Type.INT);
+        TYPES.put(long.class, MessageAdapter.Type.LONG);
+        TYPES.put(Long.class, MessageAdapter.Type.LONG);
+        TYPES.put(float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(Float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(Double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(char.class, MessageAdapter.Type.CHAR);
+        TYPES.put(Character.class, MessageAdapter.Type.CHAR);
+        TYPES.put(boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(Boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(byte[].class, MessageAdapter.Type.BYTE_ARR);
+        TYPES.put(short[].class, MessageAdapter.Type.SHORT_ARR);
+        TYPES.put(int[].class, MessageAdapter.Type.INT_ARR);
+        TYPES.put(long[].class, MessageAdapter.Type.LONG_ARR);
+        TYPES.put(float[].class, MessageAdapter.Type.FLOAT_ARR);
+        TYPES.put(double[].class, MessageAdapter.Type.DOUBLE_ARR);
+        TYPES.put(char[].class, MessageAdapter.Type.CHAR_ARR);
+        TYPES.put(boolean[].class, MessageAdapter.Type.BOOLEAN_ARR);
+        TYPES.put(String.class, MessageAdapter.Type.STRING);
+        TYPES.put(BitSet.class, MessageAdapter.Type.BIT_SET);
+        TYPES.put(UUID.class, MessageAdapter.Type.UUID);
+        TYPES.put(IgniteUuid.class, MessageAdapter.Type.IGNITE_UUID);
     }
 
     /**
      * @param cls Class.
      * @return Type enum value.
      */
-    private static MessageFieldType typeEnum(Class<?> cls) {
-        MessageFieldType type = TYPES.get(cls);
+    private static MessageAdapter.Type typeEnum(Class<?> cls) {
+        MessageAdapter.Type type = TYPES.get(cls);
 
         if (type == null) {
             assert MessageAdapter.class.isAssignableFrom(cls) : cls;
 
-            type = MessageFieldType.MSG;
+            type = MessageAdapter.Type.MSG;
         }
 
         return type;
@@ -461,68 +461,67 @@ public class CommunicationMessageCodeGenerator {
         String field = raw ? "null" : '"' + name + '"';
 
         if (type == byte.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.BYTE");
+            returnFalseIfFailed(write, "writer.writeByte", field, name);
         else if (type == short.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.SHORT");
+            returnFalseIfFailed(write, "writer.writeShort", field, name);
         else if (type == int.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.INT");
+            returnFalseIfFailed(write, "writer.writeInt", field, name);
         else if (type == long.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.LONG");
+            returnFalseIfFailed(write, "writer.writeLong", field, name);
         else if (type == float.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.FLOAT");
+            returnFalseIfFailed(write, "writer.writeFloat", field, name);
         else if (type == double.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.DOUBLE");
+            returnFalseIfFailed(write, "writer.writeDouble", field, name);
         else if (type == char.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.CHAR");
+            returnFalseIfFailed(write, "writer.writeChar", field, name);
         else if (type == boolean.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.BOOLEAN");
+            returnFalseIfFailed(write, "writer.writeBoolean", field, name);
         else if (type == byte[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.BYTE_ARR");
+            returnFalseIfFailed(write, "writer.writeByteArray", field, name);
         else if (type == short[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.SHORT_ARR");
+            returnFalseIfFailed(write, "writer.writeShortArray", field, name);
         else if (type == int[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.INT_ARR");
+            returnFalseIfFailed(write, "writer.writeIntArray", field, name);
         else if (type == long[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.LONG_ARR");
+            returnFalseIfFailed(write, "writer.writeLongArray", field, name);
         else if (type == float[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.FLOAT_ARR");
+            returnFalseIfFailed(write, "writer.writeFloatArray", field, name);
         else if (type == double[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.DOUBLE_ARR");
+            returnFalseIfFailed(write, "writer.writeDoubleArray", field, name);
         else if (type == char[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.CHAR_ARR");
+            returnFalseIfFailed(write, "writer.writeCharArray", field, name);
         else if (type == boolean[].class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.BOOLEAN_ARR");
+            returnFalseIfFailed(write, "writer.writeBooleanArray", field, name);
         else if (type == String.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.STRING");
+            returnFalseIfFailed(write, "writer.writeString", field, name);
         else if (type == BitSet.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.BIT_SET");
+            returnFalseIfFailed(write, "writer.writeBitSet", field, name);
         else if (type == UUID.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.UUID");
+            returnFalseIfFailed(write, "writer.writeUuid", field, name);
         else if (type == IgniteUuid.class)
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.IGNITE_UUID");
+            returnFalseIfFailed(write, "writer.writeIgniteUuid", field, name);
         else if (type.isEnum()) {
             String arg = name + " != null ? (byte)" + name + ".ordinal() : -1";
 
-            returnFalseIfFailed(write, "writer.writeField", field, arg, "MessageFieldType.BYTE");
+            returnFalseIfFailed(write, "writer.writeByte", field, arg);
         }
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfFailed(write, "writer.writeField", field, name, "MessageFieldType.MSG");
+            returnFalseIfFailed(write, "writer.writeMessage", field, name);
         else if (type.isArray()) {
-            returnFalseIfFailed(write, "writer.writeArrayField", field, name,
-                "MessageFieldType." + typeEnum(type.getComponentType()));
+            returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
+                "Type." + typeEnum(type.getComponentType()));
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfFailed(write, "writer.writeCollectionField", field, name,
-                "MessageFieldType." + typeEnum(colItemType));
+            returnFalseIfFailed(write, "writer.writeCollection", field, name, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            returnFalseIfFailed(write, "writer.writeMapField", field, name, "MessageFieldType." + typeEnum(mapKeyType),
-                "MessageFieldType." + typeEnum(mapValType));
+            returnFalseIfFailed(write, "writer.writeMap", field, name, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapValType));
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);
@@ -542,69 +541,68 @@ public class CommunicationMessageCodeGenerator {
         String field = '"' + name + '"';
 
         if (type == byte.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.BYTE");
+            returnFalseIfReadFailed(name, "reader.readByte", field);
         else if (type == short.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.SHORT");
+            returnFalseIfReadFailed(name, "reader.readShort", field);
         else if (type == int.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.INT");
+            returnFalseIfReadFailed(name, "reader.readInt", field);
         else if (type == long.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.LONG");
+            returnFalseIfReadFailed(name, "reader.readLong", field);
         else if (type == float.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.FLOAT");
+            returnFalseIfReadFailed(name, "reader.readFloat", field);
         else if (type == double.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.DOUBLE");
+            returnFalseIfReadFailed(name, "reader.readDouble", field);
         else if (type == char.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.CHAR");
+            returnFalseIfReadFailed(name, "reader.readChar", field);
         else if (type == boolean.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.BOOLEAN");
+            returnFalseIfReadFailed(name, "reader.readBoolean", field);
         else if (type == byte[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.BYTE_ARR");
+            returnFalseIfReadFailed(name, "reader.readByteArray", field);
         else if (type == short[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.SHORT_ARR");
+            returnFalseIfReadFailed(name, "reader.readShortArray", field);
         else if (type == int[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.INT_ARR");
+            returnFalseIfReadFailed(name, "reader.readIntArray", field);
         else if (type == long[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.LONG_ARR");
+            returnFalseIfReadFailed(name, "reader.readLongArray", field);
         else if (type == float[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.FLOAT_ARR");
+            returnFalseIfReadFailed(name, "reader.readFloatArray", field);
         else if (type == double[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.DOUBLE_ARR");
+            returnFalseIfReadFailed(name, "reader.readDoubleArray", field);
         else if (type == char[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.CHAR_ARR");
+            returnFalseIfReadFailed(name, "reader.readCharArray", field);
         else if (type == boolean[].class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.BOOLEAN_ARR");
+            returnFalseIfReadFailed(name, "reader.readBooleanArray", field);
         else if (type == String.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.STRING");
+            returnFalseIfReadFailed(name, "reader.readString", field);
         else if (type == BitSet.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.BIT_SET");
+            returnFalseIfReadFailed(name, "reader.readBitSet", field);
         else if (type == UUID.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.UUID");
+            returnFalseIfReadFailed(name, "reader.readUuid", field);
         else if (type == IgniteUuid.class)
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.IGNITE_UUID");
+            returnFalseIfReadFailed(name, "reader.readIgniteUuid", field);
         else if (type.isEnum()) {
             String loc = name + "Ord";
 
             read.add(builder().a("byte ").a(loc).a(";").toString());
             read.add(EMPTY);
 
-            returnFalseIfReadFailed(loc, "reader.readField", field, "MessageFieldType.BYTE");
+            returnFalseIfReadFailed(loc, "reader.readByte", field);
 
             read.add(EMPTY);
             read.add(builder().a(name).a(" = ").a(type.getSimpleName()).a(".fromOrdinal(").a(loc).a(");").toString());
         }
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfReadFailed(name, "reader.readField", field, "MessageFieldType.MSG");
+            returnFalseIfReadFailed(name, "reader.readMessage", field);
         else if (type.isArray()) {
             Class<?> compType = type.getComponentType();
 
-            returnFalseIfReadFailed(name, "reader.readArrayField", field, "MessageFieldType." + typeEnum(compType),
+            returnFalseIfReadFailed(name, "reader.readObjectArray", field, "Type." + typeEnum(compType),
                 compType.getSimpleName() + ".class");
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(name, "reader.readCollectionField", field,
-                "MessageFieldType." + typeEnum(colItemType));
+            returnFalseIfReadFailed(name, "reader.readCollection", field, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
@@ -612,8 +610,8 @@ public class CommunicationMessageCodeGenerator {
 
             boolean linked = type.equals(LinkedHashMap.class);
 
-            returnFalseIfReadFailed(name, "reader.readMapField", field, "MessageFieldType." + typeEnum(mapKeyType),
-                "MessageFieldType." + typeEnum(mapValType), linked ? "true" : "false");
+            returnFalseIfReadFailed(name, "reader.readMap", field, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapValType), linked ? "true" : "false");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);

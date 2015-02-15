@@ -198,7 +198,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -241,7 +241,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 readState++;
 
             case 6:
-                missedKeyBytes = reader.readCollection("missedKeyBytes", MessageFieldType.BYTE_ARR);
+                missedKeyBytes = reader.readCollection("missedKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
