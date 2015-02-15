@@ -382,13 +382,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 state.increment();
 
             case 25:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, GridCacheVersion.class))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
                     return false;
 
                 state.increment();
 
             case 26:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, byte[].class))
+                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -470,7 +470,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 25:
-                dhtVers = reader.readObjectArray("dhtVers", GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -478,7 +478,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 26:
-                filterBytes = reader.readObjectArray("filterBytes", byte[].class);
+                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

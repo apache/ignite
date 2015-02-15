@@ -193,22 +193,23 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls) {
-        stream.writeObjectArray(arr, itemCls, state);
+    @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType) {
+        stream.writeObjectArray(arr, itemType, state);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls) {
-        stream.writeCollection(col, itemCls, state);
+    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType) {
+        stream.writeCollection(col, itemType, state);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls) {
-        stream.writeMap(map, keyCls, valCls, state);
+    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType) {
+        stream.writeMap(map, keyType, valType, state);
 
         return stream.lastFinished();
     }

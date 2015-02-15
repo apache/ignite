@@ -336,7 +336,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 state.increment();
 
             case 6:
-                if (!writer.writeMap("ldrParties", ldrParties, UUID.class, IgniteUuid.class))
+                if (!writer.writeMap("ldrParties", ldrParties, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
                 state.increment();
@@ -417,7 +417,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 6:
-                ldrParties = reader.readMap("ldrParties", UUID.class, IgniteUuid.class, false);
+                ldrParties = reader.readMap("ldrParties", Type.UUID, Type.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;

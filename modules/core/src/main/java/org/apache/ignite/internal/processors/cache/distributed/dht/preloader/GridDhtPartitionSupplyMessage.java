@@ -326,13 +326,13 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 state.increment();
 
             case 5:
-                if (!writer.writeCollection("last", last, int.class))
+                if (!writer.writeCollection("last", last, Type.INT))
                     return false;
 
                 state.increment();
 
             case 6:
-                if (!writer.writeCollection("missed", missed, int.class))
+                if (!writer.writeCollection("missed", missed, Type.INT))
                     return false;
 
                 state.increment();
@@ -380,7 +380,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 5:
-                last = reader.readCollection("last", int.class);
+                last = reader.readCollection("last", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -388,7 +388,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 6:
-                missed = reader.readCollection("missed", int.class);
+                missed = reader.readCollection("missed", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;

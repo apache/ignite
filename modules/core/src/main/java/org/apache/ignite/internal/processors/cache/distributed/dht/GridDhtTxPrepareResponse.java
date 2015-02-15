@@ -250,7 +250,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 state.increment();
 
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
+                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 state.increment();
@@ -262,13 +262,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 state.increment();
 
             case 13:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, byte[].class))
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 14:
-                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, byte[].class))
+                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -296,7 +296,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 11:
-                invalidParts = reader.readCollection("invalidParts", int.class);
+                invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -312,7 +312,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 13:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", byte[].class);
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -320,7 +320,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 14:
-                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", byte[].class);
+                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

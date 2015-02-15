@@ -602,7 +602,7 @@ public class CommunicationMessageCodeGenerator {
             assert mapValType != null;
 
             returnFalseIfFailed(write, "writer.writeMap", field, name, "Type." + typeEnum(mapKeyType),
-                "Type." + typeEnum(mapKeyType));
+                "Type." + typeEnum(mapValType));
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);

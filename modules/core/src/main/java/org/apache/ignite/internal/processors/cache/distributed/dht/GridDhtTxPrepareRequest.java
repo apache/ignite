@@ -388,7 +388,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                 state.increment();
 
             case 27:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, byte[].class))
+                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -484,7 +484,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                 readState++;
 
             case 27:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", byte[].class);
+                nearWritesBytes = reader.readCollection("nearWritesBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

@@ -101,7 +101,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
         switch (state.index()) {
             case 0:
-                if (!writer.writeMap("deltas", deltas, UUID.class, long.class))
+                if (!writer.writeMap("deltas", deltas, Type.UUID, Type.LONG))
                     return false;
 
                 state.increment();
@@ -124,7 +124,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                deltas = reader.readMap("deltas", UUID.class, long.class, false);
+                deltas = reader.readMap("deltas", Type.UUID, Type.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;

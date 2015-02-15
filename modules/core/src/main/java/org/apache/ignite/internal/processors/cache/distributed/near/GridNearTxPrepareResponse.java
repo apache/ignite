@@ -275,7 +275,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 state.increment();
 
             case 12:
-                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
+                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 state.increment();
@@ -287,13 +287,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 state.increment();
 
             case 14:
-                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, byte[].class))
+                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 15:
-                if (!writer.writeCollection("pending", pending, GridCacheVersion.class))
+                if (!writer.writeCollection("pending", pending, Type.MSG))
                     return false;
 
                 state.increment();
@@ -329,7 +329,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 12:
-                invalidParts = reader.readCollection("invalidParts", int.class);
+                invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -345,7 +345,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 14:
-                ownedValsBytes = reader.readCollection("ownedValsBytes", byte[].class);
+                ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -353,7 +353,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 15:
-                pending = reader.readCollection("pending", GridCacheVersion.class);
+                pending = reader.readCollection("pending", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

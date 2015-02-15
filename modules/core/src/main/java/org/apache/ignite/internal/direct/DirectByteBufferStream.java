@@ -550,10 +550,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param arr Array.
-     * @param itemCls Component type.
-     * @param writer Writer.
+     * @param itemType Component type.
+     * @param state Current state.
      */
-    public <T> void writeObjectArray(T[] arr, Class<T> itemCls, MessageWriteState state) {
+    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriteState state) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -563,8 +563,6 @@ public class DirectByteBufferStream {
 
                 it = arrayIterator(arr);
             }
-
-            MessageAdapter.Type itemType = null;//type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
@@ -593,10 +591,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param col Collection.
-     * @param itemCls Item type.
-     * @param writer Writer.
+     * @param itemType Item type.
+     * @param state Current state.
      */
-    public <T> void writeCollection(Collection<T> col, Class<T> itemCls, MessageWriteState state) {
+    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriteState state) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -606,8 +604,6 @@ public class DirectByteBufferStream {
 
                 it = col.iterator();
             }
-
-            MessageAdapter.Type itemType = null;//type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
@@ -636,12 +632,13 @@ public class DirectByteBufferStream {
 
     /**
      * @param map Map.
-     * @param keyCls Key type.
-     * @param valCls Value type.
-     * @param writer Writer.
+     * @param keyType Key type.
+     * @param valType Value type.
+     * @param state Current state.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls, MessageWriteState state) {
+    public <K, V> void writeMap(Map<K, V> map, MessageAdapter.Type keyType, MessageAdapter.Type valType,
+        MessageWriteState state) {
         if (map != null) {
             if (it == null) {
                 writeInt(map.size());
@@ -651,9 +648,6 @@ public class DirectByteBufferStream {
 
                 it = map.entrySet().iterator();
             }
-
-            MessageAdapter.Type keyType = null;//type(keyCls);
-            MessageAdapter.Type valType = null;//type(valCls);
 
             while (it.hasNext() || cur != NULL) {
                 Map.Entry<K, V> e;
@@ -975,12 +969,12 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemCls Component type.
+     * @param itemType Component type.
      * @param reader Reader.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(Class<?> itemCls, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageAdapter.Type itemType, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -992,9 +986,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = (Object[])Array.newInstance(itemCls, readSize);
-
-            MessageAdapter.Type itemType = null;//type(itemCls);
+                objArr = (Object[])Array.newInstance(itemType.clazz(), readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
@@ -1020,12 +1012,12 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemCls Item type.
+     * @param itemType Item type.
      * @param reader Reader.
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<T>, T> C readCollection(Class<T> itemCls, MessageReader reader) {
+    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1038,8 +1030,6 @@ public class DirectByteBufferStream {
         if (readSize >= 0) {
             if (col == null)
                 col = new ArrayList<>(readSize);
-
-            MessageAdapter.Type itemType = null;//type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
@@ -1057,23 +1047,23 @@ public class DirectByteBufferStream {
         readItems = 0;
         cur = null;
 
-        Collection<T> col0 = (Collection<T>)col;
+        C col0 = (C)col;
 
         col = null;
 
-        return (C)col0;
+        return col0;
     }
 
     /**
-     * @param keyCls Key type.
-     * @param valCls Value type.
+     * @param keyType Key type.
+     * @param valType Value type.
      * @param reader Reader.
      * @param linked Whether linked map should be created.
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls, MessageReader reader,
-        boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType,
+        MessageReader reader, boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1086,9 +1076,6 @@ public class DirectByteBufferStream {
         if (readSize >= 0) {
             if (map == null)
                 map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
-
-            MessageAdapter.Type keyType = null;//type(keyCls);
-            MessageAdapter.Type valType = null;//type(valCls);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
@@ -1118,11 +1105,11 @@ public class DirectByteBufferStream {
         readItems = 0;
         cur = null;
 
-        Map<K, V> map0 = (Map<K, V>)map;
+        M map0 = (M)map;
 
         map = null;
 
-        return (M)map0;
+        return map0;
     }
 
     /**

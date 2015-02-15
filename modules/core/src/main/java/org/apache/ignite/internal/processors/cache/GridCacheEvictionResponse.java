@@ -177,7 +177,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 state.increment();
 
             case 5:
-                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, byte[].class))
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -213,7 +213,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 5:
-                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", byte[].class);
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

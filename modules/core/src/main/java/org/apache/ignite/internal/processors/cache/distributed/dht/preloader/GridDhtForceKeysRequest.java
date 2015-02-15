@@ -205,7 +205,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 state.increment();
 
             case 4:
-                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
+                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -245,7 +245,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 readState++;
 
             case 4:
-                keyBytes = reader.readCollection("keyBytes", byte[].class);
+                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

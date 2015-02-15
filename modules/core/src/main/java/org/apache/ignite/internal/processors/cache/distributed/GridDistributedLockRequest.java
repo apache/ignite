@@ -479,7 +479,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         switch (state.index()) {
             case 8:
-                if (!writer.writeObjectArray("drVersByIdx", drVersByIdx, GridCacheVersion.class))
+                if (!writer.writeObjectArray("drVersByIdx", drVersByIdx, Type.MSG))
                     return false;
 
                 state.increment();
@@ -521,7 +521,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 state.increment();
 
             case 15:
-                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
+                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -589,7 +589,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         switch (readState) {
             case 8:
-                drVersByIdx = reader.readObjectArray("drVersByIdx", GridCacheVersion.class);
+                drVersByIdx = reader.readObjectArray("drVersByIdx", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -649,7 +649,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 15:
-                keyBytes = reader.readCollection("keyBytes", byte[].class);
+                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

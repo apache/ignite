@@ -496,7 +496,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state.increment();
 
             case 15:
-                if (!writer.writeCollection("readsBytes", readsBytes, byte[].class))
+                if (!writer.writeCollection("readsBytes", readsBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -532,7 +532,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state.increment();
 
             case 21:
-                if (!writer.writeCollection("writesBytes", writesBytes, byte[].class))
+                if (!writer.writeCollection("writesBytes", writesBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -616,7 +616,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 15:
-                readsBytes = reader.readCollection("readsBytes", byte[].class);
+                readsBytes = reader.readCollection("readsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -664,7 +664,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 21:
-                writesBytes = reader.readCollection("writesBytes", byte[].class);
+                writesBytes = reader.readCollection("writesBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

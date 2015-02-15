@@ -229,29 +229,30 @@ public interface MessageWriter {
      *
      * @param name Field name.
      * @param arr Array of objects.
-     * @param itemCls Array component type.
+     * @param itemType Array component type.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls);
+    public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType);
 
     /**
      * Writes collection.
      *
      * @param name Field name.
      * @param col Collection.
-     * @param itemCls Collection item type.
+     * @param itemType Collection item type.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls);
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType);
 
     /**
      * Writes map.
      *
      * @param name Field name.
      * @param map Map.
-     * @param keyCls Map key type.
-     * @param valCls Map value type.
+     * @param keyType Map key type.
+     * @param valType Map value type.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls);
+    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType);
 }

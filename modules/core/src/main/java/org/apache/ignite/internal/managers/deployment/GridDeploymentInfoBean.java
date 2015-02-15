@@ -188,7 +188,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 state.increment();
 
             case 3:
-                if (!writer.writeMap("participants", participants, UUID.class, IgniteUuid.class))
+                if (!writer.writeMap("participants", participants, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
                 state.increment();
@@ -239,7 +239,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 readState++;
 
             case 3:
-                participants = reader.readMap("participants", UUID.class, IgniteUuid.class, false);
+                participants = reader.readMap("participants", Type.UUID, Type.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;

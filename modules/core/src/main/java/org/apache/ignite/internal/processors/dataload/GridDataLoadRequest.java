@@ -273,7 +273,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 state.increment();
 
             case 6:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
                 state.increment();
@@ -377,7 +377,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 6:
-                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
+                ldrParticipants = reader.readMap("ldrParticipants", Type.UUID, Type.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;

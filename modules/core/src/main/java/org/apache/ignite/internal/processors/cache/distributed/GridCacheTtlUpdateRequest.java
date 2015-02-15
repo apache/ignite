@@ -210,19 +210,19 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (state.index()) {
             case 3:
-                if (!writer.writeCollection("keysBytes", keysBytes, byte[].class))
+                if (!writer.writeCollection("keysBytes", keysBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 4:
-                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, byte[].class))
+                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 5:
-                if (!writer.writeCollection("nearVers", nearVers, GridCacheVersion.class))
+                if (!writer.writeCollection("nearVers", nearVers, Type.MSG))
                     return false;
 
                 state.increment();
@@ -240,7 +240,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 state.increment();
 
             case 8:
-                if (!writer.writeCollection("vers", vers, GridCacheVersion.class))
+                if (!writer.writeCollection("vers", vers, Type.MSG))
                     return false;
 
                 state.increment();
@@ -259,7 +259,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (readState) {
             case 3:
-                keysBytes = reader.readCollection("keysBytes", byte[].class);
+                keysBytes = reader.readCollection("keysBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -267,7 +267,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 4:
-                nearKeysBytes = reader.readCollection("nearKeysBytes", byte[].class);
+                nearKeysBytes = reader.readCollection("nearKeysBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -275,7 +275,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 5:
-                nearVers = reader.readCollection("nearVers", GridCacheVersion.class);
+                nearVers = reader.readCollection("nearVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -299,7 +299,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 8:
-                vers = reader.readCollection("vers", GridCacheVersion.class);
+                vers = reader.readCollection("vers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

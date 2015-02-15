@@ -201,7 +201,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 state.increment();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, UUID.class))
+                if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
                     return false;
 
                 state.increment();
@@ -246,7 +246,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", UUID.class);
+                nodeIds = reader.readCollection("nodeIds", Type.UUID);
 
                 if (!reader.isLastRead())
                     return false;

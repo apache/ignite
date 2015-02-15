@@ -268,7 +268,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 state.increment();
 
             case 24:
-                if (!writer.writeCollection("lastBackups", lastBackups, UUID.class))
+                if (!writer.writeCollection("lastBackups", lastBackups, Type.UUID))
                     return false;
 
                 state.increment();
@@ -334,7 +334,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 readState++;
 
             case 24:
-                lastBackups = reader.readCollection("lastBackups", UUID.class);
+                lastBackups = reader.readCollection("lastBackups", Type.UUID);
 
                 if (!reader.isLastRead())
                     return false;

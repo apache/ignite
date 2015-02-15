@@ -119,7 +119,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
                 state.increment();
 
             case 1:
-                if (!writer.writeCollection("fragmentRanges", fragmentRanges, IgfsFileAffinityRange.class))
+                if (!writer.writeCollection("fragmentRanges", fragmentRanges, Type.MSG))
                     return false;
 
                 state.increment();
@@ -147,7 +147,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
                 readState++;
 
             case 1:
-                fragmentRanges = reader.readCollection("fragmentRanges", IgfsFileAffinityRange.class);
+                fragmentRanges = reader.readCollection("fragmentRanges", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

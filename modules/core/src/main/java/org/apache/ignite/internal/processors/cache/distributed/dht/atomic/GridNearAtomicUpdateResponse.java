@@ -491,7 +491,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 state.increment();
 
             case 7:
-                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, int.class))
+                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, Type.INT))
                     return false;
 
                 state.increment();
@@ -503,13 +503,13 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 state.increment();
 
             case 9:
-                if (!writer.writeCollection("nearValBytes", nearValBytes, GridCacheValueBytes.class))
+                if (!writer.writeCollection("nearValBytes", nearValBytes, Type.MSG))
                     return false;
 
                 state.increment();
 
             case 10:
-                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, int.class))
+                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, Type.INT))
                     return false;
 
                 state.increment();
@@ -579,7 +579,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 7:
-                nearSkipIdxs = reader.readCollection("nearSkipIdxs", int.class);
+                nearSkipIdxs = reader.readCollection("nearSkipIdxs", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -595,7 +595,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 9:
-                nearValBytes = reader.readCollection("nearValBytes", GridCacheValueBytes.class);
+                nearValBytes = reader.readCollection("nearValBytes", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -603,7 +603,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 10:
-                nearValsIdxs = reader.readCollection("nearValsIdxs", int.class);
+                nearValsIdxs = reader.readCollection("nearValsIdxs", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;

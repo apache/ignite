@@ -746,13 +746,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 4:
-                if (!writer.writeCollection("drVers", drVers, GridCacheVersion.class))
+                if (!writer.writeCollection("drVers", drVers, Type.MSG))
                     return false;
 
                 state.increment();
 
             case 5:
-                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, byte[].class))
+                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -770,19 +770,19 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 8:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, byte[].class))
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 9:
-                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
+                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
 
             case 10:
-                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, byte[].class))
+                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -794,7 +794,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 12:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
                     return false;
 
                 state.increment();
@@ -806,7 +806,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 14:
-                if (!writer.writeCollection("nearValBytes", nearValBytes, GridCacheValueBytes.class))
+                if (!writer.writeCollection("nearValBytes", nearValBytes, Type.MSG))
                     return false;
 
                 state.increment();
@@ -848,7 +848,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 21:
-                if (!writer.writeCollection("valBytes", valBytes, GridCacheValueBytes.class))
+                if (!writer.writeCollection("valBytes", valBytes, Type.MSG))
                     return false;
 
                 state.increment();
@@ -882,7 +882,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 4:
-                drVers = reader.readCollection("drVers", GridCacheVersion.class);
+                drVers = reader.readCollection("drVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -890,7 +890,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 5:
-                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", byte[].class);
+                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -914,7 +914,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 8:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", byte[].class);
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -922,7 +922,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 9:
-                keyBytes = reader.readCollection("keyBytes", byte[].class);
+                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -930,7 +930,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 10:
-                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", byte[].class);
+                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -946,7 +946,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 12:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
+                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -962,7 +962,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 14:
-                nearValBytes = reader.readCollection("nearValBytes", GridCacheValueBytes.class);
+                nearValBytes = reader.readCollection("nearValBytes", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1022,7 +1022,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 21:
-                valBytes = reader.readCollection("valBytes", GridCacheValueBytes.class);
+                valBytes = reader.readCollection("valBytes", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
