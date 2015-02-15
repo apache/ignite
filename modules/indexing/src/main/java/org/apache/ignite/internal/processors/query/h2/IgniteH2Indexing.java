@@ -1143,7 +1143,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (cfg.isUseOptimizedSerializer())
-            Utils.serializer = h2Serializer(ctx != null && ctx.config().isPeerClassLoadingEnabled());
+            Utils.serializer = h2Serializer(ctx != null && ctx.deploy().enabled());
 
         long maxOffHeapMemory = cfg.getMaxOffHeapMemory();
 
@@ -1737,7 +1737,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (type().valueClass() == String.class) {
                 try {
-                    luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
+                    luceneIdx = new GridLuceneIndex(ctx, marshaller, offheap, spaceName, type, true);
                 }
                 catch (IgniteCheckedException e1) {
                     throw new IgniteException(e1);
@@ -1750,7 +1750,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (idx.type() == FULLTEXT) {
                     try {
-                        luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
+                        luceneIdx = new GridLuceneIndex(ctx, marshaller, offheap, spaceName, type, true);
                     }
                     catch (IgniteCheckedException e1) {
                         throw new IgniteException(e1);
