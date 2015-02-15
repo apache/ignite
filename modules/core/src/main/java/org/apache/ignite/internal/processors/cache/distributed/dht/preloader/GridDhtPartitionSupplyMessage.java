@@ -280,7 +280,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -288,37 +288,37 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("ack", ack, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("ack", ack))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("infoBytes", infoBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("infoBytes", infoBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollectionField("last", last, MessageFieldType.INT))
+                if (!writer.writeCollection("last", last, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollectionField("missed", missed, MessageFieldType.INT))
+                if (!writer.writeCollection("missed", missed, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("updateSeq", updateSeq, MessageFieldType.LONG))
+                if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeField("workerId", workerId, MessageFieldType.INT))
+                if (!writer.writeInt("workerId", workerId))
                     return false;
 
                 writer.incrementState();
@@ -337,7 +337,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
         switch (readState) {
             case 3:
-                ack = reader.readField("ack", MessageFieldType.BOOLEAN);
+                ack = reader.readBoolean("ack");
 
                 if (!reader.isLastRead())
                     return false;
@@ -345,7 +345,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 4:
-                infoBytes = reader.readField("infoBytes", MessageFieldType.BYTE_ARR);
+                infoBytes = reader.readByteArray("infoBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -353,7 +353,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 5:
-                last = reader.readCollectionField("last", MessageFieldType.INT);
+                last = reader.readCollection("last", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -361,7 +361,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 6:
-                missed = reader.readCollectionField("missed", MessageFieldType.INT);
+                missed = reader.readCollection("missed", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -369,7 +369,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 7:
-                updateSeq = reader.readField("updateSeq", MessageFieldType.LONG);
+                updateSeq = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
                     return false;
@@ -377,7 +377,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 readState++;
 
             case 8:
-                workerId = reader.readField("workerId", MessageFieldType.INT);
+                workerId = reader.readInt("workerId");
 
                 if (!reader.isLastRead())
                     return false;

@@ -509,7 +509,7 @@ public class GridLongList extends MessageAdapter implements Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -517,13 +517,13 @@ public class GridLongList extends MessageAdapter implements Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("arr", arr, MessageFieldType.LONG_ARR))
+                if (!writer.writeLongArray("arr", arr))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("idx", idx, MessageFieldType.INT))
+                if (!writer.writeInt("idx", idx))
                     return false;
 
                 writer.incrementState();
@@ -539,7 +539,7 @@ public class GridLongList extends MessageAdapter implements Externalizable {
 
         switch (readState) {
             case 0:
-                arr = reader.readField("arr", MessageFieldType.LONG_ARR);
+                arr = reader.readLongArray("arr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -547,7 +547,7 @@ public class GridLongList extends MessageAdapter implements Externalizable {
                 readState++;
 
             case 1:
-                idx = reader.readField("idx", MessageFieldType.INT);
+                idx = reader.readInt("idx");
 
                 if (!reader.isLastRead())
                     return false;

@@ -88,7 +88,7 @@ public class GridJobSiblingsRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -96,13 +96,13 @@ public class GridJobSiblingsRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("topicBytes", topicBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
                 writer.incrementState();
@@ -118,7 +118,7 @@ public class GridJobSiblingsRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
+                sesId = reader.readIgniteUuid("sesId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -126,7 +126,7 @@ public class GridJobSiblingsRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                topicBytes = reader.readField("topicBytes", MessageFieldType.BYTE_ARR);
+                topicBytes = reader.readByteArray("topicBytes");
 
                 if (!reader.isLastRead())
                     return false;

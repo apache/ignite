@@ -117,7 +117,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -125,31 +125,31 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeField("nearXidVer", nearXidVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("txNum", txNum, MessageFieldType.INT))
+                if (!writer.writeInt("txNum", txNum))
                     return false;
 
                 writer.incrementState();
@@ -168,7 +168,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
         switch (readState) {
             case 8:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,7 +176,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 readState++;
 
             case 9:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -184,7 +184,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 readState++;
 
             case 10:
-                nearXidVer = reader.readField("nearXidVer", MessageFieldType.MSG);
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,7 +192,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 readState++;
 
             case 11:
-                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;
@@ -200,7 +200,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 readState++;
 
             case 12:
-                txNum = reader.readField("txNum", MessageFieldType.INT);
+                txNum = reader.readInt("txNum");
 
                 if (!reader.isLastRead())
                     return false;

@@ -81,7 +81,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -89,13 +89,13 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("txId", txId, MessageFieldType.MSG))
+                if (!writer.writeMessage("txId", txId))
                     return false;
 
                 writer.incrementState();
@@ -114,7 +114,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (readState) {
             case 3:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +122,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
                 readState++;
 
             case 4:
-                txId = reader.readField("txId", MessageFieldType.MSG);
+                txId = reader.readMessage("txId");
 
                 if (!reader.isLastRead())
                     return false;

@@ -147,7 +147,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -155,43 +155,43 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeField("nearOnlyCheck", nearOnlyCheck, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("nearOnlyCheck", nearOnlyCheck))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("nearXidVer", nearXidVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("originatingNodeId", originatingNodeId, MessageFieldType.UUID))
+                if (!writer.writeUuid("originatingNodeId", originatingNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeField("originatingThreadId", originatingThreadId, MessageFieldType.LONG))
+                if (!writer.writeLong("originatingThreadId", originatingThreadId))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
@@ -210,7 +210,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         switch (readState) {
             case 8:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -218,7 +218,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 9:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -226,7 +226,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 10:
-                nearOnlyCheck = reader.readField("nearOnlyCheck", MessageFieldType.BOOLEAN);
+                nearOnlyCheck = reader.readBoolean("nearOnlyCheck");
 
                 if (!reader.isLastRead())
                     return false;
@@ -234,7 +234,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 11:
-                nearXidVer = reader.readField("nearXidVer", MessageFieldType.MSG);
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -242,7 +242,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 12:
-                originatingNodeId = reader.readField("originatingNodeId", MessageFieldType.UUID);
+                originatingNodeId = reader.readUuid("originatingNodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -250,7 +250,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 13:
-                originatingThreadId = reader.readField("originatingThreadId", MessageFieldType.LONG);
+                originatingThreadId = reader.readLong("originatingThreadId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -258,7 +258,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 readState++;
 
             case 14:
-                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;

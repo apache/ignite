@@ -227,7 +227,7 @@ public class GridDataLoadRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -235,79 +235,79 @@ public class GridDataLoadRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("cacheName", cacheName, MessageFieldType.STRING))
+                if (!writer.writeString("cacheName", cacheName))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("clsLdrId", clsLdrId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("colBytes", colBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("colBytes", colBytes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("depMode", depMode != null ? (byte)depMode.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("forceLocDep", forceLocDep, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("ignoreDepOwnership", ignoreDepOwnership, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMapField("ldrParticipants", ldrParticipants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("reqId", reqId, MessageFieldType.LONG))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeField("resTopicBytes", resTopicBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeField("sampleClsName", sampleClsName, MessageFieldType.STRING))
+                if (!writer.writeString("sampleClsName", sampleClsName))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeField("skipStore", skipStore, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("updaterBytes", updaterBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("updaterBytes", updaterBytes))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("userVer", userVer, MessageFieldType.STRING))
+                if (!writer.writeString("userVer", userVer))
                     return false;
 
                 writer.incrementState();
@@ -323,7 +323,7 @@ public class GridDataLoadRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                cacheName = reader.readField("cacheName", MessageFieldType.STRING);
+                cacheName = reader.readString("cacheName");
 
                 if (!reader.isLastRead())
                     return false;
@@ -331,7 +331,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                clsLdrId = reader.readField("clsLdrId", MessageFieldType.IGNITE_UUID);
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -339,7 +339,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                colBytes = reader.readField("colBytes", MessageFieldType.BYTE_ARR);
+                colBytes = reader.readByteArray("colBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -349,7 +349,7 @@ public class GridDataLoadRequest extends MessageAdapter {
             case 3:
                 byte depModeOrd;
 
-                depModeOrd = reader.readField("depMode", MessageFieldType.BYTE);
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -359,7 +359,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 4:
-                forceLocDep = reader.readField("forceLocDep", MessageFieldType.BOOLEAN);
+                forceLocDep = reader.readBoolean("forceLocDep");
 
                 if (!reader.isLastRead())
                     return false;
@@ -367,7 +367,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 5:
-                ignoreDepOwnership = reader.readField("ignoreDepOwnership", MessageFieldType.BOOLEAN);
+                ignoreDepOwnership = reader.readBoolean("ignoreDepOwnership");
 
                 if (!reader.isLastRead())
                     return false;
@@ -375,7 +375,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 6:
-                ldrParticipants = reader.readMapField("ldrParticipants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
+                ldrParticipants = reader.readMap("ldrParticipants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -383,7 +383,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 7:
-                reqId = reader.readField("reqId", MessageFieldType.LONG);
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -391,7 +391,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 8:
-                resTopicBytes = reader.readField("resTopicBytes", MessageFieldType.BYTE_ARR);
+                resTopicBytes = reader.readByteArray("resTopicBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -399,7 +399,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 9:
-                sampleClsName = reader.readField("sampleClsName", MessageFieldType.STRING);
+                sampleClsName = reader.readString("sampleClsName");
 
                 if (!reader.isLastRead())
                     return false;
@@ -407,7 +407,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 10:
-                skipStore = reader.readField("skipStore", MessageFieldType.BOOLEAN);
+                skipStore = reader.readBoolean("skipStore");
 
                 if (!reader.isLastRead())
                     return false;
@@ -415,7 +415,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 11:
-                updaterBytes = reader.readField("updaterBytes", MessageFieldType.BYTE_ARR);
+                updaterBytes = reader.readByteArray("updaterBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -423,7 +423,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 readState++;
 
             case 12:
-                userVer = reader.readField("userVer", MessageFieldType.STRING);
+                userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
                     return false;

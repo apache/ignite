@@ -206,7 +206,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -214,25 +214,25 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeCollectionField("invalidParts", invalidParts, MessageFieldType.INT))
+                if (!writer.writeCollection("invalidParts", invalidParts, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollectionField("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollectionField("preloadEntriesBytes", preloadEntriesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -251,7 +251,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
         switch (readState) {
             case 11:
-                invalidParts = reader.readCollectionField("invalidParts", MessageFieldType.INT);
+                invalidParts = reader.readCollection("invalidParts", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -259,7 +259,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 readState++;
 
             case 12:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -267,7 +267,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 readState++;
 
             case 13:
-                nearEvictedBytes = reader.readCollectionField("nearEvictedBytes", MessageFieldType.BYTE_ARR);
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -275,7 +275,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 readState++;
 
             case 14:
-                preloadEntriesBytes = reader.readCollectionField("preloadEntriesBytes", MessageFieldType.BYTE_ARR);
+                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.direct;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.nio.*;
 import java.util.*;
@@ -45,127 +47,196 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T readField(String name, MessageFieldType type) {
-        Object val;
-
-        switch (type) {
-            case BYTE:
-                val = stream.readByte();
-
-                break;
-
-            case SHORT:
-                val = stream.readShort();
-
-                break;
-
-            case INT:
-                val = stream.readInt();
-
-                break;
-
-            case LONG:
-                val = stream.readLong();
-
-                break;
-
-            case FLOAT:
-                val = stream.readFloat();
-
-                break;
-
-            case DOUBLE:
-                val = stream.readDouble();
-
-                break;
-
-            case CHAR:
-                val = stream.readChar();
-
-                break;
-
-            case BOOLEAN:
-                val = stream.readBoolean();
-
-                break;
-
-            case BYTE_ARR:
-                val = stream.readByteArray();
-
-                break;
-
-            case SHORT_ARR:
-                val = stream.readShortArray();
-
-                break;
-
-            case INT_ARR:
-                val = stream.readIntArray();
-
-                break;
-
-            case LONG_ARR:
-                val = stream.readLongArray();
-
-                break;
-
-            case FLOAT_ARR:
-                val = stream.readFloatArray();
-
-                break;
-
-            case DOUBLE_ARR:
-                val = stream.readDoubleArray();
-
-                break;
-
-            case CHAR_ARR:
-                val = stream.readCharArray();
-
-                break;
-
-            case BOOLEAN_ARR:
-                val = stream.readBooleanArray();
-
-                break;
-
-            case STRING:
-                val = stream.readString();
-
-                break;
-
-            case BIT_SET:
-                val = stream.readBitSet();
-
-                break;
-
-            case UUID:
-                val = stream.readUuid();
-
-                break;
-
-            case IGNITE_UUID:
-                val = stream.readIgniteUuid();
-
-                break;
-
-            case MSG:
-                val = stream.readMessage();
-
-                break;
-
-            default:
-                throw new IllegalStateException("Unknown field type: " + type);
-        }
+    @Override public byte readByte(String name) {
+        byte val = stream.readByte();
 
         lastRead = stream.lastFinished();
 
-        return (T)val;
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readArrayField(String name, MessageFieldType itemType, Class<T> itemCls) {
+    @Override public short readShort(String name) {
+        short val = stream.readShort();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readInt(String name) {
+        int val = stream.readInt();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLong(String name) {
+        long val = stream.readLong();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float readFloat(String name) {
+        float val = stream.readFloat();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double readDouble(String name) {
+        double val = stream.readDouble();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public char readChar(String name) {
+        char val = stream.readChar();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readBoolean(String name) {
+        boolean val = stream.readBoolean();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public byte[] readByteArray(String name) {
+        byte[] arr = stream.readByteArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public short[] readShortArray(String name) {
+        short[] arr = stream.readShortArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public int[] readIntArray(String name) {
+        int[] arr = stream.readIntArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public long[] readLongArray(String name) {
+        long[] arr = stream.readLongArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public float[] readFloatArray(String name) {
+        float[] arr = stream.readFloatArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public double[] readDoubleArray(String name) {
+        double[] arr = stream.readDoubleArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public char[] readCharArray(String name) {
+        char[] arr = stream.readCharArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public boolean[] readBooleanArray(String name) {
+        boolean[] arr = stream.readBooleanArray();
+
+        lastRead = stream.lastFinished();
+
+        return arr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String readString(String name) {
+        String val = stream.readString();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet readBitSet(String name) {
+        BitSet val = stream.readBitSet();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID readUuid(String name) {
+        UUID val = stream.readUuid();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid readIgniteUuid(String name) {
+        IgniteUuid val = stream.readIgniteUuid();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T extends MessageAdapter> T readMessage(String name) {
+        T msg = stream.readMessage();
+
+        lastRead = stream.lastFinished();
+
+        return msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T[] readObjectArray(String name, MessageFieldType itemType, Class<T> itemCls) {
         T[] msg = stream.readObjectArray(itemType, itemCls);
 
         lastRead = stream.lastFinished();
@@ -174,7 +245,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollectionField(String name, MessageFieldType itemType) {
+    @Override public <C extends Collection<?>> C readCollection(String name, MessageFieldType itemType) {
         C col = stream.readCollection(itemType);
 
         lastRead = stream.lastFinished();
@@ -183,7 +254,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMapField(String name, MessageFieldType keyType,
+    @Override public <M extends Map<?, ?>> M readMap(String name, MessageFieldType keyType,
         MessageFieldType valType, boolean linked) {
         M map = stream.readMap(keyType, valType, linked);
 

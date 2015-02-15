@@ -194,7 +194,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -202,37 +202,37 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollectionField("keysBytes", keysBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("keysBytes", keysBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollectionField("nearKeysBytes", nearKeysBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollectionField("nearVers", nearVers, MessageFieldType.MSG))
+                if (!writer.writeCollection("nearVers", nearVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("ttl", ttl, MessageFieldType.LONG))
+                if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollectionField("vers", vers, MessageFieldType.MSG))
+                if (!writer.writeCollection("vers", vers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -251,7 +251,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (readState) {
             case 3:
-                keysBytes = reader.readCollectionField("keysBytes", MessageFieldType.BYTE_ARR);
+                keysBytes = reader.readCollection("keysBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -259,7 +259,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 4:
-                nearKeysBytes = reader.readCollectionField("nearKeysBytes", MessageFieldType.BYTE_ARR);
+                nearKeysBytes = reader.readCollection("nearKeysBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -267,7 +267,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 5:
-                nearVers = reader.readCollectionField("nearVers", MessageFieldType.MSG);
+                nearVers = reader.readCollection("nearVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -275,7 +275,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 6:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -283,7 +283,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 7:
-                ttl = reader.readField("ttl", MessageFieldType.LONG);
+                ttl = reader.readLong("ttl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,7 +291,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 8:
-                vers = reader.readCollectionField("vers", MessageFieldType.MSG);
+                vers = reader.readCollection("vers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

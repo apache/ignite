@@ -351,7 +351,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -359,79 +359,79 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeField("baseVer", baseVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("baseVer", baseVer))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeField("commit", commit, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("commit", commit))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeField("commitVer", commitVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("grpLockKeyBytes", grpLockKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeField("invalidate", invalidate, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollectionField("recoveryWritesBytes", recoveryWritesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("recoveryWritesBytes", recoveryWritesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeField("syncCommit", syncCommit, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeField("syncRollback", syncRollback, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeField("threadId", threadId, MessageFieldType.LONG))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeField("txSize", txSize, MessageFieldType.INT))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeCollectionField("writeEntriesBytes", writeEntriesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("writeEntriesBytes", writeEntriesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -450,7 +450,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
         switch (readState) {
             case 8:
-                baseVer = reader.readField("baseVer", MessageFieldType.MSG);
+                baseVer = reader.readMessage("baseVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -458,7 +458,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 9:
-                commit = reader.readField("commit", MessageFieldType.BOOLEAN);
+                commit = reader.readBoolean("commit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -466,7 +466,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 10:
-                commitVer = reader.readField("commitVer", MessageFieldType.MSG);
+                commitVer = reader.readMessage("commitVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -474,7 +474,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 11:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -482,7 +482,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 12:
-                grpLockKeyBytes = reader.readField("grpLockKeyBytes", MessageFieldType.BYTE_ARR);
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -490,7 +490,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 13:
-                invalidate = reader.readField("invalidate", MessageFieldType.BOOLEAN);
+                invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
                     return false;
@@ -498,7 +498,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 14:
-                recoveryWritesBytes = reader.readCollectionField("recoveryWritesBytes", MessageFieldType.BYTE_ARR);
+                recoveryWritesBytes = reader.readCollection("recoveryWritesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -506,7 +506,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 15:
-                syncCommit = reader.readField("syncCommit", MessageFieldType.BOOLEAN);
+                syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -514,7 +514,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 16:
-                syncRollback = reader.readField("syncRollback", MessageFieldType.BOOLEAN);
+                syncRollback = reader.readBoolean("syncRollback");
 
                 if (!reader.isLastRead())
                     return false;
@@ -522,7 +522,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 17:
-                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;
@@ -530,7 +530,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 18:
-                threadId = reader.readField("threadId", MessageFieldType.LONG);
+                threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -538,7 +538,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 19:
-                txSize = reader.readField("txSize", MessageFieldType.INT);
+                txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -546,7 +546,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 readState++;
 
             case 20:
-                writeEntriesBytes = reader.readCollectionField("writeEntriesBytes", MessageFieldType.BYTE_ARR);
+                writeEntriesBytes = reader.readCollection("writeEntriesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

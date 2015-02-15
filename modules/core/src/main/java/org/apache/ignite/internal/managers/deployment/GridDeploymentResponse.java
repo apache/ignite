@@ -110,7 +110,7 @@ public class GridDeploymentResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -118,19 +118,19 @@ public class GridDeploymentResponse extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("byteSrc", byteSrc, MessageFieldType.MSG))
+                if (!writer.writeMessage("byteSrc", byteSrc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("errMsg", errMsg, MessageFieldType.STRING))
+                if (!writer.writeString("errMsg", errMsg))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("success", success, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("success", success))
                     return false;
 
                 writer.incrementState();
@@ -146,7 +146,7 @@ public class GridDeploymentResponse extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                byteSrc = reader.readField("byteSrc", MessageFieldType.MSG);
+                byteSrc = reader.readMessage("byteSrc");
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +154,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 readState++;
 
             case 1:
-                errMsg = reader.readField("errMsg", MessageFieldType.STRING);
+                errMsg = reader.readString("errMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -162,7 +162,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 readState++;
 
             case 2:
-                success = reader.readField("success", MessageFieldType.BOOLEAN);
+                success = reader.readBoolean("success");
 
                 if (!reader.isLastRead())
                     return false;

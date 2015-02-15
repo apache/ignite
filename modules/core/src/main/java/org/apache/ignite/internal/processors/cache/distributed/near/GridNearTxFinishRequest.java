@@ -165,7 +165,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -173,37 +173,37 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeField("explicitLock", explicitLock, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("explicitLock", explicitLock))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeField("storeEnabled", storeEnabled, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("storeEnabled", storeEnabled))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeField("subjId", subjId, MessageFieldType.UUID))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeField("taskNameHash", taskNameHash, MessageFieldType.INT))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -222,7 +222,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         switch (readState) {
             case 21:
-                explicitLock = reader.readField("explicitLock", MessageFieldType.BOOLEAN);
+                explicitLock = reader.readBoolean("explicitLock");
 
                 if (!reader.isLastRead())
                     return false;
@@ -230,7 +230,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 readState++;
 
             case 22:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -238,7 +238,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 readState++;
 
             case 23:
-                storeEnabled = reader.readField("storeEnabled", MessageFieldType.BOOLEAN);
+                storeEnabled = reader.readBoolean("storeEnabled");
 
                 if (!reader.isLastRead())
                     return false;
@@ -246,7 +246,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 readState++;
 
             case 24:
-                subjId = reader.readField("subjId", MessageFieldType.UUID);
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -254,7 +254,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 readState++;
 
             case 25:
-                taskNameHash = reader.readField("taskNameHash", MessageFieldType.INT);
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -262,7 +262,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 readState++;
 
             case 26:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

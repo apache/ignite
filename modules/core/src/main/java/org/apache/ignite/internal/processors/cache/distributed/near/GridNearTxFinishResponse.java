@@ -121,7 +121,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -129,19 +129,19 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
         switch (writer.state()) {
             case 5:
-                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("nearThreadId", nearThreadId, MessageFieldType.LONG))
+                if (!writer.writeLong("nearThreadId", nearThreadId))
                     return false;
 
                 writer.incrementState();
@@ -160,7 +160,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
         switch (readState) {
             case 5:
-                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -168,7 +168,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 readState++;
 
             case 6:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,7 +176,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 readState++;
 
             case 7:
-                nearThreadId = reader.readField("nearThreadId", MessageFieldType.LONG);
+                nearThreadId = reader.readLong("nearThreadId");
 
                 if (!reader.isLastRead())
                     return false;

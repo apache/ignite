@@ -82,7 +82,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -90,13 +90,13 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("exchId", exchId, MessageFieldType.MSG))
+                if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("lastVer", lastVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
                 writer.incrementState();
@@ -115,7 +115,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (readState) {
             case 3:
-                exchId = reader.readField("exchId", MessageFieldType.MSG);
+                exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -123,7 +123,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
                 readState++;
 
             case 4:
-                lastVer = reader.readField("lastVer", MessageFieldType.MSG);
+                lastVer = reader.readMessage("lastVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -650,7 +650,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -658,19 +658,19 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("cacheId", cacheId, MessageFieldType.INT))
+                if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("depInfo", depInfo, MessageFieldType.MSG))
+                if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("msgId", msgId, MessageFieldType.LONG))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
                 writer.incrementState();
@@ -686,7 +686,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                cacheId = reader.readField("cacheId", MessageFieldType.INT);
+                cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -694,7 +694,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 readState++;
 
             case 1:
-                depInfo = reader.readField("depInfo", MessageFieldType.MSG);
+                depInfo = reader.readMessage("depInfo");
 
                 if (!reader.isLastRead())
                     return false;
@@ -702,7 +702,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 readState++;
 
             case 2:
-                msgId = reader.readField("msgId", MessageFieldType.LONG);
+                msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
                     return false;

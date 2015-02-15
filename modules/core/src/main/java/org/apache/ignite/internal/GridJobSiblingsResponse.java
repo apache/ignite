@@ -81,7 +81,7 @@ public class GridJobSiblingsResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -89,7 +89,7 @@ public class GridJobSiblingsResponse extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("siblingsBytes", siblingsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
                     return false;
 
                 writer.incrementState();
@@ -105,7 +105,7 @@ public class GridJobSiblingsResponse extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                siblingsBytes = reader.readField("siblingsBytes", MessageFieldType.BYTE_ARR);
+                siblingsBytes = reader.readByteArray("siblingsBytes");
 
                 if (!reader.isLastRead())
                     return false;

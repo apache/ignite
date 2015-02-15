@@ -114,7 +114,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -122,13 +122,13 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("id", id, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("id", id))
                     return false;
 
                 writer.incrementState();
@@ -147,7 +147,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +155,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 1:
-                id = reader.readField("id", MessageFieldType.IGNITE_UUID);
+                id = reader.readIgniteUuid("id");
 
                 if (!reader.isLastRead())
                     return false;

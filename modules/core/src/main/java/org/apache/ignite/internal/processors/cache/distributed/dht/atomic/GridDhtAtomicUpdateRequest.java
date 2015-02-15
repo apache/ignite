@@ -688,7 +688,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -696,121 +696,121 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("drExpireTimes", drExpireTimes, MessageFieldType.MSG))
+                if (!writer.writeMessage("drExpireTimes", drExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollectionField("drVers", drVers, MessageFieldType.MSG))
+                if (!writer.writeCollection("drVers", drVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollectionField("entryProcessorsBytes", entryProcessorsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("forceTransformBackups", forceTransformBackups, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("futVer", futVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeArrayField("invokeArgsBytes", invokeArgsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollectionField("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollectionField("nearEntryProcessorsBytes", nearEntryProcessorsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("nearExpireTimes", nearExpireTimes, MessageFieldType.MSG))
+                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollectionField("nearKeyBytes", nearKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeField("nearTtls", nearTtls, MessageFieldType.MSG))
+                if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollectionField("nearValBytes", nearValBytes, MessageFieldType.MSG))
+                if (!writer.writeCollection("nearValBytes", nearValBytes, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeField("nodeId", nodeId, MessageFieldType.UUID))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeField("subjId", subjId, MessageFieldType.UUID))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeField("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeField("taskNameHash", taskNameHash, MessageFieldType.INT))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeField("ttls", ttls, MessageFieldType.MSG))
+                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollectionField("valBytes", valBytes, MessageFieldType.MSG))
+                if (!writer.writeCollection("valBytes", valBytes, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeField("writeVer", writeVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -829,7 +829,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (readState) {
             case 3:
-                drExpireTimes = reader.readField("drExpireTimes", MessageFieldType.MSG);
+                drExpireTimes = reader.readMessage("drExpireTimes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -837,7 +837,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 4:
-                drVers = reader.readCollectionField("drVers", MessageFieldType.MSG);
+                drVers = reader.readCollection("drVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -845,7 +845,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 5:
-                entryProcessorsBytes = reader.readCollectionField("entryProcessorsBytes", MessageFieldType.BYTE_ARR);
+                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -853,7 +853,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 6:
-                forceTransformBackups = reader.readField("forceTransformBackups", MessageFieldType.BOOLEAN);
+                forceTransformBackups = reader.readBoolean("forceTransformBackups");
 
                 if (!reader.isLastRead())
                     return false;
@@ -861,7 +861,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 7:
-                futVer = reader.readField("futVer", MessageFieldType.MSG);
+                futVer = reader.readMessage("futVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -869,7 +869,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 8:
-                invokeArgsBytes = reader.readArrayField("invokeArgsBytes", MessageFieldType.BYTE_ARR, byte[].class);
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageFieldType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -877,7 +877,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 9:
-                keyBytes = reader.readCollectionField("keyBytes", MessageFieldType.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -885,7 +885,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 10:
-                nearEntryProcessorsBytes = reader.readCollectionField("nearEntryProcessorsBytes", MessageFieldType.BYTE_ARR);
+                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -893,7 +893,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 11:
-                nearExpireTimes = reader.readField("nearExpireTimes", MessageFieldType.MSG);
+                nearExpireTimes = reader.readMessage("nearExpireTimes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -901,7 +901,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 12:
-                nearKeyBytes = reader.readCollectionField("nearKeyBytes", MessageFieldType.BYTE_ARR);
+                nearKeyBytes = reader.readCollection("nearKeyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -909,7 +909,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 13:
-                nearTtls = reader.readField("nearTtls", MessageFieldType.MSG);
+                nearTtls = reader.readMessage("nearTtls");
 
                 if (!reader.isLastRead())
                     return false;
@@ -917,7 +917,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 14:
-                nearValBytes = reader.readCollectionField("nearValBytes", MessageFieldType.MSG);
+                nearValBytes = reader.readCollection("nearValBytes", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -925,7 +925,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 15:
-                nodeId = reader.readField("nodeId", MessageFieldType.UUID);
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -933,7 +933,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 16:
-                subjId = reader.readField("subjId", MessageFieldType.UUID);
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -943,7 +943,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
             case 17:
                 byte syncModeOrd;
 
-                syncModeOrd = reader.readField("syncMode", MessageFieldType.BYTE);
+                syncModeOrd = reader.readByte("syncMode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -953,7 +953,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 18:
-                taskNameHash = reader.readField("taskNameHash", MessageFieldType.INT);
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -961,7 +961,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 19:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -969,7 +969,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 20:
-                ttls = reader.readField("ttls", MessageFieldType.MSG);
+                ttls = reader.readMessage("ttls");
 
                 if (!reader.isLastRead())
                     return false;
@@ -977,7 +977,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 21:
-                valBytes = reader.readCollectionField("valBytes", MessageFieldType.MSG);
+                valBytes = reader.readCollection("valBytes", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -985,7 +985,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 22:
-                writeVer = reader.readField("writeVer", MessageFieldType.MSG);
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;

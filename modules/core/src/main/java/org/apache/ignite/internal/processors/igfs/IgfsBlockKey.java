@@ -162,7 +162,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -170,25 +170,25 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("affKey", affKey, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("blockId", blockId, MessageFieldType.LONG))
+                if (!writer.writeLong("blockId", blockId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("evictExclude", evictExclude, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("evictExclude", evictExclude))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("fileId", fileId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
                 writer.incrementState();
@@ -204,7 +204,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
 
         switch (readState) {
             case 0:
-                affKey = reader.readField("affKey", MessageFieldType.IGNITE_UUID);
+                affKey = reader.readIgniteUuid("affKey");
 
                 if (!reader.isLastRead())
                     return false;
@@ -212,7 +212,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 readState++;
 
             case 1:
-                blockId = reader.readField("blockId", MessageFieldType.LONG);
+                blockId = reader.readLong("blockId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -220,7 +220,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 readState++;
 
             case 2:
-                evictExclude = reader.readField("evictExclude", MessageFieldType.BOOLEAN);
+                evictExclude = reader.readBoolean("evictExclude");
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,7 +228,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 readState++;
 
             case 3:
-                fileId = reader.readField("fileId", MessageFieldType.IGNITE_UUID);
+                fileId = reader.readIgniteUuid("fileId");
 
                 if (!reader.isLastRead())
                     return false;

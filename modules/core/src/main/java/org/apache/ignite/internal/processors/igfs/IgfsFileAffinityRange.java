@@ -267,7 +267,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -275,31 +275,31 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("affKey", affKey, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("done", done, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("done", done))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("endOff", endOff, MessageFieldType.LONG))
+                if (!writer.writeLong("endOff", endOff))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("startOff", startOff, MessageFieldType.LONG))
+                if (!writer.writeLong("startOff", startOff))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("status", status, MessageFieldType.INT))
+                if (!writer.writeInt("status", status))
                     return false;
 
                 writer.incrementState();
@@ -315,7 +315,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
 
         switch (readState) {
             case 0:
-                affKey = reader.readField("affKey", MessageFieldType.IGNITE_UUID);
+                affKey = reader.readIgniteUuid("affKey");
 
                 if (!reader.isLastRead())
                     return false;
@@ -323,7 +323,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 readState++;
 
             case 1:
-                done = reader.readField("done", MessageFieldType.BOOLEAN);
+                done = reader.readBoolean("done");
 
                 if (!reader.isLastRead())
                     return false;
@@ -331,7 +331,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 readState++;
 
             case 2:
-                endOff = reader.readField("endOff", MessageFieldType.LONG);
+                endOff = reader.readLong("endOff");
 
                 if (!reader.isLastRead())
                     return false;
@@ -339,7 +339,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 readState++;
 
             case 3:
-                startOff = reader.readField("startOff", MessageFieldType.LONG);
+                startOff = reader.readLong("startOff");
 
                 if (!reader.isLastRead())
                     return false;
@@ -347,7 +347,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 readState++;
 
             case 4:
-                status = reader.readField("status", MessageFieldType.INT);
+                status = reader.readInt("status");
 
                 if (!reader.isLastRead())
                     return false;

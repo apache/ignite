@@ -135,7 +135,7 @@ public class GridContinuousMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -143,25 +143,25 @@ public class GridContinuousMessage extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("dataBytes", dataBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("dataBytes", dataBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("routineId", routineId, MessageFieldType.UUID))
+                if (!writer.writeUuid("routineId", routineId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("type", type != null ? (byte)type.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -177,7 +177,7 @@ public class GridContinuousMessage extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                dataBytes = reader.readField("dataBytes", MessageFieldType.BYTE_ARR);
+                dataBytes = reader.readByteArray("dataBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -185,7 +185,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 readState++;
 
             case 1:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -193,7 +193,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 readState++;
 
             case 2:
-                routineId = reader.readField("routineId", MessageFieldType.UUID);
+                routineId = reader.readUuid("routineId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,7 +203,7 @@ public class GridContinuousMessage extends MessageAdapter {
             case 3:
                 byte typeOrd;
 
-                typeOrd = reader.readField("type", MessageFieldType.BYTE);
+                typeOrd = reader.readByte("type");
 
                 if (!reader.isLastRead())
                     return false;

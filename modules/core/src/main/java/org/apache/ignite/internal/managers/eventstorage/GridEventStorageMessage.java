@@ -265,7 +265,7 @@ public class GridEventStorageMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -273,55 +273,55 @@ public class GridEventStorageMessage extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("clsLdrId", clsLdrId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("depMode", depMode != null ? (byte)depMode.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("evtsBytes", evtsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("evtsBytes", evtsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("exBytes", exBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("exBytes", exBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("filter", filter, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("filter", filter))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("filterClsName", filterClsName, MessageFieldType.STRING))
+                if (!writer.writeString("filterClsName", filterClsName))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMapField("ldrParties", ldrParties, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeMap("ldrParties", ldrParties, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("resTopicBytes", resTopicBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeField("userVer", userVer, MessageFieldType.STRING))
+                if (!writer.writeString("userVer", userVer))
                     return false;
 
                 writer.incrementState();
@@ -337,7 +337,7 @@ public class GridEventStorageMessage extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                clsLdrId = reader.readField("clsLdrId", MessageFieldType.IGNITE_UUID);
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -347,7 +347,7 @@ public class GridEventStorageMessage extends MessageAdapter {
             case 1:
                 byte depModeOrd;
 
-                depModeOrd = reader.readField("depMode", MessageFieldType.BYTE);
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -357,7 +357,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 2:
-                evtsBytes = reader.readField("evtsBytes", MessageFieldType.BYTE_ARR);
+                evtsBytes = reader.readByteArray("evtsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -365,7 +365,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 3:
-                exBytes = reader.readField("exBytes", MessageFieldType.BYTE_ARR);
+                exBytes = reader.readByteArray("exBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -373,7 +373,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 4:
-                filter = reader.readField("filter", MessageFieldType.BYTE_ARR);
+                filter = reader.readByteArray("filter");
 
                 if (!reader.isLastRead())
                     return false;
@@ -381,7 +381,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 5:
-                filterClsName = reader.readField("filterClsName", MessageFieldType.STRING);
+                filterClsName = reader.readString("filterClsName");
 
                 if (!reader.isLastRead())
                     return false;
@@ -389,7 +389,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 6:
-                ldrParties = reader.readMapField("ldrParties", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
+                ldrParties = reader.readMap("ldrParties", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -397,7 +397,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 7:
-                resTopicBytes = reader.readField("resTopicBytes", MessageFieldType.BYTE_ARR);
+                resTopicBytes = reader.readByteArray("resTopicBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -405,7 +405,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 8:
-                userVer = reader.readField("userVer", MessageFieldType.STRING);
+                userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
                     return false;

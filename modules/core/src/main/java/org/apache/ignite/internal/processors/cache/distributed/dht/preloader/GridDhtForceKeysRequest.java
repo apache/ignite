@@ -169,7 +169,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -177,25 +177,25 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollectionField("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -214,7 +214,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
         switch (readState) {
             case 3:
-                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +222,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 readState++;
 
             case 4:
-                keyBytes = reader.readCollectionField("keyBytes", MessageFieldType.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -230,7 +230,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 readState++;
 
             case 5:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -238,7 +238,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 readState++;
 
             case 6:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

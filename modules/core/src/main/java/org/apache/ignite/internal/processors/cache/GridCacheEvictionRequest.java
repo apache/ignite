@@ -147,7 +147,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -155,19 +155,19 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("entriesBytes", entriesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("entriesBytes", entriesBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("futId", futId, MessageFieldType.LONG))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -186,7 +186,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (readState) {
             case 3:
-                entriesBytes = reader.readField("entriesBytes", MessageFieldType.BYTE_ARR);
+                entriesBytes = reader.readByteArray("entriesBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -194,7 +194,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 readState++;
 
             case 4:
-                futId = reader.readField("futId", MessageFieldType.LONG);
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -202,7 +202,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 readState++;
 
             case 5:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

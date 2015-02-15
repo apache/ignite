@@ -344,7 +344,7 @@ public class CommunicationMessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeMessageType", "directType()");
+            returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
 
             code.add(EMPTY);
             code.add(builder().a("writer.onTypeWritten();").toString());

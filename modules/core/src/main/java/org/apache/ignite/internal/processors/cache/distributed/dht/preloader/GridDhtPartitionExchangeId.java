@@ -150,7 +150,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -158,19 +158,19 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("evt", evt, MessageFieldType.INT))
+                if (!writer.writeInt("evt", evt))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("nodeId", nodeId, MessageFieldType.UUID))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -186,7 +186,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
 
         switch (readState) {
             case 0:
-                evt = reader.readField("evt", MessageFieldType.INT);
+                evt = reader.readInt("evt");
 
                 if (!reader.isLastRead())
                     return false;
@@ -194,7 +194,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 readState++;
 
             case 1:
-                nodeId = reader.readField("nodeId", MessageFieldType.UUID);
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -202,7 +202,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 readState++;
 
             case 2:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -209,7 +209,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -217,37 +217,37 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollectionField("dataBytes", dataBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("dataBytes", dataBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("fields", fields, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("fields", fields))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("finished", finished, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("finished", finished))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollectionField("metaDataBytes", metaDataBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("metaDataBytes", metaDataBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeField("reqId", reqId, MessageFieldType.LONG))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -266,7 +266,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
         switch (readState) {
             case 3:
-                dataBytes = reader.readCollectionField("dataBytes", MessageFieldType.BYTE_ARR);
+                dataBytes = reader.readCollection("dataBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -274,7 +274,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 4:
-                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -282,7 +282,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 5:
-                fields = reader.readField("fields", MessageFieldType.BOOLEAN);
+                fields = reader.readBoolean("fields");
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,7 +290,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 6:
-                finished = reader.readField("finished", MessageFieldType.BOOLEAN);
+                finished = reader.readBoolean("finished");
 
                 if (!reader.isLastRead())
                     return false;
@@ -298,7 +298,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 7:
-                metaDataBytes = reader.readCollectionField("metaDataBytes", MessageFieldType.BYTE_ARR);
+                metaDataBytes = reader.readCollection("metaDataBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +306,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 readState++;
 
             case 8:
-                reqId = reader.readField("reqId", MessageFieldType.LONG);
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;

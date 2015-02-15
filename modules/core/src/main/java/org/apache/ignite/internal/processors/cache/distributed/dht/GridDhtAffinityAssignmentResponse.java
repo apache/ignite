@@ -114,7 +114,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -122,13 +122,13 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("affAssignmentBytes", affAssignmentBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -147,7 +147,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
         switch (readState) {
             case 3:
-                affAssignmentBytes = reader.readField("affAssignmentBytes", MessageFieldType.BYTE_ARR);
+                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +155,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
                 readState++;
 
             case 4:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -88,7 +88,7 @@ public class GridCheckpointRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -96,19 +96,19 @@ public class GridCheckpointRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("cpSpi", cpSpi, MessageFieldType.STRING))
+                if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("key", key, MessageFieldType.STRING))
+                if (!writer.writeString("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
                 writer.incrementState();
@@ -124,7 +124,7 @@ public class GridCheckpointRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                cpSpi = reader.readField("cpSpi", MessageFieldType.STRING);
+                cpSpi = reader.readString("cpSpi");
 
                 if (!reader.isLastRead())
                     return false;
@@ -132,7 +132,7 @@ public class GridCheckpointRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                key = reader.readField("key", MessageFieldType.STRING);
+                key = reader.readString("key");
 
                 if (!reader.isLastRead())
                     return false;
@@ -140,7 +140,7 @@ public class GridCheckpointRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
+                sesId = reader.readIgniteUuid("sesId");
 
                 if (!reader.isLastRead())
                     return false;

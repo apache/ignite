@@ -409,7 +409,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -417,85 +417,85 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeField("commitVer", commitVer, MessageFieldType.MSG))
+                if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeField("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeField("dhtVersBytes", dhtVersBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("dhtVersBytes", dhtVersBytes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeField("grpLockKeyBytes", grpLockKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeField("invalidate", invalidate, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeField("isolation", isolation != null ? (byte)isolation.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeField("partLock", partLock, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollectionField("readsBytes", readsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("readsBytes", readsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeField("threadId", threadId, MessageFieldType.LONG))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeField("timeout", timeout, MessageFieldType.LONG))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeField("txNodesBytes", txNodesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeField("txSize", txSize, MessageFieldType.INT))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollectionField("writesBytes", writesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("writesBytes", writesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -514,7 +514,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (readState) {
             case 8:
-                commitVer = reader.readField("commitVer", MessageFieldType.MSG);
+                commitVer = reader.readMessage("commitVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -524,7 +524,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             case 9:
                 byte concurrencyOrd;
 
-                concurrencyOrd = reader.readField("concurrency", MessageFieldType.BYTE);
+                concurrencyOrd = reader.readByte("concurrency");
 
                 if (!reader.isLastRead())
                     return false;
@@ -534,7 +534,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 10:
-                dhtVersBytes = reader.readField("dhtVersBytes", MessageFieldType.BYTE_ARR);
+                dhtVersBytes = reader.readByteArray("dhtVersBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -542,7 +542,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 11:
-                grpLockKeyBytes = reader.readField("grpLockKeyBytes", MessageFieldType.BYTE_ARR);
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -550,7 +550,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 12:
-                invalidate = reader.readField("invalidate", MessageFieldType.BOOLEAN);
+                invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
                     return false;
@@ -560,7 +560,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             case 13:
                 byte isolationOrd;
 
-                isolationOrd = reader.readField("isolation", MessageFieldType.BYTE);
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
@@ -570,7 +570,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 14:
-                partLock = reader.readField("partLock", MessageFieldType.BOOLEAN);
+                partLock = reader.readBoolean("partLock");
 
                 if (!reader.isLastRead())
                     return false;
@@ -578,7 +578,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 15:
-                readsBytes = reader.readCollectionField("readsBytes", MessageFieldType.BYTE_ARR);
+                readsBytes = reader.readCollection("readsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -586,7 +586,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 16:
-                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;
@@ -594,7 +594,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 17:
-                threadId = reader.readField("threadId", MessageFieldType.LONG);
+                threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -602,7 +602,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 18:
-                timeout = reader.readField("timeout", MessageFieldType.LONG);
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -610,7 +610,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 19:
-                txNodesBytes = reader.readField("txNodesBytes", MessageFieldType.BYTE_ARR);
+                txNodesBytes = reader.readByteArray("txNodesBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -618,7 +618,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 20:
-                txSize = reader.readField("txSize", MessageFieldType.INT);
+                txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -626,7 +626,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 21:
-                writesBytes = reader.readCollectionField("writesBytes", MessageFieldType.BYTE_ARR);
+                writesBytes = reader.readCollection("writesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

@@ -110,7 +110,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -118,19 +118,19 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("fileId", fileId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("id", id, MessageFieldType.LONG))
+                if (!writer.writeLong("id", id))
                     return false;
 
                 writer.incrementState();
@@ -149,7 +149,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -157,7 +157,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 1:
-                fileId = reader.readField("fileId", MessageFieldType.IGNITE_UUID);
+                fileId = reader.readIgniteUuid("fileId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -165,7 +165,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 2:
-                id = reader.readField("id", MessageFieldType.LONG);
+                id = reader.readLong("id");
 
                 if (!reader.isLastRead())
                     return false;

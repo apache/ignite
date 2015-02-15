@@ -136,7 +136,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -144,19 +144,19 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("err", err, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("err", err))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("futId", futId, MessageFieldType.LONG))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollectionField("rejectedKeyBytes", rejectedKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -175,7 +175,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
         switch (readState) {
             case 3:
-                err = reader.readField("err", MessageFieldType.BOOLEAN);
+                err = reader.readBoolean("err");
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,7 +183,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 4:
-                futId = reader.readField("futId", MessageFieldType.LONG);
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -191,7 +191,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 readState++;
 
             case 5:
-                rejectedKeyBytes = reader.readCollectionField("rejectedKeyBytes", MessageFieldType.BYTE_ARR);
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

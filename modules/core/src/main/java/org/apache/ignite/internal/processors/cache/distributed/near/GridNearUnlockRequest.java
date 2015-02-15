@@ -54,7 +54,7 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();

@@ -79,7 +79,7 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -87,13 +87,13 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("order", order, MessageFieldType.LONG))
+                if (!writer.writeLong("order", order))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("res", res, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("res", res))
                     return false;
 
                 writer.incrementState();
@@ -112,7 +112,7 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                order = reader.readField("order", MessageFieldType.LONG);
+                order = reader.readLong("order");
 
                 if (!reader.isLastRead())
                     return false;
@@ -120,7 +120,7 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 1:
-                res = reader.readField("res", MessageFieldType.BOOLEAN);
+                res = reader.readBoolean("res");
 
                 if (!reader.isLastRead())
                     return false;

@@ -122,7 +122,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -130,7 +130,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollectionField("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -149,7 +149,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
         switch (readState) {
             case 8:
-                keyBytes = reader.readCollectionField("keyBytes", MessageFieldType.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

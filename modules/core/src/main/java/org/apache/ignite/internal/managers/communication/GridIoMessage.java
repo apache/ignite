@@ -183,7 +183,7 @@ public class GridIoMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -191,43 +191,43 @@ public class GridIoMessage extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("msg", msg, MessageFieldType.MSG))
+                if (!writer.writeMessage("msg", msg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("ordered", ordered, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("ordered", ordered))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("plc", plc != null ? (byte)plc.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("skipOnTimeout", skipOnTimeout, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("timeout", timeout, MessageFieldType.LONG))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeField("topicBytes", topicBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeField("topicOrd", topicOrd, MessageFieldType.INT))
+                if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
                 writer.incrementState();
@@ -243,7 +243,7 @@ public class GridIoMessage extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                msg = reader.readField("msg", MessageFieldType.MSG);
+                msg = reader.readMessage("msg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -251,7 +251,7 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 1:
-                ordered = reader.readField("ordered", MessageFieldType.BOOLEAN);
+                ordered = reader.readBoolean("ordered");
 
                 if (!reader.isLastRead())
                     return false;
@@ -261,7 +261,7 @@ public class GridIoMessage extends MessageAdapter {
             case 2:
                 byte plcOrd;
 
-                plcOrd = reader.readField("plc", MessageFieldType.BYTE);
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,7 +271,7 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 3:
-                skipOnTimeout = reader.readField("skipOnTimeout", MessageFieldType.BOOLEAN);
+                skipOnTimeout = reader.readBoolean("skipOnTimeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -279,7 +279,7 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 4:
-                timeout = reader.readField("timeout", MessageFieldType.LONG);
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -287,7 +287,7 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 5:
-                topicBytes = reader.readField("topicBytes", MessageFieldType.BYTE_ARR);
+                topicBytes = reader.readByteArray("topicBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -295,7 +295,7 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 6:
-                topicOrd = reader.readField("topicOrd", MessageFieldType.INT);
+                topicOrd = reader.readInt("topicOrd");
 
                 if (!reader.isLastRead())
                     return false;

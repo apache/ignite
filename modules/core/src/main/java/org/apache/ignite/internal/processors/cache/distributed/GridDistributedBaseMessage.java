@@ -247,7 +247,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -255,31 +255,31 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeField("candsByIdxBytes", candsByIdxBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("candsByIdxBytes", candsByIdxBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("candsByKeyBytes", candsByKeyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("candsByKeyBytes", candsByKeyBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollectionField("committedVers", committedVers, MessageFieldType.MSG))
+                if (!writer.writeCollection("committedVers", committedVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollectionField("rolledbackVers", rolledbackVers, MessageFieldType.MSG))
+                if (!writer.writeCollection("rolledbackVers", rolledbackVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeField("ver", ver, MessageFieldType.MSG))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -298,7 +298,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         switch (readState) {
             case 3:
-                candsByIdxBytes = reader.readField("candsByIdxBytes", MessageFieldType.BYTE_ARR);
+                candsByIdxBytes = reader.readByteArray("candsByIdxBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +306,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 readState++;
 
             case 4:
-                candsByKeyBytes = reader.readField("candsByKeyBytes", MessageFieldType.BYTE_ARR);
+                candsByKeyBytes = reader.readByteArray("candsByKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +314,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 readState++;
 
             case 5:
-                committedVers = reader.readCollectionField("committedVers", MessageFieldType.MSG);
+                committedVers = reader.readCollection("committedVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -322,7 +322,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 readState++;
 
             case 6:
-                rolledbackVers = reader.readCollectionField("rolledbackVers", MessageFieldType.MSG);
+                rolledbackVers = reader.readCollection("rolledbackVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -330,7 +330,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 readState++;
 
             case 7:
-                ver = reader.readField("ver", MessageFieldType.MSG);
+                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;

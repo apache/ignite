@@ -338,7 +338,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -346,73 +346,73 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
         switch (writer.state()) {
             case 24:
-                if (!writer.writeField("accessTtl", accessTtl, MessageFieldType.LONG))
+                if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeArrayField("dhtVers", dhtVers, MessageFieldType.MSG))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeArrayField("filterBytes", filterBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeField("hasTransforms", hasTransforms, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeField("implicitSingleTx", implicitSingleTx, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeField("implicitTx", implicitTx, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeField("onePhaseCommit", onePhaseCommit, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeField("subjId", subjId, MessageFieldType.UUID))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeField("syncCommit", syncCommit, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 34:
-                if (!writer.writeField("taskNameHash", taskNameHash, MessageFieldType.INT))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 35:
-                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -431,7 +431,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
         switch (readState) {
             case 24:
-                accessTtl = reader.readField("accessTtl", MessageFieldType.LONG);
+                accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -439,7 +439,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 25:
-                dhtVers = reader.readArrayField("dhtVers", MessageFieldType.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageFieldType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -447,7 +447,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 26:
-                filterBytes = reader.readArrayField("filterBytes", MessageFieldType.BYTE_ARR, byte[].class);
+                filterBytes = reader.readObjectArray("filterBytes", MessageFieldType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -455,7 +455,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 27:
-                hasTransforms = reader.readField("hasTransforms", MessageFieldType.BOOLEAN);
+                hasTransforms = reader.readBoolean("hasTransforms");
 
                 if (!reader.isLastRead())
                     return false;
@@ -463,7 +463,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 28:
-                implicitSingleTx = reader.readField("implicitSingleTx", MessageFieldType.BOOLEAN);
+                implicitSingleTx = reader.readBoolean("implicitSingleTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -471,7 +471,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 29:
-                implicitTx = reader.readField("implicitTx", MessageFieldType.BOOLEAN);
+                implicitTx = reader.readBoolean("implicitTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -479,7 +479,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 30:
-                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -487,7 +487,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 31:
-                onePhaseCommit = reader.readField("onePhaseCommit", MessageFieldType.BOOLEAN);
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -495,7 +495,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 32:
-                subjId = reader.readField("subjId", MessageFieldType.UUID);
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -503,7 +503,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 33:
-                syncCommit = reader.readField("syncCommit", MessageFieldType.BOOLEAN);
+                syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -511,7 +511,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 34:
-                taskNameHash = reader.readField("taskNameHash", MessageFieldType.INT);
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -519,7 +519,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 35:
-                topVer = reader.readField("topVer", MessageFieldType.LONG);
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;

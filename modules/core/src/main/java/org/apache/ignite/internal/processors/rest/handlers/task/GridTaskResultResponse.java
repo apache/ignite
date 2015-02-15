@@ -121,7 +121,7 @@ public class GridTaskResultResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -129,25 +129,25 @@ public class GridTaskResultResponse extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("err", err, MessageFieldType.STRING))
+                if (!writer.writeString("err", err))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("finished", finished, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("finished", finished))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("found", found, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("found", found))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeField("resBytes", resBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
                 writer.incrementState();
@@ -163,7 +163,7 @@ public class GridTaskResultResponse extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                err = reader.readField("err", MessageFieldType.STRING);
+                err = reader.readString("err");
 
                 if (!reader.isLastRead())
                     return false;
@@ -171,7 +171,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 readState++;
 
             case 1:
-                finished = reader.readField("finished", MessageFieldType.BOOLEAN);
+                finished = reader.readBoolean("finished");
 
                 if (!reader.isLastRead())
                     return false;
@@ -179,7 +179,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 readState++;
 
             case 2:
-                found = reader.readField("found", MessageFieldType.BOOLEAN);
+                found = reader.readBoolean("found");
 
                 if (!reader.isLastRead())
                     return false;
@@ -187,7 +187,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 readState++;
 
             case 3:
-                resBytes = reader.readField("resBytes", MessageFieldType.BYTE_ARR);
+                resBytes = reader.readByteArray("resBytes");
 
                 if (!reader.isLastRead())
                     return false;

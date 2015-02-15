@@ -142,7 +142,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -150,31 +150,31 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("clsLdrId", clsLdrId, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("depMode", depMode != null ? (byte)depMode.ordinal() : -1, MessageFieldType.BYTE))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("locDepOwner", locDepOwner, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMapField("participants", participants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeMap("participants", participants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeField("userVer", userVer, MessageFieldType.STRING))
+                if (!writer.writeString("userVer", userVer))
                     return false;
 
                 writer.incrementState();
@@ -190,7 +190,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
 
         switch (readState) {
             case 0:
-                clsLdrId = reader.readField("clsLdrId", MessageFieldType.IGNITE_UUID);
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -200,7 +200,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
             case 1:
                 byte depModeOrd;
 
-                depModeOrd = reader.readField("depMode", MessageFieldType.BYTE);
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -210,7 +210,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 readState++;
 
             case 2:
-                locDepOwner = reader.readField("locDepOwner", MessageFieldType.BOOLEAN);
+                locDepOwner = reader.readBoolean("locDepOwner");
 
                 if (!reader.isLastRead())
                     return false;
@@ -218,7 +218,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 readState++;
 
             case 3:
-                participants = reader.readMapField("participants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
+                participants = reader.readMap("participants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -226,7 +226,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 readState++;
 
             case 4:
-                userVer = reader.readField("userVer", MessageFieldType.STRING);
+                userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
                     return false;

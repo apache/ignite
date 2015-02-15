@@ -87,7 +87,7 @@ public class GridDataLoadResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -95,19 +95,19 @@ public class GridDataLoadResponse extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("forceLocDep", forceLocDep, MessageFieldType.BOOLEAN))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeField("reqId", reqId, MessageFieldType.LONG))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -123,7 +123,7 @@ public class GridDataLoadResponse extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -131,7 +131,7 @@ public class GridDataLoadResponse extends MessageAdapter {
                 readState++;
 
             case 1:
-                forceLocDep = reader.readField("forceLocDep", MessageFieldType.BOOLEAN);
+                forceLocDep = reader.readBoolean("forceLocDep");
 
                 if (!reader.isLastRead())
                     return false;
@@ -139,7 +139,7 @@ public class GridDataLoadResponse extends MessageAdapter {
                 readState++;
 
             case 2:
-                reqId = reader.readField("reqId", MessageFieldType.LONG);
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;

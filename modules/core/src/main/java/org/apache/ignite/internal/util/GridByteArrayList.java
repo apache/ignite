@@ -411,7 +411,7 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeMessageType(directType()))
+            if (!writer.writeByte(null, directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -419,13 +419,13 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeField("data", data, MessageFieldType.BYTE_ARR))
+                if (!writer.writeByteArray("data", data))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeField("size", size, MessageFieldType.INT))
+                if (!writer.writeInt("size", size))
                     return false;
 
                 writer.incrementState();
@@ -441,7 +441,7 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
 
         switch (readState) {
             case 0:
-                data = reader.readField("data", MessageFieldType.BYTE_ARR);
+                data = reader.readByteArray("data");
 
                 if (!reader.isLastRead())
                     return false;
@@ -449,7 +449,7 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
                 readState++;
 
             case 1:
-                size = reader.readField("size", MessageFieldType.INT);
+                size = reader.readInt("size");
 
                 if (!reader.isLastRead())
                     return false;
