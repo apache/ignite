@@ -1793,7 +1793,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (retVal == null) {
                             computedMap = U.newHashMap(keys.size());
 
-                            retVal = new GridCacheReturn<>((Object)computedMap, updRes.success());
+                            retVal = new GridCacheReturn<>((Object)computedMap, updRes.success(), true);
                         }
 
                         computedMap.put(k, updRes.computedResult());

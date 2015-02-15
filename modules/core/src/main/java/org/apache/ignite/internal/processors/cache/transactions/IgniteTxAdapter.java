@@ -162,9 +162,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     private Set<Integer> invalidParts = new GridLeanSet<>();
 
-    /** Recover writes. */
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
-
     /**
      * Transaction state. Note that state is not protected, as we want to
      * always use {@link #state()} and {@link #state(IgniteTxState)}
@@ -194,6 +191,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Lock condition. */
     private final Condition cond = lock.newCondition();
+
+    /** */
+    protected Map<UUID, Collection<UUID>> txNodes;
 
     /** Subject ID initiated this transaction. */
     protected UUID subjId;
@@ -367,8 +367,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry<K, V>> optimisticLockEntries() {
-        assert optimistic();
-
         if (!groupLock())
             return writeEntries();
         else {
@@ -393,20 +391,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 Collections.<IgniteTxEntry<K,V>>emptyList() :
                 Collections.singletonList(grpLockEntry);
         }
-    }
-
-    /**
-     * @param recoveryWrites Recover write entries.
-     */
-    public void recoveryWrites(Collection<IgniteTxEntry<K, V>> recoveryWrites) {
-        this.recoveryWrites = recoveryWrites;
-    }
-
-    /**
-     * @return Recover write entries.
-     */
-    @Override public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites;
     }
 
     /** {@inheritDoc} */
@@ -451,6 +435,28 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         return null;
+    }
+
+    /**
+     * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     */
+    @SuppressWarnings({"CatchGenericClass"})
+    protected void uncommit() {
+        for (IgniteTxEntry<K, V> e : writeMap().values()) {
+            try {
+                GridCacheEntryEx<K, V> Entry = e.cached();
+
+                if (e.op() != NOOP)
+                    Entry.invalidate(null, xidVer);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                break;
+            }
+        }
+
+        cctx.tm().uncommitTx(this);
     }
 
     /**
@@ -1164,7 +1170,14 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return null;
+        return txNodes;
+    }
+
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -1278,7 +1291,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param newVer New version.
      * @param old Old entry.
      * @return Tuple with adjusted operation type and conflict context.
-     * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
+     * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
@@ -1834,11 +1847,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> recoveryWrites() {
             return null;
         }
 

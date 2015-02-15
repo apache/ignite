@@ -15,35 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+package org.apache.ignite.internal.processors.cache.query;
 
 /**
- * Entry used for continuous query notifications.
+ * Cache query type.
+ * <p>
+ * Used in {@link org.apache.ignite.events.CacheQueryExecutedEvent} and {@link org.apache.ignite.events.CacheQueryReadEvent}
+ * to identify the type of query for which an event was fired.
+ *
+ * @see org.apache.ignite.events.CacheQueryExecutedEvent#queryType()
+ * @see org.apache.ignite.events.CacheQueryReadEvent#queryType()
  */
-public interface CacheContinuousQueryEntry<K, V> extends Map.Entry<K, V>, Serializable {
-    /**
-     * Gets entry key.
-     *
-     * @return Entry key.
-     */
-    @Override public K getKey();
+public enum CacheQueryType {
+    /** SQL query. */
+    SQL,
 
-    /**
-     * Gets entry new value. New value may be null, if entry is being removed.
-     *
-     * @return Entry new value.
-     */
-    @Override @Nullable public V getValue();
+    /** SQL fields query. */
+    SQL_FIELDS,
 
-    /**
-     * Gets entry old value. Old value may be null if entry is being inserted (not updated).
-     *
-     * @return Gets entry old value.
-     */
-    @Nullable public V getOldValue();
+    /** Full text query. */
+    FULL_TEXT,
+
+    /** Scan query. */
+    SCAN,
+
+    /** Continuous query. */
+    CONTINUOUS,
+
+    /** SPI query. */
+    SPI
 }

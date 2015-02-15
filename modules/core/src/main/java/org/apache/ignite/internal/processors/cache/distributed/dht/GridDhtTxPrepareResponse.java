@@ -169,6 +169,8 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      * @param info Info to add.
      */
     public void addPreloadEntry(GridCacheEntryInfo<K, V> info) {
+        assert info.cacheId() != 0;
+
         if (preloadEntries == null)
             preloadEntries = new ArrayList<>();
 

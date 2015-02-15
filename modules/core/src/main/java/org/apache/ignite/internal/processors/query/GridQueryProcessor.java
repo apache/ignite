@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -32,14 +35,17 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
 
@@ -75,7 +81,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private Map<Integer, String> portableIds;
 
     /** Type resolvers per space name. */
-    private Map<String, CacheQueryTypeResolver> typeResolvers = new HashMap<>();
+    private Map<String,QueryTypeResolver> typeResolvers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -279,7 +285,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id = null;
 
-            CacheQueryTypeResolver rslvr = typeResolvers.get(space);
+            QueryTypeResolver rslvr = typeResolvers.get(space);
 
             if (rslvr != null) {
                 String typeName = rslvr.resolveTypeName(key, val);
@@ -413,7 +419,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String space, String clause,
-        Collection<Object> params, String resType, GridIndexingQueryFilter filters)
+        Collection<Object> params, String resType, IndexingQueryFilter filters)
         throws IgniteCheckedException {
         checkEnabled();
 
@@ -470,6 +476,117 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param space Space.
+     * @param type Type.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Cursor.
+     */
+    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(String space, String type, String sqlQry, Object[] params) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
+
+            if (typeDesc == null || !typeDesc.registered())
+                return new GridEmptyCloseableIterator<>();
+
+            final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
+                idx.backupFilter());
+
+            if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    "SQL query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL,
+                    null,
+                    null,
+                    sqlQry,
+                    null,
+                    null,
+                    params,
+                    null,
+                    null));
+            }
+
+            return new ClIter<Cache.Entry<K,V>>() {
+                @Override public void close() throws Exception {
+                    i.close();
+                }
+
+                @Override public boolean hasNext() {
+                    return i.hasNext();
+                }
+
+                @Override public Cache.Entry<K,V> next() {
+                    IgniteBiTuple<K,V> t = i.next();
+
+                    return new CacheEntryImpl<>(t.getKey(), t.getValue());
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Closeable iterator.
+     */
+    private static interface ClIter<X> extends AutoCloseable, Iterator<X> {
+        // No-op.
+    }
+
+    /**
+     * @param space Space.
+     * @param sql SQL Query.
+     * @param args Arguments.
+     * @return Iterator.
+     */
+    public Iterator<List<?>> queryLocalFields(String space, String sql, Object[] args) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            IgniteSpiCloseableIterator<List<?>> iterator =
+                idx.queryFields(space, sql, F.asList(args), idx.backupFilter()).iterator();
+
+            if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    "SQL query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL,
+                    null,
+                    null,
+                    sql,
+                    null,
+                    null,
+                    args,
+                    null,
+                    null));
+            }
+
+            return iterator;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space.
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -499,7 +616,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class.
      * @return Type name.
      */
-    public String typeName(Class<?> cls) {
+    public static String typeName(Class<?> cls) {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
@@ -592,7 +709,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(String space, String clause, String resType,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -620,7 +737,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridQueryFieldsResult queryFields(@Nullable String space, String clause, Collection<Object> params,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -740,28 +857,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Recursive reference found in type: " + cls.getName());
 
         if (parent == null) { // Check class annotation at top level only.
-            CacheQueryTextField txtAnnCls = cls.getAnnotation(CacheQueryTextField.class);
+            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
 
             if (txtAnnCls != null)
                 type.valueTextIndex(true);
 
-            CacheQueryGroupIndex grpIdx = cls.getAnnotation(CacheQueryGroupIndex.class);
+            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
 
             if (grpIdx != null)
                 type.addIndex(grpIdx.name(), SORTED);
 
-            CacheQueryGroupIndex.List grpIdxList = cls.getAnnotation(CacheQueryGroupIndex.List.class);
+            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
-                for (CacheQueryGroupIndex idx : grpIdxList.value())
+                for (QueryGroupIndex idx : grpIdxList.value())
                     type.addIndex(idx.name(), SORTED);
             }
         }
 
         for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
-                CacheQuerySqlField sqlAnn = field.getAnnotation(CacheQuerySqlField.class);
-                CacheQueryTextField txtAnn = field.getAnnotation(CacheQueryTextField.class);
+                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     ClassProperty prop = new ClassProperty(field);
@@ -775,12 +892,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
-                CacheQuerySqlField sqlAnn = mtd.getAnnotation(CacheQuerySqlField.class);
-                CacheQueryTextField txtAnn = mtd.getAnnotation(CacheQueryTextField.class);
+                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
-                        throw new IgniteCheckedException("Getter with CacheQuerySqlField " +
+                        throw new IgniteCheckedException("Getter with QuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
                     ClassProperty prop = new ClassProperty(mtd);
@@ -806,7 +923,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Class description.
      * @throws IgniteCheckedException In case of error.
      */
-    static void processAnnotation(boolean key, CacheQuerySqlField sqlAnn, CacheQueryTextField txtAnn,
+    static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
         Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws IgniteCheckedException {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, cls, desc, prop);
@@ -828,7 +945,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {
-                for (CacheQuerySqlField.Group idx : sqlAnn.orderedGroups())
+                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
                     desc.addFieldToIndex(idx.name(), prop.name(), idx.order(), idx.descending());
             }
         }

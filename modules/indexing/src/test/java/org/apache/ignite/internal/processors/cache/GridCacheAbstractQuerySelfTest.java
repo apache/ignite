@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.cache.query.CacheQueryType.*;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.junit.Assert.*;
 
@@ -372,7 +372,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class Key {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final long id;
 
         /**
@@ -1151,7 +1151,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         GridCache<Integer, Object> cache = ((IgniteKernal)ignite).cache(null);
 
         Object val = new Object() {
-            @CacheQuerySqlField
+            @QuerySqlField
             private int field1 = 10;
 
             @Override public String toString() {
@@ -1700,7 +1700,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class ArrayObject implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Long[] arr;
 
         /**
@@ -1717,20 +1717,20 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     public static class Person implements Externalizable {
         /** */
         @GridToStringExclude
-        @CacheQuerySqlField
+        @QuerySqlField
         private UUID id = UUID.randomUUID();
 
         /** */
-        @CacheQuerySqlField
-        @CacheQueryTextField
+        @QuerySqlField
+        @QueryTextField
         private String name;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int salary;
 
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private int fake$Field;
 
         /**
@@ -1817,11 +1817,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     @SuppressWarnings("PublicInnerClass")
     public static class ObjectValue implements Serializable {
         /** String value. */
-        @CacheQueryTextField
+        @QueryTextField
         private String strVal;
 
         /** Integer value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int intVal;
 
         /**
@@ -1881,7 +1881,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class ObjectValueOther {
         /** Value. */
-        @CacheQueryTextField
+        @QueryTextField
         private String val;
 
         /**
@@ -1964,7 +1964,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class BadHashKeyObject implements Serializable {
         /** */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String str;
 
         /**
@@ -2032,7 +2032,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
          * @param x Argument.
          * @return Square of given value.
          */
-        @CacheQuerySqlFunction
+        @QuerySqlFunction
         public static int square(int x) {
             return x * x;
         }
@@ -2041,7 +2041,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
          * @param x Argument.
          * @return Cube of given value.
          */
-        @CacheQuerySqlFunction(alias = "_cube_")
+        @QuerySqlFunction(alias = "_cube_")
         public static int cube(int x) {
             return x * x * x;
         }

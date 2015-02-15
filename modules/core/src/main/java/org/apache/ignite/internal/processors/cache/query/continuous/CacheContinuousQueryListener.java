@@ -15,35 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
-
-import java.lang.annotation.*;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
 /**
- * Describes group index.
+ * Continuous query listener.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CacheQueryGroupIndex {
+interface CacheContinuousQueryListener<K, V> {
     /**
-     * Group index name.
-     *
-     * @return Name.
+     * Query execution callback.
      */
-    String name();
+    public void onExecution();
 
     /**
-     * List of group indexes for type.
+     * Entry update callback.
+     *
+     * @param evt Event
+     * @param primary Primary flag.
+     * @param recordIgniteEvt Whether to record event.
      */
-    @SuppressWarnings("PublicInnerClass")
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.TYPE)
-    public static @interface List {
-        /**
-         * Gets array of group indexes.
-         *
-         * @return Array of group indexes.
-         */
-        CacheQueryGroupIndex[] value();
-    }
+    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
+
+    /**
+     * Listener unregistered callback.
+     */
+    public void onUnregister();
+
+    /**
+     * @return Whether old value is required.
+     */
+    public boolean oldValueRequired();
 }

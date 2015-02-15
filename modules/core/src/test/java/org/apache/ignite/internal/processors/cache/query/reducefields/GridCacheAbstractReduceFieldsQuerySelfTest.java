@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.cache.query.reducefields;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -280,15 +281,15 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private final int age;
 
         /** Organization ID. */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private final int orgId;
 
         /**
@@ -337,11 +338,11 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /**

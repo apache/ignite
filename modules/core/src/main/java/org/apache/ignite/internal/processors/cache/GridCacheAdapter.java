@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -3988,6 +3987,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
             final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
@@ -4499,7 +4499,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 true,
                 op.single(),
                 ctx.system(),
-                PESSIMISTIC,
+                OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
@@ -4574,7 +4574,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 true,
                 op.single(),
                 ctx.system(),
-                PESSIMISTIC,
+                OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
@@ -4610,13 +4610,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         try {
             IgniteInternalFuture fut = holder.future();
 
-            if (fut != null && !fut.isDone()) {
-                final IgniteTxLocalAdapter<K, V> tx0 = tx;
+            final IgniteTxLocalAdapter<K, V> tx0 = tx;
 
+            if (fut != null && !fut.isDone()) {
                 IgniteInternalFuture<T> f = new GridEmbeddedFuture<>(fut,
                     new C2<T, Exception, IgniteInternalFuture<T>>() {
                         @Override public IgniteInternalFuture<T> apply(T t, Exception e) {
-                            return op.op(tx0);
+                            return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                    try {
+                                        return tFut.get();
+                                    }
+                                    catch (IgniteCheckedException e1) {
+                                        tx0.rollbackAsync();
+
+                                        throw e1;
+                                    }
+                                }
+                            });
                         }
                     }, ctx.kernalContext());
 
@@ -4625,7 +4636,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return f;
             }
 
-            IgniteInternalFuture<T> f = op.op(tx);
+            IgniteInternalFuture<T> f = op.op(tx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                    try {
+                        return tFut.get();
+                    }
+                    catch (IgniteCheckedException e1) {
+                        tx0.rollbackAsync();
+
+                        throw e1;
+                    }
+                }
+            });
 
             saveFuture(holder, f);
 

@@ -17,74 +17,48 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.cache.*;
+import org.apache.ignite.spi.indexing.*;
 
 /**
- * TODO: Add class description.
+ * Query to be used by {@link IndexingSpi} implementations.
  *
- * @author @java.author
- * @version @java.version
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
  */
-public final class QueryTextPredicate<K, V> extends QueryPredicate<K, V> {
+public final class SpiQuery extends Query<SpiQuery> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** SQL clause. */
-    private String txt;
-
     /** Arguments. */
+    @GridToStringInclude
     private Object[] args;
 
-    public QueryTextPredicate(String txt, Object... args) {
-        this.txt = txt;
-        this.args = args;
-    }
-
     /**
-     * Gets text search string.
+     * Gets SQL arguments.
      *
-     * @return Text search string.
-     */
-    public String getText() {
-        return txt;
-    }
-
-    /**
-     * Sets text search string.
-     *
-     * @param txt Text search string.
-     */
-    public void setText(String txt) {
-        this.txt = txt;
-    }
-
-    /**
-     * Gets text search arguments.
-     *
-     * @return Text search arguments.
+     * @return SQL arguments.
      */
     public Object[] getArgs() {
         return args;
     }
 
     /**
-     * Sets text search arguments.
+     * Sets SQL arguments.
      *
-     * @param args Text search arguments.
+     * @param args SQL arguments.
+     * @return {@code this} For chaining.
      */
-    public void setArgs(Object... args) {
+    public SpiQuery setArgs(Object... args) {
         this.args = args;
-    }
 
-    /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
-        return false; // Not used.
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryTextPredicate.class, this);
+        return S.toString(SpiQuery.class, this);
     }
 }

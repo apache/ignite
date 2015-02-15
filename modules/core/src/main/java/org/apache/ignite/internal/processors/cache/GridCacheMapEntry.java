@@ -424,6 +424,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     info = new GridCacheEntryInfo<>();
 
                     info.key(key);
+                    info.cacheId(cctx.cacheId());
 
                     long expireTime = expireTimeExtras();
 
@@ -1027,16 +1028,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
-            if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                if (!(isNew() || !valid) && ver.compareTo(newVer) > 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping entry update for one-phase commit since current entry version is " +
-                            "greater than write version [entry=" + this + ", newVer=" + newVer + ']');
-
-                    return new GridCacheUpdateTxResult<>(false, null);
-                }
-            }
-
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : this.val;
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
@@ -1104,7 +1095,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
+                cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, false);
         }
@@ -1154,126 +1145,98 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheVersion obsoleteVer = null;
 
-        GridCacheVersion enqueueVer = null;
-
         boolean intercept = cctx.config().getInterceptor() != null;
 
         IgniteBiTuple<Boolean, V> interceptRes = null;
 
-        try {
-            synchronized (this) {
-                checkObsolete();
+        synchronized (this) {
+            checkObsolete();
 
-                if (tx != null && tx.groupLock() && cctx.kernalContext().config().isCacheSanityCheckEnabled())
-                    groupLockSanityCheck(tx);
-                else
-                    assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
-                        "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
+            if (tx != null && tx.groupLock() && cctx.kernalContext().config().isCacheSanityCheckEnabled())
+                groupLockSanityCheck(tx);
+            else
+                assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
+                    "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
 
-                boolean startVer = isStartVersion();
+            boolean startVer = isStartVersion();
 
-                if (startVer) {
-                    if (tx != null && !tx.local() && tx.onePhaseCommit())
-                        // Must promote to check version for one-phase commit tx.
-                        unswap(true, retval);
-                    else
-                        // Release swap.
-                        releaseSwap();
-                }
+            if (startVer) {
+                // Release swap.
+                releaseSwap();
+            }
 
-                newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
+            newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
 
-                if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                    if (!startVer && ver.compareTo(newVer) > 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping entry removal for one-phase commit since current entry version is " +
-                                "greater than write version [entry=" + this + ", newVer=" + newVer + ']');
+            old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
-                        return new GridCacheUpdateTxResult<>(false, null);
-                    }
+            if (intercept) {
+                interceptRes = cctx.config().<K, V>getInterceptor().onBeforeRemove(key, old);
 
-                    if (!detached())
-                        enqueueVer = newVer;
-                }
+                if (cctx.cancelRemove(interceptRes))
+                    return new GridCacheUpdateTxResult<>(false, cctx.<V>unwrapTemporary(interceptRes.get2()));
+            }
 
-                old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : val;
+            GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
-                if (intercept) {
-                    interceptRes = cctx.config().<K, V>getInterceptor().onBeforeRemove(key, old);
+            if (old == null)
+                old = saveValueForIndexUnlocked();
 
-                    if (cctx.cancelRemove(interceptRes))
-                        return new GridCacheUpdateTxResult<>(false, cctx.<V>unwrapTemporary(interceptRes.get2()));
-                }
+            // Clear indexes inside of synchronization since indexes
+            // can be updated without actually holding entry lock.
+            clearIndex(old);
 
-                GridCacheValueBytes oldBytes = valueBytesUnlocked();
+            boolean hadValPtr = valPtr != 0;
 
-                if (old == null)
-                    old = saveValueForIndexUnlocked();
+            update(null, null, 0, 0, newVer);
 
-                // Clear indexes inside of synchronization since indexes
-                // can be updated without actually holding entry lock.
-                clearIndex(old);
+            if (cctx.offheapTiered() && hadValPtr) {
+                boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
 
-                boolean hadValPtr = valPtr != 0;
+                assert rmv;
+            }
 
-                update(null, null, 0, 0, newVer);
+            if (cctx.deferredDelete() && !detached() && !isInternal()) {
+                if (!deletedUnlocked()) {
+                    deletedUnlocked(true);
 
-                if (cctx.offheapTiered() && hadValPtr) {
-                    boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
+                    if (tx != null) {
+                        GridCacheMvcc<K> mvcc = mvccExtras();
 
-                    assert rmv;
-                }
-
-                if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                    if (!deletedUnlocked()) {
-                        deletedUnlocked(true);
-
-                        if (tx != null) {
-                            GridCacheMvcc<K> mvcc = mvccExtras();
-
-                            if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
-                                clearReaders();
-                            else
-                                clearReader(tx.originatingNodeId());
-                        }
+                        if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
+                            clearReaders();
+                        else
+                            clearReader(tx.originatingNodeId());
                     }
                 }
+            }
 
-                drReplicate(drType, null, null, newVer);
+            drReplicate(drType, null, null, newVer);
 
-                if (metrics && cctx.cache().configuration().isStatisticsEnabled())
-                    cctx.cache().metrics0().onRemove();
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled())
+                cctx.cache().metrics0().onRemove();
 
-                if (tx == null)
-                    obsoleteVer = newVer;
-                else {
-                    // Only delete entry if the lock is not explicit.
-                    if (tx.groupLock() || lockedBy(tx.xidVersion()))
-                        obsoleteVer = tx.xidVersion();
-                    else if (log.isDebugEnabled())
-                        log.debug("Obsolete version was not set because lock was explicit: " + this);
-                }
+            if (tx == null)
+                obsoleteVer = newVer;
+            else {
+                // Only delete entry if the lock is not explicit.
+                if (tx.groupLock() || lockedBy(tx.xidVersion()))
+                    obsoleteVer = tx.xidVersion();
+                else if (log.isDebugEnabled())
+                    log.debug("Obsolete version was not set because lock was explicit: " + this);
+            }
 
-                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
-                    V evtOld = cctx.unwrapTemporary(old);
+            if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
+                V evtOld = cctx.unwrapTemporary(old);
 
-                    cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(), newVer,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hasValueUnlocked(), subjId,
-                        null, taskName);
-                }
+                cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(), newVer,
+                    EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hasValueUnlocked(), subjId,
+                    null, taskName);
+            }
 
                 if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes, false);
+                    cctx.continuousQueries().onEntryUpdated(this, key, null, null, old, oldBytes);
 
-                cctx.dataStructures().onEntryUpdated(key, true);
-            }
-        }
-        finally {
-            if (enqueueVer != null) {
-                assert cctx.deferredDelete();
-
-                cctx.onDeferredDelete(this, enqueueVer);
-            }
+            cctx.dataStructures().onEntryUpdated(key, true);
         }
 
         // Persist outside of synchronization. The correctness of the
@@ -1572,7 +1535,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (res)
                 updateMetrics(op, metrics);
 
-            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
+            cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -1584,7 +1547,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        return new GridTuple3<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old), invokeRes);
+        return new GridTuple3<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old),
+            invokeRes);
     }
 
     /** {@inheritDoc} */
@@ -2143,8 +2107,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (res)
                 updateMetrics(op, metrics);
 
-            if (primary)
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
+            if (cctx.isReplicated() || primary)
+                cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -3167,15 +3131,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, val, valBytes, ver);
 
                 if (!skipQryNtf) {
-                    if (cctx.affinity().primary(cctx.localNode(), key, topVer)) {
-                        cctx.continuousQueries().onEntryUpdate(this,
-                            key,
-                            val,
-                            valueBytesUnlocked(),
-                            null,
-                            null,
-                            preload);
-                    }
+                    if (!preload && (cctx.isLocal() || cctx.isReplicated() ||
+                        cctx.affinity().primary(cctx.localNode(), key, topVer)))
+                        cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), null, null);
+
 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }

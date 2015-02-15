@@ -33,7 +33,7 @@ import java.util.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * {@link org.apache.ignite.cache.query.CacheQueries} implementation.
+ * {@link CacheQueries} implementation.
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
@@ -151,7 +151,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /**
-     * Query for {@link GridIndexingSpi}.
+     * Query for {@link IndexingSpi}.
      *
      * @return Query.
      */
@@ -182,11 +182,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
-        return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
         A.notNull(cls, "cls");
 
@@ -206,7 +201,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
     }
 

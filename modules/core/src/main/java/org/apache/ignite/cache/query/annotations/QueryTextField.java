@@ -17,13 +17,15 @@
 
 package org.apache.ignite.cache.query.annotations;
 
+import org.apache.ignite.internal.processors.cache.query.*;
+
 import java.lang.annotation.*;
 
 /**
  * Annotation for fields or getters to be indexed for full text
- * search using {@code H2 TEXT} indexing. For more information
- * refer to {@link org.apache.ignite.cache.query.CacheQuery} documentation.
- * @see org.apache.ignite.cache.query.CacheQuery
+ * search using Lucene. For more information
+ * refer to {@link CacheQuery} documentation.
+ * @see CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

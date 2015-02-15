@@ -15,33 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.query.continuous;
+
+
+import javax.cache.event.*;
 
 /**
- * Cache query type.
- * <p>
- * Used in {@link org.apache.ignite.events.CacheQueryExecutedEvent} and {@link org.apache.ignite.events.CacheQueryReadEvent}
- * to identify the type of query for which an event was fired.
- *
- * @see org.apache.ignite.events.CacheQueryExecutedEvent#queryType()
- * @see org.apache.ignite.events.CacheQueryReadEvent#queryType()
+ * Extended continuous query filter.
  */
-public enum CacheQueryType {
-    /** SQL query. */
-    SQL,
-
-    /** SQL fields query. */
-    SQL_FIELDS,
-
-    /** Full text query. */
-    FULL_TEXT,
-
-    /** Scan query. */
-    SCAN,
-
-    /** Continuous query. */
-    CONTINUOUS,
-
-    /** SPI query. */
-    SPI
+public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventFilter<K, V> {
+    /**
+     * Callback for query unregister event.
+     */
+    public void onQueryUnregister();
 }

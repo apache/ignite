@@ -105,7 +105,7 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void executeLocalQuery(ClusterNode node, GridQueryRequest req) {
-        h2.setFilters(new GridIndexingQueryFilter() {
+        h2.setFilters(new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 

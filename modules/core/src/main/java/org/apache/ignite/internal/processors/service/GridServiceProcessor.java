@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -27,7 +26,6 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -35,13 +33,14 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -86,11 +85,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();
 
-    /** Deployment listener. */
-    private GridCacheContinuousQueryAdapter<Object, Object> cfgQry;
+    /** Deployment listener ID. */
+    private UUID cfgQryId;
 
-    /** Assignment listener. */
-    private GridCacheContinuousQueryAdapter<Object, Object> assignQry;
+    /** Assignment listener ID. */
+    private UUID assignQryId;
 
     /**
      * @param ctx Kernal context.
@@ -119,7 +118,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
+        cache = ctx.cache().utilityCache();
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
@@ -127,17 +126,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
-
-            cfgQry.localCallback(new DeploymentListener());
-
-            cfgQry.execute(ctx.grid().forLocal(), true, false, false, true);
-
-            assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
-
-            assignQry.localCallback(new AssignmentListener());
-
-            assignQry.execute(ctx.grid().forLocal(), true, false, false, true);
+            cfgQryId = cache.context().continuousQueries().executeInternalQuery(new DeploymentListener(), null, true);
+            assignQryId = cache.context().continuousQueries().executeInternalQuery(
+                new AssignmentListener(), null, true);
         }
         finally {
             if (ctx.deploy().enabled())
@@ -170,21 +161,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         ctx.event().removeLocalEventListener(topLsnr);
 
-        try {
-            if (cfgQry != null)
-                cfgQry.close();
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to unsubscribe service configuration notifications.", e);
-        }
+        if (cfgQryId != null)
+            cache.context().continuousQueries().cancelInternalQuery(cfgQryId);
 
-        try {
-            if (assignQry != null)
-                assignQry.close();
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to unsubscribe service assignment notifications.", e);
-        }
+        if (assignQryId != null)
+            cache.context().continuousQueries().cancelInternalQuery(assignQryId);
 
         Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
@@ -915,18 +896,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Service deployment listener.
      */
-    private class DeploymentListener
-        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
-        /** Serial version ID. */
-        private static final long serialVersionUID = 0L;
-
+    private class DeploymentListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
-        @Override public boolean apply(
-            UUID nodeId,
-            final Collection<CacheContinuousQueryEntry<Object, Object>> deps) {
+        @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Map.Entry<Object, Object> e : deps) {
+                    for (CacheEntryEvent<?, ?> e : deps) {
                         if (!(e.getKey() instanceof GridServiceDeploymentKey))
                             continue;
 
@@ -988,8 +963,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
             });
-
-            return true;
         }
 
         /**
@@ -1193,18 +1166,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Assignment listener.
      */
-    private class AssignmentListener
-        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
-        /** Serial version ID. */
-        private static final long serialVersionUID = 0L;
-
+    private class AssignmentListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
-        @Override public boolean apply(
-            UUID nodeId,
-            final Collection<CacheContinuousQueryEntry<Object, Object>> assignCol) {
+        @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> assignCol) throws CacheEntryListenerException {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Map.Entry<Object, Object> e : assignCol) {
+                    for (CacheEntryEvent<?, ?> e : assignCol) {
                         if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                             continue;
 
@@ -1252,8 +1219,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
             });
-
-            return true;
         }
     }
 

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
@@ -40,6 +41,7 @@ import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 /**
  * Shared context.
  */
+@GridToStringExclude
 public class GridCacheSharedContext<K, V> {
     /** Kernal context. */
     private GridKernalContext kernalCtx;

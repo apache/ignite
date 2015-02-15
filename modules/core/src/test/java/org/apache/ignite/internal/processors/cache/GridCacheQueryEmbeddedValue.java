@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
 
@@ -27,15 +27,15 @@ import java.io.*;
 @SuppressWarnings("unused")
 public class GridCacheQueryEmbeddedValue implements Serializable {
     /** Query embedded field. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private int embeddedField1 = 55;
 
     /** Query embedded field. */
-    @CacheQuerySqlField(groups = {"grp1"})
+    @QuerySqlField(groups = {"grp1"})
     private int embeddedField2 = 11;
 
     /** */
-    @CacheQuerySqlField
+    @QuerySqlField
     private Val embeddedField3 = new Val();
 
     /**
@@ -43,7 +43,7 @@ public class GridCacheQueryEmbeddedValue implements Serializable {
     @SuppressWarnings("PublicInnerClass")
     public static class Val implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Long x = 3L;
     }
 }
