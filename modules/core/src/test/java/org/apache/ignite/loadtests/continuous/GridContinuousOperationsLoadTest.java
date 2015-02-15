@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,7 +39,6 @@ import static org.apache.ignite.testframework.GridLoadTestUtils.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
- * Load test for {@link org.apache.ignite.cache.query.CacheContinuousQuery}.
  */
 public class GridContinuousOperationsLoadTest {
     /**
@@ -80,7 +78,6 @@ public class GridContinuousOperationsLoadTest {
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
             final IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
-            final GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);
@@ -100,8 +97,8 @@ public class GridContinuousOperationsLoadTest {
                 if (useQry) {
                     ContinuousQuery<Object, Object> qry = Query.continuous();
 
-                    qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                    qry.setLocalListener(new CacheEntryUpdatedListener<Object,Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?,?>> evts) {
                             if (cbSleepMs > 0) {
                                 try {
                                     U.sleep(cbSleepMs);
@@ -111,13 +108,13 @@ public class GridContinuousOperationsLoadTest {
                                 }
                             }
 
-                            for (CacheEntryEvent<?, ?> ignored : evts)
+                            for (CacheEntryEvent<?,?> ignored : evts)
                                 cbCntr.incrementAndGet();
                         }
                     });
 
-                    qry.setRemoteFilter(new CacheEntryEventFilter<Object, Object>() {
-                        @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
+                    qry.setRemoteFilter(new CacheEntryEventFilter<Object,Object>() {
+                        @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
                             if (filterSleepMs > 0) {
                                 try {
                                     U.sleep(filterSleepMs);
