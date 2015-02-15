@@ -529,23 +529,22 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             if (replied.compareAndSet(false, true)) {
                 try {
                     sendPrepareResponse(createPrepareResponse());
-
-                    return true;
                 }
                 catch (IgniteCheckedException e) {
-                    onError(e);
-
-                    return true;
+                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
                 }
                 finally {
                     // Will call super.onDone().
                     onComplete();
                 }
+
+                return true;
             }
             else {
                 // Other thread is completing future. Wait for it to complete.
                 try {
-                    get();
+                    if (err != null)
+                        get();
                 }
                 catch (IgniteInterruptedException e) {
                     onError(new IgniteCheckedException("Got interrupted while waiting for replies to be sent.", e));
