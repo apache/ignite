@@ -98,7 +98,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         ignite = startGrid();
 
-        GridCache cache = ignite.cache(null);
+        GridCache cache = ((IgniteKernal)ignite).cache(null);
 
         cache.putx("testAddr", new Address());
         cache.putx("testPerson", new Person());

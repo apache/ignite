@@ -129,7 +129,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final Person p3 = new Person("Mike", 1800, "Bachelor");
         final Person p4 = new Person("Bob", 1900, "Bachelor");
 
-        final GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        final GridCache<UUID, Person> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

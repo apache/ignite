@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -85,7 +86,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final GridCache<Integer, Person> cache = grid(0).cache(null);
+        final GridCache<Integer, Person> cache = ((IgniteKernal)grid(0)).cache(null);
 
         for (int i = 0; i < 2000; i++)
             cache.put(i, new Person(i));

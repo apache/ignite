@@ -104,7 +104,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
         super.afterPropertiesSet();
 
         metaCache = ((IgniteEx)grid).utilityCache(MetaKey.class, org.springframework.cache.Cache.class);
-        dataCache = grid.cache(dataCacheName);
+        dataCache = ((IgniteKernal)grid).cache(dataCacheName);
     }
 
     /** {@inheritDoc} */

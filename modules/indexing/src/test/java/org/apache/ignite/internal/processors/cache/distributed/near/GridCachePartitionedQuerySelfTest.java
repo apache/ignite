@@ -54,7 +54,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        GridCache<UUID, Person> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -133,7 +133,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        GridCache<UUID, Person> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -194,7 +194,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        GridCache<UUID, Person> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -234,7 +234,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testScanReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        GridCache<UUID, Person> c = ((IgniteKernal)ignite).cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -292,7 +292,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testSqlReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        GridCache<UUID, Person> c = ((IgniteKernal)ignite).cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -346,7 +346,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testLuceneReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        GridCache<UUID, Person> c = ((IgniteKernal)ignite).cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -405,8 +405,8 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             int cnt = 0;
 
             while (true) {
-                if (grid(i).cache(null).affinity().mapKeyToNode(key).equals(grid(i).localNode())) {
-                    assertTrue(grid(i).cache(null).putx(key, key));
+                if (((IgniteKernal)grid(i)).cache(null).affinity().mapKeyToNode(key).equals(grid(i).localNode())) {
+                    assertTrue(((IgniteKernal)grid(i)).cache(null).putx(key, key));
 
                     cnt++;
                 }
@@ -419,9 +419,9 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(i == 1 ? 2 : 3, grid(i).cache(null).primarySize());
+            assertEquals(i == 1 ? 2 : 3, ((IgniteKernal)grid(i)).cache(null).primarySize());
 
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        GridCache<Integer, Integer> cache = ((IgniteKernal)ignite).cache(null);
 
         CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
 
@@ -438,7 +438,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      * @throws Exception If failed.
      */
     public void testReduceWithPagination() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        GridCache<Integer, Integer> c = ((IgniteKernal)grid(0)).cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(c.putx(i, 10));

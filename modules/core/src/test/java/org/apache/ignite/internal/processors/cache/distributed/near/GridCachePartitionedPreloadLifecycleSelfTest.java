@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -28,6 +29,7 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -173,7 +175,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = grid(j).cache("two");
+                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).cache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
@@ -190,12 +192,12 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = grid.cache("one").get(key);
+                            Object v2 = grid.jcache("one").get(key);
 
                             assertNotNull(v2);
                             assertEquals(v1, v2);
                         }
-                        catch (IgniteCheckedException e1) {
+                        catch (CacheException e1) {
                             e1.printStackTrace();
 
                             assert false;

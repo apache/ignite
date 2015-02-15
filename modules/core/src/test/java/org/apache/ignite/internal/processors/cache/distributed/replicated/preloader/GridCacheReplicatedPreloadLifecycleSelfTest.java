@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated.prelo
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -175,7 +176,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = grid(j).cache("two");
+                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).cache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
@@ -203,10 +204,10 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = grid.cache("one").get(key);
+                            Object v2 = ((IgniteKernal)grid).cache("one").get(key);
 
                             assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 +
-                                ", missedKey=" + key + ", cache=" + grid.cache("one").values() + ']', v2);
+                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).cache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
                         catch (IgniteCheckedException e1) {

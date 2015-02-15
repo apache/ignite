@@ -629,7 +629,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -670,7 +670,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -721,7 +721,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             // Store counter.
             cache.put(RMVD_CNTR_KEY, 0);

@@ -103,7 +103,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         final long nodeLifeTime = 2 * 1000;
         final int logFreq = 20;
 
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
         assert cache != null;
 

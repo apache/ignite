@@ -80,6 +80,7 @@ public class GridContinuousOperationsLoadTest {
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
             final IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
+            final GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);

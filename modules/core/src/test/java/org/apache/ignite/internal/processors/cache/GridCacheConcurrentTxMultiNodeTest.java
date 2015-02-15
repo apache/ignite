@@ -678,7 +678,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            CacheProjection<Object, Request> cache = ignite.cache(null).projection(Object.class, Request.class);
+            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).cache(null).projection(Object.class, Request.class);
 
             CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
@@ -708,7 +708,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-//            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
+//            GridCache<CacheAffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
 //
 //            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
 //

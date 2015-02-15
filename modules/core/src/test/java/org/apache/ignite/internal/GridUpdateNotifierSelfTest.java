@@ -87,5 +87,9 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         @Override public String userStackTrace() {
             return null;
         }
+
+        @Override public boolean tryWriteLock(long timeout) {
+            return false;
+        }
     };
 }

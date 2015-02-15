@@ -19,6 +19,7 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
@@ -124,7 +125,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
 
                 String cacheName = prop.getValue().toString();
 
-                if (ignite.cache(cacheName) == null)
+                if (((IgniteKernal)ignite).cache(cacheName) == null)
                     throw new CacheException("Cache '" + cacheName + "' specified for region '" + regionName + "' " +
                         "is not configured.");
 
@@ -135,7 +136,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
         String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
 
         if (dfltCacheName != null) {
-            dfltCache = ignite.cache(dfltCacheName);
+            dfltCache = ((IgniteKernal)ignite).cache(dfltCacheName);
 
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
@@ -220,7 +221,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
             cacheName = regionName;
         }
 
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");
