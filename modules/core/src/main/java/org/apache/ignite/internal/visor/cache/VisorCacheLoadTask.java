@@ -60,7 +60,7 @@ public class VisorCacheLoadTask extends
             try {
                 Set<String> cacheNames = arg.get1();
                 Long ttl = arg.get2();
-                Object[] loaderArgs = arg.get3();
+                Object[] ldrArgs = arg.get3();
 
                 Map<String, Integer> res = new HashMap<>();
 
@@ -72,7 +72,7 @@ public class VisorCacheLoadTask extends
                             @Override public boolean apply(Object o, Object o2) {
                                 return true;
                             }
-                        }, ttl, loaderArgs);
+                        }, ttl, ldrArgs);
 
                         res.put(cacheName, c.size()); // Put new key size for successfully loaded cache.
                     }

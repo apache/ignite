@@ -40,8 +40,8 @@ public class VisorGridDeploymentEvent extends VisorGridEvent {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      * @param alias Deployment alias.
      */
@@ -50,12 +50,12 @@ public class VisorGridDeploymentEvent extends VisorGridEvent {
         IgniteUuid id,
         String name,
         UUID nid,
-        long timestamp,
-        @Nullable String message,
+        long ts,
+        @Nullable String msg,
         String shortDisplay,
         String alias
     ) {
-        super(typeId, id, name, nid, timestamp, message, shortDisplay);
+        super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.alias = alias;
     }

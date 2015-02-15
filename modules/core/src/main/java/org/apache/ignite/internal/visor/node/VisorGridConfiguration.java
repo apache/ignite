@@ -66,6 +66,7 @@ public class VisorGridConfiguration implements Serializable {
     /** Include events types. */
     private int[] inclEvtTypes;
 
+    /** REST configuration. */
     private VisorRestConfiguration rest;
 
     /** User attributes. */
@@ -85,6 +86,12 @@ public class VisorGridConfiguration implements Serializable {
 
     /** System properties. */
     private Properties sysProps;
+
+    /** Configuration of atomic data structures. */
+    private VisorAtomicConfiguration atomic;
+
+    /** Transactions configuration. */
+    private VisorTransactionConfiguration txCfg;
 
     /**
      * @param ignite Grid.
@@ -112,6 +119,8 @@ public class VisorGridConfiguration implements Serializable {
         streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
         env(new HashMap<>(getenv()));
         systemProperties(getProperties());
+        atomic(VisorAtomicConfiguration.from(c.getAtomicConfiguration()));
+        transaction(VisorTransactionConfiguration.from(c.getTransactionConfiguration()));
 
         return this;
     }
@@ -352,6 +361,34 @@ public class VisorGridConfiguration implements Serializable {
      */
     public void systemProperties(Properties sysProps) {
         this.sysProps = sysProps;
+    }
+
+    /**
+     * @return Configuration of atomic data structures.
+     */
+    public VisorAtomicConfiguration atomic() {
+        return atomic;
+    }
+
+    /**
+     * @param atomic New configuration of atomic data structures.
+     */
+    public void atomic(VisorAtomicConfiguration atomic) {
+        this.atomic = atomic;
+    }
+
+    /**
+     * @return Transactions configuration.
+     */
+    public VisorTransactionConfiguration transaction() {
+        return txCfg;
+    }
+
+    /**
+     * @param txCfg New transactions configuration.
+     */
+    public void transaction(VisorTransactionConfiguration txCfg) {
+        this.txCfg = txCfg;
     }
 
     /** {@inheritDoc} */

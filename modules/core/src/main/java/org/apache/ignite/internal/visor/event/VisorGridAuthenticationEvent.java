@@ -46,8 +46,8 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      * @param subjType Subject type.
      * @param subjId Subject ID.
@@ -58,14 +58,14 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
         IgniteUuid id,
         String name,
         UUID nid,
-        long timestamp,
-        String message,
+        long ts,
+        String msg,
         String shortDisplay,
         GridSecuritySubjectType subjType,
         UUID subjId,
         Object login
     ) {
-        super(typeId, id, name, nid, timestamp, message, shortDisplay);
+        super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.subjType = subjType;
         this.subjId = subjId;

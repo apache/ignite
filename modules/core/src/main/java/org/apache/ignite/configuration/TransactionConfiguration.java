@@ -19,15 +19,10 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.transactions.*;
 
-import java.io.*;
-
 /**
  * Transactions configuration.
  */
-public class TransactionConfiguration implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TransactionConfiguration {
     /** Default value for 'txSerializableEnabled' flag. */
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 

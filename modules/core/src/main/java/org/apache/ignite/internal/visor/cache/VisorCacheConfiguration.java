@@ -113,9 +113,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Default config */
     private VisorCacheDefaultConfiguration dflt;
 
-    /** Dgc config */
-    private VisorCacheDgcConfiguration dgc;
-
     /** Store config */
     private VisorCacheStoreConfiguration store;
 
@@ -173,7 +170,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.evictConfiguration(VisorCacheEvictionConfiguration.from(ccfg));
         cfg.nearConfiguration(VisorCacheNearConfiguration.from(ccfg));
         cfg.defaultConfiguration(VisorCacheDefaultConfiguration.from(ccfg));
-        cfg.dgcConfiguration(VisorCacheDgcConfiguration.from(ccfg));
         cfg.storeConfiguration(VisorCacheStoreConfiguration.from(ccfg));
         cfg.writeBehind(VisorCacheWriteBehindConfiguration.from(ccfg));
         cfg.typeMeta(VisorCacheTypeMetadata.list(ccfg.getTypeMetadata()));
@@ -548,20 +544,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void defaultConfiguration(VisorCacheDefaultConfiguration dflt) {
         this.dflt = dflt;
-    }
-
-    /**
-     * @return Dgc config
-     */
-    public VisorCacheDgcConfiguration dgcConfiguration() {
-        return dgc;
-    }
-
-    /**
-     * @param dgc New dgc config
-     */
-    public void dgcConfiguration(VisorCacheDgcConfiguration dgc) {
-        this.dgc = dgc;
     }
 
     /**

@@ -53,7 +53,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         }
         finally {
             if (debug)
-                logMapped(g.log(), getClass(), map.values());
+                logMapped(ignite.log(), getClass(), map.values());
         }
     }
 
@@ -67,62 +67,73 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 
-    protected VisorNodeDataCollectorTaskResult reduce(VisorNodeDataCollectorTaskResult taskResult,
+    /**
+     * @param taskRes Task result.
+     * @param results Results.
+     */
+    protected VisorNodeDataCollectorTaskResult reduce(VisorNodeDataCollectorTaskResult taskRes,
         List<ComputeJobResult> results) {
         for (ComputeJobResult res : results) {
-            VisorNodeDataCollectorJobResult jobResult = res.getData();
+            VisorNodeDataCollectorJobResult jobRes = res.getData();
 
-            if (jobResult != null) {
+            if (jobRes != null) {
                 UUID nid = res.getNode().id();
 
                 IgniteException unhandledEx = res.getException();
 
                 if (unhandledEx == null)
-                    reduceJobResult(taskResult, jobResult, nid);
+                    reduceJobResult(taskRes, jobRes, nid);
                 else {
                     // Ignore nodes that left topology.
                     if (!(unhandledEx instanceof ClusterGroupEmptyException))
-                        taskResult.unhandledEx().put(nid, unhandledEx);
+                        taskRes.unhandledEx().put(nid, unhandledEx);
                 }
             }
         }
 
-        return taskResult;
+        return taskRes;
     }
 
-    protected void reduceJobResult(VisorNodeDataCollectorTaskResult taskResult,
-        VisorNodeDataCollectorJobResult jobResult, UUID nid) {
-        taskResult.gridNames().put(nid, jobResult.gridName());
+    /**
+     * Reduce job result.
+     *
+     * @param taskRes Task result.
+     * @param jobRes Job result.
+     * @param nid Node ID.
+     */
+    protected void reduceJobResult(VisorNodeDataCollectorTaskResult taskRes,
+        VisorNodeDataCollectorJobResult jobRes, UUID nid) {
+        taskRes.gridNames().put(nid, jobRes.gridName());
 
-        taskResult.topologyVersions().put(nid, jobResult.topologyVersion());
+        taskRes.topologyVersions().put(nid, jobRes.topologyVersion());
 
-        taskResult.taskMonitoringEnabled().put(nid, jobResult.taskMonitoringEnabled());
+        taskRes.taskMonitoringEnabled().put(nid, jobRes.taskMonitoringEnabled());
 
-        if (!jobResult.events().isEmpty())
-            taskResult.events().addAll(jobResult.events());
+        if (!jobRes.events().isEmpty())
+            taskRes.events().addAll(jobRes.events());
 
-        if (jobResult.eventsEx() != null)
-            taskResult.eventsEx().put(nid, jobResult.eventsEx());
+        if (jobRes.eventsEx() != null)
+            taskRes.eventsEx().put(nid, jobRes.eventsEx());
 
-        if (!jobResult.caches().isEmpty())
-            taskResult.caches().put(nid, jobResult.caches());
+        if (!jobRes.caches().isEmpty())
+            taskRes.caches().put(nid, jobRes.caches());
 
-        if (jobResult.cachesEx() != null)
-            taskResult.cachesEx().put(nid, jobResult.cachesEx());
+        if (jobRes.cachesEx() != null)
+            taskRes.cachesEx().put(nid, jobRes.cachesEx());
 
-        if (!jobResult.streamers().isEmpty())
-            taskResult.streamers().put(nid, jobResult.streamers());
+        if (!jobRes.streamers().isEmpty())
+            taskRes.streamers().put(nid, jobRes.streamers());
 
-        if (jobResult.streamersEx() != null)
-            taskResult.streamersEx().put(nid, jobResult.streamersEx());
+        if (jobRes.streamersEx() != null)
+            taskRes.streamersEx().put(nid, jobRes.streamersEx());
 
-        if (!jobResult.igfss().isEmpty())
-            taskResult.igfss().put(nid, jobResult.igfss());
+        if (!jobRes.igfss().isEmpty())
+            taskRes.igfss().put(nid, jobRes.igfss());
 
-        if (!jobResult.igfsEndpoints().isEmpty())
-            taskResult.igfsEndpoints().put(nid, jobResult.igfsEndpoints());
+        if (!jobRes.igfsEndpoints().isEmpty())
+            taskRes.igfsEndpoints().put(nid, jobRes.igfsEndpoints());
 
-        if (jobResult.igfssEx() != null)
-            taskResult.igfssEx().put(nid, jobResult.igfssEx());
+        if (jobRes.igfssEx() != null)
+            taskRes.igfssEx().put(nid, jobRes.igfssEx());
     }
 }

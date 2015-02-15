@@ -30,6 +30,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * Base class for Visor jobs.
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
+    /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;
 
@@ -37,7 +38,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     protected transient long start;
 
     /** Debug flag. */
-    protected transient boolean debug;
+    protected boolean debug;
 
     /**
      * Create job with specified argument.

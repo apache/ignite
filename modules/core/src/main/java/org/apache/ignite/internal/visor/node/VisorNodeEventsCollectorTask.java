@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -33,6 +32,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task that runs on specified node and returns events data.
@@ -50,14 +50,14 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override protected Iterable<? extends VisorGridEvent> reduce0(List<ComputeJobResult> results) {
-        Collection<VisorGridEvent> allEvents = new ArrayList<>();
+        Collection<VisorGridEvent> allEvts = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
             if (r.getException() == null)
-                allEvents.addAll((Collection<VisorGridEvent>) r.getData());
+                allEvts.addAll((Collection<VisorGridEvent>) r.getData());
         }
 
-        return allEvents.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvents;
+        return allEvts.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvts;
     }
 
     /**
@@ -81,23 +81,23 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         private final String taskName;
 
         /** Task or job events with session. */
-        private final IgniteUuid taskSessionId;
+        private final IgniteUuid taskSesId;
 
         /**
          * @param keyOrder Arguments for node local storage key.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
-         * @param taskSessionId Arguments for task session filter.
+         * @param taskSesId Arguments for task session filter.
          */
         public VisorNodeEventsCollectorTaskArg(@Nullable String keyOrder, @Nullable int[] typeArg,
             @Nullable Long timeArg,
-            @Nullable String taskName, @Nullable IgniteUuid taskSessionId) {
+            @Nullable String taskName, @Nullable IgniteUuid taskSesId) {
             this.keyOrder = keyOrder;
             this.typeArg = typeArg;
             this.timeArg = timeArg;
             this.taskName = taskName;
-            this.taskSessionId = taskSessionId;
+            this.taskSesId = taskSesId;
         }
 
         /**
@@ -111,13 +111,12 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         /**
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
-         * @param taskSessionId Arguments for task session filter.
+         * @param taskSesId Arguments for task session filter.
          */
         public static VisorNodeEventsCollectorTaskArg createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
-            @Nullable IgniteUuid taskSessionId) {
-            return new VisorNodeEventsCollectorTaskArg(null,
-                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION),
-                timeArg, taskName, taskSessionId);
+            @Nullable IgniteUuid taskSesId) {
+            return new VisorNodeEventsCollectorTaskArg(null, concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION),
+                timeArg, taskName, taskSesId);
         }
 
         /**
@@ -160,7 +159,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @return Task or job events with session.
          */
         public IgniteUuid taskSessionId() {
-            return taskSessionId;
+            return taskSesId;
         }
 
         /** {@inheritDoc} */
@@ -241,17 +240,17 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterByTaskSessionId(Event e, IgniteUuid taskSessionId) {
+        private boolean filterByTaskSessionId(Event e, IgniteUuid taskSesId) {
             if (e.getClass().equals(TaskEvent.class)) {
                 TaskEvent te = (TaskEvent)e;
 
-                return te.taskSessionId().equals(taskSessionId);
+                return te.taskSessionId().equals(taskSesId);
             }
 
             if (e.getClass().equals(JobEvent.class)) {
                 JobEvent je = (JobEvent)e;
 
-                return je.taskSessionId().equals(taskSessionId);
+                return je.taskSessionId().equals(taskSesId);
             }
 
             return true;

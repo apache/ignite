@@ -38,13 +38,20 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Analyzed file size in bytes. */
-    private long fileSize = 0;
+    private long fileSize;
 
     /** Current block size to calculate uniformity. */
     private long blockSize = UNIFORMITY_DFLT_BLOCK_SIZE;
 
-    private ArrayList<Integer> counters = new ArrayList<>();
+    /** Collection of calculated counters. */
+    private final ArrayList<Integer> counters = new ArrayList<>();
 
+    /**
+     * Calculate block size.
+     *
+     * @param fileSize File size in bytes.
+     * @return Block size.
+     */
     private long calcBlockSize(long fileSize) {
         return Math.max(UNIFORMITY_DFLT_BLOCK_SIZE, fileSize / UNIFORMITY_BLOCKS);
     }
@@ -113,12 +120,12 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable {
     /**
      * Ensure counters capacity and initial state.
      *
-     * @param minCapacity Desired minimum capacity.
+     * @param minCap Desired minimum capacity.
      */
-    private void capacity(int minCapacity) {
-        counters.ensureCapacity(minCapacity);
+    private void capacity(int minCap) {
+        counters.ensureCapacity(minCap);
 
-        while(counters.size() < minCapacity)
+        while(counters.size() < minCap)
             counters.add(0);
     }
 

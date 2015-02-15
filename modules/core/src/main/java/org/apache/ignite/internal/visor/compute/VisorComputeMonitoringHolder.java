@@ -63,6 +63,7 @@ public class VisorComputeMonitoringHolder {
 
     /**
      * Check if collect events may be disable.
+     *
      * @param ignite Grid.
      * @return {@code true} if task events should remain enabled.
      */
@@ -79,8 +80,9 @@ public class VisorComputeMonitoringHolder {
 
     /**
      * Disable collect events for Visor instance.
-     * @param g grid.
-     * @param visorKey uniq Visor instance key.
+     *
+     * @param g Grid.
+     * @param visorKey Unique Visor instance key.
      */
     public void stopCollect(IgniteEx g, String visorKey) {
         synchronized(listenVisor) {
@@ -92,6 +94,7 @@ public class VisorComputeMonitoringHolder {
 
     /**
      * Schedule cleanup process for events monitoring.
+     *
      * @param g grid.
      */
     private void scheduleCleanupJob(final IgniteEx g) {

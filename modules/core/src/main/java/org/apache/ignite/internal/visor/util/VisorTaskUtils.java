@@ -94,6 +94,7 @@ public class VisorTaskUtils {
     /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
     public static final int MAX_FOLDER_DEPTH = 4;
 
+    /** Comparator for log files by last modified date.  */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.lastModified(), f1.lastModified());
@@ -135,12 +136,12 @@ public class VisorTaskUtils {
         assert arrays != null;
         assert arrays.length > 1;
 
-        int length = 0;
+        int len = 0;
 
         for (int[] a : arrays)
-            length += a.length;
+            len += a.length;
 
-        int[] r = Arrays.copyOf(arrays[0], length);
+        int[] r = Arrays.copyOf(arrays[0], len);
 
         for (int i = 1, shift = 0; i < arrays.length; i++) {
             shift += arrays[i - 1].length;
@@ -173,9 +174,8 @@ public class VisorTaskUtils {
 
             int i = 0;
 
-            for (Object elm : col) {
+            for (Object elm : col)
                 res[i++] = compactObject(elm);
-            }
 
             return res;
         }
@@ -446,6 +446,11 @@ public class VisorTaskUtils {
         return F.asList(new VisorLogFile(file));
     }
 
+    /**
+     * @param fld Folder with files to match.
+     * @param ptrn Pattern to match against file name.
+     * @return Collection of matched files.
+     */
     public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
         List<VisorLogFile> files = fileTree(fld, MAX_FOLDER_DEPTH,
             new FileFilter() {
@@ -483,6 +488,13 @@ public class VisorTaskUtils {
         return false;
     }
 
+    /**
+     * Decode file charset.
+     *
+     * @param f File to process.
+     * @return File charset.
+     * @throws IOException
+     */
     public static Charset decode(File f) throws IOException {
         SortedMap<String, Charset> charsets = Charset.availableCharsets();
 
@@ -497,11 +509,11 @@ public class VisorTaskUtils {
         orderedCharsets.addAll(charsets.values());
 
         try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-            FileChannel channel = raf.getChannel();
+            FileChannel ch = raf.getChannel();
 
             ByteBuffer buf = ByteBuffer.allocate(4096);
 
-            channel.read(buf);
+            ch.read(buf);
 
             buf.flip();
 
@@ -597,18 +609,18 @@ public class VisorTaskUtils {
     /**
      * Extract max size from eviction policy if available.
      *
-     * @param policy Eviction policy.
+     * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy policy) {
-        if (policy instanceof CacheLruEvictionPolicyMBean)
-            return ((CacheLruEvictionPolicyMBean)policy).getMaxSize();
+    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy plc) {
+        if (plc instanceof CacheLruEvictionPolicyMBean)
+            return ((CacheLruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (policy instanceof CacheRandomEvictionPolicyMBean)
-            return ((CacheRandomEvictionPolicyMBean)policy).getMaxSize();
+        if (plc instanceof CacheRandomEvictionPolicyMBean)
+            return ((CacheRandomEvictionPolicyMBean)plc).getMaxSize();
 
-        if (policy instanceof CacheFifoEvictionPolicyMBean)
-            return ((CacheFifoEvictionPolicyMBean)policy).getMaxSize();
+        if (plc instanceof CacheFifoEvictionPolicyMBean)
+            return ((CacheFifoEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }
@@ -736,11 +748,11 @@ public class VisorTaskUtils {
 
             String cmd = String.format("ping -%s 1 %s", U.isWindows() ? "n" : "c", addr.getHostAddress());
 
-            Process myProcess = Runtime.getRuntime().exec(cmd);
+            Process myProc = Runtime.getRuntime().exec(cmd);
 
-            myProcess.waitFor();
+            myProc.waitFor();
 
-            return myProcess.exitValue() == 0;
+            return myProc.exitValue() == 0;
         }
         catch (IOException ignore) {
             return false;

@@ -57,7 +57,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         }
         finally {
             if (debug)
-                logMapped(g.log(), getClass(), map.values());
+                logMapped(ignite.log(), getClass(), map.values());
         }
     }
 

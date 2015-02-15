@@ -24,13 +24,13 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Helper class to get mimetype.
+ * Helper class to get MIME type.
  */
 public class VisorMimeTypes {
     /** Bytes to read from file for mimetype detection. */
     private static final int PREVIEW_SIZE = 11;
 
-    /** Common mimetypes. */
+    /** Common MIME types. */
     private static final Map<String, String> mimeTypes = U.newHashMap(810);
 
     static {
@@ -840,6 +840,10 @@ public class VisorMimeTypes {
         mimeTypes.put("dssc", "application/dssc+der");
     }
 
+    /**
+     * @param f File to detect content type.
+     * @return Content type.
+     */
     @Nullable public static String getContentType(File f) {
         try (FileInputStream is = new FileInputStream(f)) {
             byte[] data = new byte[Math.min((int)f.length(), PREVIEW_SIZE)];
@@ -853,25 +857,30 @@ public class VisorMimeTypes {
         }
     }
 
+    /**
+     * @param data Bytes to detect content type.
+     * @param name File name to detect content type by file name.
+     * @return Content type.
+     */
     @Nullable public static String getContentType(byte[] data, String name) {
         if (data == null)
             return null;
 
-        byte[] header = new byte[PREVIEW_SIZE];
+        byte[] hdr = new byte[PREVIEW_SIZE];
 
-        System.arraycopy(data, 0, header, 0, Math.min(data.length, header.length));
+        System.arraycopy(data, 0, hdr, 0, Math.min(data.length, hdr.length));
 
-        int c1 = header[0] & 0xff;
-        int c2 = header[1] & 0xff;
-        int c3 = header[2] & 0xff;
-        int c4 = header[3] & 0xff;
-        int c5 = header[4] & 0xff;
-        int c6 = header[5] & 0xff;
-        int c7 = header[6] & 0xff;
-        int c8 = header[7] & 0xff;
-        int c9 = header[8] & 0xff;
-        int c10 = header[9] & 0xff;
-        int c11 = header[10] & 0xff;
+        int c1 = hdr[0] & 0xff;
+        int c2 = hdr[1] & 0xff;
+        int c3 = hdr[2] & 0xff;
+        int c4 = hdr[3] & 0xff;
+        int c5 = hdr[4] & 0xff;
+        int c6 = hdr[5] & 0xff;
+        int c7 = hdr[6] & 0xff;
+        int c8 = hdr[7] & 0xff;
+        int c9 = hdr[8] & 0xff;
+        int c10 = hdr[9] & 0xff;
+        int c11 = hdr[10] & 0xff;
 
         if (c1 == 0xCA && c2 == 0xFE && c3 == 0xBA && c4 == 0xBE)
             return "application/java-vm";
@@ -879,8 +888,10 @@ public class VisorMimeTypes {
         if (c1 == 0xD0 && c2 == 0xCF && c3 == 0x11 && c4 == 0xE0 && c5 == 0xA1 && c6 == 0xB1 && c7 == 0x1A && c8 == 0xE1) {
             // if the name is set then check if it can be validated by name, because it could be a xls or powerpoint
             String contentType = guessContentTypeFromName(name);
+
             if (contentType != null)
                 return contentType;
+
             return "application/msword";
         }
         if (c1 == 0x25 && c2 == 0x50 && c3 == 0x44 && c4 == 0x46 && c5 == 0x2d && c6 == 0x31 && c7 == 0x2e)
@@ -987,14 +998,18 @@ public class VisorMimeTypes {
         return guessContentTypeFromName(name);
     }
 
+    /**
+     * @param name File name to detect content type by file name.
+     * @return Content type.
+     */
     @Nullable public static String guessContentTypeFromName(String name) {
         if (name == null)
             return null;
 
-        int lastIndex = name.lastIndexOf('.');
+        int lastIdx = name.lastIndexOf('.');
 
-        if (lastIndex != -1) {
-            String extention = name.substring(lastIndex + 1).toLowerCase();
+        if (lastIdx != -1) {
+            String extention = name.substring(lastIdx + 1).toLowerCase();
 
             return mimeTypes.get(extention);
         }

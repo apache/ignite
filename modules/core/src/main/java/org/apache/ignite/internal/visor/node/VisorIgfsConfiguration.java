@@ -56,37 +56,37 @@ public class VisorIgfsConfiguration implements Serializable {
     private int prefetchBlocks;
 
     /** Read/write buffer size for IGFS stream operations in bytes. */
-    private int streamBufferSize;
+    private int streamBufSize;
 
     /** Number of file blocks buffered on local node before sending batch to remote node. */
     private int perNodeBatchSize;
 
     /** Number of batches that can be concurrently sent to remote node. */
-    private int perNodeParallelBatchCount;
+    private int perNodeParallelBatchCnt;
 
     /** URI of the secondary Hadoop file system. */
-    private String secondaryHadoopFileSystemUri;
+    private String secondaryHadoopFileSysUri;
 
     /** Path for the secondary hadoop file system config. */
-    private String secondaryHadoopFileSystemConfigPath;
+    private String secondaryHadoopFileSysCfgPath;
 
     /** IGFS instance mode. */
-    private IgfsMode defaultMode;
+    private IgfsMode dfltMode;
 
     /** Map of paths to IGFS modes. */
     private Map<String, IgfsMode> pathModes;
 
     /** Dual mode PUT operations executor service. */
-    private String dualModePutExecutorService;
+    private String dualModePutExecutorSrvc;
 
     /** Dual mode PUT operations executor service shutdown flag. */
-    private boolean dualModePutExecutorServiceShutdown;
+    private boolean dualModePutExecutorSrvcShutdown;
 
     /** Maximum amount of data in pending puts. */
     private long dualModeMaxPendingPutsSize;
 
     /** Maximum range length. */
-    private long maxTaskRangeLength;
+    private long maxTaskRangeLen;
 
     /** Fragmentizer concurrent files. */
     private int fragmentizerConcurrentFiles;
@@ -262,14 +262,14 @@ public class VisorIgfsConfiguration implements Serializable {
      * @return Read/write buffer size for IGFS stream operations in bytes.
      */
     public int streamBufferSize() {
-        return streamBufferSize;
+        return streamBufSize;
     }
 
     /**
      * @param streamBufSize New read/write buffer size for IGFS stream operations in bytes.
      */
     public void streamBufferSize(int streamBufSize) {
-        streamBufferSize = streamBufSize;
+        this.streamBufSize = streamBufSize;
     }
 
     /**
@@ -290,56 +290,56 @@ public class VisorIgfsConfiguration implements Serializable {
      * @return Number of batches that can be concurrently sent to remote node.
      */
     public int perNodeParallelBatchCount() {
-        return perNodeParallelBatchCount;
+        return perNodeParallelBatchCnt;
     }
 
     /**
      * @param perNodeParallelBatchCnt New number of batches that can be concurrently sent to remote node.
      */
     public void perNodeParallelBatchCount(int perNodeParallelBatchCnt) {
-        perNodeParallelBatchCount = perNodeParallelBatchCnt;
+        this.perNodeParallelBatchCnt = perNodeParallelBatchCnt;
     }
 
     /**
      * @return URI of the secondary Hadoop file system.
      */
     @Nullable public String secondaryHadoopFileSystemUri() {
-        return secondaryHadoopFileSystemUri;
+        return secondaryHadoopFileSysUri;
     }
 
     /**
      * @param secondaryHadoopFileSysUri New URI of the secondary Hadoop file system.
      */
     public void secondaryHadoopFileSystemUri(@Nullable String secondaryHadoopFileSysUri) {
-        secondaryHadoopFileSystemUri = secondaryHadoopFileSysUri;
+        this.secondaryHadoopFileSysUri = secondaryHadoopFileSysUri;
     }
 
     /**
      * @return Path for the secondary hadoop file system config.
      */
     @Nullable public String secondaryHadoopFileSystemConfigPath() {
-        return secondaryHadoopFileSystemConfigPath;
+        return secondaryHadoopFileSysCfgPath;
     }
 
     /**
      * @param secondaryHadoopFileSysCfgPath New path for the secondary hadoop file system config.
      */
     public void secondaryHadoopFileSystemConfigPath(@Nullable String secondaryHadoopFileSysCfgPath) {
-        secondaryHadoopFileSystemConfigPath = secondaryHadoopFileSysCfgPath;
+        this.secondaryHadoopFileSysCfgPath = secondaryHadoopFileSysCfgPath;
     }
 
     /**
      * @return IGFS instance mode.
      */
     public IgfsMode defaultMode() {
-        return defaultMode;
+        return dfltMode;
     }
 
     /**
      * @param dfltMode New IGFS instance mode.
      */
     public void defaultMode(IgfsMode dfltMode) {
-        defaultMode = dfltMode;
+        this.dfltMode = dfltMode;
     }
 
     /**
@@ -360,28 +360,28 @@ public class VisorIgfsConfiguration implements Serializable {
      * @return Dual mode PUT operations executor service.
      */
     public String dualModePutExecutorService() {
-        return dualModePutExecutorService;
+        return dualModePutExecutorSrvc;
     }
 
     /**
      * @param dualModePutExecutorSrvc New dual mode PUT operations executor service.
      */
     public void dualModePutExecutorService(String dualModePutExecutorSrvc) {
-        dualModePutExecutorService = dualModePutExecutorSrvc;
+        this.dualModePutExecutorSrvc = dualModePutExecutorSrvc;
     }
 
     /**
      * @return Dual mode PUT operations executor service shutdown flag.
      */
     public boolean dualModePutExecutorServiceShutdown() {
-        return dualModePutExecutorServiceShutdown;
+        return dualModePutExecutorSrvcShutdown;
     }
 
     /**
      * @param dualModePutExecutorSrvcShutdown New dual mode PUT operations executor service shutdown flag.
      */
     public void dualModePutExecutorServiceShutdown(boolean dualModePutExecutorSrvcShutdown) {
-        dualModePutExecutorServiceShutdown = dualModePutExecutorSrvcShutdown;
+        this.dualModePutExecutorSrvcShutdown = dualModePutExecutorSrvcShutdown;
     }
 
     /**
@@ -402,14 +402,14 @@ public class VisorIgfsConfiguration implements Serializable {
      * @return Maximum range length.
      */
     public long maxTaskRangeLength() {
-        return maxTaskRangeLength;
+        return maxTaskRangeLen;
     }
 
     /**
      * @param maxTaskRangeLen New maximum range length.
      */
     public void maxTaskRangeLength(long maxTaskRangeLen) {
-        maxTaskRangeLength = maxTaskRangeLen;
+        this.maxTaskRangeLen = maxTaskRangeLen;
     }
 
     /**
