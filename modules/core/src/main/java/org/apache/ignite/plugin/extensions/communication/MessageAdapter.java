@@ -83,4 +83,51 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     public boolean skipRecovery() {
         return false;
     }
+
+    /**
+     * TODO
+     */
+    public enum Type {
+        BYTE,
+
+        SHORT,
+
+        INT,
+
+        LONG,
+
+        FLOAT,
+
+        DOUBLE,
+
+        CHAR,
+
+        BOOLEAN,
+
+        BYTE_ARR,
+
+        SHORT_ARR,
+
+        INT_ARR,
+
+        LONG_ARR,
+
+        FLOAT_ARR,
+
+        DOUBLE_ARR,
+
+        CHAR_ARR,
+
+        BOOLEAN_ARR,
+
+        STRING,
+
+        BIT_SET,
+
+        UUID,
+
+        IGNITE_UUID,
+
+        MSG
+    }
 }

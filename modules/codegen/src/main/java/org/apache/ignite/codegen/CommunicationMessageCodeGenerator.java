@@ -63,6 +63,56 @@ public class CommunicationMessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
+    private static final Map<Class<?>, MessageAdapter.Type> TYPES = U.newHashMap(30);
+
+    static {
+        TYPES.put(byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(Byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(Short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(int.class, MessageAdapter.Type.INT);
+        TYPES.put(Integer.class, MessageAdapter.Type.INT);
+        TYPES.put(long.class, MessageAdapter.Type.LONG);
+        TYPES.put(Long.class, MessageAdapter.Type.LONG);
+        TYPES.put(float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(Float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(Double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(char.class, MessageAdapter.Type.CHAR);
+        TYPES.put(Character.class, MessageAdapter.Type.CHAR);
+        TYPES.put(boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(Boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(byte[].class, MessageAdapter.Type.BYTE_ARR);
+        TYPES.put(short[].class, MessageAdapter.Type.SHORT_ARR);
+        TYPES.put(int[].class, MessageAdapter.Type.INT_ARR);
+        TYPES.put(long[].class, MessageAdapter.Type.LONG_ARR);
+        TYPES.put(float[].class, MessageAdapter.Type.FLOAT_ARR);
+        TYPES.put(double[].class, MessageAdapter.Type.DOUBLE_ARR);
+        TYPES.put(char[].class, MessageAdapter.Type.CHAR_ARR);
+        TYPES.put(boolean[].class, MessageAdapter.Type.BOOLEAN_ARR);
+        TYPES.put(String.class, MessageAdapter.Type.STRING);
+        TYPES.put(BitSet.class, MessageAdapter.Type.BIT_SET);
+        TYPES.put(UUID.class, MessageAdapter.Type.UUID);
+        TYPES.put(IgniteUuid.class, MessageAdapter.Type.IGNITE_UUID);
+    }
+
+    /**
+     * @param cls Class.
+     * @return Type enum value.
+     */
+    private static MessageAdapter.Type typeEnum(Class<?> cls) {
+        MessageAdapter.Type type = TYPES.get(cls);
+
+        if (type == null) {
+            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
+
+            type = MessageAdapter.Type.MSG;
+        }
+
+        return type;
+    }
+
+    /** */
     private final Collection<String> write = new ArrayList<>();
 
     /** */
@@ -540,19 +590,19 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeMessage", field, name);
         else if (type.isArray()) {
             returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
-                type.getComponentType().getSimpleName() + ".class");
+                "Type." + typeEnum(type.getComponentType()));
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfFailed(write, "writer.writeCollection", field, name, colItemType.getSimpleName() + ".class");
+            returnFalseIfFailed(write, "writer.writeCollection", field, name, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            returnFalseIfFailed(write, "writer.writeMap", field, name, mapKeyType.getSimpleName() + ".class",
-                mapValType.getSimpleName() + ".class");
+            returnFalseIfFailed(write, "writer.writeMap", field, name, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapKeyType));
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);
@@ -624,15 +674,12 @@ public class CommunicationMessageCodeGenerator {
         }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfReadFailed(name, "reader.readMessage", field);
-        else if (type.isArray()) {
-            returnFalseIfReadFailed(name, "reader.readObjectArray", field,
-                type.getComponentType().getSimpleName() + ".class");
-        }
+        else if (type.isArray())
+            returnFalseIfReadFailed(name, "reader.readObjectArray", field, "Type." + typeEnum(type.getComponentType()));
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(name, "reader.readCollection", field,
-                colItemType.getSimpleName() + ".class");
+            returnFalseIfReadFailed(name, "reader.readCollection", field, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
@@ -640,8 +687,8 @@ public class CommunicationMessageCodeGenerator {
 
             boolean linked = type.equals(LinkedHashMap.class);
 
-            returnFalseIfReadFailed(name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
-                mapValType.getSimpleName() + ".class", linked ? "true" : "false");
+            returnFalseIfReadFailed(name, "reader.readMap", field, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapValType), linked ? "true" : "false");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);

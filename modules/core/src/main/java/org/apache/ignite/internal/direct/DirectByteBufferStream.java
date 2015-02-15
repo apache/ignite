@@ -207,56 +207,6 @@ public class DirectByteBufferStream {
     private static final Object NULL = new Object();
 
     /** */
-    private static final Map<Class<?>, Type> TYPES = U.newHashMap(30);
-
-    static {
-        TYPES.put(byte.class, Type.BYTE);
-        TYPES.put(Byte.class, Type.BYTE);
-        TYPES.put(short.class, Type.SHORT);
-        TYPES.put(Short.class, Type.SHORT);
-        TYPES.put(int.class, Type.INT);
-        TYPES.put(Integer.class, Type.INT);
-        TYPES.put(long.class, Type.LONG);
-        TYPES.put(Long.class, Type.LONG);
-        TYPES.put(float.class, Type.FLOAT);
-        TYPES.put(Float.class, Type.FLOAT);
-        TYPES.put(double.class, Type.DOUBLE);
-        TYPES.put(Double.class, Type.DOUBLE);
-        TYPES.put(char.class, Type.CHAR);
-        TYPES.put(Character.class, Type.CHAR);
-        TYPES.put(boolean.class, Type.BOOLEAN);
-        TYPES.put(Boolean.class, Type.BOOLEAN);
-        TYPES.put(byte[].class, Type.BYTE_ARR);
-        TYPES.put(short[].class, Type.SHORT_ARR);
-        TYPES.put(int[].class, Type.INT_ARR);
-        TYPES.put(long[].class, Type.LONG_ARR);
-        TYPES.put(float[].class, Type.FLOAT_ARR);
-        TYPES.put(double[].class, Type.DOUBLE_ARR);
-        TYPES.put(char[].class, Type.CHAR_ARR);
-        TYPES.put(boolean[].class, Type.BOOLEAN_ARR);
-        TYPES.put(String.class, Type.STRING);
-        TYPES.put(BitSet.class, Type.BIT_SET);
-        TYPES.put(UUID.class, Type.UUID);
-        TYPES.put(IgniteUuid.class, Type.IGNITE_UUID);
-    }
-
-    /**
-     * @param cls Class.
-     * @return Type enum value.
-     */
-    private static Type type(Class<?> cls) {
-        Type type = TYPES.get(cls);
-
-        if (type == null) {
-            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
-
-            type = Type.MSG;
-        }
-
-        return type;
-    }
-
-    /** */
     private final MessageFactory msgFactory;
 
     /** */
@@ -614,7 +564,7 @@ public class DirectByteBufferStream {
                 it = arrayIterator(arr);
             }
 
-            Type itemType = type(itemCls);
+            MessageAdapter.Type itemType = null;//type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
@@ -657,7 +607,7 @@ public class DirectByteBufferStream {
                 it = col.iterator();
             }
 
-            Type itemType = type(itemCls);
+            MessageAdapter.Type itemType = null;//type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL) {
@@ -702,8 +652,8 @@ public class DirectByteBufferStream {
                 it = map.entrySet().iterator();
             }
 
-            Type keyType = type(keyCls);
-            Type valType = type(valCls);
+            MessageAdapter.Type keyType = null;//type(keyCls);
+            MessageAdapter.Type valType = null;//type(valCls);
 
             while (it.hasNext() || cur != NULL) {
                 Map.Entry<K, V> e;
@@ -1044,7 +994,7 @@ public class DirectByteBufferStream {
             if (objArr == null)
                 objArr = (Object[])Array.newInstance(itemCls, readSize);
 
-            Type itemType = type(itemCls);
+            MessageAdapter.Type itemType = null;//type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
@@ -1089,7 +1039,7 @@ public class DirectByteBufferStream {
             if (col == null)
                 col = new ArrayList<>(readSize);
 
-            Type itemType = type(itemCls);
+            MessageAdapter.Type itemType = null;//type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
@@ -1137,8 +1087,8 @@ public class DirectByteBufferStream {
             if (map == null)
                 map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
 
-            Type keyType = type(keyCls);
-            Type valType = type(valCls);
+            MessageAdapter.Type keyType = null;//type(keyCls);
+            MessageAdapter.Type valType = null;//type(valCls);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
@@ -1324,7 +1274,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param val Value.
      */
-    private void write(Type type, Object val, MessageWriteState state) {
+    private void write(MessageAdapter.Type type, Object val, MessageWriteState state) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1450,7 +1400,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    private Object read(Type type, MessageReader reader) {
+    private Object read(MessageAdapter.Type type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1554,51 +1504,5 @@ public class DirectByteBufferStream {
          * @return New array.
          */
         public T create(int len);
-    }
-
-    /**
-     */
-    private enum Type {
-        BYTE,
-
-        SHORT,
-
-        INT,
-
-        LONG,
-
-        FLOAT,
-
-        DOUBLE,
-
-        CHAR,
-
-        BOOLEAN,
-
-        BYTE_ARR,
-
-        SHORT_ARR,
-
-        INT_ARR,
-
-        LONG_ARR,
-
-        FLOAT_ARR,
-
-        DOUBLE_ARR,
-
-        CHAR_ARR,
-
-        BOOLEAN_ARR,
-
-        STRING,
-
-        BIT_SET,
-
-        UUID,
-
-        IGNITE_UUID,
-
-        MSG
     }
 }
