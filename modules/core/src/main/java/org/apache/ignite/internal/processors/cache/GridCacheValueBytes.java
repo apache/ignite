@@ -124,7 +124,7 @@ public class GridCacheValueBytes extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -132,13 +132,13 @@ public class GridCacheValueBytes extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("bytes", bytes))
+                if (!writer.writeField("bytes", bytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("plain", plain))
+                if (!writer.writeField("plain", plain, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
@@ -154,7 +154,7 @@ public class GridCacheValueBytes extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                bytes = reader.readByteArray("bytes");
+                bytes = reader.readField("bytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -162,7 +162,7 @@ public class GridCacheValueBytes extends MessageAdapter {
                 readState++;
 
             case 1:
-                plain = reader.readBoolean("plain");
+                plain = reader.readField("plain", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;

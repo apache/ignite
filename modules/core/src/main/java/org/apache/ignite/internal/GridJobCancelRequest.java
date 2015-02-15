@@ -114,7 +114,7 @@ public class GridJobCancelRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -122,19 +122,19 @@ public class GridJobCancelRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeField("jobId", jobId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
@@ -150,7 +150,7 @@ public class GridJobCancelRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readField("jobId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -158,7 +158,7 @@ public class GridJobCancelRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -166,7 +166,7 @@ public class GridJobCancelRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                sys = reader.readBoolean("sys");
+                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;

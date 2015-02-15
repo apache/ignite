@@ -40,168 +40,143 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByte(String name, byte val) {
-        stream.writeByte(val);
+    @Override public boolean writeMessageType(byte msgType) {
+        stream.writeByte(msgType);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeShort(String name, short val) {
-        stream.writeShort(val);
+    @Override public boolean writeField(String name, Object val, MessageFieldType type) {
+        switch (type) {
+            case BYTE:
+                stream.writeByte((byte)val);
+
+                break;
+
+            case SHORT:
+                stream.writeShort((short)val);
+
+                break;
+
+            case INT:
+                stream.writeInt((int)val);
+
+                break;
+
+            case LONG:
+                stream.writeLong((long)val);
+
+                break;
+
+            case FLOAT:
+                stream.writeFloat((float)val);
+
+                break;
+
+            case DOUBLE:
+                stream.writeDouble((double)val);
+
+                break;
+
+            case CHAR:
+                stream.writeChar((char)val);
+
+                break;
+
+            case BOOLEAN:
+                stream.writeBoolean((boolean)val);
+
+                break;
+
+            case BYTE_ARR:
+                stream.writeByteArray((byte[])val);
+
+                break;
+
+            case SHORT_ARR:
+                stream.writeShortArray((short[])val);
+
+                break;
+
+            case INT_ARR:
+                stream.writeIntArray((int[])val);
+
+                break;
+
+            case LONG_ARR:
+                stream.writeLongArray((long[])val);
+
+                break;
+
+            case FLOAT_ARR:
+                stream.writeFloatArray((float[])val);
+
+                break;
+
+            case DOUBLE_ARR:
+                stream.writeDoubleArray((double[])val);
+
+                break;
+
+            case CHAR_ARR:
+                stream.writeCharArray((char[])val);
+
+                break;
+
+            case BOOLEAN_ARR:
+                stream.writeBooleanArray((boolean[])val);
+
+                break;
+
+            case STRING:
+                stream.writeString((String)val);
+
+                break;
+
+            case BIT_SET:
+                stream.writeBitSet((BitSet)val);
+
+                break;
+
+            case UUID:
+                stream.writeUuid((UUID)val);
+
+                break;
+
+            case IGNITE_UUID:
+                stream.writeIgniteUuid((IgniteUuid)val);
+
+                break;
+
+            case MSG:
+                stream.writeMessage((MessageAdapter)val, this);
+
+                break;
+
+            default:
+                throw new IllegalStateException("Unknown field type: " + type);
+        }
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeInt(String name, int val) {
-        stream.writeInt(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeLong(String name, long val) {
-        stream.writeLong(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeFloat(String name, float val) {
-        stream.writeFloat(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeDouble(String name, double val) {
-        stream.writeDouble(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeChar(String name, char val) {
-        stream.writeChar(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeBoolean(String name, boolean val) {
-        stream.writeBoolean(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeByteArray(String name, @Nullable byte[] val) {
-        stream.writeByteArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeShortArray(String name, @Nullable short[] val) {
-        stream.writeShortArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeIntArray(String name, @Nullable int[] val) {
-        stream.writeIntArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeLongArray(String name, @Nullable long[] val) {
-        stream.writeLongArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeFloatArray(String name, @Nullable float[] val) {
-        stream.writeFloatArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeDoubleArray(String name, @Nullable double[] val) {
-        stream.writeDoubleArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeCharArray(String name, @Nullable char[] val) {
-        stream.writeCharArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeBooleanArray(String name, @Nullable boolean[] val) {
-        stream.writeBooleanArray(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeString(String name, String val) {
-        stream.writeString(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeBitSet(String name, BitSet val) {
-        stream.writeBitSet(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeUuid(String name, UUID val) {
-        stream.writeUuid(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeIgniteUuid(String name, IgniteUuid val) {
-        stream.writeIgniteUuid(val);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
-        stream.writeMessage(msg, this);
-
-        return stream.lastFinished();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageFieldType itemType) {
+    @Override public <T> boolean writeArrayField(String name, T[] arr, MessageFieldType itemType) {
         stream.writeObjectArray(arr, itemType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageFieldType itemType) {
+    @Override public <T> boolean writeCollectionField(String name, Collection<T> col, MessageFieldType itemType) {
         stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageFieldType keyType,
+    @Override public <K, V> boolean writeMapField(String name, Map<K, V> map, MessageFieldType keyType,
         MessageFieldType valType) {
         stream.writeMap(map, keyType, valType, this);
 

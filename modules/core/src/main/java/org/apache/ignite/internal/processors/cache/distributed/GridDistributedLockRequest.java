@@ -433,7 +433,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -441,97 +441,97 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeObjectArray("drVersByIdx", drVersByIdx, MessageFieldType.MSG))
+                if (!writer.writeArrayField("drVersByIdx", drVersByIdx, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
+                if (!writer.writeField("grpLockKeyBytes", grpLockKeyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeBoolean("isInTx", isInTx))
+                if (!writer.writeField("isInTx", isInTx, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeBoolean("isInvalidate", isInvalidate))
+                if (!writer.writeField("isInvalidate", isInvalidate, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBoolean("isRead", isRead))
+                if (!writer.writeField("isRead", isRead, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
+                if (!writer.writeField("isolation", isolation != null ? (byte)isolation.ordinal() : -1, MessageFieldType.BYTE))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollectionField("keyBytes", keyBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                if (!writer.writeField("nearXidVer", nearXidVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeField("nodeId", nodeId, MessageFieldType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeBoolean("partLock", partLock))
+                if (!writer.writeField("partLock", partLock, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeBooleanArray("retVals", retVals))
+                if (!writer.writeField("retVals", retVals, MessageFieldType.BOOLEAN_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeField("threadId", threadId, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeField("timeout", timeout, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeInt("txSize", txSize))
+                if (!writer.writeField("txSize", txSize, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeByteArray("writeEntriesBytes", writeEntriesBytes))
+                if (!writer.writeField("writeEntriesBytes", writeEntriesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -550,7 +550,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         switch (readState) {
             case 8:
-                drVersByIdx = reader.readObjectArray("drVersByIdx", MessageFieldType.MSG, GridCacheVersion.class);
+                drVersByIdx = reader.readArrayField("drVersByIdx", MessageFieldType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -558,7 +558,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 9:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -566,7 +566,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 10:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+                grpLockKeyBytes = reader.readField("grpLockKeyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -574,7 +574,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 11:
-                isInTx = reader.readBoolean("isInTx");
+                isInTx = reader.readField("isInTx", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -582,7 +582,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 12:
-                isInvalidate = reader.readBoolean("isInvalidate");
+                isInvalidate = reader.readField("isInvalidate", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -590,7 +590,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 13:
-                isRead = reader.readBoolean("isRead");
+                isRead = reader.readField("isRead", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -600,7 +600,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             case 14:
                 byte isolationOrd;
 
-                isolationOrd = reader.readByte("isolation");
+                isolationOrd = reader.readField("isolation", MessageFieldType.BYTE);
 
                 if (!reader.isLastRead())
                     return false;
@@ -610,7 +610,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 15:
-                keyBytes = reader.readCollection("keyBytes", MessageFieldType.BYTE_ARR);
+                keyBytes = reader.readCollectionField("keyBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -618,7 +618,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 16:
-                nearXidVer = reader.readMessage("nearXidVer");
+                nearXidVer = reader.readField("nearXidVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -626,7 +626,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 17:
-                nodeId = reader.readUuid("nodeId");
+                nodeId = reader.readField("nodeId", MessageFieldType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -634,7 +634,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 18:
-                partLock = reader.readBoolean("partLock");
+                partLock = reader.readField("partLock", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -642,7 +642,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 19:
-                retVals = reader.readBooleanArray("retVals");
+                retVals = reader.readField("retVals", MessageFieldType.BOOLEAN_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -650,7 +650,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 20:
-                threadId = reader.readLong("threadId");
+                threadId = reader.readField("threadId", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -658,7 +658,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 21:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readField("timeout", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -666,7 +666,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 22:
-                txSize = reader.readInt("txSize");
+                txSize = reader.readField("txSize", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -674,7 +674,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 23:
-                writeEntriesBytes = reader.readByteArray("writeEntriesBytes");
+                writeEntriesBytes = reader.readField("writeEntriesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

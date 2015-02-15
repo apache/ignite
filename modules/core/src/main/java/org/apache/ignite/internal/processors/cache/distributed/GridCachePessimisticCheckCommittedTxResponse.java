@@ -135,7 +135,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -143,25 +143,25 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeByteArray("committedTxInfoBytes", committedTxInfoBytes))
+                if (!writer.writeField("committedTxInfoBytes", committedTxInfoBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeField("sys", sys, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
@@ -180,7 +180,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (readState) {
             case 8:
-                committedTxInfoBytes = reader.readByteArray("committedTxInfoBytes");
+                committedTxInfoBytes = reader.readField("committedTxInfoBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -188,7 +188,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 readState++;
 
             case 9:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -196,7 +196,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 readState++;
 
             case 10:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -204,7 +204,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 readState++;
 
             case 11:
-                sys = reader.readBoolean("sys");
+                sys = reader.readField("sys", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;

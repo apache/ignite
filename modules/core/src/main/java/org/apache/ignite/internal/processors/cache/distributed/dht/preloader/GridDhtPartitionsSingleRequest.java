@@ -52,7 +52,7 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();

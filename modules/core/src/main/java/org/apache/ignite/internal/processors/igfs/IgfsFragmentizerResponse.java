@@ -62,7 +62,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -70,7 +70,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("fileId", fileId))
+                if (!writer.writeField("fileId", fileId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -89,7 +89,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                fileId = reader.readIgniteUuid("fileId");
+                fileId = reader.readField("fileId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

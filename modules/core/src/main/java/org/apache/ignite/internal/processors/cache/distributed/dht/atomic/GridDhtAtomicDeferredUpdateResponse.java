@@ -80,7 +80,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -88,7 +88,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, MessageFieldType.MSG))
+                if (!writer.writeCollectionField("futVers", futVers, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -107,7 +107,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
         switch (readState) {
             case 3:
-                futVers = reader.readCollection("futVers", MessageFieldType.MSG);
+                futVers = reader.readCollectionField("futVers", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

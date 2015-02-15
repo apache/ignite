@@ -17,8 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.lang.*;
-
 import java.nio.*;
 import java.util.*;
 
@@ -29,200 +27,29 @@ import java.util.*;
  */
 public interface MessageWriter {
     /**
-     * Sets but buffer to write to.
+     * Sets byte buffer to write to.
      *
      * @param buf Byte buffer.
      */
     public void setBuffer(ByteBuffer buf);
 
     /**
-     * Writes {@code byte} value.
+     * Writes message type.
      *
-     * @param name Field name.
-     * @param val {@code byte} value.
-     * @return Whether value was fully written.
+     * @param msgType Message type.
+     * @return Whether message type was written.
      */
-    public boolean writeByte(String name, byte val);
+    public boolean writeMessageType(byte msgType);
 
     /**
-     * Writes {@code short} value.
+     * Writes field.
      *
      * @param name Field name.
-     * @param val {@code short} value.
-     * @return Whether value was fully written.
+     * @param val Field value.
+     * @param type Field type.
+     * @return Whether field was fully written.
      */
-    public boolean writeShort(String name, short val);
-
-    /**
-     * Writes {@code int} value.
-     *
-     * @param name Field name.
-     * @param val {@code int} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeInt(String name, int val);
-
-    /**
-     * Writes {@code long} value.
-     *
-     * @param name Field name.
-     * @param val {@code long} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeLong(String name, long val);
-
-    /**
-     * Writes {@code float} value.
-     *
-     * @param name Field name.
-     * @param val {@code float} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeFloat(String name, float val);
-
-    /**
-     * Writes {@code double} value.
-     *
-     * @param name Field name.
-     * @param val {@code double} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeDouble(String name, double val);
-
-    /**
-     * Writes {@code char} value.
-     *
-     * @param name Field name.
-     * @param val {@code char} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeChar(String name, char val);
-
-    /**
-     * Writes {@code boolean} value.
-     *
-     * @param name Field name.
-     * @param val {@code boolean} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeBoolean(String name, boolean val);
-
-    /**
-     * Writes {@code byte} array.
-     *
-     * @param name Field name.
-     * @param val {@code byte} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeByteArray(String name, byte[] val);
-
-    /**
-     * Writes {@code short} array.
-     *
-     * @param name Field name.
-     * @param val {@code short} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeShortArray(String name, short[] val);
-
-    /**
-     * Writes {@code int} array.
-     *
-     * @param name Field name.
-     * @param val {@code int} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeIntArray(String name, int[] val);
-
-    /**
-     * Writes {@code long} array.
-     *
-     * @param name Field name.
-     * @param val {@code long} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeLongArray(String name, long[] val);
-
-    /**
-     * Writes {@code float} array.
-     *
-     * @param name Field name.
-     * @param val {@code float} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeFloatArray(String name, float[] val);
-
-    /**
-     * Writes {@code double} array.
-     *
-     * @param name Field name.
-     * @param val {@code double} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeDoubleArray(String name, double[] val);
-
-    /**
-     * Writes {@code char} array.
-     *
-     * @param name Field name.
-     * @param val {@code char} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeCharArray(String name, char[] val);
-
-    /**
-     * Writes {@code boolean} array.
-     *
-     * @param name Field name.
-     * @param val {@code boolean} array.
-     * @return Whether array was fully written.
-     */
-    public boolean writeBooleanArray(String name, boolean[] val);
-
-    /**
-     * Writes {@link String}.
-     *
-     * @param name Field name.
-     * @param val {@link String}.
-     * @return Whether value was fully written.
-     */
-    public boolean writeString(String name, String val);
-
-    /**
-     * Writes {@link BitSet}.
-     *
-     * @param name Field name.
-     * @param val {@link BitSet}.
-     * @return Whether value was fully written.
-     */
-    public boolean writeBitSet(String name, BitSet val);
-
-    /**
-     * Writes {@link UUID}.
-     *
-     * @param name Field name.
-     * @param val {@link UUID}.
-     * @return Whether value was fully written.
-     */
-    public boolean writeUuid(String name, UUID val);
-
-    /**
-     * Writes {@link IgniteUuid}.
-     *
-     * @param name Field name.
-     * @param val {@link IgniteUuid}.
-     * @return Whether value was fully written.
-     */
-    public boolean writeIgniteUuid(String name, IgniteUuid val);
-
-    /**
-     * Writes nested message.
-     *
-     * @param name Field name.
-     * @param val Message.
-     * @return Whether value was fully written.
-     */
-    public boolean writeMessage(String name, MessageAdapter val);
+    public boolean writeField(String name, Object val, MessageFieldType type);
 
     /**
      * Writes array of objects.
@@ -232,7 +59,7 @@ public interface MessageWriter {
      * @param itemType Array component type.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, MessageFieldType itemType);
+    public <T> boolean writeArrayField(String name, T[] arr, MessageFieldType itemType);
 
     /**
      * Writes collection.
@@ -242,7 +69,7 @@ public interface MessageWriter {
      * @param itemType Collection item type.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, MessageFieldType itemType);
+    public <T> boolean writeCollectionField(String name, Collection<T> col, MessageFieldType itemType);
 
     /**
      * Writes map.
@@ -253,20 +80,45 @@ public interface MessageWriter {
      * @param valType Map value type.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageFieldType keyType,
+    public <K, V> boolean writeMapField(String name, Map<K, V> map, MessageFieldType keyType,
         MessageFieldType valType);
 
+    /**
+     * @return Whether type for current message is already written.
+     */
     public boolean isTypeWritten();
 
+    /**
+     * Callback called after message type is written.
+     */
     public void onTypeWritten();
 
+    /**
+     * Gets current state.
+     *
+     * @return State.
+     */
     public int state();
 
+    /**
+     * Increments state.
+     */
     public void incrementState();
 
+    /**
+     * Callback called before inner message is written.
+     */
     public void beforeInnerMessageWrite();
 
+    /**
+     * Callback called after inner message is written.
+     *
+     * @param finished Whether inner message was fully written.
+     */
     public void afterInnerMessageWrite(boolean finished);
 
+    /**
+     * Resets the state of this writer.
+     */
     public void reset();
 }

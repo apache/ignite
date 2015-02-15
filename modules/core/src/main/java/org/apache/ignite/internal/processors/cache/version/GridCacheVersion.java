@@ -257,7 +257,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -265,25 +265,25 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("globalTime", globalTime))
+                if (!writer.writeField("globalTime", globalTime, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
+                if (!writer.writeField("nodeOrderDrId", nodeOrderDrId, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("order", order))
+                if (!writer.writeField("order", order, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeInt("topVer", topVer))
+                if (!writer.writeField("topVer", topVer, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
@@ -299,7 +299,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
 
         switch (readState) {
             case 0:
-                globalTime = reader.readLong("globalTime");
+                globalTime = reader.readField("globalTime", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -307,7 +307,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 readState++;
 
             case 1:
-                nodeOrderDrId = reader.readInt("nodeOrderDrId");
+                nodeOrderDrId = reader.readField("nodeOrderDrId", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -315,7 +315,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 readState++;
 
             case 2:
-                order = reader.readLong("order");
+                order = reader.readField("order", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -323,7 +323,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 readState++;
 
             case 3:
-                topVer = reader.readInt("topVer");
+                topVer = reader.readField("topVer", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;

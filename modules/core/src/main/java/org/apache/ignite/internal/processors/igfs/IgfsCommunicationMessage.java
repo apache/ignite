@@ -53,7 +53,7 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();

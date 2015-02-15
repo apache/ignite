@@ -59,7 +59,7 @@ public class GridStreamerCancelRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -67,7 +67,7 @@ public class GridStreamerCancelRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("cancelledFutId", cancelledFutId))
+                if (!writer.writeField("cancelledFutId", cancelledFutId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -83,7 +83,7 @@ public class GridStreamerCancelRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                cancelledFutId = reader.readIgniteUuid("cancelledFutId");
+                cancelledFutId = reader.readField("cancelledFutId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

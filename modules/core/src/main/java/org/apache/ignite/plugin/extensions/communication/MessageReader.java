@@ -17,8 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.lang.*;
-
 import java.nio.*;
 import java.util.*;
 
@@ -29,179 +27,20 @@ import java.util.*;
  */
 public interface MessageReader {
     /**
-     * Sets but buffer to read from.
+     * Sets byte buffer to read from.
      *
      * @param buf Byte buffer.
      */
     public void setBuffer(ByteBuffer buf);
 
     /**
-     * Reads {@code byte} value.
+     * Reads field.
      *
      * @param name Field name.
-     * @return {@code byte} value.
+     * @param type Field type.
+     * @return Field value.
      */
-    public byte readByte(String name);
-
-    /**
-     * Reads {@code short} value.
-     *
-     * @param name Field name.
-     * @return {@code short} value.
-     */
-    public short readShort(String name);
-
-    /**
-     * Reads {@code int} value.
-     *
-     * @param name Field name.
-     * @return {@code int} value.
-     */
-    public int readInt(String name);
-
-    /**
-     * Reads {@code long} value.
-     *
-     * @param name Field name.
-     * @return {@code long} value.
-     */
-    public long readLong(String name);
-
-    /**
-     * Reads {@code float} value.
-     *
-     * @param name Field name.
-     * @return {@code float} value.
-     */
-    public float readFloat(String name);
-
-    /**
-     * Reads {@code double} value.
-     *
-     * @param name Field name.
-     * @return {@code double} value.
-     */
-    public double readDouble(String name);
-
-    /**
-     * Reads {@code char} value.
-     *
-     * @param name Field name.
-     * @return {@code char} value.
-     */
-    public char readChar(String name);
-
-    /**
-     * Reads {@code boolean} value.
-     *
-     * @param name Field name.
-     * @return {@code boolean} value.
-     */
-    public boolean readBoolean(String name);
-
-    /**
-     * Reads {@code byte} array.
-     *
-     * @param name Field name.
-     * @return {@code byte} array.
-     */
-    public byte[] readByteArray(String name);
-
-    /**
-     * Reads {@code short} array.
-     *
-     * @param name Field name.
-     * @return {@code short} array.
-     */
-    public short[] readShortArray(String name);
-
-    /**
-     * Reads {@code int} array.
-     *
-     * @param name Field name.
-     * @return {@code int} array.
-     */
-    public int[] readIntArray(String name);
-
-    /**
-     * Reads {@code long} array.
-     *
-     * @param name Field name.
-     * @return {@code long} array.
-     */
-    public long[] readLongArray(String name);
-
-    /**
-     * Reads {@code float} array.
-     *
-     * @param name Field name.
-     * @return {@code float} array.
-     */
-    public float[] readFloatArray(String name);
-
-    /**
-     * Reads {@code double} array.
-     *
-     * @param name Field name.
-     * @return {@code double} array.
-     */
-    public double[] readDoubleArray(String name);
-
-    /**
-     * Reads {@code char} array.
-     *
-     * @param name Field name.
-     * @return {@code char} array.
-     */
-    public char[] readCharArray(String name);
-
-    /**
-     * Reads {@code boolean} array.
-     *
-     * @param name Field name.
-     * @return {@code boolean} array.
-     */
-    public boolean[] readBooleanArray(String name);
-
-    /**
-     * Reads {@link String}.
-     *
-     * @param name Field name.
-     * @return {@link String}.
-     */
-    public String readString(String name);
-
-    /**
-     * Reads {@link BitSet}.
-     *
-     * @param name Field name.
-     * @return {@link BitSet}.
-     */
-    public BitSet readBitSet(String name);
-
-    /**
-     * Reads {@link UUID}.
-     *
-     * @param name Field name.
-     * @return {@link UUID}.
-     */
-    public UUID readUuid(String name);
-
-    /**
-     * Reads {@link IgniteUuid}.
-     *
-     * @param name Field name.
-     * @return {@link IgniteUuid}.
-     */
-    public IgniteUuid readIgniteUuid(String name);
-
-    /**
-     * Reads nested message.
-     *
-     * @param name Field name.
-     * @return Message.
-     */
-    public <T extends MessageAdapter> T readMessage(String name);
+    public <T> T readField(String name, MessageFieldType type);
 
     /**
      * Reads array of objects.
@@ -211,7 +50,7 @@ public interface MessageReader {
      * @param itemCls Array component class.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, MessageFieldType itemType, Class<T> itemCls);
+    public <T> T[] readArrayField(String name, MessageFieldType itemType, Class<T> itemCls);
 
     /**
      * Reads collection.
@@ -220,7 +59,7 @@ public interface MessageReader {
      * @param itemType Collection item type.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(String name, MessageFieldType itemType);
+    public <C extends Collection<?>> C readCollectionField(String name, MessageFieldType itemType);
 
     /**
      * Reads map.
@@ -231,7 +70,7 @@ public interface MessageReader {
      * @param linked Whether {@link LinkedHashMap} should be created.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(String name, MessageFieldType keyType, MessageFieldType valType,
+    public <M extends Map<?, ?>> M readMapField(String name, MessageFieldType keyType, MessageFieldType valType,
         boolean linked);
 
     /**

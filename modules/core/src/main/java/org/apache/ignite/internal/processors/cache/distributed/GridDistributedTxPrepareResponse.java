@@ -156,7 +156,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -164,13 +164,13 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeByteArray("candsBytes", candsBytes))
+                if (!writer.writeField("candsBytes", candsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -189,7 +189,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
         switch (readState) {
             case 8:
-                candsBytes = reader.readByteArray("candsBytes");
+                candsBytes = reader.readField("candsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -197,7 +197,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
                 readState++;
 
             case 9:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

@@ -231,7 +231,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -239,37 +239,37 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage("dhtVer", dhtVer))
+                if (!writer.writeField("dhtVer", dhtVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageFieldType.INT))
+                if (!writer.writeCollectionField("invalidParts", invalidParts, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollectionField("ownedValsBytes", ownedValsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("pending", pending, MessageFieldType.MSG))
+                if (!writer.writeCollectionField("pending", pending, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -288,7 +288,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (readState) {
             case 10:
-                dhtVer = reader.readMessage("dhtVer");
+                dhtVer = reader.readField("dhtVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -296,7 +296,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 11:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -304,7 +304,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 12:
-                invalidParts = reader.readCollection("invalidParts", MessageFieldType.INT);
+                invalidParts = reader.readCollectionField("invalidParts", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -312,7 +312,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 13:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -320,7 +320,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 14:
-                ownedValsBytes = reader.readCollection("ownedValsBytes", MessageFieldType.BYTE_ARR);
+                ownedValsBytes = reader.readCollectionField("ownedValsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -328,7 +328,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 15:
-                pending = reader.readCollection("pending", MessageFieldType.MSG);
+                pending = reader.readCollectionField("pending", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

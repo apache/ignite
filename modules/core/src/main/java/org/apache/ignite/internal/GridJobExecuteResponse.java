@@ -209,7 +209,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -217,43 +217,43 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("gridExBytes", gridExBytes))
+                if (!writer.writeField("gridExBytes", gridExBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("isCancelled", isCancelled))
+                if (!writer.writeField("isCancelled", isCancelled, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
+                if (!writer.writeField("jobAttrsBytes", jobAttrsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeField("jobId", jobId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeField("nodeId", nodeId, MessageFieldType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("resBytes", resBytes))
+                if (!writer.writeField("resBytes", resBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -269,7 +269,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
 
         switch (readState) {
             case 0:
-                gridExBytes = reader.readByteArray("gridExBytes");
+                gridExBytes = reader.readField("gridExBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -277,7 +277,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 1:
-                isCancelled = reader.readBoolean("isCancelled");
+                isCancelled = reader.readField("isCancelled", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -285,7 +285,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 2:
-                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
+                jobAttrsBytes = reader.readField("jobAttrsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -293,7 +293,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 3:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readField("jobId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -301,7 +301,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 4:
-                nodeId = reader.readUuid("nodeId");
+                nodeId = reader.readField("nodeId", MessageFieldType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -309,7 +309,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 5:
-                resBytes = reader.readByteArray("resBytes");
+                resBytes = reader.readField("resBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -317,7 +317,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 6:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

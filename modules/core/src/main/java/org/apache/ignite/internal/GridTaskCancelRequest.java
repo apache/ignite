@@ -65,7 +65,7 @@ public class GridTaskCancelRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -73,7 +73,7 @@ public class GridTaskCancelRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -89,7 +89,7 @@ public class GridTaskCancelRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

@@ -76,7 +76,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -84,13 +84,13 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("deltas", deltas, MessageFieldType.UUID, MessageFieldType.LONG))
+                if (!writer.writeMapField("deltas", deltas, MessageFieldType.UUID, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("snapVer", snapVer))
+                if (!writer.writeField("snapVer", snapVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -106,7 +106,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                deltas = reader.readMap("deltas", MessageFieldType.UUID, MessageFieldType.LONG, false);
+                deltas = reader.readMapField("deltas", MessageFieldType.UUID, MessageFieldType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -114,7 +114,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
                 readState++;
 
             case 1:
-                snapVer = reader.readMessage("snapVer");
+                snapVer = reader.readField("snapVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

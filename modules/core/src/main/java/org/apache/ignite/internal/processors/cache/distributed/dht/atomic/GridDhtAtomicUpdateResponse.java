@@ -185,7 +185,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -193,25 +193,25 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
+                if (!writer.writeField("failedKeysBytes", failedKeysBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeField("futVer", futVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollectionField("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -230,7 +230,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (readState) {
             case 3:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -238,7 +238,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 4:
-                failedKeysBytes = reader.readByteArray("failedKeysBytes");
+                failedKeysBytes = reader.readField("failedKeysBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -246,7 +246,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 5:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readField("futVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -254,7 +254,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 6:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageFieldType.BYTE_ARR);
+                nearEvictedBytes = reader.readCollectionField("nearEvictedBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

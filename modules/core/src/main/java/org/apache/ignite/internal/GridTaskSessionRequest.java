@@ -102,7 +102,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -110,19 +110,19 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("attrsBytes", attrsBytes))
+                if (!writer.writeField("attrsBytes", attrsBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeField("jobId", jobId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeField("sesId", sesId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -138,7 +138,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
 
         switch (readState) {
             case 0:
-                attrsBytes = reader.readByteArray("attrsBytes");
+                attrsBytes = reader.readField("attrsBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,7 +146,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 1:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readField("jobId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +154,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 readState++;
 
             case 2:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readField("sesId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

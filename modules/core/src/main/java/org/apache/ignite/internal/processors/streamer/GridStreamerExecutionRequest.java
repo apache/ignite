@@ -154,7 +154,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -162,43 +162,43 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("batchBytes", batchBytes))
+                if (!writer.writeField("batchBytes", batchBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeField("clsLdrId", clsLdrId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeField("depMode", depMode != null ? (byte)depMode.ordinal() : -1, MessageFieldType.BYTE))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                if (!writer.writeField("forceLocDep", forceLocDep, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
+                if (!writer.writeMapField("ldrParticipants", ldrParticipants, MessageFieldType.UUID, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeString("sampleClsName", sampleClsName))
+                if (!writer.writeField("sampleClsName", sampleClsName, MessageFieldType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeString("userVer", userVer))
+                if (!writer.writeField("userVer", userVer, MessageFieldType.STRING))
                     return false;
 
                 writer.incrementState();
@@ -214,7 +214,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                batchBytes = reader.readByteArray("batchBytes");
+                batchBytes = reader.readField("batchBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +222,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                clsLdrId = reader.readField("clsLdrId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -232,7 +232,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
             case 2:
                 byte depModeOrd;
 
-                depModeOrd = reader.readByte("depMode");
+                depModeOrd = reader.readField("depMode", MessageFieldType.BYTE);
 
                 if (!reader.isLastRead())
                     return false;
@@ -242,7 +242,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 3:
-                forceLocDep = reader.readBoolean("forceLocDep");
+                forceLocDep = reader.readField("forceLocDep", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -250,7 +250,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 4:
-                ldrParticipants = reader.readMap("ldrParticipants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
+                ldrParticipants = reader.readMapField("ldrParticipants", MessageFieldType.UUID, MessageFieldType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -258,7 +258,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 5:
-                sampleClsName = reader.readString("sampleClsName");
+                sampleClsName = reader.readField("sampleClsName", MessageFieldType.STRING);
 
                 if (!reader.isLastRead())
                     return false;
@@ -266,7 +266,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 6:
-                userVer = reader.readString("userVer");
+                userVer = reader.readField("userVer", MessageFieldType.STRING);
 
                 if (!reader.isLastRead())
                     return false;

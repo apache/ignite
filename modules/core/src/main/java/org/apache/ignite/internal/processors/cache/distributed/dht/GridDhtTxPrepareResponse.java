@@ -212,7 +212,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -220,31 +220,31 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageFieldType.INT))
+                if (!writer.writeCollectionField("invalidParts", invalidParts, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollectionField("nearEvictedBytes", nearEvictedBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, MessageFieldType.BYTE_ARR))
+                if (!writer.writeCollectionField("preloadEntriesBytes", preloadEntriesBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -263,7 +263,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (readState) {
             case 10:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,7 +271,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 11:
-                invalidParts = reader.readCollection("invalidParts", MessageFieldType.INT);
+                invalidParts = reader.readCollectionField("invalidParts", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -279,7 +279,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 12:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -287,7 +287,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 13:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageFieldType.BYTE_ARR);
+                nearEvictedBytes = reader.readCollectionField("nearEvictedBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -295,7 +295,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 readState++;
 
             case 14:
-                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", MessageFieldType.BYTE_ARR);
+                preloadEntriesBytes = reader.readCollectionField("preloadEntriesBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

@@ -91,7 +91,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -99,19 +99,19 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("blocks", blocks, MessageFieldType.MSG, MessageFieldType.BYTE_ARR))
+                if (!writer.writeMapField("blocks", blocks, MessageFieldType.MSG, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("fileId", fileId))
+                if (!writer.writeField("fileId", fileId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("id", id))
+                if (!writer.writeField("id", id, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -130,7 +130,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (readState) {
             case 0:
-                blocks = reader.readMap("blocks", MessageFieldType.MSG, MessageFieldType.BYTE_ARR, false);
+                blocks = reader.readMapField("blocks", MessageFieldType.MSG, MessageFieldType.BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,7 +138,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 1:
-                fileId = reader.readIgniteUuid("fileId");
+                fileId = reader.readField("fileId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,7 +146,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 readState++;
 
             case 2:
-                id = reader.readLong("id");
+                id = reader.readField("id", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;

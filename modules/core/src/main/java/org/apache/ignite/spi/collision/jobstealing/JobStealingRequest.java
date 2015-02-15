@@ -59,7 +59,7 @@ public class JobStealingRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -67,7 +67,7 @@ public class JobStealingRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("delta", delta))
+                if (!writer.writeField("delta", delta, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
@@ -83,7 +83,7 @@ public class JobStealingRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                delta = reader.readInt("delta");
+                delta = reader.readField("delta", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;

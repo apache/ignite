@@ -103,7 +103,7 @@ public class GridTaskResultRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -111,13 +111,13 @@ public class GridTaskResultRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("taskId", taskId))
+                if (!writer.writeField("taskId", taskId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeField("topicBytes", topicBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -133,7 +133,7 @@ public class GridTaskResultRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                taskId = reader.readIgniteUuid("taskId");
+                taskId = reader.readField("taskId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,7 +141,7 @@ public class GridTaskResultRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readField("topicBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

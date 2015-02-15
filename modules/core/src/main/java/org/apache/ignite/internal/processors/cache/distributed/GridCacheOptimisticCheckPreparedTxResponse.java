@@ -92,7 +92,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -100,19 +100,19 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeField("futId", futId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeField("success", success, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
@@ -131,7 +131,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (readState) {
             case 8:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readField("futId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -139,7 +139,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 readState++;
 
             case 9:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,7 +147,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 readState++;
 
             case 10:
-                success = reader.readBoolean("success");
+                success = reader.readField("success", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;

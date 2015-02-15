@@ -425,7 +425,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -433,67 +433,67 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeField("errBytes", errBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
+                if (!writer.writeField("failedKeysBytes", failedKeysBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeField("futVer", futVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
+                if (!writer.writeField("nearExpireTimes", nearExpireTimes, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, MessageFieldType.INT))
+                if (!writer.writeCollectionField("nearSkipIdxs", nearSkipIdxs, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("nearTtls", nearTtls))
+                if (!writer.writeField("nearTtls", nearTtls, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("nearValBytes", nearValBytes, MessageFieldType.MSG))
+                if (!writer.writeCollectionField("nearValBytes", nearValBytes, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, MessageFieldType.INT))
+                if (!writer.writeCollectionField("nearValsIdxs", nearValsIdxs, MessageFieldType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("nearVer", nearVer))
+                if (!writer.writeField("nearVer", nearVer, MessageFieldType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("remapKeysBytes", remapKeysBytes))
+                if (!writer.writeField("remapKeysBytes", remapKeysBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("retValBytes", retValBytes))
+                if (!writer.writeField("retValBytes", retValBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -512,7 +512,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
         switch (readState) {
             case 3:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readField("errBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -520,7 +520,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 4:
-                failedKeysBytes = reader.readByteArray("failedKeysBytes");
+                failedKeysBytes = reader.readField("failedKeysBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -528,7 +528,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 5:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readField("futVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -536,7 +536,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 6:
-                nearExpireTimes = reader.readMessage("nearExpireTimes");
+                nearExpireTimes = reader.readField("nearExpireTimes", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -544,7 +544,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 7:
-                nearSkipIdxs = reader.readCollection("nearSkipIdxs", MessageFieldType.INT);
+                nearSkipIdxs = reader.readCollectionField("nearSkipIdxs", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -552,7 +552,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 8:
-                nearTtls = reader.readMessage("nearTtls");
+                nearTtls = reader.readField("nearTtls", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -560,7 +560,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 9:
-                nearValBytes = reader.readCollection("nearValBytes", MessageFieldType.MSG);
+                nearValBytes = reader.readCollectionField("nearValBytes", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -568,7 +568,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 10:
-                nearValsIdxs = reader.readCollection("nearValsIdxs", MessageFieldType.INT);
+                nearValsIdxs = reader.readCollectionField("nearValsIdxs", MessageFieldType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -576,7 +576,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 11:
-                nearVer = reader.readMessage("nearVer");
+                nearVer = reader.readField("nearVer", MessageFieldType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -584,7 +584,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 12:
-                remapKeysBytes = reader.readByteArray("remapKeysBytes");
+                remapKeysBytes = reader.readField("remapKeysBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -592,7 +592,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 readState++;
 
             case 13:
-                retValBytes = reader.readByteArray("retValBytes");
+                retValBytes = reader.readField("retValBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;

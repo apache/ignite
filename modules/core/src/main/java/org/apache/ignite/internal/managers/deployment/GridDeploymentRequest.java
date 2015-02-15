@@ -160,7 +160,7 @@ public class GridDeploymentRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -168,31 +168,31 @@ public class GridDeploymentRequest extends MessageAdapter {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("isUndeploy", isUndeploy))
+                if (!writer.writeField("isUndeploy", isUndeploy, MessageFieldType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("ldrId", ldrId))
+                if (!writer.writeField("ldrId", ldrId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, MessageFieldType.UUID))
+                if (!writer.writeCollectionField("nodeIds", nodeIds, MessageFieldType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
+                if (!writer.writeField("resTopicBytes", resTopicBytes, MessageFieldType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("rsrcName", rsrcName))
+                if (!writer.writeField("rsrcName", rsrcName, MessageFieldType.STRING))
                     return false;
 
                 writer.incrementState();
@@ -208,7 +208,7 @@ public class GridDeploymentRequest extends MessageAdapter {
 
         switch (readState) {
             case 0:
-                isUndeploy = reader.readBoolean("isUndeploy");
+                isUndeploy = reader.readField("isUndeploy", MessageFieldType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -216,7 +216,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 1:
-                ldrId = reader.readIgniteUuid("ldrId");
+                ldrId = reader.readField("ldrId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -224,7 +224,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", MessageFieldType.UUID);
+                nodeIds = reader.readCollectionField("nodeIds", MessageFieldType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -232,7 +232,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 3:
-                resTopicBytes = reader.readByteArray("resTopicBytes");
+                resTopicBytes = reader.readField("resTopicBytes", MessageFieldType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -240,7 +240,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 readState++;
 
             case 4:
-                rsrcName = reader.readString("rsrcName");
+                rsrcName = reader.readField("rsrcName", MessageFieldType.STRING);
 
                 if (!reader.isLastRead())
                     return false;

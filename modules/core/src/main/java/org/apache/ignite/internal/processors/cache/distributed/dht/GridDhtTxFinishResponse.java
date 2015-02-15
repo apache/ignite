@@ -76,7 +76,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
             return false;
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -84,7 +84,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (writer.state()) {
             case 5:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeField("miniId", miniId, MessageFieldType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -103,7 +103,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (readState) {
             case 5:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readField("miniId", MessageFieldType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

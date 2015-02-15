@@ -117,7 +117,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
         writer.setBuffer(buf);
 
         if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeMessageType(directType()))
                 return false;
 
             writer.onTypeWritten();
@@ -125,13 +125,13 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeField("topVer", topVer, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("ver", ver))
+                if (!writer.writeField("ver", ver, MessageFieldType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -147,7 +147,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
         switch (readState) {
             case 0:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readField("topVer", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +155,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
                 readState++;
 
             case 1:
-                ver = reader.readLong("ver");
+                ver = reader.readField("ver", MessageFieldType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
