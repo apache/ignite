@@ -296,6 +296,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 writer.incrementState();
 
+            case 14:
+                if (!writer.writeBoolean("syncCommit", syncCommit))
+                    return false;
+
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeBoolean("syncRollback", syncRollback))
@@ -382,6 +387,14 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
+            case 14:
+                syncCommit = reader.readBoolean("syncCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
             case 15:
                 syncRollback = reader.readBoolean("syncRollback");
 
@@ -406,6 +419,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
+            case 18:
+                txSize = reader.readInt("txSize");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
         }
 

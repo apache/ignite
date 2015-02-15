@@ -310,24 +310,30 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
+                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 15:
+                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
                 if (!writer.writeCollection("pending", pending, Type.MSG))
                     return false;
 
@@ -337,7 +343,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -369,7 +375,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 12:
-                invalidParts = reader.readCollection("invalidParts", Type.INT);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -377,7 +383,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 13:
-                invalidParts = reader.readCollection("invalidParts", int.class);
+                invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -385,7 +391,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 14:
-                ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -393,7 +399,23 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 15:
+                ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 16:
                 pending = reader.readCollection("pending", Type.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 17:
+                retValBytes = reader.readByteArray("retValBytes");
 
                 if (!reader.isLastRead())
                     return false;

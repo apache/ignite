@@ -238,6 +238,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         }
 
         switch (writer.state()) {
+            case 19:
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
             case 20:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
@@ -250,7 +256,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 writer.incrementState();
 
-            case 27:
+            case 22:
                 if (!writer.writeCollection("pendingVers", pendingVers, Type.MSG))
                     return false;
 
@@ -280,7 +286,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 writer.incrementState();
 
-            case 33:
+            case 27:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -299,9 +305,75 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (readState) {
+            case 19:
+                byte isolationOrd;
 
+                isolationOrd = reader.readByte("isolation");
 
-            case 33:
+                if (!reader.isLastRead())
+                    return false;
+
+                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
+
+                readState++;
+
+            case 20:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 21:
+                nearNodeId = reader.readUuid("nearNodeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 22:
+                pendingVers = reader.readCollection("pendingVers", Type.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 23:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 24:
+                sysInvalidate = reader.readBoolean("sysInvalidate");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 25:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 26:
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 27:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())

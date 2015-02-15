@@ -20,9 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -258,6 +257,29 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         switch (writer.state()) {
+            case 23:
+                if (!writer.writeIgniteUuid("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeBoolean("implicitSingle", implicitSingle))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeBoolean("last", last))
+                    return false;
+
+                writer.incrementState();
+
+            case 26:
+                if (!writer.writeCollection("lastBackups", lastBackups, Type.UUID))
+                    return false;
+
+                writer.incrementState();
 
             case 27:
                 if (!writer.writeIgniteUuid("miniId", miniId))
@@ -275,7 +297,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (!writer.writeBoolean("retVal", retVal))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 30:
                 if (!writer.writeUuid("subjId", subjId))
@@ -308,7 +330,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (readState) {
-            case 22:
+            case 23:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -316,7 +338,29 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
+            case 24:
+                implicitSingle = reader.readBoolean("implicitSingle");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 25:
+                last = reader.readBoolean("last");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 26:
+                lastBackups = reader.readCollection("lastBackups", Type.UUID);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 27:
                 miniId = reader.readIgniteUuid("miniId");
@@ -334,6 +378,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
+            case 29:
+                retVal = reader.readBoolean("retVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 30:
                 subjId = reader.readUuid("subjId");

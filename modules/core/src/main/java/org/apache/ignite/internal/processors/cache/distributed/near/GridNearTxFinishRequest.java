@@ -167,6 +167,23 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (writer.state()) {
+            case 19:
+                if (!writer.writeBoolean("explicitLock", explicitLock))
+                    return false;
+
+                writer.incrementState();
+
+            case 20:
+                if (!writer.writeIgniteUuid("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 21:
+                if (!writer.writeBoolean("storeEnabled", storeEnabled))
+                    return false;
+
+                writer.incrementState();
 
             case 22:
                 if (!writer.writeUuid("subjId", subjId))
@@ -199,7 +216,29 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (readState) {
+            case 19:
+                explicitLock = reader.readBoolean("explicitLock");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 20:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 21:
+                storeEnabled = reader.readBoolean("storeEnabled");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 22:
                 subjId = reader.readUuid("subjId");

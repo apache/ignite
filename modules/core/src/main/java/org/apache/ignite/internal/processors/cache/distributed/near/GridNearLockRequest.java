@@ -336,7 +336,23 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         }
 
         switch (writer.state()) {
+            case 22:
+                if (!writer.writeLong("accessTtl", accessTtl))
+                    return false;
 
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
 
             case 25:
                 if (!writer.writeBoolean("hasTransforms", hasTransforms))
@@ -405,7 +421,37 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             return false;
 
         switch (readState) {
+            case 22:
+                accessTtl = reader.readLong("accessTtl");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 23:
+                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 24:
+                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR, byte[].class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 25:
+                hasTransforms = reader.readBoolean("hasTransforms");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 26:
                 implicitSingleTx = reader.readBoolean("implicitSingleTx");

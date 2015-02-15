@@ -360,6 +360,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         }
 
         switch (writer.state()) {
+            case 8:
+                if (!writer.writeIgniteUuid("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
             case 9:
                 if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
@@ -384,6 +390,23 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                    return false;
+
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeUuid("nodeId", nodeId))
@@ -421,7 +444,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 writer.incrementState();
 
-
         }
 
         return true;
@@ -435,6 +457,21 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             return false;
 
         switch (readState) {
+            case 8:
+                futId = reader.readIgniteUuid("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 9:
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 10:
                 isInTx = reader.readBoolean("isInTx");
@@ -460,6 +497,25 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 readState++;
 
+            case 13:
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
+
+                readState++;
+
+            case 14:
+                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 15:
                 nearXidVer = reader.readMessage("nearXidVer");
@@ -509,6 +565,13 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 readState++;
 
+            case 21:
+                txSize = reader.readInt("txSize");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
         }
 

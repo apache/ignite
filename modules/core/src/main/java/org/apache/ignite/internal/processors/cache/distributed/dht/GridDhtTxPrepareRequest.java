@@ -328,7 +328,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         }
 
         switch (writer.state()) {
-            case 22:
+            case 23:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
@@ -352,7 +352,17 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 writer.incrementState();
 
+            case 27:
+                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                    return false;
 
+                writer.incrementState();
+
+            case 28:
+                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
 
             case 29:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
@@ -403,7 +413,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             return false;
 
         switch (readState) {
-            case 22:
+            case 23:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -443,6 +453,13 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 readState++;
 
+            case 28:
+                nearWritesBytes = reader.readCollection("nearWritesBytes", Type.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 29:
                 nearXidVer = reader.readMessage("nearXidVer");

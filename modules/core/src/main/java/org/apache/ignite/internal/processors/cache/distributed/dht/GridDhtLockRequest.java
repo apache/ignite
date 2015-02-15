@@ -351,7 +351,29 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         }
 
         switch (writer.state()) {
+            case 22:
+                if (!writer.writeLong("accessTtl", accessTtl))
+                    return false;
 
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeIgniteUuid("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
 
             case 26:
                 if (!writer.writeByteArray("ownedBytes", ownedBytes))
@@ -396,7 +418,37 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
             return false;
 
         switch (readState) {
+            case 22:
+                accessTtl = reader.readLong("accessTtl");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 23:
+                invalidateEntries = reader.readBitSet("invalidateEntries");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 24:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 25:
+                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 26:
                 ownedBytes = reader.readByteArray("ownedBytes");
