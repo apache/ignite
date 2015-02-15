@@ -113,12 +113,6 @@ public class CommunicationMessageCodeGenerator {
     private final Collection<String> read = new ArrayList<>();
 
     /** */
-    private final Collection<String> clone = new ArrayList<>();
-
-    /** */
-    private final Collection<String> clone0 = new ArrayList<>();
-
-    /** */
     private final Map<Class<?>, Integer> fieldCnt = new HashMap<>();
 
     /** */
@@ -196,8 +190,6 @@ public class CommunicationMessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
-            boolean cloneFound = false;
-            boolean clone0Found = false;
 
             while ((line = rdr.readLine()) != null) {
                 if (!skip) {
@@ -217,20 +209,6 @@ public class CommunicationMessageCodeGenerator {
 
                         readFound = true;
                     }
-                    else if (line.contains("public MessageAdapter clone()")) {
-                        src.addAll(clone);
-
-                        skip = true;
-
-                        cloneFound = true;
-                    }
-                    else if (line.contains("protected void clone0(MessageAdapter _msg)")) {
-                        src.addAll(clone0);
-
-                        skip = true;
-
-                        clone0Found = true;
-                    }
                 }
                 else if (line.startsWith(TAB + "}")) {
                     src.add(line);
@@ -244,12 +222,6 @@ public class CommunicationMessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
-
-            if (!cloneFound)
-                System.out.println("    clone method doesn't exist.");
-
-            if (!clone0Found)
-                System.out.println("    clone0 method doesn't exist.");
         }
         finally {
             if (rdr != null)
@@ -281,8 +253,6 @@ public class CommunicationMessageCodeGenerator {
 
         write.clear();
         read.clear();
-        clone.clear();
-        clone0.clear();
 
         fields = new ArrayList<>();
 
@@ -300,46 +270,6 @@ public class CommunicationMessageCodeGenerator {
         indent = 2;
 
         boolean hasSuper = cls.getSuperclass() != BASE_CLS;
-
-        String clsName = cls.getSimpleName();
-
-        if (!Modifier.isAbstract(cls.getModifiers())) {
-            clone.add(builder().a("throw new UnsupportedOperationException();").toString());
-
-//            clone.add(builder().a(clsName).a(" _clone = new ").a(clsName).a("();").toString());
-//            clone.add(EMPTY);
-//            clone.add(builder().a("clone0(_clone);").toString());
-//            clone.add(EMPTY);
-//            clone.add(builder().a("return _clone;").toString());
-        }
-
-        if (hasSuper) {
-            clone0.add(builder().a("super.clone0(_msg);").toString());
-            clone0.add(EMPTY);
-        }
-
-        Collection<Field> cloningFields = new ArrayList<>(declaredFields.length);
-
-        for (Field field: declaredFields)
-            if (!isStatic(field.getModifiers()))
-                cloningFields.add(field);
-
-        if (!cloningFields.isEmpty()) {
-            clone0.add(builder().a(clsName).a(" _clone = (").a(clsName).a(")_msg;").toString());
-            clone0.add(EMPTY);
-
-            for (Field field : cloningFields) {
-                String name = field.getName();
-                Class<?> type = field.getType();
-
-                String res = name;
-
-                if (BASE_CLS.isAssignableFrom(type))
-                    res = name + " != null ? (" + type.getSimpleName() + ")" + name + ".clone() : null";
-
-                clone0.add(builder().a("_clone.").a(name).a(" = ").a(res).a(";").toString());
-            }
-        }
 
         start(write, hasSuper ? "writeTo" : null, true);
         start(read, hasSuper ? "readFrom" : null, false);
@@ -802,6 +732,7 @@ public class CommunicationMessageCodeGenerator {
      * @param col Classes.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     private void processFile(File file, ClassLoader ldr, int prefixLen,
         Collection<Class<? extends MessageAdapter>> col) throws Exception {
         assert file != null;
