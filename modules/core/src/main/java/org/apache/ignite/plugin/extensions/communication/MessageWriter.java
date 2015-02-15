@@ -256,17 +256,42 @@ public interface MessageWriter {
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
         MessageAdapter.Type valType);
 
+    /**
+     * @return Whether type of current message is already written.
+     */
     public boolean isTypeWritten();
 
+    /**
+     * Callback called when type of the message is written.
+     */
     public void onTypeWritten();
 
+    /**
+     * Gets current message state.
+     *
+     * @return State.
+     */
     public int state();
 
+    /**
+     * Increments state.
+     */
     public void incrementState();
 
+    /**
+     * Callback called before inner message is written.
+     */
     public void beforeInnerMessageWrite();
 
+    /**
+     * Callback called after inner message is written.
+     *
+     * @param finished Whether message was fully written.
+     */
     public void afterInnerMessageWrite(boolean finished);
 
+    /**
+     * Resets this writer.
+     */
     public void reset();
 }
