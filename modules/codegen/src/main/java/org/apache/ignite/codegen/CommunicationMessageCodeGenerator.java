@@ -42,12 +42,6 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String[] EXCLUDED_PACKAGES = new String[] {
-        "org.apache.ignite.internal.processors.rest.client.message",
-        "org.apache.ignite.internal.processors.rest.protocols.tcp"
-    };
-
-    /** */
     private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
@@ -827,11 +821,6 @@ public class CommunicationMessageCodeGenerator {
 
             if (path.endsWith(".class")) {
                 String clsName = path.substring(prefixLen, path.length() - 6).replace(File.separatorChar, '.');
-
-                for (String excluded : EXCLUDED_PACKAGES) {
-                    if (clsName.startsWith(excluded))
-                        return;
-                }
 
                 Class<?> cls = Class.forName(clsName, false, ldr);
 
