@@ -460,7 +460,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state.increment();
 
             case 9:
-                if (!writer.writeEnum("concurrency", concurrency))
+                if (!writer.writeByte("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -484,7 +484,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 state.increment();
 
             case 13:
-                if (!writer.writeEnum("isolation", isolation))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -560,10 +560,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 9:
-                concurrency = reader.readEnum("concurrency", IgniteTxConcurrency.class);
+                byte concurrencyOrd;
+
+                concurrencyOrd = reader.readByte("concurrency");
 
                 if (!reader.isLastRead())
                     return false;
+
+                concurrency = IgniteTxConcurrency.fromOrdinal(concurrencyOrd);
 
                 readState++;
 
@@ -592,10 +596,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readState++;
 
             case 13:
-                isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
+
+                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

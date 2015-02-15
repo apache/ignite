@@ -196,15 +196,6 @@ public interface MessageReader {
     public IgniteUuid readIgniteUuid(String name);
 
     /**
-     * Reads {@code enum} value.
-     *
-     * @param name Field name.
-     * @param enumCls {@code enum} type.
-     * @return {@code enum} value.
-     */
-    public <T extends Enum<T>> T readEnum(String name, Class<T> enumCls);
-
-    /**
      * Reads nested message.
      *
      * @param name Field name.

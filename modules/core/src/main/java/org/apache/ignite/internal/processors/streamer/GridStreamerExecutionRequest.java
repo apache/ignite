@@ -196,7 +196,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 state.increment();
 
             case 2:
-                if (!writer.writeEnum("depMode", depMode))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -253,10 +253,14 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 readState++;
 
             case 2:
-                depMode = reader.readEnum("depMode", DeploymentMode.class);
+                byte depModeOrd;
+
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
+
+                depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
                 readState++;
 

@@ -181,7 +181,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 state.increment();
 
             case 3:
-                if (!writer.writeEnum("type", type))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -222,10 +222,14 @@ public class GridContinuousMessage extends MessageAdapter {
                 readState++;
 
             case 3:
-                type = reader.readEnum("type", GridContinuousMessageType.class);
+                byte typeOrd;
+
+                typeOrd = reader.readByte("type");
 
                 if (!reader.isLastRead())
                     return false;
+
+                type = GridContinuousMessageType.fromOrdinal(typeOrd);
 
                 readState++;
 

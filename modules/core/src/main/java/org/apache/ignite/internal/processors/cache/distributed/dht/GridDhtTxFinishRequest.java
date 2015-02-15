@@ -394,7 +394,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
         switch (state.index()) {
             case 21:
-                if (!writer.writeEnum("isolation", isolation))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -486,10 +486,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
         switch (readState) {
             case 21:
-                isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
+
+                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

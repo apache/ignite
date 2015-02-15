@@ -824,7 +824,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state.increment();
 
             case 17:
-                if (!writer.writeEnum("syncMode", syncMode))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -986,10 +986,14 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 readState++;
 
             case 17:
-                syncMode = reader.readEnum("syncMode", CacheWriteSynchronizationMode.class);
+                byte syncModeOrd;
+
+                syncModeOrd = reader.readByte("syncMode");
 
                 if (!reader.isLastRead())
                     return false;
+
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
                 readState++;
 

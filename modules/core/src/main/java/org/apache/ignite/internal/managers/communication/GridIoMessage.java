@@ -227,7 +227,7 @@ public class GridIoMessage extends MessageAdapter {
                 state.increment();
 
             case 2:
-                if (!writer.writeEnum("plc", plc))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -284,10 +284,14 @@ public class GridIoMessage extends MessageAdapter {
                 readState++;
 
             case 2:
-                plc = reader.readEnum("plc", GridIoPolicy.class);
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
+
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
 
                 readState++;
 

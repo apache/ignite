@@ -216,15 +216,6 @@ public interface MessageWriter {
     public boolean writeIgniteUuid(String name, IgniteUuid val);
 
     /**
-     * Writes {@code enum} value.
-     *
-     * @param name Field name.
-     * @param val {@code enum} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeEnum(String name, Enum<?> val);
-
-    /**
      * Writes nested message.
      *
      * @param name Field name.

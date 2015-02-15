@@ -531,8 +531,11 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeUuid", field, name);
         else if (type == IgniteUuid.class)
             returnFalseIfFailed(write, "writer.writeIgniteUuid", field, name);
-        else if (type.isEnum())
-            returnFalseIfFailed(write, "writer.writeEnum", field, name);
+        else if (type.isEnum()) {
+            String arg = name + " != null ? (byte)" + name + ".ordinal() : -1";
+
+            returnFalseIfFailed(write, "writer.writeByte", field, arg);
+        }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfFailed(write, "writer.writeMessage", field, name);
         else if (type.isArray()) {
@@ -608,8 +611,17 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfReadFailed(name, "reader.readUuid", field);
         else if (type == IgniteUuid.class)
             returnFalseIfReadFailed(name, "reader.readIgniteUuid", field);
-        else if (type.isEnum())
-            returnFalseIfReadFailed(name, "reader.readEnum", field, type.getSimpleName() + ".class");
+        else if (type.isEnum()) {
+            String loc = name + "Ord";
+
+            read.add(builder().a("byte ").a(loc).a(";").toString());
+            read.add(EMPTY);
+
+            returnFalseIfReadFailed(loc, "reader.readByte", field);
+
+            read.add(EMPTY);
+            read.add(builder().a(name).a(" = ").a(type.getSimpleName()).a(".fromOrdinal(").a(loc).a(");").toString());
+        }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfReadFailed(name, "reader.readMessage", field);
         else if (type.isArray()) {

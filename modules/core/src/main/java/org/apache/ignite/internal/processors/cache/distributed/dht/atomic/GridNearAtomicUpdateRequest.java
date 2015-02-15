@@ -666,7 +666,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 state.increment();
 
             case 14:
-                if (!writer.writeEnum("op", op))
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -684,7 +684,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 state.increment();
 
             case 17:
-                if (!writer.writeEnum("syncMode", syncMode))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -816,10 +816,14 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 14:
-                op = reader.readEnum("op", GridCacheOperation.class);
+                byte opOrd;
+
+                opOrd = reader.readByte("op");
 
                 if (!reader.isLastRead())
                     return false;
+
+                op = GridCacheOperation.fromOrdinal(opOrd);
 
                 readState++;
 
@@ -840,10 +844,14 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 readState++;
 
             case 17:
-                syncMode = reader.readEnum("syncMode", CacheWriteSynchronizationMode.class);
+                byte syncModeOrd;
+
+                syncModeOrd = reader.readByte("syncMode");
 
                 if (!reader.isLastRead())
                     return false;
+
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
                 readState++;
 

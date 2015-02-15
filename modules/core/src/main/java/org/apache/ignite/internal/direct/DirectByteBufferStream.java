@@ -577,13 +577,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param val Value
-     */
-    public void writeEnum(Enum<?> val) {
-        writeByte(val != null ? (byte)val.ordinal() : -1);
-    }
-
-    /**
      * @param msg Message.
      */
     public void writeMessage(MessageAdapter msg, MessageWriteState state) {
@@ -993,17 +986,6 @@ public class DirectByteBufferStream {
         byte[] arr = readByteArray();
 
         return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
-    }
-
-    /**
-     * @param enumCls Enum type.
-     * @return Value.
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends Enum<T>> T readEnum(Class<T> enumCls) {
-        byte ord = readByte();
-
-        return ord >= 0 ? (T)GridEnumCache.get(enumCls)[ord] : null;
     }
 
     /**

@@ -306,7 +306,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 state.increment();
 
             case 1:
-                if (!writer.writeEnum("depMode", depMode))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -373,10 +373,14 @@ public class GridEventStorageMessage extends MessageAdapter {
                 readState++;
 
             case 1:
-                depMode = reader.readEnum("depMode", DeploymentMode.class);
+                byte depModeOrd;
+
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
+
+                depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
                 readState++;
 

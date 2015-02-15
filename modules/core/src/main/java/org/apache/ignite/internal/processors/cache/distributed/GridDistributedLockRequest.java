@@ -515,7 +515,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 state.increment();
 
             case 14:
-                if (!writer.writeEnum("isolation", isolation))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -637,10 +637,14 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 readState++;
 
             case 14:
-                isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
+
+                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

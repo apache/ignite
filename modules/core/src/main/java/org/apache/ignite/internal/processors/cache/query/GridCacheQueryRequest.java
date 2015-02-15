@@ -605,7 +605,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 state.increment();
 
             case 21:
-                if (!writer.writeEnum("type", type))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 state.increment();
@@ -769,10 +769,14 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 readState++;
 
             case 21:
-                type = reader.readEnum("type", GridCacheQueryType.class);
+                byte typeOrd;
+
+                typeOrd = reader.readByte("type");
 
                 if (!reader.isLastRead())
                     return false;
+
+                type = GridCacheQueryType.fromOrdinal(typeOrd);
 
                 readState++;
 
