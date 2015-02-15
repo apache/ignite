@@ -119,7 +119,7 @@ class GridTestMessage extends MessageAdapter implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         return true;
     }
 

@@ -175,48 +175,46 @@ public class GridDeploymentRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeBoolean("isUndeploy", isUndeploy))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeIgniteUuid("ldrId", ldrId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeString("rsrcName", rsrcName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

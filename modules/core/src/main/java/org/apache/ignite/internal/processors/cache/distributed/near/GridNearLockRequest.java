@@ -359,93 +359,91 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 24:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 25:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 26:
                 if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 27:
                 if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 28:
                 if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 29:
                 if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 30:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 31:
                 if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 32:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 33:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 34:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 35:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

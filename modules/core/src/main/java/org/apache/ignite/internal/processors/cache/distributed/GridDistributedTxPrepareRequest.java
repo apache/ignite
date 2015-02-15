@@ -437,105 +437,103 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 8:
                 if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeByte("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeByteArray("dhtVersBytes", dhtVersBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeCollection("readsBytes", readsBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 21:
                 if (!writer.writeCollection("writesBytes", writesBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

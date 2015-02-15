@@ -155,7 +155,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
 //            writer.setBuffer(buf);
 //
 //            return writer.writeByte(null, directType());

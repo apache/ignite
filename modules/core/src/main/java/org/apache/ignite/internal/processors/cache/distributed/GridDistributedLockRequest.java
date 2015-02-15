@@ -462,117 +462,115 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 8:
                 if (!writer.writeObjectArray("drVersByIdx", drVersByIdx, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeBoolean("isInTx", isInTx))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeBoolean("isInvalidate", isInvalidate))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeBoolean("isRead", isRead))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeBooleanArray("retVals", retVals))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 21:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 22:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 23:
                 if (!writer.writeByteArray("writeEntriesBytes", writeEntriesBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

@@ -115,7 +115,7 @@ public class GridTestMessage extends MessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
 //        writer.setBuffer(buf);
 //
 //        if (!typeWritten) {

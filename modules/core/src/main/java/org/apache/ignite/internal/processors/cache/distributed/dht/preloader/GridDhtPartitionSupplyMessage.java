@@ -297,57 +297,55 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeBoolean("ack", ack))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeByteArray("infoBytes", infoBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeCollection("last", last, Type.INT))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeCollection("missed", missed, Type.INT))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeInt("workerId", workerId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

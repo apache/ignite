@@ -286,72 +286,70 @@ public class GridEventStorageMessage extends MessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeByteArray("evtsBytes", evtsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeByteArray("exBytes", exBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeByteArray("filter", filter))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeString("filterClsName", filterClsName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeMap("ldrParties", ldrParties, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

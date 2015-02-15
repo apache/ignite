@@ -175,42 +175,40 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
 
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeLong("blockId", blockId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeBoolean("evictExclude", evictExclude))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

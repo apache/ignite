@@ -281,48 +281,46 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
 
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeBoolean("done", done))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeLong("endOff", endOff))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeLong("startOff", startOff))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeInt("status", status))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

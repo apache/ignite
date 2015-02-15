@@ -100,30 +100,28 @@ public class GridJobSiblingsRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

@@ -723,141 +723,139 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeMessage("drExpireTimes", drExpireTimes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeCollection("drVers", drVers, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeMessage("futVer", futVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeCollection("nearValBytes", nearValBytes, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeMessage("ttls", ttls))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 21:
                 if (!writer.writeCollection("valBytes", valBytes, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 22:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

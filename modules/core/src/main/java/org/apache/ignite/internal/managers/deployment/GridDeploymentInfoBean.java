@@ -156,48 +156,46 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeMap("participants", participants, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

@@ -229,60 +229,58 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("gridExBytes", gridExBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeBoolean("isCancelled", isCancelled))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

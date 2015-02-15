@@ -865,7 +865,7 @@ public interface EventType {
      */
     public static final int[] EVTS_JOB_EXECUTION = {
         EVT_JOB_MAPPED,
-        EVT_JOB_RESULTED,+
+        EVT_JOB_RESULTED,
         EVT_JOB_FAILED_OVER,
         EVT_JOB_STARTED,
         EVT_JOB_FINISHED,

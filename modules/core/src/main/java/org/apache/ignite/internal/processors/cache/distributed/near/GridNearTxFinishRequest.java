@@ -179,57 +179,55 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 21:
                 if (!writer.writeBoolean("explicitLock", explicitLock))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 22:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 23:
                 if (!writer.writeBoolean("storeEnabled", storeEnabled))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 24:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 25:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 26:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

@@ -450,87 +450,85 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeMessage("futVer", futVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, Type.INT))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeCollection("nearValBytes", nearValBytes, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, Type.INT))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeMessage("nearVer", nearVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeByteArray("remapKeysBytes", remapKeysBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

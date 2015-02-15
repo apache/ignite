@@ -31,11 +31,8 @@ public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
     private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
-    private MessageWriteState state;
-
-    public void state(MessageWriteState state) {
-        this.state = state;
-    }
+    /** State. */
+    private final MessageWriterState state = new MessageWriterState();
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
@@ -184,24 +181,21 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
-//        if (msg != null)
-//            msg.setWriter(this);
-
-        stream.writeMessage(msg, state);
+        stream.writeMessage(msg, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType) {
-        stream.writeObjectArray(arr, itemType, state);
+        stream.writeObjectArray(arr, itemType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType) {
-        stream.writeCollection(col, itemType, state);
+        stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
     }
@@ -209,8 +203,43 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
         MessageAdapter.Type valType) {
-        stream.writeMap(map, keyType, valType, state);
+        stream.writeMap(map, keyType, valType, this);
 
         return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isTypeWritten() {
+        return state.isTypeWritten();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypeWritten() {
+        state.onTypeWritten();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int state() {
+        return state.state();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementState() {
+        state.incrementState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeInnerMessageWrite() {
+        state.beforeInnerMessageWrite();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterInnerMessageWrite(boolean finished) {
+        state.afterInnerMessageWrite(finished);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        state.reset();
     }
 }

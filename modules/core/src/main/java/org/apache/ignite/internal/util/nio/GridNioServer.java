@@ -834,10 +834,10 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
-            if (state == null)
-                ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
+            if (writer == null)
+                ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
@@ -888,10 +888,10 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf, state);
+                        finished = msg.writeTo(buf, writer);
 
                         if (finished)
-                            state.reset();
+                            writer.reset();
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -910,10 +910,10 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf, state);
+                        finished = msg.writeTo(buf, writer);
 
                         if (finished)
-                            state.reset();
+                            writer.reset();
                     }
 
                     buf.flip();
@@ -1010,10 +1010,10 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            MessageWriteState state = ses.meta(WRITE_STATE.ordinal());
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
-            if (state == null)
-                ses.addMeta(WRITE_STATE.ordinal(), state = MessageWriteState.create(formatter));
+            if (writer == null)
+                ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
 
             List<NioOperationFuture<?>> doneFuts = null;
 
@@ -1036,10 +1036,10 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
-                    finished = msg.writeTo(buf, state);
+                    finished = msg.writeTo(buf, writer);
 
                     if (finished)
-                        state.reset();
+                        writer.reset();
                 }
 
                 // Fill up as many messages as possible to write buffer.
@@ -1058,10 +1058,10 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
-                    finished = msg.writeTo(buf, state);
+                    finished = msg.writeTo(buf, writer);
 
                     if (finished)
-                        state.reset();
+                        writer.reset();
                 }
 
                 buf.flip();

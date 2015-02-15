@@ -255,4 +255,18 @@ public interface MessageWriter {
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
         MessageAdapter.Type valType);
+
+    public boolean isTypeWritten();
+
+    public void onTypeWritten();
+
+    public int state();
+
+    public void incrementState();
+
+    public void beforeInnerMessageWrite();
+
+    public void afterInnerMessageWrite(boolean finished);
+
+    public void reset();
 }

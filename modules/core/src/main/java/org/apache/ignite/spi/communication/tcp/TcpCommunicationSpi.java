@@ -2211,9 +2211,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.order(ByteOrder.nativeOrder());
 
-                        MessageWriteState state = MessageWriteState.create(getSpiContext().messageFormatter());
-
-                        boolean written = msg.writeTo(buf, state);
+                        boolean written = msg.writeTo(buf, getSpiContext().messageFormatter().writer());
 
                         assert written;
 
@@ -3038,7 +3036,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 33)
                 return false;
 
@@ -3130,7 +3128,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 9)
                 return false;
 
@@ -3211,7 +3209,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             assert nodeIdBytes.length == 16;
 
             if (buf.remaining() < 17)

@@ -169,33 +169,31 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 8:
                 if (!writer.writeByteArray("candsBytes", candsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

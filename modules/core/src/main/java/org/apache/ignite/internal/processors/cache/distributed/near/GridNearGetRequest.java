@@ -266,87 +266,85 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeMap("keyBytes", keyBytes, Type.BYTE_ARR, Type.BOOLEAN))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeBoolean("readThrough", readThrough))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeBoolean("reload", reload))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeBoolean("skipVals", skipVals))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

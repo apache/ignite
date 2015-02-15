@@ -246,57 +246,55 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 10:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeCollection("pending", pending, Type.MSG))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

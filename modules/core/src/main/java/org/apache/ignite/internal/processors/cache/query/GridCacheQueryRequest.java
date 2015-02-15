@@ -480,135 +480,133 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf, state))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeBoolean("all", all))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeByteArray("argsBytes", argsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeString("cacheName", cacheName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeBoolean("cancel", cancel))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeString("clause", clause))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeString("clsName", clsName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeBoolean("fields", fields))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeLong("id", id))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeBoolean("incBackups", incBackups))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeBoolean("incMeta", incMeta))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeBoolean("keepPortable", keepPortable))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeByteArray("keyValFilterBytes", keyValFilterBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeByteArray("prjFilterBytes", prjFilterBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeByteArray("transBytes", transBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 21:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 

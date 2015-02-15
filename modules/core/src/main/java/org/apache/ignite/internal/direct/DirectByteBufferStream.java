@@ -529,16 +529,16 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      */
-    public void writeMessage(MessageAdapter msg, MessageWriteState state) {
+    public void writeMessage(MessageAdapter msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
-                    state.forward();
+                    writer.beforeInnerMessageWrite();
 
-                    lastFinished = msg.writeTo(buf, state);
+                    lastFinished = msg.writeTo(buf, writer);
                 }
                 finally {
-                    state.backward(lastFinished);
+                    writer.afterInnerMessageWrite(lastFinished);
                 }
             }
             else
@@ -551,9 +551,9 @@ public class DirectByteBufferStream {
     /**
      * @param arr Array.
      * @param itemType Component type.
-     * @param state Current state.
+     * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriteState state) {
+    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriter writer) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -565,17 +565,10 @@ public class DirectByteBufferStream {
             }
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-//                    if (cur != null && itemType == Type.MSG) {
-//                        cur = ((MessageAdapter)cur).clone();
-//
-//                        ((MessageAdapter)cur).setWriter(writer);
-//                    }
-                }
-
-                write(itemType, cur, state);
+                write(itemType, cur, writer);
 
                 if (!lastFinished)
                     return;
@@ -592,9 +585,9 @@ public class DirectByteBufferStream {
     /**
      * @param col Collection.
      * @param itemType Item type.
-     * @param state Current state.
+     * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriteState state) {
+    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -606,17 +599,10 @@ public class DirectByteBufferStream {
             }
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-//                    if (cur != null && itemType == Type.MSG) {
-//                        cur = ((MessageAdapter)cur).clone();
-//
-//                        ((MessageAdapter)cur).setWriter(writer);
-//                    }
-                }
-
-                write(itemType, cur, state);
+                write(itemType, cur, writer);
 
                 if (!lastFinished)
                     return;
@@ -634,11 +620,11 @@ public class DirectByteBufferStream {
      * @param map Map.
      * @param keyType Key type.
      * @param valType Value type.
-     * @param state Current state.
+     * @param writer Writer.
      */
     @SuppressWarnings("unchecked")
     public <K, V> void writeMap(Map<K, V> map, MessageAdapter.Type keyType, MessageAdapter.Type valType,
-        MessageWriteState state) {
+        MessageWriter writer) {
         if (map != null) {
             if (it == null) {
                 writeInt(map.size());
@@ -652,35 +638,13 @@ public class DirectByteBufferStream {
             while (it.hasNext() || cur != NULL) {
                 Map.Entry<K, V> e;
 
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-                    e = (Map.Entry<K, V>)cur;
-
-//                    if (keyType == Type.MSG || valType == Type.MSG) {
-//                        K k = e.getKey();
-//                        V v = e.getValue();
-//
-//                        if (k != null && keyType == Type.MSG) {
-//                            k = (K)((MessageAdapter)k).clone();
-//
-//                            ((MessageAdapter)k).setWriter(writer);
-//                        }
-//
-//                        if (v != null && valType == Type.MSG) {
-//                            v = (V)((MessageAdapter)v).clone();
-//
-//                            ((MessageAdapter)v).setWriter(writer);
-//                        }
-//
-//                        cur = e = F.t(k, v);
-//                    }
-                }
-                else
-                    e = (Map.Entry<K, V>)cur;
+                e = (Map.Entry<K, V>)cur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey(), state);
+                    write(keyType, e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -688,7 +652,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue(), state);
+                write(valType, e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -1254,8 +1218,9 @@ public class DirectByteBufferStream {
     /**
      * @param type Type.
      * @param val Value.
+     * @param writer Writer.
      */
-    private void write(MessageAdapter.Type type, Object val, MessageWriteState state) {
+    private void write(MessageAdapter.Type type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1360,13 +1325,13 @@ public class DirectByteBufferStream {
             case MSG:
                 try {
                     if (val != null)
-                        state.forward();
+                        writer.beforeInnerMessageWrite();
 
-                    writeMessage((MessageAdapter)val, state);
+                    writeMessage((MessageAdapter)val, writer);
                 }
                 finally {
                     if (val != null)
-                        state.backward(lastFinished);
+                        writer.afterInnerMessageWrite(lastFinished);
                 }
 
                 break;

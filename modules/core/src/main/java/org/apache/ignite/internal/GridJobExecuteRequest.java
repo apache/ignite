@@ -451,144 +451,142 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriteState state) {
-        MessageWriter writer = state.writer();
-
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!state.isTypeWritten()) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            state.setTypeWritten();
+            writer.onTypeWritten();
         }
 
-        switch (state.index()) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeBoolean("dynamicSiblings", dynamicSiblings))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeBoolean("internal", internal))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeByteArray("jobBytes", jobBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeMap("ldrParticipants", ldrParticipants, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeByteArray("sesAttrsBytes", sesAttrsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeBoolean("sesFullSup", sesFullSup))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeLong("startTaskTime", startTaskTime))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeString("taskClsName", taskClsName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeString("taskName", taskName))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeCollection("top", top, Type.UUID))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state.increment();
+                writer.incrementState();
 
         }
 
