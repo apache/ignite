@@ -167,8 +167,6 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         if (fullFailure)
-            ignoreMessages(ignoreMessageClasses(), allNodeIds());
-        else
             ignoreMessages(ignoreMessageClasses(), F.asList(grid(1).localNode().id()));
 
         final IgniteEx originatingNodeGrid = grid(originatingNode());
@@ -330,17 +328,32 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             // Should not send any messages.
             cache.putAll(map);
 
-            // Fail the node in the middle of transaction.
-            info(">>> Stopping primary node " + primaryNode);
+            IgniteTxProxyImpl txProxy = (IgniteTxProxyImpl)tx;
 
-            G.stop(G.ignite(primaryNode.id()).name(), true);
+            IgniteInternalTx txEx = txProxy.tx();
 
-            info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+            if (commmit) {
+                txEx.prepare();
 
-            if (commmit)
+                // Fail the node in the middle of transaction.
+                info(">>> Stopping primary node " + primaryNode);
+
+                G.stop(Ignition.ignite(primaryNode.id()).name(), true);
+
+                info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+
                 tx.commit();
-            else
+            }
+            else {
+                // Fail the node in the middle of transaction.
+                info(">>> Stopping primary node " + primaryNode);
+
+                G.stop(G.ignite(primaryNode.id()).name(), true);
+
+                info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+
                 tx.rollback();
+            }
         }
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {

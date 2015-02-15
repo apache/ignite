@@ -154,6 +154,11 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     public boolean partitionLock();
 
     /**
+     * @return Return value for
+     */
+    public GridCacheReturn<V> implicitSingleResult();
+
+    /**
      * Finishes transaction (either commit or rollback).
      *
      * @param commit {@code True} if commit, {@code false} if rollback.

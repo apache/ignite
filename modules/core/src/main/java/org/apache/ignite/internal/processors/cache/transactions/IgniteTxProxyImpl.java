@@ -73,6 +73,13 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx<K, V> tx() {
+        return tx;
+    }
+
+    /**
      * Enters a call.
      */
     private void enter() {
@@ -102,13 +109,6 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         finally {
             cctx.kernalContext().gateway().readUnlock();
         }
-    }
-
-    /**
-     * @return Proxied transaction.
-     */
-    public IgniteInternalTx<K, V> tx() {
-        return tx;
     }
 
     /** {@inheritDoc} */

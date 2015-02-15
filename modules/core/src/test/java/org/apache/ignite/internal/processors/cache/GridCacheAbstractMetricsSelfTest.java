@@ -59,7 +59,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @return Expected number of inner reads.
      */
     protected int expectedReadsPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /**
@@ -69,7 +69,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @return Expected number of misses.
      */
     protected int expectedMissesPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

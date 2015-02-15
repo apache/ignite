@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -55,7 +57,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** IDs of backup nodes receiving last prepare request during this prepare. */
     @GridDirectCollection(UUID.class)
+    @GridToStringInclude
     private Collection<UUID> lastBackups;
+
+    /** Need return value flag. */
+    private boolean retVal;
+
+    /** Implicit single flag. */
+    private boolean implicitSingle;
 
     /** Subject ID. */
     private UUID subjId;
@@ -97,10 +106,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
         Collection<UUID> lastBackups,
+        boolean onePhaseCommit,
+        boolean retVal,
+        boolean implicitSingle,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(tx, reads, writes, grpLockKey, partLock, txNodes);
+        super(tx, reads, writes, grpLockKey, partLock, txNodes, onePhaseCommit);
 
         assert futId != null;
 
@@ -109,6 +121,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         this.near = near;
         this.last = last;
         this.lastBackups = lastBackups;
+        this.retVal = retVal;
+        this.implicitSingle = implicitSingle;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
     }
@@ -167,6 +181,20 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public int taskNameHash() {
         return taskNameHash;
+    }
+
+    /**
+     * @return Whether return value is requested.
+     */
+    public boolean returnValue() {
+        return retVal;
+    }
+
+    /**
+     * @return Implicit single flag.
+     */
+    public boolean implicitSingle() {
+        return implicitSingle;
     }
 
     /**
@@ -230,49 +258,38 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         switch (writer.state()) {
-            case 22:
-                if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
 
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeBoolean("last", last))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeCollection("lastBackups", lastBackups, Type.UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
+            case 27:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 28:
                 if (!writer.writeBoolean("near", near))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 29:
+                if (!writer.writeBoolean("retVal", retVal))
+                    return false;
+
+                state++;
+
+            case 30:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 31:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 32:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -299,23 +316,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
-            case 23:
-                last = reader.readBoolean("last");
 
-                if (!reader.isLastRead())
-                    return false;
 
-                readState++;
-
-            case 24:
-                lastBackups = reader.readCollection("lastBackups", Type.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 25:
+            case 27:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -323,7 +326,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
-            case 26:
+            case 28:
                 near = reader.readBoolean("near");
 
                 if (!reader.isLastRead())
@@ -331,7 +334,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
-            case 27:
+
+            case 30:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -339,7 +343,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
-            case 28:
+            case 31:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -347,7 +351,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 readState++;
 
-            case 29:
+            case 32:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())

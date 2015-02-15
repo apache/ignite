@@ -90,7 +90,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assert jcache().localSize() == 0;
+        assertEquals(0, jcache().localSize());
     }
 
     /** {@inheritDoc} */

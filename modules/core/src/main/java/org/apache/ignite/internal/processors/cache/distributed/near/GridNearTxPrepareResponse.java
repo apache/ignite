@@ -70,6 +70,20 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     @GridDirectCollection(byte[].class)
     private Collection<byte[]> ownedValsBytes;
 
+    /** Cache return value. */
+    @GridDirectTransient
+    private GridCacheReturn<V> retVal;
+
+    /** Return value bytes. */
+    private byte[] retValBytes;
+
+    /** Filter failed keys. */
+    @GridDirectTransient
+    private Collection<IgniteTxKey<K>> filterFailedKeys;
+
+    /** Filter failed key bytes. */
+    private byte[] filterFailedKeyBytes;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -85,8 +99,15 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param invalidParts Invalid partitions.
      * @param err Error.
      */
-    public GridNearTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, GridCacheVersion dhtVer,
-        Collection<Integer> invalidParts, Throwable err) {
+    public GridNearTxPrepareResponse(
+        GridCacheVersion xid,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        GridCacheVersion dhtVer,
+        Collection<Integer> invalidParts,
+        GridCacheReturn<V> retVal,
+        Throwable err
+    ) {
         super(xid, err);
 
         assert futId != null;
@@ -97,6 +118,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         this.miniId = miniId;
         this.dhtVer = dhtVer;
         this.invalidParts = invalidParts;
+        this.retVal = retVal;
     }
 
     /**
@@ -147,6 +169,9 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param valBytes Value bytes.
      */
     public void addOwnedValue(IgniteTxKey<K> key, GridCacheVersion ver, V val, byte[] valBytes) {
+        if (val == null && valBytes == null)
+            return;
+
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
@@ -159,6 +184,27 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     public Map<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
         return ownedVals == null ? Collections.<IgniteTxKey<K>, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
+    }
+
+    /**
+     * @return Return value.
+     */
+    public GridCacheReturn<V> returnValue() {
+        return retVal;
+    }
+
+    /**
+     * @param filterFailedKeys Collection of keys that did not pass the filter.
+     */
+    public void filterFailedKeys(Collection<IgniteTxKey<K>> filterFailedKeys) {
+        this.filterFailedKeys = filterFailedKeys;
+    }
+
+    /**
+     * @return Collection of keys that did not pass the filter.
+     */
+    public Collection<IgniteTxKey<K>> filterFailedKeys() {
+        return filterFailedKeys == null ? Collections.<IgniteTxKey<K>>emptyList() : filterFailedKeys;
     }
 
     /**
@@ -204,6 +250,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 ownedValsBytes.add(ctx.marshaller().marshal(F.t(entry.getKey(), tup.get1(), valBytes, rawBytes)));
             }
         }
+
+
+        if (retValBytes == null && retVal != null)
+            retValBytes = ctx.marshaller().marshal(retVal);
+
+        if (filterFailedKeyBytes == null && filterFailedKeys != null)
+            filterFailedKeyBytes = ctx.marshaller().marshal(filterFailedKeys);
     }
 
     /** {@inheritDoc} */
@@ -221,6 +274,12 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 ownedVals.put(tup.get1(), F.t(tup.get2(), val, tup.get4() ? null : tup.get3()));
             }
         }
+
+        if (retVal == null && retValBytes != null)
+            retVal = ctx.marshaller().unmarshal(retValBytes, ldr);
+
+        if (filterFailedKeys == null && filterFailedKeyBytes != null)
+            filterFailedKeys = ctx.marshaller().unmarshal(filterFailedKeyBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -245,7 +304,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeByteArray("filterFailedKeyBytes", filterFailedKeyBytes))
                     return false;
 
                 writer.incrementState();
@@ -257,7 +316,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
                     return false;
 
                 writer.incrementState();
@@ -273,6 +332,12 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     return false;
 
                 writer.incrementState();
+
+            case 17:
+                if (!writer.writeByteArray("retValBytes", retValBytes))
+                    return false;
+
+                state++;
 
         }
 
@@ -296,7 +361,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 11:
-                futId = reader.readIgniteUuid("futId");
+                filterFailedKeyBytes = reader.readByteArray("filterFailedKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -312,7 +377,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 readState++;
 
             case 13:
-                miniId = reader.readIgniteUuid("miniId");
+                invalidParts = reader.readCollection("invalidParts", int.class);
 
                 if (!reader.isLastRead())
                     return false;

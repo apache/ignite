@@ -566,8 +566,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
             checkLastMethod("load");
 
-            assert val != null;
-            assert val.equals("reloaded-" + i);
+            assertEquals("reloaded-" + i, val);
 
             store.resetLastMethod();
 

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -64,24 +63,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Min version used as base for completed versions. */
     private GridCacheVersion baseVer;
 
-    /** Transaction write entries. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> writeEntries;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> writeEntriesBytes;
-
-    /** Write entries which have not been transferred to nodes during lock request. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> recoveryWritesBytes;
-
     /** Expected txSize. */
     private int txSize;
 
@@ -114,9 +95,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
-     * @param writeEntries Write entries.
-     * @param recoveryWrites Recover entries. In pessimistic mode entries which were not transferred to remote nodes
-     *      with lock requests. {@code Null} for optimistic mode.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      */
     public GridDistributedTxFinishRequest(
@@ -133,11 +111,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writeEntries,
-        Collection<IgniteTxEntry<K, V>> recoveryWrites,
         @Nullable IgniteTxKey grpLockKey
     ) {
-        super(xidVer, writeEntries == null ? 0 : writeEntries.size());
+        super(xidVer, 0);
         assert xidVer != null;
 
         this.futId = futId;
@@ -150,33 +126,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
         this.txSize = txSize;
-        this.writeEntries = writeEntries;
-        this.recoveryWrites = recoveryWrites;
         this.grpLockKey = grpLockKey;
 
         completedVersions(committedVers, rolledbackVers);
-    }
-
-    /**
-     * Clones write entries so that near entries are not passed to DHT cache.
-     */
-    public void cloneEntries() {
-        if (F.isEmpty(writeEntries))
-            return;
-
-        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(writeEntries.size());
-
-        for (IgniteTxEntry<K, V> e : writeEntries) {
-            GridCacheContext<K, V> cacheCtx = e.context();
-
-            // Clone only if it is a near cache.
-            if (cacheCtx.isNear())
-                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
-            else
-                cp.add(e);
-        }
-
-        writeEntries = cp;
     }
 
     /**
@@ -244,20 +196,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
-     * @return Write entries.
-     */
-    public Collection<IgniteTxEntry<K, V>> writes() {
-        return writeEntries;
-    }
-
-    /**
-     * @return Recover entries.
-     */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites;
-    }
-
-    /**
      * @return Expected tx size.
      */
     public int txSize() {
@@ -291,24 +229,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (writeEntries != null) {
-            marshalTx(writeEntries, ctx);
-
-            writeEntriesBytes = new ArrayList<>(writeEntries.size());
-
-            for (IgniteTxEntry<K, V> e : writeEntries)
-                writeEntriesBytes.add(ctx.marshaller().marshal(e));
-        }
-
-        if (recoveryWrites != null) {
-            marshalTx(recoveryWrites, ctx);
-
-            recoveryWritesBytes = new ArrayList<>(recoveryWrites.size());
-
-            for (IgniteTxEntry<K, V> e : recoveryWrites)
-                recoveryWritesBytes.add(ctx.marshaller().marshal(e));
-        }
-
         if (grpLockKey != null && grpLockKeyBytes == null) {
             if (ctx.deploymentEnabled())
                 prepareObject(grpLockKey, ctx);
@@ -320,24 +240,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (writeEntriesBytes != null) {
-            writeEntries = new ArrayList<>(writeEntriesBytes.size());
-
-            for (byte[] arr : writeEntriesBytes)
-                writeEntries.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(writeEntries, false, ctx, ldr);
-        }
-
-        if (recoveryWritesBytes != null) {
-            recoveryWrites = new ArrayList<>(recoveryWritesBytes.size());
-
-            for (byte[] arr : recoveryWritesBytes)
-                recoveryWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(recoveryWrites, false, ctx, ldr);
-        }
 
         if (grpLockKeyBytes != null && grpLockKey == null)
             grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
@@ -394,44 +296,27 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 writer.incrementState();
 
-            case 14:
-                if (!writer.writeCollection("recoveryWritesBytes", recoveryWritesBytes, Type.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
 
             case 15:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
                 if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeInt("txSize", txSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeCollection("writeEntriesBytes", writeEntriesBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -497,23 +382,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 14:
-                recoveryWritesBytes = reader.readCollection("recoveryWritesBytes", Type.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
             case 15:
-                syncCommit = reader.readBoolean("syncCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 16:
                 syncRollback = reader.readBoolean("syncRollback");
 
                 if (!reader.isLastRead())
@@ -521,7 +390,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 17:
+            case 16:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -529,7 +398,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 18:
+            case 17:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -537,21 +406,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 19:
-                txSize = reader.readInt("txSize");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 20:
-                writeEntriesBytes = reader.readCollection("writeEntriesBytes", Type.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
 
         }
 

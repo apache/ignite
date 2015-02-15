@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
@@ -75,8 +74,6 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
-     * @param writeEntries Write entries.
-     * @param recoverEntries Recover entries.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -94,12 +91,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writeEntries,
-        Collection<IgniteTxEntry<K, V>> recoverEntries,
         @Nullable UUID subjId,
         int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
-            rolledbackVers, txSize, writeEntries, recoverEntries, null);
+            rolledbackVers, txSize, null);
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;
@@ -172,37 +167,20 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (writer.state()) {
-            case 21:
-                if (!writer.writeBoolean("explicitLock", explicitLock))
-                    return false;
-
-                writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeBoolean("storeEnabled", storeEnabled))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 23:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 24:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -221,31 +199,9 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (readState) {
-            case 21:
-                explicitLock = reader.readBoolean("explicitLock");
 
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
 
             case 22:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 23:
-                storeEnabled = reader.readBoolean("storeEnabled");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 24:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -253,7 +209,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 readState++;
 
-            case 25:
+            case 23:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -261,7 +217,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 readState++;
 
-            case 26:
+            case 24:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())

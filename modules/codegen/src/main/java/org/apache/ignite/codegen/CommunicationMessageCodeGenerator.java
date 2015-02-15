@@ -129,6 +129,30 @@ public class CommunicationMessageCodeGenerator {
 
         try {
             gen.generateAll(true);
+
+//            gen.generateAndWrite(GridDistributedLockRequest.class);
+//            gen.generateAndWrite(GridDistributedLockResponse.class);
+//            gen.generateAndWrite(GridNearLockRequest.class);
+//            gen.generateAndWrite(GridNearLockResponse.class);
+//            gen.generateAndWrite(GridDhtLockRequest.class);
+//            gen.generateAndWrite(GridDhtLockResponse.class);
+//
+//            gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
+//            gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
+//            gen.generateAndWrite(GridNearTxPrepareRequest.class);
+//            gen.generateAndWrite(GridNearTxPrepareResponse.class);
+//            gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//            gen.generateAndWrite(GridDhtTxPrepareResponse.class);
+//
+//            gen.generateAndWrite(GridDistributedTxFinishRequest.class);
+//            gen.generateAndWrite(GridDistributedTxFinishResponse.class);
+//            gen.generateAndWrite(GridNearTxFinishRequest.class);
+//            gen.generateAndWrite(GridNearTxFinishResponse.class);
+//            gen.generateAndWrite(GridDhtTxFinishRequest.class);
+//            gen.generateAndWrite(GridDhtTxFinishResponse.class);
+//
+//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
+//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
         }
         catch (Exception e) {
             e.printStackTrace();

@@ -1493,7 +1493,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
+        @Nullable Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
         assert topVer != -1;
 
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
@@ -1501,25 +1501,27 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
-        Collection<UUID> readers = entry.readers();
-
-        Collection<ClusterNode> nearNodes = null;
-
-        if (!F.isEmpty(readers)) {
-            nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
-
-            if (log.isDebugEnabled())
-                log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Entry has no near readers: " + entry);
-
         Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty())
-            ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+        if (nearMap != null) {
+            Collection<UUID> readers = entry.readers();
+
+            Collection<ClusterNode> nearNodes = null;
+
+            if (!F.isEmpty(readers)) {
+                nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
+
+                if (log.isDebugEnabled())
+                    log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Entry has no near readers: " + entry);
+
+            if (nearNodes != null && !nearNodes.isEmpty())
+                ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+        }
 
         return ret;
     }

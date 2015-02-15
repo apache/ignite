@@ -362,11 +362,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final IgniteCache<String, Integer> cache = jcache();
 
-        cache.put("key1", 1);
-        cache.put("key2", 2);
+        try {
+            cache.put("key1", 1);
+            cache.put("key2", 2);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -400,31 +406,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         // Now do the same checks but within transaction.
         if (txEnabled()) {
-            tx = transactions().txStart();
+            try (IgniteTx tx0 = transactions().txStart()) {
+                assert cache.getAll(Collections.<String>emptySet()).isEmpty();
 
-            assert cache.getAll(Collections.<String>emptySet()).isEmpty();
+                map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
-            map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                info("Retrieved map1: " + map1);
 
-            info("Retrieved map1: " + map1);
+                assert 2 == map1.size() : "Invalid map: " + map1;
 
-            assert 2 == map1.size() : "Invalid map: " + map1;
+                assertEquals(1, (int)map1.get("key1"));
+                assertEquals(2, (int)map1.get("key2"));
+                assertNull(map1.get("key9999"));
 
-            assertEquals(1, (int)map1.get("key1"));
-            assertEquals(2, (int)map1.get("key2"));
-            assertNull(map1.get("key9999"));
+                map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
-            map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                info("Retrieved map2: " + map2);
 
-            info("Retrieved map2: " + map2);
+                assert 2 == map2.size() : "Invalid map: " + map2;
 
-            assert 2 == map2.size() : "Invalid map: " + map2;
+                assertEquals(1, (int)map2.get("key1"));
+                assertEquals(2, (int)map2.get("key2"));
+                assertNull(map2.get("key9999"));
 
-            assertEquals(1, (int)map2.get("key1"));
-            assertEquals(2, (int)map2.get("key2"));
-            assertNull(map2.get("key9999"));
-
-            tx.commit();
+                tx0.commit();
+            }
         }
     }
 
@@ -531,29 +537,26 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPutTx() throws Exception {
         if (txEnabled()) {
-            IgniteTx tx = transactions().txStart();
-
             IgniteCache<String, Integer> cache = jcache();
+            
+            try (IgniteTx tx = transactions().txStart()) {
+                assert cache.getAndPut("key1", 1) == null;
+                assert cache.getAndPut("key2", 2) == null;
 
-            assert cache.getAndPut("key1", 1) == null;
-            assert cache.getAndPut("key2", 2) == null;
+                // Check inside transaction.
+                assert cache.get("key1") == 1;
+                assert cache.get("key2") == 2;
 
-            // Check inside transaction.
-            assert cache.get("key1") == 1;
-            assert cache.get("key2") == 2;
+                // Put again to check returned values.
+                assert cache.getAndPut("key1", 1) == 1;
+                assert cache.getAndPut("key2", 2) == 2;
 
-            // Put again to check returned values.
-            assert cache.getAndPut("key1", 1) == 1;
-            assert cache.getAndPut("key2", 2) == 2;
-
-            checkContainsKey(true, "key1");
-            checkContainsKey(true, "key2");
-
-            assert cache.get("key1") != null;
-            assert cache.get("key2") != null;
-            assert cache.get("wrong") == null;
-
-            tx.commit();
+                assert cache.get("key1") != null;
+                assert cache.get("key2") != null;
+                assert cache.get("wrong") == null;
+                
+                tx.commit();
+            }
 
             // Check outside transaction.
             checkContainsKey(true, "key1");
@@ -849,10 +852,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             if (startVal)
                 cache.put("key", 2);
+            else
+                assertEquals(null, cache.get("key"));
 
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
+            Integer expectedRes = startVal ? 2 : null;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes = startVal ? 3 : 1;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes++;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -1145,15 +1158,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache();
 
-        cache.put("key1", 1);
-        cache.put("key2", 2);
+        try {
+            cache.put("key1", 1);
+            cache.put("key2", 2);
+    
+            // Check inside transaction.
+            assert cache.get("key1") == 1;
+            assert cache.get("key2") == 2;
 
-        // Check inside transaction.
-        assert cache.get("key1") == 1;
-        assert cache.get("key2") == 2;
-
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -1175,30 +1194,36 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
 
-        jcache().put("key2", 1);
+        try {
+            jcache().put("key2", 1);
+    
+            cacheAsync.put("key1", 10);
+    
+            IgniteFuture<?> fut1 = cacheAsync.future();
+    
+            cacheAsync.put("key2", 11);
+    
+            IgniteFuture<?> fut2 = cacheAsync.future();
+    
+            IgniteFuture<IgniteTx> f = null;
+    
+            if (tx != null) {
+                tx = (IgniteTx)tx.withAsync();
+    
+                tx.commit();
 
-        cacheAsync.put("key1", 10);
+                f = tx.future();
+            }
+    
+            fut1.get();
+            fut2.get();
 
-        IgniteFuture<?> fut1 = cacheAsync.future();
-
-        cacheAsync.put("key2", 11);
-
-        IgniteFuture<?> fut2 = cacheAsync.future();
-
-        IgniteFuture<IgniteTx> f = null;
-
-        if (tx != null) {
-            tx = (IgniteTx)tx.withAsync();
-
-            tx.commit();
-
-            f = tx.future();
+            assert f == null || f.get().state() == COMMITTED;
         }
-
-        fut1.get();
-        fut2.get();
-
-        assert f == null || f.get().state() == COMMITTED;
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -3774,9 +3799,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
+        final int SIZE = 20000;
+
         Map<String, Integer> entries = new HashMap<>();
 
-        for (int i = 0; i < 20000; ++i) {
+        for (int i = 0; i < SIZE; ++i) {
             cache.put(Integer.toString(i), i);
 
             entries.put(Integer.toString(i), i);
