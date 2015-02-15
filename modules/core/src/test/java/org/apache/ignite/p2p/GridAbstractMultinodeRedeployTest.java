@@ -80,8 +80,8 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                Integer res1 = fut1.get(1000);
-                Integer res2 = fut2.get(1000);
+                Integer res1 = fut1.get(5000);
+                Integer res2 = fut2.get(5000);
 
                 if (res1 == null || res2 == null)
                     throw new IgniteCheckedException("Received wrong result.");
