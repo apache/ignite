@@ -2771,8 +2771,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    /**
+     * @param name Cache name.
+     * @return Cache.
+     */
+    public <K, V> GridCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {
@@ -2795,8 +2798,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> caches() {
+    /**
+     * @return Public caches.
+     */
+    public Collection<GridCache<?, ?>> caches() {
         guard();
 
         try {

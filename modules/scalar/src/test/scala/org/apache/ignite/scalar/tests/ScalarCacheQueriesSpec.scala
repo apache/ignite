@@ -48,7 +48,7 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     override def beforeAll() {
         n = start("modules/scalar/src/test/resources/spring-cache.xml").cluster().localNode
 
-        c = cache$[Int, ObjectValue].get
+        // c = cache$[Int, ObjectValue].get TODO
 
         (1 to ENTRY_CNT).foreach(i => c.putx(i, ObjectValue(i, "str " + WORDS(i))))
 

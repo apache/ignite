@@ -74,11 +74,11 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                grid(i).cache(null).forceRepartition().get();
+                ((IgniteKernal)grid(i)).cache(null).forceRepartition().get();
 
             startGrid(GRID_CNT - 1);
 
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
 
             final int keyCnt = 100;
 

@@ -153,7 +153,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
 
             int keyCnt = 200;
 
@@ -163,7 +163,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             // Create readers if near cache is enabled.
             for (int g = 1; g < 2; g++) {
                 for (int i = 30; i < 70; i++)
-                    grid(g).cache(null).get(i);
+                    ((IgniteKernal)grid(g)).cache(null).get(i);
             }
 
             info(">>> Starting test tx.");
@@ -212,7 +212,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                GridCache<Object, Object> checkCache = grid(g).cache(null);
+                GridCache<Object, Object> checkCache = ((IgniteKernal)grid(g)).cache(null);
 
                 ClusterNode checkNode = grid(g).localNode();
 
@@ -278,7 +278,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             Map<Integer, Integer> checkMap = new HashMap<>();
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 0; i < 10; i++) {

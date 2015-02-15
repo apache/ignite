@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -144,14 +145,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkAffinity() throws Exception {
-        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
+        CacheAffinity<Object> aff = ((IgniteKernal)grid(0)).cache(null).affinity();
 
         for (Ignite grid : Ignition.allGrids()) {
             try {
                 if (grid.cluster().localNode().id().equals(grid(0).localNode().id()))
                     continue;
 
-                CacheAffinity<Object> checkAff = grid.cache(null).affinity();
+                CacheAffinity<Object> checkAff = ((IgniteKernal)grid).cache(null).affinity();
 
                 for (int p = 0; p < PARTS; p++)
                     assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));

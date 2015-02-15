@@ -100,9 +100,9 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2 = grid(1);
         ignite3 = grid(2);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
-        cache3 = ignite3.cache(null);
+        cache1 = ((IgniteKernal)ignite1).cache(null);
+        cache2 = ((IgniteKernal)ignite2).cache(null);
+        cache3 = ((IgniteKernal)ignite3).cache(null);
     }
 
     /**

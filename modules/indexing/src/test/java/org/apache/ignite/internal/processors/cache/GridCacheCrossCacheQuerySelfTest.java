@@ -109,7 +109,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         String cache = "partitioned";
 
         GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache(cache).queries();
+            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
+                .<Integer, FactPurchase>cache(cache).queries();
 
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
@@ -130,7 +131,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         fillCaches();
 
         GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
+            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
+                .<Integer, FactPurchase>cache("partitioned").queries();
 
         Set<Integer> set1 = new HashSet<>();
 
@@ -173,7 +175,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testOnProjection() throws Exception {
         fillCaches();
 
-        CacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
+        CacheProjection<Integer, FactPurchase> prj = ((IgniteKernal)ignite)
+            .<Integer, FactPurchase>cache("partitioned").projection(
             new IgnitePredicate<Cache.Entry<Integer, FactPurchase>>() {
                 @Override public boolean apply(Cache.Entry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
@@ -245,7 +248,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
         throws Exception {
         CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
-            ignite.<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
+            ((IgniteKernal)ignite)
+                .<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
         List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());
