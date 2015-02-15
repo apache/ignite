@@ -237,7 +237,7 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends MessageAdapter> T readMessage(String name) {
-        T msg = stream.readMessage();
+        T msg = stream.readMessage(this);
 
         lastRead = stream.lastFinished();
 
@@ -246,7 +246,7 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <T> T[] readObjectArray(String name, Class<T> itemCls) {
-        T[] msg = stream.readObjectArray(itemCls);
+        T[] msg = stream.readObjectArray(itemCls, this);
 
         lastRead = stream.lastFinished();
 
@@ -255,7 +255,7 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls) {
-        C col = stream.readCollection(itemCls);
+        C col = stream.readCollection(itemCls, this);
 
         lastRead = stream.lastFinished();
 
@@ -265,7 +265,7 @@ public class DirectMessageReader implements MessageReader {
     /** {@inheritDoc} */
     @Override public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls,
         boolean linked) {
-        M map = stream.readMap(keyCls, valCls, linked);
+        M map = stream.readMap(keyCls, valCls, this, linked);
 
         lastRead = stream.lastFinished();
 

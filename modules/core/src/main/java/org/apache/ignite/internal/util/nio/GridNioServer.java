@@ -889,6 +889,9 @@ public class GridNioServer<T> {
                         assert msg != null;
 
                         finished = msg.writeTo(buf, state);
+
+                        if (finished)
+                            state.reset();
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -908,6 +911,9 @@ public class GridNioServer<T> {
                         assert msg != null;
 
                         finished = msg.writeTo(buf, state);
+
+                        if (finished)
+                            state.reset();
                     }
 
                     buf.flip();

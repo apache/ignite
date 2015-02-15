@@ -1504,6 +1504,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
+                GridDirectParser parser = new GridDirectParser(messageFactory, messageFormatter);
+
                 GridNioServer<MessageAdapter> srvr =
                     GridNioServer.<MessageAdapter>builder()
                         .address(locHost)
@@ -1521,7 +1523,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .directMode(true)
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
-                        .filters(new GridNioCodecFilter(new GridDirectParser(messageFactory), log, true),
+                        .filters(new GridNioCodecFilter(parser, log, true),
                             new GridConnectionBytesVerifyFilter(log))
                         .messageFormatter(messageFormatter)
                         .build();
@@ -2452,13 +2454,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
+                GridDirectParser parser = new GridDirectParser(getSpiContext().messageFactory(),
+                    getSpiContext().messageFormatter());
+
                 IpcToNioAdapter<MessageAdapter> adapter = new IpcToNioAdapter<>(
                     metricsLsnr,
                     log,
                     endpoint,
                     srvLsnr,
                     getSpiContext().messageFormatter(),
-                    new GridNioCodecFilter(new GridDirectParser(getSpiContext().messageFactory()), log, true),
+                    new GridNioCodecFilter(parser, log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

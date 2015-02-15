@@ -479,16 +479,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param val Value.
-     */
-    public void writeByteArray(byte[] val, int off, int len) {
-        if (val != null)
-            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len, true);
-        else
-            writeInt(-1);
-    }
-
-    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {
@@ -920,14 +910,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param len Length.
-     * @return Value.
-     */
-    public byte[] readByteArray(int len) {
-        return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF, len);
-    }
-
-    /**
      /**
       * @return Value.
       */
@@ -1028,7 +1010,7 @@ public class DirectByteBufferStream {
      * @return Message.
      */
     @SuppressWarnings("unchecked")
-    public <T extends MessageAdapter> T readMessage() {
+    public <T extends MessageAdapter> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -1039,6 +1021,9 @@ public class DirectByteBufferStream {
             byte type = readByte();
 
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
+
+            if (msg != null)
+                msg.setReader(reader);
 
             msgTypeDone = true;
         }
@@ -1059,10 +1044,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemCls Component type.
+     * @param reader Reader.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(Class<?> itemCls) {
+    public <T> T[] readObjectArray(Class<?> itemCls, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1079,7 +1065,7 @@ public class DirectByteBufferStream {
             Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType);
+                Object item = read(itemType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1103,10 +1089,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemCls Item type.
+     * @param reader Reader.
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<T>, T> C readCollection(Class<T> itemCls) {
+    public <C extends Collection<T>, T> C readCollection(Class<T> itemCls, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1123,7 +1110,7 @@ public class DirectByteBufferStream {
             Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType);
+                Object item = read(itemType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1148,11 +1135,13 @@ public class DirectByteBufferStream {
     /**
      * @param keyCls Key type.
      * @param valCls Value type.
+     * @param reader Reader.
      * @param linked Whether linked map should be created.
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls, boolean linked) {
+    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls, MessageReader reader,
+        boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1171,7 +1160,7 @@ public class DirectByteBufferStream {
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(keyType);
+                    Object key = read(keyType, reader);
 
                     if (!lastFinished)
                         return null;
@@ -1180,7 +1169,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(valType);
+                Object val = read(valType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1476,9 +1465,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param type Type.
+     * @param reader Reader.
      * @return Value.
      */
-    private Object read(Type type) {
+    private Object read(Type type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1541,7 +1531,7 @@ public class DirectByteBufferStream {
                 return readIgniteUuid();
 
             case MSG:
-                return readMessage();
+                return readMessage(reader);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);

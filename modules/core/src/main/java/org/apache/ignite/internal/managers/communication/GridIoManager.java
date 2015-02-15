@@ -229,7 +229,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
-        msgFactory = new GridIoMessageFactory(formatter, ctx.plugins().extensions(MessageFactory.class));
+        msgFactory = new GridIoMessageFactory(ctx.plugins().extensions(MessageFactory.class));
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
