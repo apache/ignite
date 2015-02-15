@@ -48,6 +48,9 @@ public class VisorStreamerConfiguration implements Serializable {
     /** Maximum number of concurrent events to be processed. */
     private int maxConcurrentSessions;
 
+    /** Streamer thread pool size. */
+    private int poolSize;
+
     /**
      * @param scfg Streamer configuration.
      * @return Data transfer object for streamer configuration properties.
@@ -60,6 +63,7 @@ public class VisorStreamerConfiguration implements Serializable {
         cfg.atLeastOnce(scfg.isAtLeastOnce());
         cfg.maximumFailoverAttempts(scfg.getMaximumFailoverAttempts());
         cfg.maximumConcurrentSessions(scfg.getMaximumConcurrentSessions());
+        cfg.threadPoolSize(scfg.getThreadPoolSize());
 
         return cfg;
     }
@@ -150,6 +154,20 @@ public class VisorStreamerConfiguration implements Serializable {
      */
     public void maximumConcurrentSessions(int maxConcurrentSessions) {
         this.maxConcurrentSessions = maxConcurrentSessions;
+    }
+
+    /**
+     * @return Streamer thread pool size.
+     */
+    public int threadPoolSize() {
+        return poolSize;
+    }
+
+    /**
+     * @param poolSize New streamer thread pool size.
+     */
+    public void threadPoolSize(int poolSize) {
+        this.poolSize = poolSize;
     }
 
     /** {@inheritDoc} */
