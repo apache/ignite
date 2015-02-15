@@ -95,81 +95,81 @@ public class GridTestMessage extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-//        writer.setBuffer(buf);
-//
-//        if (!typeWritten) {
-//            if (!writer.writeByte(null, directType()))
-//                return false;
-//
-//            typeWritten = true;
-//        }
-//
-//        switch (state) {
-//            case 0:
-//                if (!writer.writeUuid(null, srcNodeId))
-//                    return false;
-//
-//                state++;
-//
-//            case 1:
-//                if (!writer.writeLong(null, msgId))
-//                    return false;
-//
-//                state++;
-//
-//            case 2:
-//                if (!writer.writeLong(null, resId))
-//                    return false;
-//
-//                state++;
-//
-//            case 3:
-//                if (!writer.writeByteArray(null, payload))
-//                    return false;
-//
-//                state++;
-//        }
+        writer.setBuffer(buf);
+
+        if (!writer.isTypeWritten()) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            writer.onTypeWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeUuid(null, srcNodeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong(null, msgId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeLong(null, resId))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeByteArray(null, payload))
+                    return false;
+
+                writer.incrementState();
+        }
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-//        reader.setBuffer(buf);
-//
-//        switch (state) {
-//            case 0:
-//                srcNodeId = reader.readUuid(null);
-//
-//                if (!reader.isLastRead())
-//                    return false;
-//
-//                state++;
-//
-//            case 1:
-//                msgId = reader.readLong(null);
-//
-//                if (!reader.isLastRead())
-//                    return false;
-//
-//                state++;
-//
-//            case 2:
-//                resId = reader.readLong(null);
-//
-//                if (!reader.isLastRead())
-//                    return false;
-//
-//                state++;
-//
-//            case 3:
-//                payload = reader.readByteArray(null);
-//
-//                if (!reader.isLastRead())
-//                    return false;
-//
-//                state++;
-//        }
+        reader.setBuffer(buf);
+
+        switch (readState) {
+            case 0:
+                srcNodeId = reader.readUuid(null);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 1:
+                msgId = reader.readLong(null);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 2:
+                resId = reader.readLong(null);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 3:
+                payload = reader.readByteArray(null);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+        }
 
         return true;
     }
