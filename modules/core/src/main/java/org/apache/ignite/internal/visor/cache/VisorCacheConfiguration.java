@@ -122,8 +122,29 @@ public class VisorCacheConfiguration implements Serializable {
     /** Collection of type metadata. */
     private Collection<VisorCacheTypeMetadata> typeMeta;
 
-    /** Check that cache have JDBC store. */
+    /** Whether cache has JDBC store. */
     private boolean jdbcStore;
+
+    /** Whether cache should operate in read-through mode. */
+    private boolean readThrough;
+
+    /** Whether cache should operate in write-through mode. */
+    private boolean writeThrough;
+
+    /** Whether statistics collection is enabled. */
+    private boolean statisticsEnabled;
+
+    /** Whether management is enabled. */
+    private boolean mgmtEnabled;
+
+    /** Class name of cache loader factory. */
+    private String ldrFactory;
+
+    /** Class name of cache writer factory. */
+    private String writerFactory;
+
+    /** Class name of expiry policy factory. */
+    private String expiryPlcFactory;
 
     /**
      * @param ignite Grid.
@@ -172,8 +193,17 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.defaultConfiguration(VisorCacheDefaultConfiguration.from(ccfg));
         cfg.storeConfiguration(VisorCacheStoreConfiguration.from(ccfg));
         cfg.writeBehind(VisorCacheWriteBehindConfiguration.from(ccfg));
+
         cfg.typeMeta(VisorCacheTypeMetadata.list(ccfg.getTypeMetadata()));
         cfg.jdbcStore(jdbcStore);
+
+        cfg.readThrough(ccfg.isReadThrough());
+        cfg.writeThrough(ccfg.isWriteThrough());
+        cfg.statisticsEnabled(ccfg.isStatisticsEnabled());
+        cfg.managementEnabled(ccfg.isManagementEnabled());
+        cfg.loaderFactory(compactClass(ccfg.getCacheLoaderFactory()));
+        cfg.writerFactory(compactClass(ccfg.getCacheWriterFactory()));
+        cfg.expiryPolicyFactory(compactClass(ccfg.getExpiryPolicyFactory()));
 
         return cfg;
     }
@@ -574,11 +604,6 @@ public class VisorCacheConfiguration implements Serializable {
         this.writeBehind = writeBehind;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheConfiguration.class, this);
-    }
-
     /**
      * @param typeMeta New collection of type metadata.
      */
@@ -594,16 +619,119 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Check that cache have JDBC store.
+     * @return  {@code true} if cache has JDBC store.
      */
     public boolean jdbcStore() {
         return jdbcStore;
     }
 
     /**
-     * @param jdbcStore Check that cache have JDBC store.
+     * @param jdbcStore {@code true} if cache has JDBC store.
      */
     public void jdbcStore(boolean jdbcStore) {
         this.jdbcStore = jdbcStore;
+    }
+
+    /**
+     * @return Whether cache should operate in read-through mode.
+     */
+    public boolean readThrough() {
+        return readThrough;
+    }
+
+    /**
+     * @param readThrough New whether cache should operate in read-through mode.
+     */
+    public void readThrough(boolean readThrough) {
+        this.readThrough = readThrough;
+    }
+
+    /**
+     * @return Whether cache should operate in write-through mode.
+     */
+    public boolean writeThrough() {
+        return writeThrough;
+    }
+
+    /**
+     * @param writeThrough New whether cache should operate in write-through mode.
+     */
+    public void writeThrough(boolean writeThrough) {
+        this.writeThrough = writeThrough;
+    }
+
+    /**
+     * @return  {@code true} if cache statistics enabled.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled  {@code true} if cache statistics enabled.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @return Whether management is enabled.
+     */
+    public boolean managementEnabled() {
+        return mgmtEnabled;
+    }
+
+    /**
+     * @param mgmtEnabled New whether management is enabled.
+     */
+    public void managementEnabled(boolean mgmtEnabled) {
+        this.mgmtEnabled = mgmtEnabled;
+    }
+
+    /**
+     * @return Class name of cache loader factory.
+     */
+    public String loaderFactory() {
+        return ldrFactory;
+    }
+
+    /**
+     * @param ldrFactory New class name of cache loader factory.
+     */
+    public void loaderFactory(String ldrFactory) {
+        this.ldrFactory = ldrFactory;
+    }
+
+    /**
+     * @return Class name of cache writer factory.
+     */
+    public String writerFactory() {
+        return writerFactory;
+    }
+
+    /**
+     * @param writerFactory New class name of cache writer factory.
+     */
+    public void writerFactory(String writerFactory) {
+        this.writerFactory = writerFactory;
+    }
+
+    /**
+     * @return Class name of expiry policy factory.
+     */
+    public String expiryPolicyFactory() {
+        return expiryPlcFactory;
+    }
+
+    /**
+     * @param expiryPlcFactory New class name of expiry policy factory.
+     */
+    public void expiryPolicyFactory(String expiryPlcFactory) {
+        this.expiryPlcFactory = expiryPlcFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheConfiguration.class, this);
     }
 }
