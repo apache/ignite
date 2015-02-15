@@ -61,7 +61,7 @@ public final class MessagingExample {
             System.out.println();
             System.out.println(">>> Messaging example started.");
 
-            // Projection for remote nodes.
+            // Group for remote nodes.
             ClusterGroup rmtGrp = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
@@ -97,7 +97,7 @@ public final class MessagingExample {
     }
 
     /**
-     * Start listening to messages on all cluster nodes within passed in projection.
+     * Start listening to messages on remote cluster nodes.
      *
      * @param ignite Ignite.
      * @param imsg Ignite messaging.

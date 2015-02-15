@@ -23,17 +23,17 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  *
  */
-public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
+public class ComputeClusterGroupsExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // Start up a node.
-        startGrid("ignite-projection-example", DFLT_CFG);
+        startGrid("ignite-cluster-groups-example", DFLT_CFG);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testProjectionExample() throws Exception {
-        ComputeProjectionExample.main(EMPTY_ARGS);
+    public void testComputeClusterGroupsExample() throws Exception {
+        ComputeClusterGroupsExample.main(EMPTY_ARGS);
     }
 }

@@ -51,7 +51,7 @@ object ScalarContinuationExample {
 
             val start = System.currentTimeMillis
 
-            // Projection that excludes this node if others exists.
+            // Group that excludes this node if others exists.
             val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(thisNode) else ignite$.cluster().forNode(thisNode)
 
             val fib = ignite$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
@@ -111,7 +111,7 @@ class FibonacciClosure (
 
             val excludeNode = ignite$.cluster().node(excludeNodeId)
 
-            // Projection that excludes node with id passed in constructor if others exists.
+            // Group that excludes node with id passed in constructor if others exists.
             val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(excludeNode) else ignite$.cluster().forNode(excludeNode)
 
             val comp = ignite$.compute(prj).withAsync()

@@ -31,7 +31,7 @@ import org.apache.ignite.lang.*;
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
-public class ComputeProjectionExample {
+public class ComputeClusterGroupsExample {
     /**
      * Executes example.
      *
@@ -44,7 +44,7 @@ public class ComputeProjectionExample {
                 return;
 
             System.out.println();
-            System.out.println("Compute projection example started.");
+            System.out.println("Compute example started.");
 
             IgniteCluster cluster = ignite.cluster();
 
@@ -80,7 +80,7 @@ public class ComputeProjectionExample {
      * @throws IgniteException If failed.
      */
     private static void sayHello(Ignite ignite, final ClusterGroup grp) throws IgniteException {
-        // Print out hello message on all projection nodes.
+        // Print out hello message on all cluster nodes.
         ignite.compute(grp).broadcast(
             new IgniteRunnable() {
                 @Override public void run() {
