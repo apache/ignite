@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -29,7 +28,7 @@ public interface CacheStoreSession {
     /**
      * @return Transaction belonging to current session.
      */
-    @Nullable public IgniteTx transaction();
+    public IgniteTx transaction();
 
     /**
      * @return Current session properties.
@@ -39,5 +38,5 @@ public interface CacheStoreSession {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName();
+    public String cacheName();
 }
