@@ -1232,10 +1232,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-
-
-
-
     /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);

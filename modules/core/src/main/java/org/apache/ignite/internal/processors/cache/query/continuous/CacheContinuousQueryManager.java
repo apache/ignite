@@ -399,29 +399,31 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         UUID id = cctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval,
             autoUnsubscribe, grp.predicate()).get();
 
-        final Iterator<Cache.Entry<K, V>> it = cctx.cache().igniteIterator();
+        if (notifyExisting) {
+            final Iterator<Cache.Entry<K, V>> it = cctx.cache().entrySetx().iterator();
 
-        locLsnr.onUpdated(new Iterable<CacheEntryEvent<? extends K, ? extends V>>() {
-            @Override public Iterator<CacheEntryEvent<? extends K, ? extends V>> iterator() {
-                return new Iterator<CacheEntryEvent<? extends K, ? extends V>>() {
-                    @Override public boolean hasNext() {
-                        return it.hasNext();
-                    }
+            locLsnr.onUpdated(new Iterable<CacheEntryEvent<? extends K, ? extends V>>() {
+                @Override public Iterator<CacheEntryEvent<? extends K, ? extends V>> iterator() {
+                    return new Iterator<CacheEntryEvent<? extends K, ? extends V>>() {
+                        @Override public boolean hasNext() {
+                            return it.hasNext();
+                        }
 
-                    @Override public CacheEntryEvent<? extends K, ? extends V> next() {
-                        Cache.Entry<K, V> e = it.next();
+                        @Override public CacheEntryEvent<? extends K, ? extends V> next() {
+                            Cache.Entry<K, V> e = it.next();
 
-                        return new CacheContinuousQueryEvent<>(
-                            cctx.kernalContext().cache().jcache(cctx.name()), CREATED,
-                            new CacheContinuousQueryEntry<>(e.getKey(), e.getValue(), null, null, null));
-                    }
+                            return new CacheContinuousQueryEvent<>(
+                                cctx.kernalContext().cache().jcache(cctx.name()), CREATED,
+                                new CacheContinuousQueryEntry<>(e.getKey(), e.getValue(), null, null, null));
+                        }
 
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        });
+                        @Override public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                }
+            });
+        }
 
         return id;
     }
