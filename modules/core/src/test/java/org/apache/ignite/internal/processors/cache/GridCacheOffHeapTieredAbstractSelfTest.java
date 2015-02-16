@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -236,10 +236,10 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTx(Integer key, TransactionConcurrency txConcurrency) throws Exception {
         IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
-        IgniteTx tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
+        Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.getAndPut(key, key));
 
@@ -261,10 +261,10 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTxByteArray(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTxByteArray(Integer key, TransactionConcurrency txConcurrency) throws Exception {
         IgniteCache<Integer, byte[]> c = grid(0).jcache(null);
 
-        IgniteTx tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
+        Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
 
         byte[] val = new byte[] {key.byteValue()};
 
@@ -367,7 +367,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutAllGetAllRemoveAllTx(IgniteTxConcurrency txConcurrency) throws Exception {
+    private void checkPutAllGetAllRemoveAllTx(TransactionConcurrency txConcurrency) throws Exception {
         Map<Integer, Integer> map = new HashMap<>();
 
         for (int i = 0; i < 100; i++)
@@ -379,7 +379,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         assertTrue(map0.isEmpty());
 
-        try (IgniteTx tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
             c.putAll(map);
 
             tx.commit();
@@ -392,7 +392,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (Map.Entry<Integer, Integer> e : map.entrySet())
             checkValue(e.getKey(), e.getValue());
 
-        try (IgniteTx tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
             c.removeAll(map.keySet());
 
             tx.commit();
@@ -462,12 +462,12 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveObjectTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveObjectTx(Integer key, TransactionConcurrency txConcurrency) throws Exception {
         IgniteCache<Integer, TestValue> c = grid(0).jcache(null);
 
         TestValue val = new TestValue(new byte[10]);
 
-        IgniteTx tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
+        Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.getAndPut(key, val));
 

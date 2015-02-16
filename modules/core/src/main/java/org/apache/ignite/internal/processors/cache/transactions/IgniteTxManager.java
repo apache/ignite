@@ -48,8 +48,8 @@ import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Cache transaction manager.
@@ -94,7 +94,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         new GridBoundedConcurrentOrderedMap<>(Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Transaction synchronizations. */
-    private final Collection<IgniteTxSynchronization> syncs =
+    private final Collection<TransactionSynchronization> syncs =
         new GridConcurrentHashSet<>();
 
     /** Transaction finish synchronizer. */
@@ -176,7 +176,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     private boolean salvageTx(IgniteInternalTx<K, V> tx, boolean warn, IgniteInternalTx.FinalizationStatus status) {
         assert tx != null;
 
-        IgniteTxState state = tx.state();
+        TransactionState state = tx.state();
 
         if (state == ACTIVE || state == PREPARING || state == PREPARED) {
             try {
@@ -354,8 +354,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -486,9 +486,9 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * Creates a future that will wait for all ongoing transactions that maybe affected by topology update
      * to be finished. This set of transactions include
      * <ul>
-     *     <li/> All {@link IgniteTxConcurrency#PESSIMISTIC} transactions with topology version
+     *     <li/> All {@link TransactionConcurrency#PESSIMISTIC} transactions with topology version
      *     less or equal to {@code topVer}.
-     *     <li/> {@link IgniteTxConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
+     *     <li/> {@link TransactionConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
      *     version less or equal to {@code topVer} and having transaction key with entry that belongs to
      *     one of partitions in {@code parts}.
      * </ul>
@@ -522,7 +522,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             else if (tx.concurrency() == OPTIMISTIC) {
                 // For OPTIMISTIC mode we wait only for txs in PREPARING state that
                 // have keys for given partitions.
-                IgniteTxState state = tx.state();
+                TransactionState state = tx.state();
                 long txTopVer = tx.topologyVersion();
 
                 if ((state == PREPARING || state == PREPARED || state == COMMITTING)
@@ -1647,7 +1647,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * @param sync Transaction synchronizations to add.
      */
-    public void addSynchronizations(IgniteTxSynchronization... sync) {
+    public void addSynchronizations(TransactionSynchronization... sync) {
         if (F.isEmpty(sync))
             return;
 
@@ -1657,7 +1657,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * @param sync Transaction synchronizations to remove.
      */
-    public void removeSynchronizations(IgniteTxSynchronization... sync) {
+    public void removeSynchronizations(TransactionSynchronization... sync) {
         if (F.isEmpty(sync))
             return;
 
@@ -1667,7 +1667,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * @return Registered transaction synchronizations
      */
-    public Collection<IgniteTxSynchronization> synchronizations() {
+    public Collection<TransactionSynchronization> synchronizations() {
         return Collections.unmodifiableList(new LinkedList<>(syncs));
     }
 
@@ -1676,9 +1676,9 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param newState New state.
      * @param tx Cache transaction.
      */
-    public void onTxStateChange(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteInternalTx tx) {
+    public void onTxStateChange(@Nullable TransactionState prevState, TransactionState newState, IgniteInternalTx tx) {
         // Notify synchronizations.
-        for (IgniteTxSynchronization s : syncs)
+        for (TransactionSynchronization s : syncs)
             s.onStateChanged(prevState, newState, tx.proxy());
     }
 
@@ -1751,7 +1751,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
 
         for (IgniteInternalTx<K, V> tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
-                IgniteTxState state = tx.state();
+                TransactionState state = tx.state();
 
                 if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
                     if (--txNum == 0)

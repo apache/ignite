@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Abstract test for originating node failure.
@@ -156,7 +156,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 assertNotNull(cache);
 
-                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)txIgniteNode.transactions().txStart();
+                TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
                 IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
 

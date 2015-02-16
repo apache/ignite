@@ -577,25 +577,25 @@ public abstract class IgniteUtils {
 
         m.put(IgniteTxRollbackCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxRollbackException(e.getMessage(), e);
+                return new TransactionRollbackException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxHeuristicCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxHeuristicException(e.getMessage(), e);
+                return new TransactionHeuristicException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxTimeoutException(e.getMessage(), e);
+                return new TransactionTimeoutException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxOptimisticCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxOptimisticException(e.getMessage(), e);
+                return new TransactionOptimisticException(e.getMessage(), e);
             }
         });
 

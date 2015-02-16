@@ -601,7 +601,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable IgniteTxIsolation isolation,
+        @Nullable TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +

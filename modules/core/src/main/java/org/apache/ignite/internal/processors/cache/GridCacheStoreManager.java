@@ -841,7 +841,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         /**
          * @return Transaction.
          */
-        @Nullable private IgniteTx transaction() {
+        @Nullable private Transaction transaction() {
             return tx != null ? tx.proxy() : null;
         }
 
@@ -890,7 +890,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteTx transaction() {
+        @Nullable @Override public Transaction transaction() {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.transaction() : null;

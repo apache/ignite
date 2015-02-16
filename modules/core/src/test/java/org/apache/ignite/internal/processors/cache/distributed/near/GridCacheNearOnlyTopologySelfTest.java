@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Near-only cache node startup test.
@@ -188,7 +188,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             // Test optimistic transaction.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (IgniteTx tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         nearOnly.put("key", "val");
 
                         tx.commit();
@@ -201,7 +201,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             // Test pessimistic transaction.
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (IgniteTx tx = igniteNearOnly.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = igniteNearOnly.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         nearOnly.put("key", "val");
 
                         tx.commit();

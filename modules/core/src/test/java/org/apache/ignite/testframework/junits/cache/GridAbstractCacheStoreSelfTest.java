@@ -61,7 +61,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
      */
     public void testStore() throws Exception {
         // Create dummy transaction
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -93,7 +93,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
      * @throws IgniteCheckedException if failed.
      */
     public void testRollback() throws IgniteCheckedException {
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -200,7 +200,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
      * @param commit Commit.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    private void doTestAllOps(@Nullable Transaction tx, boolean commit) throws IgniteCheckedException {
         try {
             ses.newSession(tx);
 
@@ -302,7 +302,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < 1000; i++) {
-                    IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
+                    Transaction tx = rnd.nextBoolean() ? new DummyTx() : null;
 
                     ses.newSession(tx);
 
@@ -461,7 +461,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * Dummy transaction for test purposes.
      */
-    public static class DummyTx extends GridMetadataAwareAdapter implements IgniteTx {
+    public static class DummyTx extends GridMetadataAwareAdapter implements Transaction {
         /** */
         private final IgniteUuid xid = IgniteUuid.randomUuid();
 
@@ -486,12 +486,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteTxIsolation isolation() {
+        @Nullable @Override public TransactionIsolation isolation() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteTxConcurrency concurrency() {
+        @Nullable @Override public TransactionConcurrency concurrency() {
             return null;
         }
 
@@ -506,7 +506,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteTxState state() {
+        @Nullable @Override public TransactionState state() {
             return null;
         }
 

@@ -15,39 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.*;
+import org.apache.ignite.transactions.*;
 
 /**
- * Transaction metrics, shared across all caches.
+ * Marker interface for transaction proxy.
  */
-public interface IgniteTxMetrics extends Serializable {
-    /**
-     * Gets last time transaction was committed.
-     *
-     * @return Last commit time.
-     */
-    public long commitTime();
-
-    /**
-     * Gets last time transaction was rollback.
-     *
-     * @return Last rollback time.
-     */
-    public long rollbackTime();
-
-    /**
-     * Gets total number of transaction commits.
-     *
-     * @return Number of transaction commits.
-     */
-    public int txCommits();
-
-    /**
-     * Gets total number of transaction rollbacks.
-     *
-     * @return Number of transaction rollbacks.
-     */
-    public int txRollbacks();
+public interface TransactionProxy extends Transaction {
+    // No-op.
 }

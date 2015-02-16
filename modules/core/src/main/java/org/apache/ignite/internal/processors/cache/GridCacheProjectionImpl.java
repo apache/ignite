@@ -1279,28 +1279,28 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart() throws IllegalStateException {
+    @Override public Transaction txStart() throws IllegalStateException {
         return cache.txStart();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         return cache.txStartEx(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         return cache.txStart(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize) {
         return cache.txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx tx() {
+    @Override public Transaction tx() {
         return cache.tx();
     }
 

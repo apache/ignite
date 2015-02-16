@@ -22,24 +22,24 @@ import org.jetbrains.annotations.*;
 /**
  * Synchronization callback for transaction. You can subscribe to receive transaction
  * state change callbacks by registering transaction synchronization via
- * {@link org.apache.ignite.cache.GridCache#txSynchronize(IgniteTxSynchronization)} method.
+ * {@link org.apache.ignite.cache.GridCache#txSynchronize(TransactionSynchronization)} method.
  */
-public interface IgniteTxSynchronization {
+public interface TransactionSynchronization {
     /**
      * State change callback for transaction. Note that unless transaction has been
      * completed, it is possible to mark it for <tt>rollbackOnly</tt> by calling
-     * {@link IgniteTx#setRollbackOnly()} on the passed in transaction.
-     * You can check the return value of {@link IgniteTx#setRollbackOnly() setRollbackOnly()}
+     * {@link Transaction#setRollbackOnly()} on the passed in transaction.
+     * You can check the return value of {@link Transaction#setRollbackOnly() setRollbackOnly()}
      * method to see if transaction was indeed marked for rollback or not.
      *
      * @param prevState Previous state of the transaction. If transaction has just been
      *      started, then previous state is {@code null}.
      * @param newState New state of the transaction. In majority of the cases this will be the
-     *      same as {@link IgniteTx#state() tx.state()}, but it is also possible
+     *      same as {@link Transaction#state() tx.state()}, but it is also possible
      *      that transaction may be marked for rollback concurrently with this method
      *      invocation, and in that case <tt>newState</tt> reflects the actual state of the
      *      transition this callback is associated with.
      * @param tx Transaction whose state has changed.
      */
-    public void onStateChanged(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTx tx);
+    public void onStateChanged(@Nullable TransactionState prevState, TransactionState newState, Transaction tx);
 }

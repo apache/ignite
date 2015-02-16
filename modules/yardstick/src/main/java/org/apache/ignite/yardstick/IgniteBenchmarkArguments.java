@@ -52,11 +52,11 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
-    private IgniteTxConcurrency txConcurrency = IgniteTxConcurrency.OPTIMISTIC;
+    private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
 
     /** */
     @Parameter(names = {"-txi", "--txIsolation"}, description = "Transaction isolation")
-    private IgniteTxIsolation txIsolation = IgniteTxIsolation.REPEATABLE_READ;
+    private TransactionIsolation txIsolation = TransactionIsolation.REPEATABLE_READ;
 
     /** */
     @Parameter(names = {"-ot", "--offheapTiered"}, description = "Tiered offheap")
@@ -97,14 +97,14 @@ public class IgniteBenchmarkArguments {
     /**
      * @return Transaction concurrency.
      */
-    public IgniteTxConcurrency txConcurrency() {
+    public TransactionConcurrency txConcurrency() {
         return txConcurrency;
     }
 
     /**
      * @return Transaction isolation.
      */
-    public IgniteTxIsolation txIsolation() {
+    public TransactionIsolation txIsolation() {
         return txIsolation;
     }
 

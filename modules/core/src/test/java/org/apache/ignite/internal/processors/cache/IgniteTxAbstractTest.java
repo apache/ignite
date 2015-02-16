@@ -33,8 +33,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for local transactions.
@@ -154,7 +154,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkCommit(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    protected void checkCommit(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);
@@ -165,7 +165,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations(); i++) {
             IgniteCache<Integer, String> cache = jcache(gridIdx);
 
-            IgniteTx tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
+            Transaction tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
 
             try {
                 int prevKey = -1;
@@ -225,7 +225,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 if (isTestDebug())
                     debug("Committed transaction [i=" + i + ", tx=" + tx + ']');
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (TransactionOptimisticException e) {
                 if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                     error("Received invalid optimistic failure.", e);
 
@@ -260,7 +260,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                IgniteTx t = ignite(gridIdx).transactions().tx();
+                Transaction t = ignite(gridIdx).transactions().tx();
 
                 assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                     ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';
@@ -279,7 +279,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If check failed.
      */
-    protected void checkRollback(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    protected void checkRollback(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         checkRollback(new ConcurrentHashMap<Integer, String>(), concurrency, isolation);
     }
@@ -290,8 +290,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If check failed.
      */
-    protected void checkRollback(ConcurrentMap<Integer, String> map, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    protected void checkRollback(ConcurrentMap<Integer, String> map, TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);
@@ -302,7 +302,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations(); i++) {
             IgniteCache<Integer, String> cache = jcache(gridIdx);
 
-            IgniteTx tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
+            Transaction tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
 
             try {
                 for (Integer key : getKeys()) {
@@ -350,7 +350,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                 debug("Rolled back transaction: " + tx);
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (TransactionOptimisticException e) {
                 tx.rollback();
 
                 log.warning("Rolled back transaction due to optimistic exception [tx=" + tx + ", e=" + e + ']');
@@ -365,7 +365,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                IgniteTx t1 = ignite(gridIdx).transactions().tx();
+                Transaction t1 = ignite(gridIdx).transactions().tx();
 
                 debug("t1=" + t1);
 
@@ -403,7 +403,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     for (int j = 0; j < gridCount(); j++) {
                         IgniteCache<Integer, String> cache = jcache(j);
 
-                        IgniteTx tx = ignite(j).transactions().tx();
+                        Transaction tx = ignite(j).transactions().tx();
 
                         assertNull("Transaction is not completed: " + tx, tx);
 

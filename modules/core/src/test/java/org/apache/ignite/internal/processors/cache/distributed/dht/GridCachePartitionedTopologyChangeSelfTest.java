@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
@@ -43,8 +42,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests that new transactions do not start until partition exchange is completed.
@@ -262,7 +261,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                             IgniteCache<Integer, Integer> cache = node.jcache(null);
 
                             try {
-                                try (IgniteTx tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     info(">>> Locked key, waiting for latch: " + key);
@@ -333,7 +332,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
@@ -416,7 +415,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                             IgniteCache<Integer, Integer> cache = node.jcache(null);
 
                             try {
-                                try (IgniteTx tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     commitLatch.await();
@@ -469,7 +468,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 

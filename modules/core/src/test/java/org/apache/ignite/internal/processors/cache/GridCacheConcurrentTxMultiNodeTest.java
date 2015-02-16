@@ -49,8 +49,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -620,7 +620,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             Session ses = new Session(terminalId());
 
             try {
-                try (IgniteTx tx = ignite.transactions().txStart()) {
+                try (Transaction tx = ignite.transactions().txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());

@@ -78,7 +78,7 @@ public enum CacheFlag {
      * Instead of updating remote entries with new values, small invalidation
      * messages will be sent to set the values to {@code null}.
      *
-     * @see IgniteTx#isInvalidate()
+     * @see Transaction#isInvalidate()
      * @see org.apache.ignite.configuration.CacheConfiguration#isInvalidate()
      */
     INVALIDATE,

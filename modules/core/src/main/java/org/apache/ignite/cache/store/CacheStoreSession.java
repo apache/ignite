@@ -31,7 +31,7 @@ public interface CacheStoreSession {
      *
      * @return Transaction belonging to current session.
      */
-    public IgniteTx transaction();
+    public Transaction transaction();
 
     /**
      * Gets current session properties. You can add properties directly to the

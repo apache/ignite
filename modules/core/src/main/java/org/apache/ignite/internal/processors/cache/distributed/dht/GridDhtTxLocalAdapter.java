@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Replicated user transaction.
@@ -95,8 +95,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -428,7 +428,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry<K, V> e) throws IgniteCheckedException {
         init();
 
-        IgniteTxState state = state();
+        TransactionState state = state();
 
         assert state == PREPARING : "Invalid tx state for " +
             "adding entry [msgId=" + msgId + ", e=" + e + ", tx=" + this + ']';
@@ -743,7 +743,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
         if (commit) {
             if (!state(COMMITTING)) {
-                IgniteTxState state = state();
+                TransactionState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
                     throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +

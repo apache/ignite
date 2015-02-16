@@ -30,8 +30,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test ensuring that PRIMARY_SYNC mode works correctly.
@@ -93,7 +93,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
                 IgniteCache<Integer, Integer> cache = grid(j).jcache(null);
 
                 if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
-                    try (IgniteTx tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.put(i, i);
 
                         tx.commit();

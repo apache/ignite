@@ -124,7 +124,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         boolean implicitTx,
         boolean implicitSingleTx,
         boolean isRead,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,

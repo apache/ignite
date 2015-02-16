@@ -33,8 +33,8 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -68,7 +68,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void invoke(final IgniteCache<Integer, Integer> cache, @Nullable IgniteTxConcurrency txMode)
+    private void invoke(final IgniteCache<Integer, Integer> cache, @Nullable TransactionConcurrency txMode)
         throws Exception {
         IncrementProcessor incProcessor = new IncrementProcessor();
 
@@ -77,7 +77,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             cache.remove(key);
 
-            IgniteTx tx = startTx(txMode);
+            Transaction tx = startTx(txMode);
 
             Integer res = cache.invoke(key, incProcessor);
 
@@ -197,7 +197,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void invokeAll(IgniteCache<Integer, Integer> cache, @Nullable IgniteTxConcurrency txMode) throws Exception {
+    private void invokeAll(IgniteCache<Integer, Integer> cache, @Nullable TransactionConcurrency txMode) throws Exception {
         invokeAll(cache, new HashSet<>(primaryKeys(cache, 3, 0)), txMode);
 
         if (gridCount() > 1) {
@@ -230,14 +230,14 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      */
     private void invokeAll(IgniteCache<Integer, Integer> cache,
         Set<Integer> keys,
-        @Nullable IgniteTxConcurrency txMode) throws Exception {
+        @Nullable TransactionConcurrency txMode) throws Exception {
         cache.removeAll(keys);
 
         log.info("Test invokeAll [keys=" + keys + ", txMode=" + txMode + ']');
 
         IncrementProcessor incProcessor = new IncrementProcessor();
 
-        IgniteTx tx = startTx(txMode);
+        Transaction tx = startTx(txMode);
 
         Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
 
@@ -509,7 +509,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param txMode Transaction concurrency mode.
      * @return Transaction.
      */
-    @Nullable private IgniteTx startTx(@Nullable IgniteTxConcurrency txMode) {
+    @Nullable private Transaction startTx(@Nullable TransactionConcurrency txMode) {
         return txMode == null ? null : ignite(0).transactions().txStart(txMode, REPEATABLE_READ);
     }
 

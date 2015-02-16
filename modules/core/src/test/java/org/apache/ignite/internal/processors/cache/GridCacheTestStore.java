@@ -44,7 +44,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     private final Map<Integer, String> map;
 
     /** Transactions. */
-    private final Collection<IgniteTx> txs = new GridConcurrentHashSet<>();
+    private final Collection<Transaction> txs = new GridConcurrentHashSet<>();
 
     /** Last method called. */
     private String lastMtd;
@@ -112,7 +112,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /**
      * @return Transactions.
      */
-    public Collection<IgniteTx> transactions() {
+    public Collection<Transaction> transactions() {
         return txs;
     }
 
@@ -320,14 +320,14 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
      * @param ses Session.
      */
     private void checkTx(@Nullable CacheStoreSession ses, boolean load) {
-        IgniteTx tx = ses != null ? ses.transaction() : null;
+        Transaction tx = ses != null ? ses.transaction() : null;
 
         if (tx == null)
             return;
 
         txs.add(tx);
 
-        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof IgniteTxProxy);
+        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof TransactionProxy);
 
         IgniteInternalTx tx0 = GridTestUtils.getFieldValue(tx, "tx");
 

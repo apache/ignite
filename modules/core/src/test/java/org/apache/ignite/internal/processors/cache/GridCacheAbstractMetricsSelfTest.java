@@ -729,7 +729,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         if (inTx) {
             // Rollback transaction for the first time.
-            IgniteTx tx = grid(0).transactions().txStart();
+            Transaction tx = grid(0).transactions().txStart();
 
             try {
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
@@ -745,7 +745,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
-        IgniteTx tx = inTx ? grid(0).transactions().txStart() : null;
+        Transaction tx = inTx ? grid(0).transactions().txStart() : null;
 
         try {
             grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);

@@ -32,8 +32,8 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test cache operations with daemon node.
@@ -129,7 +129,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             for (int i = 0; i < 30; i++) {
-                try (IgniteTx tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(i, i);
 
                     tx.commit();
@@ -141,7 +141,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             for (int i = 30; i < 60; i++)
                 batch.put(i, i);
 
-            try (IgniteTx tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.putAll(batch);
                 tx.commit();
             }

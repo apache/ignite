@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -64,8 +63,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 
-        tCfg.setDefaultTxConcurrency(IgniteTxConcurrency.PESSIMISTIC);
-        tCfg.setDefaultTxIsolation(IgniteTxIsolation.REPEATABLE_READ);
+        tCfg.setDefaultTxConcurrency(TransactionConcurrency.PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
 
         cfg.setTransactionConfiguration(tCfg);
 
