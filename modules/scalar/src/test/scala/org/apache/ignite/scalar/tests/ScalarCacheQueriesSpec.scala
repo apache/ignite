@@ -17,7 +17,8 @@
 
 package org.apache.ignite.scalar.tests
 
-import org.apache.ignite.cache.GridCache
+import org.apache.ignite.IgniteCache
+import org.apache.ignite.cache.CachePeekMode
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.scalar.scalar._
 import org.junit.runner.RunWith
@@ -40,7 +41,7 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     private var n: ClusterNode = null
 
     /** Cache. */
-    private var c: GridCache[Int, ObjectValue] = null
+    private var c: IgniteCache[Int, ObjectValue] = null
 
     /**
      * Start node and put data to cache.
@@ -48,11 +49,13 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     override def beforeAll() {
         n = start("modules/scalar/src/test/resources/spring-cache.xml").cluster().localNode
 
-        // c = cache$[Int, ObjectValue].get TODO
+        c = cache$[Int, ObjectValue].get
 
-        (1 to ENTRY_CNT).foreach(i => c.putx(i, ObjectValue(i, "str " + WORDS(i))))
+        (1 to ENTRY_CNT).foreach(i => c.put(i, ObjectValue(i, "str " + WORDS(i))))
 
-        assert(c.size == ENTRY_CNT)
+        val peekModes = Array.empty[CachePeekMode]
+
+        assert(c.size(peekModes:_*) == ENTRY_CNT)
 
         c.foreach(e => println(e.getKey + " -> " + e.getValue))
     }

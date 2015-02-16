@@ -24,7 +24,6 @@ import org.apache.ignite._
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.internal.IgniteVersionUtils
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
 
@@ -264,8 +263,7 @@ object scalar extends ScalarConversions {
      * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
      * typed instance that cannot be used.
      */
-    @inline def cache$[K, V]: Option[IgniteCache[K, V]] =
-        Option(Ignition.ignite.jcache[K, V](null))
+    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.jcache[K, V](null))
 
     /**
      * Gets named cache from default grid.

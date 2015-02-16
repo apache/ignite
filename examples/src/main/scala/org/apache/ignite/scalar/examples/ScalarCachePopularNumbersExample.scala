@@ -53,7 +53,7 @@ object ScalarCachePopularNumbersExample extends App {
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear(0)
+        cache$(CACHE_NAME).get.clear()
 
         println()
         println(">>> Cache popular numbers example started.")
@@ -75,7 +75,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.cache(CACHE_NAME).clear(), null)
+                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.jcache(CACHE_NAME).clear(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

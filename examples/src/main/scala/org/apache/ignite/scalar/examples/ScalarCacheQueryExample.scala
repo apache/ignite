@@ -19,11 +19,9 @@ package org.apache.ignite.scalar.examples
 
 import java.util._
 
-import org.apache.ignite.Ignite
+import org.apache.ignite.{IgniteCache, Ignite}
 import org.apache.ignite.cache.CacheMode._
-import org.apache.ignite.cache.CacheProjection
 import org.apache.ignite.cache.affinity.CacheAffinityKey
-import org.apache.ignite.internal.processors.cache.CacheFlag
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
@@ -64,7 +62,10 @@ object ScalarCacheQueryExample {
         // Using distributed queries for partitioned cache and local queries for replicated cache.
         // Since in replicated caches data is available on all nodes, including local one,
         // it is enough to just query the local node.
-        val prj = if (cache$(CACHE_NAME).get.configuration.getCacheMode == PARTITIONED) ignite.cluster() else ignite.cluster().forLocal()
+        val prj = if (cache$[Any, Any](CACHE_NAME).get.configuration().getCacheMode == PARTITIONED)
+            ignite.cluster().forRemotes()
+        else
+            ignite.cluster().forLocal()
 
         // Example for SQL-based querying employees based on salary ranges.
         // Gets all persons with 'salary > 1000'.
@@ -104,17 +105,14 @@ object ScalarCacheQueryExample {
      *
      * @return Cache to use.
      */
-    private def mkCache[K, V]: CacheProjection[K, V] = {
-        // Using distributed queries.
-        cache$[K, V](CACHE_NAME).get.flagsOn(CacheFlag.SYNC_COMMIT)
-    }
+    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](CACHE_NAME).get
 
     /**
      * Populates cache with test data.
      */
     private def initialize() {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear(0)
+        cache$(CACHE_NAME).get.clear()
 
         // Organization cache projection.
         val orgCache = mkCache[UUID, Organization]
