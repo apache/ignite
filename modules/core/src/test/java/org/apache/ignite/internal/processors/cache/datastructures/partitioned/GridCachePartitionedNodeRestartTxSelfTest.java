@@ -33,8 +33,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test with variable number of nodes.
@@ -161,7 +161,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).jcache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
 
-            try (IgniteTx tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Integer val = (Integer) grid(i).jcache(null).get(key);
 
                 assertEquals("Simple check failed for node: " + i, (Integer) i, val);
@@ -186,7 +186,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).jcache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
 
-            try (IgniteTx tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).jcache(null).get(key));
@@ -244,7 +244,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         // Init cache data.
 
-        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put simple value.
             grid(0).jcache(null).put(key, INIT_GRID_NUM);
 
@@ -267,7 +267,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         // Init cache data.
 
-        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put custom data
             grid(0).jcache(null).put(new GridCacheInternalKeyImpl(key), new GridCacheAtomicLongValue(INIT_GRID_NUM));
 

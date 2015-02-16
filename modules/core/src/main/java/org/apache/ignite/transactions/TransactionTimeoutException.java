@@ -17,29 +17,31 @@
 
 package org.apache.ignite.transactions;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.*;
 
 /**
- * Transaction concurrency control. See {@link IgniteTx} for more information
- * on transaction concurrency controls.
+ * Exception thrown whenever grid transactions time out.
  */
-public enum IgniteTxConcurrency {
-    /** Optimistic concurrency control. */
-    OPTIMISTIC,
-
-    /** Pessimistic concurrency control. */
-    PESSIMISTIC;
-
-    /** Enum values. */
-    private static final IgniteTxConcurrency[] VALS = values();
+public class TransactionTimeoutException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Creates new timeout exception with given error message.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @param msg Error message.
      */
-    @Nullable public static IgniteTxConcurrency fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public TransactionTimeoutException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates new timeout exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be <tt>null</tt>).
+     */
+    public TransactionTimeoutException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

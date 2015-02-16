@@ -125,7 +125,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
         Collection<String> evts = firstStore.events();
 
-        try (IgniteTx tx = grid.transactions().txStart()) {
+        try (Transaction tx = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheB = grid.jcache("cacheB");
 
@@ -166,7 +166,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testIncompatibleCaches1() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (IgniteTx ignored = grid.transactions().txStart()) {
+        try (Transaction ignored = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheC = grid.jcache("cacheC");
 
@@ -187,7 +187,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testIncompatibleCaches2() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (IgniteTx ignored = grid.transactions().txStart()) {
+        try (Transaction ignored = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheC = grid.jcache("cacheD");
 

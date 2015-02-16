@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class IgniteTxRollbackException extends IgniteException {
+public class TransactionRollbackException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class IgniteTxRollbackException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public IgniteTxRollbackException(String msg) {
+    public TransactionRollbackException(String msg) {
         super(msg);
     }
 
@@ -41,7 +41,7 @@ public class IgniteTxRollbackException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public IgniteTxRollbackException(String msg, Throwable cause) {
+    public TransactionRollbackException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

@@ -27,8 +27,8 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -66,8 +66,8 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
         testTxPutRemove(null, null);
 
-        for (IgniteTxConcurrency concurrency : F.asList(PESSIMISTIC)) {
-            for (IgniteTxIsolation isolation : F.asList(REPEATABLE_READ)) {
+        for (TransactionConcurrency concurrency : F.asList(PESSIMISTIC)) {
+            for (TransactionIsolation isolation : F.asList(REPEATABLE_READ)) {
                 testTxPut(jcache(0), concurrency, isolation);
 
                 testTxRemove(concurrency, isolation);
@@ -82,7 +82,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @param isolation Isolation mode.
      * @throws Exception If failed.
      */
-    private void testTxPutRemove(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    private void testTxPutRemove(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         log.info("Test tx put/remove [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         IgniteCache<Integer, Integer> cache = jcache(0);
@@ -93,7 +93,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
         Integer key2 = keys.get(1);
         Integer key3 = keys.get(2);
 
-        try (IgniteTx tx = startTx(concurrency, isolation)) {
+        try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx put1.");
 
             cache.put(key1, key1);
@@ -125,15 +125,15 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @throws Exception If failed.
      */
     private void testTxPut(IgniteCache<Object, Object> cache,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
         log.info("Test tx put [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         List<Integer> keys = testKeys(cache, 3);
 
         Integer key1 = keys.get(0);
 
-        try (IgniteTx tx = startTx(concurrency, isolation)) {
+        try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx get.");
 
             cache.get(key1);
@@ -155,7 +155,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
         Integer key2 = keys.get(1);
         Integer key3 = keys.get(2);
 
-        try (IgniteTx tx = startTx(concurrency, isolation)) {
+        try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx put1.");
 
             cache.put(key2, key2);
@@ -180,7 +180,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @param isolation Isolation mode.
      * @throws Exception If failed.
      */
-    private void testTxRemove(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    private void testTxRemove(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         log.info("Test tx remove [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         IgniteCache<Integer, Integer> cache = jcache(0);
@@ -189,7 +189,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
         Integer key1 = keys.get(0);
 
-        try (IgniteTx tx = startTx(concurrency, isolation)) {
+        try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx get.");
 
             cache.get(key1);
@@ -211,7 +211,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
         Integer key2 = keys.get(1);
         Integer key3 = keys.get(2);
 
-        try (IgniteTx tx = startTx(concurrency, isolation)) {
+        try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx remove1.");
 
             cache.remove(key2, key2);
@@ -236,7 +236,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @param isolation Isolation mode.
      * @return Transaction.
      */
-    private IgniteTx startTx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    private Transaction startTx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         IgniteTransactions txs = ignite(0).transactions();
 
         if (concurrency == null)
@@ -256,7 +256,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
         Integer key1 = primaryKey(cache0);
         Integer key2 = primaryKeys(cache1, 1, key1 + 1).get(0);
 
-        try (IgniteTx tx = startTx(null, null)) {
+        try (Transaction tx = startTx(null, null)) {
             cache0.put(key1, 1);
 
             cache1.put(key2, 0);
@@ -270,7 +270,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
         assertEquals(0, expData.size());
 
-        try (IgniteTx tx = startTx(null, null)) {
+        try (Transaction tx = startTx(null, null)) {
             cache1.put(key1, 1);
 
             cache0.put(key2, 0);

@@ -32,8 +32,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -118,7 +118,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < DURATION && !Thread.currentThread().isInterrupted()) {
-                IgniteTx tx = ignite.transactions().txStart();
+                Transaction tx = ignite.transactions().txStart();
 
                 long seqVal = seq.incrementAndGet();
 

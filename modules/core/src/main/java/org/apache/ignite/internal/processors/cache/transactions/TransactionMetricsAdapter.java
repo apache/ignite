@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Tx metrics adapter.
  */
-public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
+public class TransactionMetricsAdapter implements TransactionMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,14 +44,14 @@ public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
     /**
      *
      */
-    public IgniteTxMetricsAdapter() {
+    public TransactionMetricsAdapter() {
 
     }
 
     /**
      * @param m Transaction metrics to copy.
      */
-    public IgniteTxMetricsAdapter(IgniteTxMetrics m) {
+    public TransactionMetricsAdapter(TransactionMetrics m) {
         commitTime = m.commitTime();
         rollbackTime = m.rollbackTime();
         txCommits = m.txCommits();
@@ -114,6 +114,6 @@ public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteTxMetricsAdapter.class, this);
+        return S.toString(TransactionMetricsAdapter.class, this);
     }
 }

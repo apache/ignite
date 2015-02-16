@@ -43,8 +43,8 @@ import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Base class for transactional DHT caches.
@@ -552,7 +552,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return lockAllAsyncInternal(
@@ -587,7 +587,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())

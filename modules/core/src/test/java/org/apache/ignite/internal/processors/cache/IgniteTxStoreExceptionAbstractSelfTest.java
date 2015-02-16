@@ -205,8 +205,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutNearTx() throws Exception {
-        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
@@ -218,8 +218,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutPrimaryTx() throws Exception {
-        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
@@ -231,8 +231,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutBackupTx() throws Exception {
-        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
@@ -244,8 +244,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutMultipleKeysTx() throws Exception {
-        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkPutTx(true, concurrency, isolation,
                     keyForNode(grid(0).localNode(), PRIMARY),
                     keyForNode(grid(0).localNode(), PRIMARY),
@@ -278,8 +278,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void checkPutTx(boolean putBefore, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, final Integer... keys) throws Exception {
+    private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, final Integer... keys) throws Exception {
         assertTrue(keys.length > 0);
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
@@ -291,7 +291,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             info("Start transaction.");
 
-            try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
+            try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -315,7 +315,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         try {
             info("Start transaction.");
 
-            try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
+            try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -410,7 +410,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, TransactionRollbackException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -451,7 +451,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: " + e, e.getCause() instanceof IgniteTxRollbackException);
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionRollbackException);
 
         checkValue(key, putBefore);
     }
@@ -498,7 +498,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, TransactionRollbackException.class, null);
 
         for (Integer key : m.keySet())
             checkValue(key, putBefore);
@@ -532,7 +532,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, TransactionRollbackException.class, null);
 
         checkValue(key, putBefore);
     }

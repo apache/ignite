@@ -31,10 +31,10 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default transaction isolation. */
-    private IgniteTxIsolation txIsolation;
+    private TransactionIsolation txIsolation;
 
     /** Default transaction concurrency. */
-    private IgniteTxConcurrency txConcurrency;
+    private TransactionConcurrency txConcurrency;
 
     /** TTL value. */
     private long ttl;
@@ -70,28 +70,28 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     /**
      * @return Default transaction isolation.
      */
-    public IgniteTxIsolation txIsolation() {
+    public TransactionIsolation txIsolation() {
         return txIsolation;
     }
 
     /**
      * @param txIsolation New default transaction isolation.
      */
-    public void txIsolation(IgniteTxIsolation txIsolation) {
+    public void txIsolation(TransactionIsolation txIsolation) {
         this.txIsolation = txIsolation;
     }
 
     /**
      * @return Default transaction concurrency.
      */
-    public IgniteTxConcurrency txConcurrency() {
+    public TransactionConcurrency txConcurrency() {
         return txConcurrency;
     }
 
     /**
      * @param txConcurrency New default transaction concurrency.
      */
-    public void txConcurrency(IgniteTxConcurrency txConcurrency) {
+    public void txConcurrency(TransactionConcurrency txConcurrency) {
         this.txConcurrency = txConcurrency;
     }
 

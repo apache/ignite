@@ -79,7 +79,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter
@@ -116,7 +116,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable IgniteTxIsolation isolation,
+        @Nullable TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter);
 

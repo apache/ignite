@@ -153,7 +153,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(@Nullable IgniteTxSynchronization syncs) {
+    @Override public void txSynchronize(@Nullable TransactionSynchronization syncs) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -165,7 +165,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnsynchronize(@Nullable IgniteTxSynchronization syncs) {
+    @Override public void txUnsynchronize(@Nullable TransactionSynchronization syncs) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -177,7 +177,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxSynchronization> txSynchronizations() {
+    @Override public Collection<TransactionSynchronization> txSynchronizations() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1143,7 +1143,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart() throws IllegalStateException {
+    @Override public Transaction txStart() throws IllegalStateException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1155,7 +1155,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1167,7 +1167,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1180,7 +1180,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1193,7 +1193,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx tx() {
+    @Override public Transaction tx() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

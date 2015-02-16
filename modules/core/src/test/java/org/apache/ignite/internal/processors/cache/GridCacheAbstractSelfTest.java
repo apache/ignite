@@ -95,7 +95,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteTx tx = jcache().unwrap(Ignite.class).transactions().tx();
+        Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
         if (tx != null) {
             tx.close();

@@ -44,8 +44,8 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Command handler for API requests.

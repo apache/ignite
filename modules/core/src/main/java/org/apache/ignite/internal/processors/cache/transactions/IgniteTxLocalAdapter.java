@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Transaction adapter for cache transactions.
@@ -129,8 +129,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -401,7 +401,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (timedOut())
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
-            IgniteTxState state = state();
+            TransactionState state = state();
 
             setRollbackOnly();
 
@@ -641,7 +641,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
     @Override public void userCommit() throws IgniteCheckedException {
-        IgniteTxState state = state();
+        TransactionState state = state();
 
         if (state != COMMITTING) {
             if (timedOut())
@@ -1071,7 +1071,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public void userRollback() throws IgniteCheckedException {
-        IgniteTxState state = state();
+        TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
@@ -3074,7 +3074,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (timedOut())
                 throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
 
-            IgniteTxState state = state();
+            TransactionState state = state();
 
             if (state == ROLLING_BACK || state == ROLLED_BACK)
                 throw new IgniteTxRollbackCheckedException("Cache transaction is marked as rollback-only " +
@@ -3128,9 +3128,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         checkInternal(key);
 
-        IgniteTxState state = state();
+        TransactionState state = state();
 
-        assert state == IgniteTxState.ACTIVE || timedOut() :
+        assert state == TransactionState.ACTIVE || timedOut() :
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Grid transactions implementation.
@@ -41,7 +41,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart() throws IllegalStateException {
+    @Override public Transaction txStart() throws IllegalStateException {
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(
@@ -54,7 +54,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -70,7 +70,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -89,8 +89,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public IgniteInternalTx txStartEx(
         GridCacheContext ctx,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         int txSize)
     {
@@ -109,8 +109,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public IgniteInternalTx txStartEx(
         GridCacheContext ctx,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation)
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation)
     {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -125,7 +125,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    @Override public Transaction txStartSystem(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -149,7 +149,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sys System flag.
      * @return Transaction.
      */
-    private IgniteInternalTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize, boolean sys) {
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
@@ -183,14 +183,14 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTx tx() {
+    @Nullable @Override public Transaction tx() {
         IgniteInternalTx tx = cctx.tm().userTx();
 
         return tx != null ? tx.proxy() : null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxMetrics metrics() {
+    @Override public TransactionMetrics metrics() {
         return cctx.txMetrics();
     }
 

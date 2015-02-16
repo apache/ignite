@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -37,8 +36,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests multi-update locks.
@@ -134,7 +133,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         info(">>>> Checking tx in new grid.");
 
-                        try (IgniteTx tx = g4.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (Transaction tx = g4.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             assertEquals(2, c.get("a"));
                             assertEquals(4, c.get("b"));
                             assertEquals(6, c.get("c"));
@@ -155,7 +154,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                 info(">>>> Checking tx commit.");
 
-                IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+                Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     cache0.put("a", 1);

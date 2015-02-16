@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.transactions.Transaction;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
@@ -197,7 +197,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public V load(K key) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store load [key=" + key + ", tx=" + tx + ']');
@@ -227,7 +227,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void write(javax.cache.Cache.Entry<? extends K, ? extends V> entry) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         K key = entry.getKey();
         V val = entry.getValue();
@@ -263,7 +263,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void delete(Object key) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
@@ -292,11 +292,11 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void rollback(SharedSessionContract ses, IgniteTx tx) {
+    private void rollback(SharedSessionContract ses, Transaction tx) {
         // Rollback only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null && hTx.isActive())
                 hTx.rollback();
@@ -309,11 +309,11 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void end(Session ses, IgniteTx tx) {
+    private void end(Session ses, Transaction tx) {
         // Commit only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null && hTx.isActive())
                 hTx.commit();
@@ -326,14 +326,14 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void txEnd(boolean commit) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Map<String, Session> props = session().properties();
 
         Session ses = props.remove(ATTR_SES);
 
         if (ses != null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null) {
                 try {
@@ -365,7 +365,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @param tx Cache transaction.
      * @return Session.
      */
-    Session session(@Nullable IgniteTx tx) {
+    Session session(@Nullable Transaction tx) {
         Session ses;
 
         if (tx != null) {
@@ -586,7 +586,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
+    @Nullable private Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;

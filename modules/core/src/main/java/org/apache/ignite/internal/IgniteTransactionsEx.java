@@ -39,7 +39,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
+    public Transaction txStartSystem(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -51,8 +51,8 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @return New transaction.
      */
     public IgniteInternalTx txStartEx(GridCacheContext ctx,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         int txSize);
 
@@ -62,5 +62,5 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public IgniteInternalTx txStartEx(GridCacheContext ctx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+    public IgniteInternalTx txStartEx(GridCacheContext ctx, TransactionConcurrency concurrency, TransactionIsolation isolation);
 }

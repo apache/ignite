@@ -39,7 +39,7 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Abstract test for originating node failure.
@@ -177,18 +177,18 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                 assertNotNull(cache);
 
-                IgniteTx tx = originatingNodeGrid.transactions().txStart();
+                Transaction tx = originatingNodeGrid.transactions().txStart();
 
                 try {
                     cache.putAll(map);
 
                     info("Before commitAsync");
 
-                    tx = (IgniteTx)tx.withAsync();
+                    tx = (Transaction)tx.withAsync();
 
                     tx.commit();
 
-                    IgniteFuture<IgniteTx> fut = tx.future();
+                    IgniteFuture<Transaction> fut = tx.future();
 
                     info("Got future for commitAsync().");
 
@@ -322,13 +322,13 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         assertNotNull(cache);
 
-        try (IgniteTx tx = grid(0).transactions().txStart()) {
+        try (Transaction tx = grid(0).transactions().txStart()) {
             cache.getAll(keys);
 
             // Should not send any messages.
             cache.putAll(map);
 
-            IgniteTxProxyImpl txProxy = (IgniteTxProxyImpl)tx;
+            TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
             IgniteInternalTx txEx = txProxy.tx();
 

@@ -33,8 +33,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -173,7 +173,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
 
                     info("Partition: " + ignite.affinity(null).partition(1));
 
-                    try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");
 
                         String s = cache.get(1);
