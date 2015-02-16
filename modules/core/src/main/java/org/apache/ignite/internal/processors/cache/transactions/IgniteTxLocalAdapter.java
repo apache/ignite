@@ -577,7 +577,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             if (intercept) {
                                 V old = e.cached().rawGetOrUnmarshal(true);
 
-                                IgniteBiTuple<Boolean, V> t = cacheCtx.config().<K, V>getInterceptor()
+                                IgniteBiTuple<Boolean, V> t = cacheCtx.config().getInterceptor()
                                     .onBeforeRemove(key, old);
 
                                 if (cacheCtx.cancelRemove(t))
