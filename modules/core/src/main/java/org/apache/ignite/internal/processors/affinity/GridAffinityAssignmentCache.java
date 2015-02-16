@@ -263,7 +263,7 @@ public class GridAffinityAssignmentCache {
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
-            new AffinityReadyFuture(ctx.kernalContext()));
+            new AffinityReadyFuture(ctx.kernalContext(), topVer));
 
         aff = head.get();
 
@@ -421,6 +421,9 @@ public class GridAffinityAssignmentCache {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private long reqTopVer;
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -431,18 +434,20 @@ public class GridAffinityAssignmentCache {
         /**
          * @param ctx Kernal context.
          */
-        private AffinityReadyFuture(GridKernalContext ctx) {
+        private AffinityReadyFuture(GridKernalContext ctx, long reqTopVer) {
             super(ctx);
+
+            this.reqTopVer = reqTopVer;
         }
 
         /** {@inheritDoc} */
         @Override public boolean onDone(Long res, @Nullable Throwable err) {
-            assert res != null;
+            assert res != null || err != null;
 
             boolean done = super.onDone(res, err);
 
             if (done)
-                readyFuts.remove(res, this);
+                readyFuts.remove(reqTopVer, this);
 
             return done;
         }
