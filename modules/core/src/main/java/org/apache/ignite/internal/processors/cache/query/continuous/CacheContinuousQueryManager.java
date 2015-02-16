@@ -416,6 +416,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         }
 
                         @Override public CacheEntryEvent<? extends K, ? extends V> next() {
+                            if (!hasNext())
+                                throw new NoSuchElementException();
+
                             CacheEntryEvent<? extends K, ? extends V> next0 = next;
 
                             advance();
