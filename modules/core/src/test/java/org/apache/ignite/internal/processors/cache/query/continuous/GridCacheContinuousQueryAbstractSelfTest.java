@@ -381,7 +381,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testLocalNodeOnly() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        if (grid(0).cache(null).configuration().getCacheMode() != PARTITIONED)
+        if (((IgniteKernal)grid(0)).cache(null).configuration().getCacheMode() != PARTITIONED)
             return;
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
@@ -450,7 +450,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testBuffering() throws Exception {
-        if (grid(0).cache(null).configuration().getCacheMode() != PARTITIONED)
+        if (((IgniteKernal)grid(0)).cache(null).configuration().getCacheMode() != PARTITIONED)
             return;
 
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);

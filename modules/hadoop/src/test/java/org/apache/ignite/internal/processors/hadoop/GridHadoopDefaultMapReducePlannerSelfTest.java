@@ -989,16 +989,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isSmtpEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public ClusterGroupEx forSubjectId(UUID subjId) {
             return null;
         }

@@ -17,17 +17,15 @@
 
 package org.apache.ignite.scalar
 
-import org.apache.ignite.cache.GridCache
-import org.apache.ignite.cache.query.annotations.{QueryTextField, QuerySqlField}
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.internal.IgniteVersionUtils
-import IgniteVersionUtils._
-import org.apache.ignite.{Ignite, IgniteDataLoader, IgniteState, Ignition}
-import org.jetbrains.annotations.Nullable
-
 import java.net.URL
 import java.util.UUID
+
+import org.apache.ignite._
+import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.internal.IgniteVersionUtils._
+import org.jetbrains.annotations.Nullable
 
 import scala.annotation.meta.field
 
@@ -265,16 +263,15 @@ object scalar extends ScalarConversions {
      * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
      * typed instance that cannot be used.
      */
-    @inline def cache$[K, V]: Option[GridCache[K, V]] =
-        Option(Ignition.ignite.cache[K, V](null))
+    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.jcache[K, V](null))
 
     /**
      * Gets named cache from default grid.
      *
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable cacheName: String): Option[GridCache[K, V]] =
-        Option(Ignition.ignite.cache(cacheName))
+    @inline def cache$[K, V](@Nullable cacheName: String): Option[IgniteCache[K, V]] =
+        Option(Ignition.ignite.jcache(cacheName))
 
     /**
      * Gets named cache from specified grid.
@@ -282,9 +279,9 @@ object scalar extends ScalarConversions {
      * @param gridName Name of the grid.
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[GridCache[K, V]] =
+    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
         ignite$(gridName) match {
-            case Some(g) => Option(g.cache(cacheName))
+            case Some(g) => Option(g.jcache(cacheName))
             case None => None
         }
 
