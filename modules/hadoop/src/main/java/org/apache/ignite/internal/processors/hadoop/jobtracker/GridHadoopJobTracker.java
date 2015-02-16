@@ -190,6 +190,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 }
             },
             null,
+            true,
             true
         );
 

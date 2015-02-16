@@ -1225,7 +1225,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ctx.cache().igniteIterator(this);
+            return ctx.cache().igniteIterator();
         }
         finally {
             gate.leave(prev);
