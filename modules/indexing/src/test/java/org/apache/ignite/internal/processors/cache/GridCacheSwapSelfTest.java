@@ -149,8 +149,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(null);
-            GridCache<Integer, Object> cache2 = ignite2.cache(null);
+            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
+            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).cache(null);
 
             Object v1 = new CacheValue(1);
 

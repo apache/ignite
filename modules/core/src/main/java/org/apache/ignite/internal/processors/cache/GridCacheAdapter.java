@@ -1211,7 +1211,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param ldr Class loader to undeploy.
      */
     public void onUndeploy(ClassLoader ldr) {
-        ctx.deploy().onUndeploy(ldr);
+        ctx.deploy().onUndeploy(ldr, context());
     }
 
     /** {@inheritDoc} */
@@ -5603,7 +5603,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link org.apache.ignite.cache.CacheProjection#clearLocally()}
+     * Internal callable which performs {@link CacheProjection#clearLocally()}
      * operation on a cache with the given name.
      */
     @GridInternal

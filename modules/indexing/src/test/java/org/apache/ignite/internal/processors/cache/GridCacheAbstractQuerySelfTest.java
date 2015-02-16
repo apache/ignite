@@ -476,7 +476,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        CacheProjection<Integer, ObjectValue> cachePrj = grid(0).<Integer, ObjectValue>cache(null).projection(p);
+        CacheProjection<Integer, ObjectValue> cachePrj = ((IgniteKernal)grid(0))
+            .<Integer, ObjectValue>cache(null).projection(p);
 
         CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
             cachePrj.queries().createFullTextQuery(ObjectValue.class, "test");
@@ -863,7 +864,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        CacheProjection<String, Integer> cachePrj = ignite.<String, Integer>cache(null).projection(p);
+        CacheProjection<String, Integer> cachePrj = ((IgniteKernal)ignite).<String, Integer>cache(null).projection(p);
 
         CacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
 

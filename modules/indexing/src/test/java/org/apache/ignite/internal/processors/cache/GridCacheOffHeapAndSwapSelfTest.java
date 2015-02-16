@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -409,7 +408,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link org.apache.ignite.cache.CacheProjection#promote(Object)} behavior on offheaped entries.
+     * Tests {@link CacheProjection#promote(Object)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */

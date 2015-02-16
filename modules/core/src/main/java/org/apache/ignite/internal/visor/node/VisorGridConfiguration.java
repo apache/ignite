@@ -48,9 +48,6 @@ public class VisorGridConfiguration implements Serializable {
     /** P2P. */
     private VisorPeerToPeerConfiguration p2p;
 
-    /** Email. */
-    private VisorEmailConfiguration email;
-
     /** Lifecycle. */
     private VisorLifecycleConfiguration lifecycle;
 
@@ -106,7 +103,6 @@ public class VisorGridConfiguration implements Serializable {
         metrics(VisorMetricsConfiguration.from(c));
         spis(VisorSpisConfiguration.from(c));
         p2p(VisorPeerToPeerConfiguration.from(c));
-        email(VisorEmailConfiguration.from(c));
         lifecycle(VisorLifecycleConfiguration.from(c));
         executeService(VisorExecutorServiceConfiguration.from(c));
         segmentation(VisorSegmentationConfiguration.from(c));
@@ -179,20 +175,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public void p2p(VisorPeerToPeerConfiguration p2P) {
         p2p = p2P;
-    }
-
-    /**
-     * @return Email.
-     */
-    public VisorEmailConfiguration email() {
-        return email;
-    }
-
-    /**
-     * @param email New email.
-     */
-    public void email(VisorEmailConfiguration email) {
-        this.email = email;
     }
 
     /**

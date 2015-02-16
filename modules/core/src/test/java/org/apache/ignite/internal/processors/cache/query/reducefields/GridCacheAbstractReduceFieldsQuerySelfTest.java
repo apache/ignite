@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -157,7 +158,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testNoDataInCache() throws Exception {
-        CacheQuery<List<?>> qry = grid(0)
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0))
             .cache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
@@ -228,7 +229,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         };
 
         CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
-            grid(0).<CacheAffinityKey<String>, Person>cache(null).projection(p);
+            ((IgniteKernal)grid(0)).<CacheAffinityKey<String>, Person>cache(null).projection(p);
 
         CacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
 

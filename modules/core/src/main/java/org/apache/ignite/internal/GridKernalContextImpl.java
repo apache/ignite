@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
@@ -195,10 +194,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridOffHeapProcessor offheapProc;
-
-    /** */
-    @GridToStringInclude
-    private IgniteEmailProcessorAdapter emailProc;
 
     /** */
     @GridToStringInclude
@@ -435,8 +430,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
-        else if (comp instanceof IgniteEmailProcessorAdapter)
-            emailProc = (IgniteEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
         else if (comp instanceof GridServiceProcessor)
@@ -572,11 +565,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteEmailProcessorAdapter email() {
-        return emailProc;
     }
 
     /** {@inheritDoc} */

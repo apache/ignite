@@ -110,18 +110,6 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     public boolean isRestartEnabled();
 
     /**
-     * Whether or not SMTP is configured.
-     *
-     * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     */
-    public boolean isSmtpEnabled();
-
-    /**
-     * Schedule sending of given email to all configured admin emails.
-     */
-    IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
-
-    /**
      * Get IGFS instance returning null if it doesn't exist.
      *
      * @param name IGFS name.

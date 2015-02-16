@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.tasks
 import org.apache.ignite.Ignition
 import org.apache.ignite.compute.{ComputeJob, ComputeJobAdapter, ComputeJobResult, ComputeTaskSplitAdapter}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.EventType
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.visor.visor
 import org.scalatest._
@@ -89,7 +88,6 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
         val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
-        cfg.setLifeCycleEmailNotification(false)
         cfg.setIncludeEventTypes(EVTS_ALL: _*)
 
         cfg
