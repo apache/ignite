@@ -296,7 +296,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     @Override public void txEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
-        IgniteTx tx = ses.transaction();
+        Transaction tx = ses.transaction();
 
         Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
 

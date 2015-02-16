@@ -17,31 +17,29 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Exception thrown whenever grid transactions fail optimistically.
+ * Transaction concurrency control. See {@link Transaction} for more information
+ * on transaction concurrency controls.
  */
-public class IgniteTxOptimisticException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public enum TransactionConcurrency {
+    /** Optimistic concurrency control. */
+    OPTIMISTIC,
+
+    /** Pessimistic concurrency control. */
+    PESSIMISTIC;
+
+    /** Enum values. */
+    private static final TransactionConcurrency[] VALS = values();
 
     /**
-     * Creates new optimistic exception with given error message.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @param msg Error message.
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public IgniteTxOptimisticException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new optimistic exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxOptimisticException(String msg, Throwable cause) {
-        super(msg, cause);
+    @Nullable public static TransactionConcurrency fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

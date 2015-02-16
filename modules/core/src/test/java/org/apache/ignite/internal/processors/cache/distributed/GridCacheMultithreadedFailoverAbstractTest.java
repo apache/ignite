@@ -302,7 +302,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             }
                         }
                         try {
-                            IgniteTx tx = atomicityMode() == TRANSACTIONAL ? ignite.transactions().txStart() : null;
+                            Transaction tx = atomicityMode() == TRANSACTIONAL ? ignite.transactions().txStart() : null;
 
                             try {
                                 cache.putAll(putMap);

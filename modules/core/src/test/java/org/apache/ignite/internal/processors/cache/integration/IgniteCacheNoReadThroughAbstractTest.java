@@ -189,8 +189,8 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
         assertTrue(cache.getAll(keys).isEmpty());
 
         if (atomicityMode() == TRANSACTIONAL) {
-            for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-                for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     for (Integer key : keys()) {
                         log.info("Test tx [key=" + key +
                             ", concurrency=" + concurrency +
@@ -198,7 +198,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         storeMap.put(key, key);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertNull(cache.get(key));
 
                             tx.commit();
@@ -206,7 +206,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         assertEquals(key, storeMap.get(key));
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertNull(cache.getAndPut(key, -1));
 
                             tx.commit();
@@ -220,7 +220,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         storeMap.put(key, key);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertTrue(cache.putIfAbsent(key, -1));
 
                             tx.commit();
@@ -234,7 +234,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         storeMap.put(key, key);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
                                 @Override public Object process(MutableEntry<Integer, Integer> e, Object... args) {
                                     Integer val = e.getValue();
@@ -256,7 +256,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         assertEquals(-1, storeMap.get(key));
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertTrue(cache.getAll(keys).isEmpty());
 
                             tx.commit();

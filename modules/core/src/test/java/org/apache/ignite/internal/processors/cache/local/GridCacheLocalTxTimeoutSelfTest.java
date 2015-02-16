@@ -28,8 +28,8 @@ import org.apache.ignite.transactions.*;
 import javax.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -126,12 +126,12 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If test failed.
      */
-    private void checkTransactionTimeout(IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    private void checkTransactionTimeout(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
 
         boolean wasEx = false;
 
-        IgniteTx tx = null;
+        Transaction tx = null;
 
         try {
             IgniteCache<Integer, String> cache = ignite.jcache(null);
@@ -147,7 +147,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
             tx.commit();
         }
         catch (CacheException e) {
-            assertTrue(X.hasCause(e, IgniteTxTimeoutException.class));
+            assertTrue(X.hasCause(e, TransactionTimeoutException.class));
 
             info("Received expected optimistic exception: " + e.getMessage());
 

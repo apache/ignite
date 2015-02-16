@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -104,8 +104,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         boolean invalidate,
         long timeout,
         int txSize,
@@ -689,7 +689,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             state(PREPARED);
 
         if (!state(COMMITTING)) {
-            IgniteTxState state = state();
+            TransactionState state = state();
 
             // If other thread is doing commit, then no-op.
             if (state == COMMITTING || state == COMMITTED)

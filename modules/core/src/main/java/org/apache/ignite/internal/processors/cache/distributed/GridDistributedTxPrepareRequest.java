@@ -46,11 +46,11 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** Transaction concurrency. */
     @GridToStringInclude
-    private IgniteTxConcurrency concurrency;
+    private TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
     @GridToStringInclude
-    private IgniteTxIsolation isolation;
+    private TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
     @GridToStringInclude
@@ -224,14 +224,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Concurrency.
      */
-    public IgniteTxConcurrency concurrency() {
+    public TransactionConcurrency concurrency() {
         return concurrency;
     }
 
     /**
      * @return Isolation level.
      */
-    public IgniteTxIsolation isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
@@ -540,7 +540,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                concurrency = IgniteTxConcurrency.fromOrdinal(concurrencyOrd);
+                concurrency = TransactionConcurrency.fromOrdinal(concurrencyOrd);
 
                 readState++;
 
@@ -576,7 +576,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
+                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

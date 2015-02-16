@@ -67,7 +67,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void txEnd(boolean commit) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Map<String, Connection> props = session().properties();
 
@@ -88,7 +88,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Nullable @Override public Person load(Long key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -118,7 +118,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Long key = entry.getKey();
 
@@ -164,7 +164,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -228,7 +228,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
+    private Connection connection(@Nullable Transaction tx) throws SQLException  {
         if (tx != null) {
             Map<Object, Object> props = session().properties();
 
@@ -255,7 +255,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @param tx Active transaction, if any.
      * @param conn Allocated connection.
      */
-    private void end(@Nullable IgniteTx tx, @Nullable Connection conn) {
+    private void end(@Nullable Transaction tx, @Nullable Connection conn) {
         if (tx == null && conn != null) {
             // Close connection right away if there is no transaction.
             try {
@@ -297,7 +297,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
+    @Nullable private Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;

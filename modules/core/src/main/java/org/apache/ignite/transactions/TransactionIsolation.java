@@ -17,31 +17,33 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Exception thrown whenever grid transactions time out.
+ * Defines different cache transaction isolation levels. See {@link Transaction}
+ * documentation for more information about cache transaction isolation levels.
  */
-public class IgniteTxTimeoutException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public enum TransactionIsolation {
+    /** Read committed isolation level. */
+    READ_COMMITTED,
+
+    /** Repeatable read isolation level. */
+    REPEATABLE_READ,
+
+    /** Serializable isolation level. */
+    SERIALIZABLE;
+
+    /** Enum values. */
+    private static final TransactionIsolation[] VALS = values();
 
     /**
-     * Creates new timeout exception with given error message.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @param msg Error message.
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public IgniteTxTimeoutException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    @Nullable
+    public static TransactionIsolation fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

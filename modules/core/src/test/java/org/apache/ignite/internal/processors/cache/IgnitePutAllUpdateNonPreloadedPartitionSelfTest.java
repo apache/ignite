@@ -25,8 +25,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests .
@@ -82,7 +82,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
             final int keyCnt = 100;
 
-            try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int k = 0; k < keyCnt; k++)
                     cache.get(k);
 

@@ -31,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Tests putAll method with large number of keys.
@@ -145,7 +145,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkPutAll(IgniteTxConcurrency concurrency, boolean nearEnabled) throws Exception {
+    private void checkPutAll(TransactionConcurrency concurrency, boolean nearEnabled) throws Exception {
         this.nearEnabled = nearEnabled;
 
         startGrids(GRID_CNT);
@@ -168,7 +168,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
             info(">>> Starting test tx.");
 
-            try (IgniteTx tx = cache.txStart(concurrency, IgniteTxIsolation.REPEATABLE_READ)) {
+            try (Transaction tx = cache.txStart(concurrency, TransactionIsolation.REPEATABLE_READ)) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
                 for (int i = 0; i < keyCnt; i++)

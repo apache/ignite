@@ -29,7 +29,7 @@ public interface CacheStoreSession {
     /**
      * @return Transaction belonging to current session.
      */
-    @Nullable public IgniteTx transaction();
+    @Nullable public Transaction transaction();
 
     /**
      * @return Current session properties.

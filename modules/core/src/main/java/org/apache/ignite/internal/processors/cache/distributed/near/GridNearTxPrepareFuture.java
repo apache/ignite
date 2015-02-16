@@ -46,7 +46,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  *
@@ -346,7 +346,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         prepare0();
                     }
-                    catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
+                    catch (TransactionTimeoutException | TransactionOptimisticException e) {
                         onError(cctx.localNodeId(), null, e);
                     }
                     catch (IgniteCheckedException e) {

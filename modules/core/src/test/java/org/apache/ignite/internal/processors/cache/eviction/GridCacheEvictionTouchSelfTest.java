@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
@@ -37,8 +36,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -121,7 +120,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             final Random rnd = new Random();
 
-            try (IgniteTx tx = ignite.transactions().txStart()) {
+            try (Transaction tx = ignite.transactions().txStart()) {
                 int iterCnt = 20;
                 int keyCnt = 5000;
 

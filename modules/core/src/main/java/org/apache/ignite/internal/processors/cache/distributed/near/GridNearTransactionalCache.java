@@ -39,7 +39,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Near cache for transactional cache.
@@ -414,7 +414,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {

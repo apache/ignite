@@ -64,7 +64,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     private boolean isRead;
 
     /** Transaction isolation. */
-    private IgniteTxIsolation isolation;
+    private TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
     @GridDirectCollection(byte[].class)
@@ -128,7 +128,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         GridCacheVersion lockVer,
         boolean isInTx,
         boolean isRead,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
@@ -228,7 +228,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
      */
-    public IgniteTxIsolation isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
@@ -505,7 +505,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
+                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

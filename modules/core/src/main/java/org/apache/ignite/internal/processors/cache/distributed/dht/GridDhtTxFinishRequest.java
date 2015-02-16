@@ -43,7 +43,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     private UUID nearNodeId;
 
     /** Transaction isolation. */
-    private IgniteTxIsolation isolation;
+    private TransactionIsolation isolation;
 
     /** Mini future ID. */
     private IgniteUuid miniId;
@@ -107,7 +107,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         long threadId,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -169,7 +169,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /**
      * @return Transaction isolation.
      */
-    public IgniteTxIsolation isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
@@ -313,7 +313,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 if (!reader.isLastRead())
                     return false;
 
-                isolation = IgniteTxIsolation.fromOrdinal(isolationOrd);
+                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
                 readState++;
 

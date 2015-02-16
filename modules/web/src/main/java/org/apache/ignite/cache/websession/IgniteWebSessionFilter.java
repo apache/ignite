@@ -36,8 +36,8 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Filter for web sessions caching.
@@ -287,7 +287,7 @@ public class IgniteWebSessionFilter implements Filter {
 
             try {
                 if (txEnabled) {
-                    try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         sesId = doFilter0(httpReq, res, chain);
 
                         tx.commit();

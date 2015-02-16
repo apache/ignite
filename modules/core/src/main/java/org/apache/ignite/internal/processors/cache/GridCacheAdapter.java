@@ -66,8 +66,8 @@ import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Adapter for different cache implementations.
@@ -560,7 +560,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean invalidate,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter);
@@ -3632,10 +3632,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTx tx() {
+    @Nullable @Override public Transaction tx() {
         IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        return tx == null ? null : new IgniteTxProxyImpl<>(tx, ctx.shared(), false);
+        return tx == null ? null : new TransactionProxyImpl<>(tx, ctx.shared(), false);
     }
 
     /** {@inheritDoc} */
@@ -3745,14 +3745,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart() throws IllegalStateException {
+    @Override public Transaction txStart() throws IllegalStateException {
         TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -3767,15 +3767,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
         return txs.txStartEx(ctx, concurrency, isolation);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
+    @Override public Transaction txStart(TransactionConcurrency concurrency,
+        TransactionIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
         return ctx.system() ?
@@ -3803,17 +3803,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(IgniteTxSynchronization syncs) {
+    @Override public void txSynchronize(TransactionSynchronization syncs) {
         ctx.tm().addSynchronizations(syncs);
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnsynchronize(IgniteTxSynchronization syncs) {
+    @Override public void txUnsynchronize(TransactionSynchronization syncs) {
         ctx.tm().removeSynchronizations(syncs);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxSynchronization> txSynchronizations() {
+    @Override public Collection<TransactionSynchronization> txSynchronizations() {
         return ctx.tm().synchronizations();
     }
 

@@ -436,7 +436,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    IgniteTx tx = g.transactions().txStart();
+                    Transaction tx = g.transactions().txStart();
 
                     TestValue val = new TestValue(0);
 
@@ -474,7 +474,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    IgniteTx tx = g.transactions().txStart();
+                    Transaction tx = g.transactions().txStart();
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
