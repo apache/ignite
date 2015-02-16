@@ -210,25 +210,28 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * Filter events containing visor in it's name.
          *
          * @param e Event
+         * @param taskName Task name to filter of events.
          * @return {@code true} if not contains {@code visor} in task name.
          */
         private boolean filterByTaskName(Event e, String taskName) {
+            String compareTaskName = taskName.toLowerCase();
+
             if (e.getClass().equals(TaskEvent.class)) {
                 TaskEvent te = (TaskEvent)e;
 
-                return containsInTaskName(te.taskName(), te.taskClassName(), taskName);
+                return containsInTaskName(te.taskName(), te.taskClassName(), compareTaskName);
             }
 
             if (e.getClass().equals(JobEvent.class)) {
                 JobEvent je = (JobEvent)e;
 
-                return containsInTaskName(je.taskName(), je.taskName(), taskName);
+                return containsInTaskName(je.taskName(), je.taskName(), compareTaskName);
             }
 
             if (e.getClass().equals(DeploymentEvent.class)) {
                 DeploymentEvent de = (DeploymentEvent)e;
 
-                return de.alias().toLowerCase().contains(taskName);
+                return de.alias().toLowerCase().contains(compareTaskName);
             }
 
             return true;
