@@ -41,7 +41,7 @@ import java.util.*;
  * properties are optional, so users should only change what they need.
  */
 @SuppressWarnings("RedundantFieldInitialization")
-public class CacheConfiguration extends MutableConfiguration {
+public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size of preload thread pool. */
     public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
 
@@ -686,9 +686,9 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets eviction filter to specify which entries should not be evicted
-     * (except explicit evict by calling {@link Entry#evict()}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(Entry)} method returns
-     * {@code false} then eviction policy will not be notified and entry will
+     * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
+     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(javax.cache.Cache.Entry)} method
+     * returns {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
@@ -697,7 +697,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Eviction filter or {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> CacheEvictionFilter<K, V> getEvictionFilter() {
+    public CacheEvictionFilter<K, V> getEvictionFilter() {
         return (CacheEvictionFilter<K, V>)evictFilter;
     }
 
@@ -706,7 +706,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param evictFilter Eviction filter.
      */
-    public <K, V> void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
+    public void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
     }
 
@@ -717,7 +717,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link Entry#timeToLive()} value and should not be confused with entry
+     * {@link javax.cache.expiry.ExpiryPolicy} and should not be confused with entry
      * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.

@@ -17,12 +17,15 @@
 
 package org.apache.ignite.cache.store;
 
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 /**
  * Session for the cache store operations.
+ *
+ * @see CacheStoreSessionResource
  */
 public interface CacheStoreSession {
     /**

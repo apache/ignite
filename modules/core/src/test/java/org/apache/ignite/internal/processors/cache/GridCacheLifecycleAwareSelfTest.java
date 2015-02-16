@@ -53,7 +53,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestStore extends CacheStore implements LifecycleAware {
+    private static class TestStore implements CacheStore, LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
 
