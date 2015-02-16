@@ -144,8 +144,8 @@ public class CacheQueryExample {
             + "and lower(Organization.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'GridGain' employees: ",
-            cache.query(sql(Person.class, joinSql).setArgs("GridGain")).getAll());
+        print("Following people are 'Ignite' employees: ",
+            cache.query(sql(Person.class, joinSql).setArgs("Ignite")).getAll());
         print("Following people are 'Other' employees: ",
             cache.query(sql(Person.class, joinSql).setArgs("Other")).getAll());
     }
@@ -222,7 +222,7 @@ public class CacheQueryExample {
         IgniteCache cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.
-        Organization org1 = new Organization("GridGain");
+        Organization org1 = new Organization("Ignite");
         Organization org2 = new Organization("Other");
 
         // People.
