@@ -108,7 +108,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         // Put and get a few keys.
         for (int i = 0; ; i++) {
             if (affinity(cache0).isPrimary(g0.cluster().localNode(), i)) {
-                cache0.put(i, i); // +1 read
+                cache0.getAndPut(i, i); // +1 read
 
                 cache0.get(i); // +1 read.
 
@@ -140,7 +140,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
                 assertEquals(2, jcache.metrics().getCacheGets());
                 assertEquals(1, jcache.metrics().getCacheHits());
-                assertEquals(1, jcache.metrics().getCacheHits());
+                assertEquals(1, jcache.metrics().getCacheMisses());
             }
             else {
                 assertEquals(0, jcache.metrics().getCacheGets());
