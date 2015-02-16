@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -39,7 +40,11 @@ import static junit.framework.Assert.*;
 /**
  * Test store.
  */
-public final class GridCacheTestStore extends CacheStore<Integer, String> {
+public final class GridCacheTestStore implements CacheStore<Integer, String> {
+    /** */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Store. */
     private final Map<Integer, String> map;
 
@@ -318,6 +323,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /**
      * @param ses Session.
+     * @param load {@code True} if {@link #loadAll} method is called.
      */
     private void checkTx(@Nullable CacheStoreSession ses, boolean load) {
         Transaction tx = ses != null ? ses.transaction() : null;
@@ -336,5 +342,12 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
         if (tx0.dht() && !load)
             throw new IgniteException("Tx is DHT: " + tx);
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }

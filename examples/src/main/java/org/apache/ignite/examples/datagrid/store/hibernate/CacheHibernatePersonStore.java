@@ -20,6 +20,7 @@ package org.apache.ignite.examples.datagrid.store.hibernate;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.Transaction;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
@@ -41,6 +42,10 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** Session factory. */
     private SessionFactory sesFactory;
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
 
     /**
      * Default constructor.
@@ -274,5 +279,12 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }

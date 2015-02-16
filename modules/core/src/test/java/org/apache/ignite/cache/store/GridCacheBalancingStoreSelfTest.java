@@ -114,7 +114,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class VerifyStore extends CacheStore<Integer, Integer> {
+    private static class VerifyStore implements CacheStore<Integer, Integer> {
         /** */
         private Lock[] locks;
 

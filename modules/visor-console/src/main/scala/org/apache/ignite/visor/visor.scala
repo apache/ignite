@@ -2516,7 +2516,7 @@ object visor extends VisorTag {
             IgniteUtils.neighborhood(ignite.nodes()).size.toString.padTo(4, ' ') + pipe +
             ignite.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
-            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
+            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryTotal) + pipe
         )
     }
 

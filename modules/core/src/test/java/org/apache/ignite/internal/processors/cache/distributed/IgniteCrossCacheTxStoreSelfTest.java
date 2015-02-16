@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
@@ -229,9 +230,13 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends CacheStore<Object, Object> {
+    private static class TestStore implements CacheStore<Object, Object> {
         /** */
         private Queue<String> evts = new ConcurrentLinkedDeque<>();
+
+        /** Auto-injected store session. */
+        @CacheStoreSessionResource
+        private CacheStoreSession ses;
 
         /**
          *
@@ -294,6 +299,13 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             String cacheName = session().cacheName();
 
             evts.add("deleteAll " + cacheName + " " + keys.size());
+        }
+
+        /**
+         * @return Store session.
+         */
+        private CacheStoreSession session() {
+            return ses;
         }
     }
 }

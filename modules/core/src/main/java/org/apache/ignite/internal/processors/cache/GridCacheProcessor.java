@@ -587,7 +587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
 
         for (int i = 0; i < cfgs.length; i++) {
-            CacheConfiguration cfg = new CacheConfiguration(cfgs[i]);
+            CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
             // Initialize defaults.
             initialize(cfg);
