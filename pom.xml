@@ -81,9 +81,46 @@
 
     <developers>
         <developer>
-            <id>gridgain</id>
-            <name>GridGain</name>
-            <email>mvncentral@gridgain.com</email>
+            <id>dsetrakyan</id>
+            <name>Dmitriy Setrakyan</name>
+            <email>dsetrakyan at apache dot org</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>agoncharuk</id>
+            <name>Alexey Goncharuk</name>
+            <email>agoncharuk at apache dot org</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>vkulichenko</id>
+            <name>Valentin Kulichenko</name>
+            <email>vkulichenko at apache dot org</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>svladykin</id>
+            <name>Sergi Vladykin</name>
+            <email>sergi dot vladykin at gmail dot com</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>yzhdanov</id>
+            <name>Yakov Zhdanov</name>
+            <email>yzhdanov at apache dot org</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>sboikov</id>
+            <name>Semyon Boikov</name>
+            <email>sboikov at gridgain dot com</email>
+            <organization>GridGain</organization>
+        </developer>
+        <developer>
+            <id>vozerov</id>
+            <name>Vladimir Ozerov</name>
+            <email>vozerov at gridgain dot com</email>
+            <organization>GridGain</organization>
         </developer>
     </developers>
 
