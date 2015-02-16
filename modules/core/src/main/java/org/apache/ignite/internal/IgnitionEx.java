@@ -1307,7 +1307,7 @@ public class IgnitionEx {
             if (cfg == null)
                 cfg = new IgniteConfiguration();
 
-            IgniteConfiguration myCfg = new IgniteConfiguration();
+            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
             String ggHome = cfg.getIgniteHome();
 
@@ -1358,34 +1358,6 @@ public class IgnitionEx {
             }
 
             myCfg.setIgniteHome(ggHome);
-
-            // Copy values that don't need extra processing.
-            myCfg.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
-            myCfg.setDeploymentMode(cfg.getDeploymentMode());
-            myCfg.setNetworkTimeout(cfg.getNetworkTimeout());
-            myCfg.setClockSyncSamples(cfg.getClockSyncSamples());
-            myCfg.setClockSyncFrequency(cfg.getClockSyncFrequency());
-            myCfg.setDiscoveryStartupDelay(cfg.getDiscoveryStartupDelay());
-            myCfg.setMetricsHistorySize(cfg.getMetricsHistorySize());
-            myCfg.setMetricsExpireTime(cfg.getMetricsExpireTime());
-            myCfg.setMetricsUpdateFrequency(cfg.getMetricsUpdateFrequency());
-            myCfg.setLifecycleBeans(cfg.getLifecycleBeans());
-            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
-            myCfg.setPeerClassLoadingMissedResourcesCacheSize(cfg.getPeerClassLoadingMissedResourcesCacheSize());
-            myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
-            myCfg.setDaemon(cfg.isDaemon());
-            myCfg.setIncludeProperties(cfg.getIncludeProperties());
-            myCfg.setLifeCycleEmailNotification(cfg.isLifeCycleEmailNotification());
-            myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
-            myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
-            myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
-            myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
-            myCfg.setWarmupClosure(cfg.getWarmupClosure());
-            myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
-            myCfg.setTransactionConfiguration(new TransactionConfiguration(cfg.getTransactionConfiguration()));
-            myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
-            myCfg.setClassLoader(cfg.getClassLoader());
-            myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 
             ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
@@ -1649,22 +1621,8 @@ public class IgnitionEx {
             myCfg.setSwapSpaceSpi(swapspaceSpi);
             myCfg.setIndexingSpi(indexingSpi);
 
-            myCfg.setAddressResolver(cfg.getAddressResolver());
-
-            // Set SMTP configuration.
-            myCfg.setSmtpFromEmail(cfg.getSmtpFromEmail());
-            myCfg.setSmtpHost(cfg.getSmtpHost());
-            myCfg.setSmtpPort(cfg.getSmtpPort());
-            myCfg.setSmtpSsl(cfg.isSmtpSsl());
-            myCfg.setSmtpUsername(cfg.getSmtpUsername());
-            myCfg.setSmtpPassword(cfg.getSmtpPassword());
-            myCfg.setAdminEmails(cfg.getAdminEmails());
-
             // REST configuration.
             myCfg.setConnectorConfiguration(clientCfg);
-
-            // Hadoop configuration.
-            myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -1675,12 +1633,6 @@ public class IgnitionEx {
                 U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
-
-            myCfg.setSegmentationResolvers(cfg.getSegmentationResolvers());
-            myCfg.setSegmentationPolicy(segPlc);
-            myCfg.setSegmentCheckFrequency(cfg.getSegmentCheckFrequency());
-            myCfg.setWaitForSegmentOnStart(cfg.isWaitForSegmentOnStart());
-            myCfg.setAllSegmentationResolversPassRequired(cfg.isAllSegmentationResolversPassRequired());
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
