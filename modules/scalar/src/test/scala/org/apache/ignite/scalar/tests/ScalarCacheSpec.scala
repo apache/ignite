@@ -38,16 +38,14 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
         scalar("examples/config/example-cache.xml") {
             registerListener()
 
-            throw new RuntimeException("Test is disabled.")
+            val c = cache$[Int, Int]("partitioned").get
 
-//            val c = cache$("partitioned").get.viewByType(classOf[Int], classOf[Int])
-//
-//            c.putx(1, 1)
-//            c.putx(2, 2)
-//
-//            c.values foreach println
-//
-//            println("Size is: " + c.size)
+            c.put(1, 1)
+            c.put(2, 2)
+
+            c.iterator() foreach println
+
+            println("Size is: " + c.size())
         }
     }
 

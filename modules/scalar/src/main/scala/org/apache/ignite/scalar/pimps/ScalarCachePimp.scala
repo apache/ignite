@@ -17,20 +17,18 @@
 
 package org.apache.ignite.scalar.pimps
 
-import org.apache.ignite.cache.query.{SqlQuery, QueryCursor}
+import org.apache.ignite.cache.query._
 import org.apache.ignite.configuration.CacheConfiguration
 
 import javax.cache.Cache
 
 import org.apache.ignite._
-import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite.internal.util.scala.impl
-import org.apache.ignite.lang.{IgniteBiTuple, IgniteClosure, IgnitePredicate, IgniteReducer}
+import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer}
 import org.apache.ignite.scalar.pimps.ScalarCacheConfigurationHelper._
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
 
-import java.util.{Set => JavaSet}
+import java.util.{List => JavaList, Set => JavaSet}
 
 import scala.collection._
 import scala.collection.JavaConversions._
@@ -133,15 +131,6 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
 
             def reduce(): R = {
                 rdc(seq)
-            }
-        }
-    }
-
-    private def toRemoteTransformer[K, V, T](trans: V => T):
-    IgniteClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] = {
-        new IgniteClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] {
-            @impl def apply(e: java.util.Map.Entry[K, V]): java.util.Map.Entry[K, T] = {
-                new IgniteBiTuple[K, T](e.getKey, trans(e.getValue))
             }
         }
     }
@@ -499,60 +488,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
     }
 
     /**
-     * Creates and executes ad-hoc `SCAN` query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @return Collection of cache key-value pairs.
-     */
-    def scan(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
-        assert(cls != null)
-        assert(kvp != null)
-
-        //        val q = value.queries().createScanQuery(kvp)
-        //
-        //        (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @return Collection of cache key-value pairs.
-     */
-    def scan(@Nullable grid: ClusterGroup, kvp: KvPred)
-        (implicit m: Manifest[V]): Iterable[(K, V)] = {
-        assert(kvp != null)
-
-        scan(grid, m.erasure.asInstanceOf[Class[V]], kvp)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` query on global projection returning its result.
+     * Creates and executes ad-hoc `SCAN` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -566,15 +502,15 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
+    def scan(cls: Class[_ <: V], kvp: KvPred): QueryCursor[Cache.Entry[K, V]] = {
         assert(cls != null)
         assert(kvp != null)
 
-        scan(null, cls, kvp)
+        value.query(new ScanQuery(kvp))
     }
 
     /**
-     * Creates and executes ad-hoc `SCAN` query on global projection returning its result.
+     * Creates and executes ad-hoc `SCAN` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -589,14 +525,14 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(kvp: KvPred)(implicit m: Manifest[V]): Iterable[(K, V)] = {
+    def scan(kvp: KvPred)(implicit m: Manifest[V]): QueryCursor[Cache.Entry[K, V]] = {
         assert(kvp != null)
 
         scan(m.erasure.asInstanceOf[Class[V]], kvp)
     }
 
     /**
-     * Creates and executes ad-hoc `SQL` query on given projection returning its result.
+     * Creates and executes ad-hoc `SQL` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -605,26 +541,27 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * all results at once without pagination and therefore memory limits should be
      * taken into account.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
      * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String, args: Any*): Iterable[(K, V)] = {
+    def sql(cls: Class[_ <: V], clause: String, args: Any*): QueryCursor[Cache.Entry[K, V]] = {
         assert(cls != null)
         assert(clause != null)
         assert(args != null)
 
-        value.query(new SqlQuery(cls, clause).setArgs(args))
+        val query = new SqlQuery(cls, clause)
 
-        return Iterable.empty
+        if (args != null && args.size > 0)
+            query.setArgs(args.map(_.asInstanceOf[AnyRef]) : _*)
+
+        value.query(query)
     }
 
     /**
-     * Creates and executes ad-hoc `SQL` query on given projection returning its result.
+     * Creates and executes ad-hoc `SQL` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -633,22 +570,20 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * all results at once without pagination and therefore memory limits should be
      * taken into account.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
      * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
+    def sql(cls: Class[_ <: V], clause: String): QueryCursor[Cache.Entry[K, V]] = {
         assert(cls != null)
         assert(clause != null)
 
-        sql(grid, cls, clause, Nil: _*)
+        sql(cls, clause, Nil:_*)
     }
 
     /**
-     * Creates and executes ad-hoc `SQL` query on given projection returning its result.
+     * Creates and executes ad-hoc `SQL` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -660,120 +595,20 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
      * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sql(@Nullable grid: ClusterGroup, clause: String, args: Any*)
-        (implicit m: Manifest[V]): Iterable[(K, V)] = {
+    def sql(clause: String, args: Any*)
+        (implicit m: Manifest[V]): QueryCursor[Cache.Entry[K, V]] = {
         assert(clause != null)
         assert(args != null)
 
-        sql(grid, m.erasure.asInstanceOf[Class[V]], clause, args: _*)
+        sql(m.erasure.asInstanceOf[Class[V]], clause, args:_*)
     }
 
     /**
-     * Creates and executes ad-hoc `SQL` query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sql(cls: Class[_ <: V], clause: String, args: Any*): Iterable[(K, V)] = {
-        assert(cls != null)
-        assert(clause != null)
-
-        sql(null.asInstanceOf[ClusterGroup], cls, clause, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sql(clause: String, args: Any*)(implicit m: Manifest[V]): Iterable[(K, V)] = {
-        assert(clause != null)
-
-        sql(m.erasure.asInstanceOf[Class[V]], clause, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @return Collection of cache key-value pairs.
-     */
-    def text(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
-        assert(cls != null)
-        assert(clause != null)
-
-        //        val q = value.cache().queries().createFullTextQuery(cls, clause)
-        //
-        //        (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @return Collection of cache key-value pairs.
-     */
-    def text(@Nullable grid: ClusterGroup, clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
-        assert(clause != null)
-
-        text(grid, m.erasure.asInstanceOf[Class[V]], clause)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` query on global projection returning its result.
+     * Creates and executes ad-hoc `TEXT` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -787,15 +622,15 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def text(cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
+    def text(cls: Class[_ <: V], clause: String): QueryCursor[Cache.Entry[K, V]] = {
         assert(cls != null)
         assert(clause != null)
 
-        text(null, cls, clause)
+        value.query(new TextQuery(cls, clause))
     }
 
     /**
-     * Creates and executes ad-hoc `TEXT` query on global projection returning its result.
+     * Creates and executes ad-hoc `TEXT` query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -810,14 +645,14 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def text(clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
+    def text(clause: String)(implicit m: Manifest[V]): QueryCursor[Cache.Entry[K, V]] = {
         assert(clause != null)
 
         text(m.erasure.asInstanceOf[Class[V]], clause)
     }
 
     /**
-     * Creates and executes ad-hoc `SCAN` transform query on given projection returning its result.
+     * Creates and executes ad-hoc `SQL` fields query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -826,1123 +661,24 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * all results at once without pagination and therefore memory limits should be
      * taken into account.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def scanTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred, trans: V => T):
-    Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(trans != null)
-
-        //        val q = value.cache[K, V]().queries().createScanQuery(kvp)
-        //
-        //        toScalaItr[K, T]((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans)).get)
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def scanTransform[T](@Nullable grid: ClusterGroup, kvp: KvPred, trans: V => T)(implicit m: Manifest[V]):
-    Iterable[(K, T)] = {
-        assert(kvp != null)
-        assert(trans != null)
-
-        scanTransform(grid, m.erasure.asInstanceOf[Class[V]], kvp, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def scanTransform[T](cls: Class[_ <: V], kvp: KvPred, trans: V => T): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(trans != null)
-
-        scanTransform(null, cls, kvp, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def scanTransform[T](kvp: KvPred, trans: V => T)
-        (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(kvp != null)
-        assert(trans != null)
-
-        scanTransform(m.erasure.asInstanceOf[Class[V]], kvp, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sqlTransform[T](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
-        trans: V => T, args: Any*): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(trans != null)
-        assert(args != null)
-
-        //        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
-        //
-        //        toScalaItr((if (grid != null) q.projection(grid) else q)
-        //            .execute(toRemoteTransformer[K, V, T](trans), args.asInstanceOf[Seq[Object]]: _*).get)
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def sqlTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        trans: V => T): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(trans != null)
-
-        sqlTransform(grid, cls, clause, trans, Nil: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sqlTransform[T](@Nullable grid: ClusterGroup, clause: String, trans: V => T, args: Any*)
-        (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(clause != null)
-        assert(trans != null)
-        assert(args != null)
-
-        sqlTransform(grid, m.erasure.asInstanceOf[Class[V]], clause, trans, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sqlTransform[T](cls: Class[_ <: V], clause: String, trans: V => T, args: Any*): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(trans != null)
-        assert(args != null)
-
-        sqlTransform(null, cls, clause, trans, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @param args Optional list of query arguments.
-     * @return Collection of cache key-value pairs.
-     */
-    def sqlTransform[T](clause: String, trans: V => T, args: Any*)
-        (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(clause != null)
-        assert(trans != null)
-        assert(args != null)
-
-        sqlTransform(m.erasure.asInstanceOf[Class[V]], clause, trans, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def textTransform[T](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        trans: V => T): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(trans != null)
-
-        //        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
-        //
-        //        toScalaItr((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans)).get)
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` transform query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def textTransform[T](@Nullable grid: ClusterGroup, clause: String, trans: V => T)
-        (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(clause != null)
-        assert(trans != null)
-
-        textTransform(grid, m.erasure.asInstanceOf[Class[V]], clause, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def textTransform[T](cls: Class[_ <: V], clause: String, trans: V => T): Iterable[(K, T)] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(trans != null)
-
-        textTransform(null, cls, clause, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` transform query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param trans Transform function that will be applied to each returned value.
-     * @return Collection of cache key-value pairs.
-     */
-    def textTransform[T](clause: String, trans: V => T)
-        (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(clause != null)
-        assert(trans != null)
-
-        textTransform(m.erasure.asInstanceOf[Class[V]], clause, trans)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def scanReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        //        val q = value.cache[K, V]().queries().createScanQuery(kvp)
-        //
-        //        locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get)
-
-        null.asInstanceOf[R2]
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def scanReduce[R1, R2](@Nullable grid: ClusterGroup, kvp: KvPred,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(kvp != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        scanReduce(grid, m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def scanReduce[R1, R2](cls: Class[_ <: V], kvp: KvPred,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        scanReduce(null, cls, kvp, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def scanReduce[R1, R2](kvp: KvPred, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(kvp != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        scanReduce(m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @param args Optional list of query arguments.
-     * @return Reduced value.
-     */
-    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2, args: Any*): R2 = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-        assert(args != null)
-
-        //        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
-        //
-        //        locRdc((if (grid != null) q.projection(grid) else q)
-        //            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get)
-
-        null.asInstanceOf[R2]
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        sqlReduce(grid, cls, clause, rmtRdc, locRdc, Nil: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @param args Optional list of query arguments.
-     * @return Reduced value.
-     */
-    def sqlReduce[R1, R2](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2, args: Any*)(implicit m: Manifest[V]): R2 = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-        assert(args != null)
-
-        sqlReduce(grid, m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, locRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @param args Optional list of query arguments.
-     * @return Reduced value.
-     */
-    def sqlReduce[R1, R2](cls: Class[_ <: V], clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2, args: Any*): R2 = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-        assert(args != null)
-
-        sqlReduce(null, cls, clause, rmtRdc, locRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @param args Optional list of query arguments.
-     * @return Reduced value.
-     */
-    def sqlReduce[R1, R2](clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2, args: Any*)(implicit m: Manifest[V]): R2 = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-        assert(args != null)
-
-        sqlReduce(m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, locRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def textReduce[R1, R2](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        //        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
-        //
-        //        locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get)
-
-        null.asInstanceOf[R2]
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def textReduce[R1, R2](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        textReduce(grid, m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def textReduce[R1, R2](cls: Class[_ <: V], clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2): R2 = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        textReduce(null, cls, clause, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param locRdc Reduce function that will be called on local node.
-     * @return Reduced value.
-     */
-    def textReduce[R1, R2](clause: String, rmtRdc: Iterable[(K, V)] => R1,
-        locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(locRdc != null)
-
-        textReduce(m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, locRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def scanReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred,
-        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(rmtRdc != null)
-
-        //        val q = value.cache[K, V]().queries().createScanQuery(kvp)
-        //
-        //        (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def scanReduceRemote[R](@Nullable grid: ClusterGroup, kvp: KvPred,
-        rmtRdc: Iterable[(K, V)] => R)(implicit m: Manifest[V]): Iterable[R] = {
-        assert(kvp != null)
-        assert(rmtRdc != null)
-
-        scanReduceRemote(grid, m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def scanReduceRemote[R](cls: Class[_ <: V], kvp: KvPred, rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
-        assert(cls != null)
-        assert(kvp != null)
-        assert(rmtRdc != null)
-
-        scanReduceRemote(null, cls, kvp, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SCAN` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def scanReduceRemote[R](kvp: KvPred, rmtRdc: Iterable[(K, V)] => R)(implicit m: Manifest[V]): Iterable[R] = {
-        assert(kvp != null)
-        assert(rmtRdc != null)
-
-        scanReduceRemote(m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param args Optional list of query arguments.
-     * @return Collection of reduced values.
-     */
-    def sqlReduceRemote[R](@Nullable grid: ClusterGroup, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R, args: Any*): Iterable[R] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(args != null)
-
-        //        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
-        //
-        //        (if (grid != null) q.projection(grid) else q)
-        //            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get
-
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def sqlReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-
-        sqlReduceRemote(grid, cls, clause, rmtRdc, Nil: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param args Optional list of query arguments.
-     * @return Collection of reduced values.
-     */
-    def sqlReduceRemote[R](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R,
-        args: Any*)(implicit m: Manifest[V]): Iterable[R] = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(args != null)
-
-        sqlReduceRemote(grid, m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param args Optional list of query arguments.
-     * @return Collection of reduced values.
-     */
-    def sqlReduceRemote[R](cls: Class[_ <: V], clause: String, rmtRdc: Iterable[(K, V)] => R,
-        args: Any*): Iterable[R] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(args != null)
-
-        sqlReduceRemote(null, cls, clause, rmtRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query SQL clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @param args Optional list of query arguments.
-     * @return Collection of reduced values.
-     */
-    def sqlReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R, args: Any*)
-        (implicit m: Manifest[V]): Iterable[R] = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-        assert(args != null)
-
-        sqlReduceRemote(m.erasure.asInstanceOf[Class[V]], clause, rmtRdc, args: _*)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def textReduceRemote[R](@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-
-        //        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
-        //
-        //        (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get
-        Iterable.empty
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def textReduceRemote[R](@Nullable grid: ClusterGroup, clause: String, rmtRdc: Iterable[(K, V)] => R)
-        (implicit m: Manifest[V]): Iterable[R] = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-
-        textReduceRemote(grid, m.erasure.asInstanceOf[Class[V]], clause, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
-     *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def textReduceRemote[R](cls: Class[_ <: V], clause: String,
-        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
-        assert(cls != null)
-        assert(clause != null)
-        assert(rmtRdc != null)
-
-        textReduceRemote(null, cls, clause, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `TEXT` reduce query on global projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * Note that query value class will be taken implicitly as exact type `V` of this
-     * cache projection.
-     *
-     * @param clause Query text clause. See `CacheQuery` for more details.
-     * @param rmtRdc Reduce function that will be called on each remote node.
-     * @return Collection of reduced values.
-     */
-    def textReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R)
-        (implicit m: Manifest[V]): Iterable[R] = {
-        assert(clause != null)
-        assert(rmtRdc != null)
-
-        textReduceRemote(m.erasure.asInstanceOf[Class[V]], clause, rmtRdc)
-    }
-
-    /**
-     * Creates and executes ad-hoc `SQL` fields query on given projection returning its result.
-     *
-     * Note that if query is executed more than once (potentially with different
-     * arguments) it is more performant to create query via standard mechanism
-     * and execute it multiple times with different arguments. The analogy is
-     * similar to JDBC `PreparedStatement`. Note also that this function will return
-     * all results at once without pagination and therefore memory limits should be
-     * taken into account.
-     *
-     * @param grid Optional grid projection on which this query will be executed. If `null` the
-     *      global projection will be used.
      * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Sequence of sequences of field values.
      */
-    def sqlFields(@Nullable grid: ClusterGroup, clause: String, args: Any*): IndexedSeq[IndexedSeq[Any]] = {
+    def sqlFields(clause: String, args: Any*): QueryCursor[JavaList[_]] = {
         assert(clause != null)
         assert(args != null)
 
-        //        val q = value.cache[K, V]().queries().createSqlFieldsQuery(clause)
-        //
-        //        (if (grid != null) q.projection(grid) else q).execute(args.asInstanceOf[Seq[Object]]: _*)
-        //            .get.toIndexedSeq.map((s: java.util.List[_]) => s.toIndexedSeq)
+        val query = new SqlFieldsQuery(clause)
 
-        IndexedSeq.empty
+        if (args != null && args.nonEmpty)
+            query.setArgs(args.map(_.asInstanceOf[AnyRef]) : _*)
+
+        value.queryFields(query)
     }
 
     /**
-     * Creates and executes ad-hoc `SQL` no-arg fields query on given projection returning its result.
+     * Creates and executes ad-hoc `SQL` no-arg fields query returning its result.
      *
      * Note that if query is executed more than once (potentially with different
      * arguments) it is more performant to create query via standard mechanism
@@ -1951,14 +687,12 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * all results at once without pagination and therefore memory limits should be
      * taken into account.
      *
-     * @param grid Optional grid projection on which this query will be executed. If `null` the
-     *      global projection will be used.
      * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @return Sequence of sequences of field values.
      */
-    def sqlFields(@Nullable grid: ClusterGroup = null, clause: String): IndexedSeq[IndexedSeq[Any]] = {
+    def sqlFields(clause: String): QueryCursor[JavaList[_]] = {
         assert(clause != null)
 
-        sqlFields(grid, clause, Nil: _*)
+        sqlFields(clause, Nil:_*)
     }
 }

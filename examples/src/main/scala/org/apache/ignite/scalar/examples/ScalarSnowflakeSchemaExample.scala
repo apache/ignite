@@ -17,13 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.Ignition
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
 import org.jdk8.backport.ThreadLocalRandom8
 
+import javax.cache.Cache
 import java.util.ConcurrentModificationException
+
+import collection.JavaConversions._
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
@@ -131,7 +133,7 @@ object ScalarSnowflakeSchemaExample {
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
             "where DimStore.id=FactPurchase.storeId and DimStore.name=?", "Store1")
 
-        printQueryResults("All purchases made at store1:", storePurchases)
+        printQueryResults("All purchases made at store1:", storePurchases.getAll)
     }
 
     /**
@@ -141,7 +143,7 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val factCache = Ignition.ignite.jcache(PART_CACHE_NAME)
+        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
 
         // All purchases for certain product made at store2.
         // =================================================
@@ -151,14 +153,14 @@ object ScalarSnowflakeSchemaExample {
 
         println("IDs of products [p1=" + p1.id + ", p2=" + p2.id + ", p3=" + p3.id + ']')
 
-//        val prodPurchases = factCache.sql(
-//            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
-//            "where DimStore.id=FactPurchase.storeId and " +
-//                "DimProduct.id=FactPurchase.productId and " +
-//                "DimStore.name=? and DimProduct.id in(?, ?, ?)",
-//            "Store2", p1.id, p2.id, p3.id)
-//
-//        printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases)
+        val prodPurchases = factCache.sql(
+            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
+            "where DimStore.id=FactPurchase.storeId and " +
+                "DimProduct.id=FactPurchase.productId and " +
+                "DimStore.name=? and DimProduct.id in(?, ?, ?)",
+            "Store2", p1.id, p2.id, p3.id)
+
+        printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases.getAll)
     }
 
     /**
@@ -167,7 +169,7 @@ object ScalarSnowflakeSchemaExample {
      * @param msg Initial message.
      * @param res Results to print.
      */
-    private def printQueryResults[V](msg: String, res: Iterable[(Int, V)]) {
+    private def printQueryResults[V](msg: String, res: Iterable[Cache.Entry[Int, V]]) {
         println(msg)
 
         for (e <- res)

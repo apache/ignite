@@ -17,8 +17,6 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.CachePeekMode
-
 import org.apache.ignite.events.Event
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
@@ -37,8 +35,6 @@ import scala.collection.JavaConversions._
 object ScalarCacheExample extends App {
     /** Name of cache specified in spring configuration. */
     private val NAME = "partitioned"
-
-    private val peekModes = Array.empty[CachePeekMode]
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.

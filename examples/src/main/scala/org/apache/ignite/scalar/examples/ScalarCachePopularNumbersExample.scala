@@ -25,6 +25,7 @@ import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
 import scala.util.Random
+import collection.JavaConversions._
 
 /**
  * Real time popular number counter.
@@ -106,9 +107,11 @@ object ScalarCachePopularNumbersExample extends App {
      * @param cnt Number of most popular numbers to return.
      */
     def query(cnt: Int) {
-        cache$[Int, Long](CACHE_NAME).get.
-            sqlFields(clause = "select _key, _val from Long order by _val desc limit " + cnt).
-            sortBy(_(1).asInstanceOf[Long]).reverse.take(cnt).foreach(println)
+        val results = cache$[Int, Long](CACHE_NAME).get
+            .sqlFields(clause = "select _key, _val from Long order by _val desc limit " + cnt)
+            .getAll
+
+        results.foreach(res => println(res.get(0) + "=" + res.get(1)))
 
         println("------------------")
     }
