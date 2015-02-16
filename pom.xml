@@ -1005,7 +1005,7 @@
                                         </group>
                                         <group>
                                             <title>Visor Plugins</title>
-                                            <packages>org.gridgain.visor.plugin</packages>
+                                            <packages>org.apache.ignite.visor.plugin</packages>
                                         </group>
                                         <group>
                                             <title>Spring Caching</title>
