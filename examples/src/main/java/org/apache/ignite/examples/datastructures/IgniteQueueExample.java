@@ -36,7 +36,7 @@ import java.util.*;
  */
 public class IgniteQueueExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = "partitioned_tx";
 
     /** Number of retries */
     private static final int RETRIES = 20;
