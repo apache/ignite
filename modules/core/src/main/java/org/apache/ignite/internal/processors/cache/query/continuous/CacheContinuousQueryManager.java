@@ -340,7 +340,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    private UUID executeQuery0(CacheEntryUpdatedListener<K, V> locLsnr, CacheEntryEventFilter<K, V> rmtFilter,
+    private UUID executeQuery0(CacheEntryUpdatedListener<K, V> locLsnr, final CacheEntryEventFilter<K, V> rmtFilter,
         int bufSize, long timeInterval, boolean autoUnsubscribe, boolean internal, boolean notifyExisting,
         boolean oldValRequired, boolean sync, boolean ignoreExpired, ClusterGroup grp) throws IgniteCheckedException {
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -405,20 +405,44 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             locLsnr.onUpdated(new Iterable<CacheEntryEvent<? extends K, ? extends V>>() {
                 @Override public Iterator<CacheEntryEvent<? extends K, ? extends V>> iterator() {
                     return new Iterator<CacheEntryEvent<? extends K, ? extends V>>() {
+                        private CacheContinuousQueryEvent<? extends K, ? extends V> next;
+
+                        {
+                            advance();
+                        }
+
                         @Override public boolean hasNext() {
                             return it.hasNext();
                         }
 
                         @Override public CacheEntryEvent<? extends K, ? extends V> next() {
-                            Cache.Entry<K, V> e = it.next();
+                            CacheEntryEvent<? extends K, ? extends V> next0 = next;
 
-                            return new CacheContinuousQueryEvent<>(
-                                cctx.kernalContext().cache().jcache(cctx.name()), CREATED,
-                                new CacheContinuousQueryEntry<>(e.getKey(), e.getValue(), null, null, null));
+                            advance();
+
+                            return next0;
                         }
 
                         @Override public void remove() {
                             throw new UnsupportedOperationException();
+                        }
+
+                        private void advance() {
+                            next = null;
+
+                            while (next == null) {
+                                if (!it.hasNext())
+                                    break;
+
+                                Cache.Entry<K, V> e = it.next();
+
+                                next = new CacheContinuousQueryEvent<>(
+                                    cctx.kernalContext().cache().jcache(cctx.name()), CREATED,
+                                    new CacheContinuousQueryEntry<>(e.getKey(), e.getValue(), null, null, null));
+
+                                if (rmtFilter != null && !rmtFilter.evaluate(next))
+                                    next = null;
+                            }
                         }
                     };
                 }

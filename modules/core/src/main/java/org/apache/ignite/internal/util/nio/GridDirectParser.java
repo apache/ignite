@@ -34,18 +34,13 @@ public class GridDirectParser implements GridNioParser {
     /** */
     private final MessageFactory msgFactory;
 
-    /** */
-    private final MessageFormatter formatter;
-
     /**
      * @param msgFactory Message factory.
-     * @param formatter Formatter.
      */
-    public GridDirectParser(MessageFactory msgFactory, MessageFormatter formatter) {
+    public GridDirectParser(MessageFactory msgFactory) {
         assert msgFactory != null;
 
         this.msgFactory = msgFactory;
-        this.formatter = formatter;
     }
 
     /** {@inheritDoc} */
