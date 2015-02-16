@@ -62,6 +62,16 @@
                     <property name="backups" value="1"/>
                 </bean>
 
+                <!-- Partitioned cache example configuration (Atomic mode, PRIMARY write order mode). -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_primary"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="backups" value="1"/>
+                </bean>
+
                 <!-- Partitioned cache example configuration (Transactional mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="partitioned_tx"/>
