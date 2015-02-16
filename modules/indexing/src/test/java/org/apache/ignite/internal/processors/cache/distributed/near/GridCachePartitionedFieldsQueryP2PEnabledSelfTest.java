@@ -22,12 +22,12 @@ import org.apache.ignite.configuration.*;
 /**
  * Tests for fields queries.
  */
-public class GridCachePartitionedFieldsQueryP2PDisabledSelfTest extends GridCachePartitionedFieldsQuerySelfTest {
+public class GridCachePartitionedFieldsQueryP2PEnabledSelfTest extends GridCachePartitionedFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(false);
+        c.setPeerClassLoadingEnabled(true);
 
         return c;
     }

@@ -33,7 +33,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     /**
      * @param tx Transaction.
      */
-    public void newSession(@Nullable IgniteTx tx) {
+    public void newSession(@Nullable Transaction tx) {
         TestCacheSession ses = new TestCacheSession();
 
         ses.newSession(tx);
@@ -42,7 +42,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTx transaction() {
+    @Nullable @Override public Transaction transaction() {
         TestCacheSession ses = sesHolder.get();
 
         return ses != null ? ses.transaction() : null;

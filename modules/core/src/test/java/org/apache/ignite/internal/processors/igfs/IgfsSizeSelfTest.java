@@ -46,8 +46,8 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * {@link IgfsAttributes} test case.
@@ -503,7 +503,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 @Override public void run() {
                     try {
 
-                        try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (Transaction tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             metaCache.get(id);
 
                             latch.await();
@@ -521,7 +521,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             // Now add file ID to trash listing so that delete worker could "see" it.
 
-            try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new IgfsListingEntry(info));
 

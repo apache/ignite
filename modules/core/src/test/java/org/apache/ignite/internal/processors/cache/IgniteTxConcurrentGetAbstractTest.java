@@ -31,8 +31,8 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Checks multithreaded put/get cache operations on one node.
@@ -122,7 +122,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private String txGet(Ignite ignite, String key) throws Exception {
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             GridCacheEntryEx<String, Integer> dhtEntry = dht(ignite).peekEx(key);
 
             if (DEBUG)

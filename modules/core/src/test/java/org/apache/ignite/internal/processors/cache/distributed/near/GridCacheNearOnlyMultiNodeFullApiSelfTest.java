@@ -237,7 +237,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         int fullIdx = nearIdx == 0 ? 1 : 0;
 
         // Now commit transaction and check that ttl and expire time have been saved.
-        IgniteTx tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+        Transaction tx = inTx ? grid(fullIdx).transactions().txStart() : null;
 
         try {
             jcache(fullIdx).withExpiryPolicy(expiry).put(key, 1);

@@ -338,7 +338,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      */
     public void testStore() throws Exception {
         // Create dummy transaction
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -389,7 +389,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException if failed.
      */
     public void testRollback() throws IgniteCheckedException {
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -506,7 +506,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      * @param tx Transaction.
      * @param commit Commit.
      */
-    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) {
+    private void doTestAllOps(@Nullable Transaction tx, boolean commit) {
         try {
             ses.newSession(tx);
 
@@ -622,7 +622,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 for (int i = 0; i < 1000; i++) {
-                    IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
+                    Transaction tx = rnd.nextBoolean() ? new DummyTx() : null;
 
                     ses.newSession(tx);
 

@@ -52,7 +52,7 @@ import static javax.cache.Cache.*;
  *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>
- * All transactional operations of this API are provided with ongoing {@link IgniteTx},
+ * All transactional operations of this API are provided with ongoing {@link Transaction},
  * if any. You can attach any metadata to it, e.g. to recognize if several operations belong
  * to the same transaction or not.
  * Here is an example of how attach a JDBC connection as transaction metadata:
@@ -152,7 +152,7 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
      *
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.
      * @throws CacheWriterException If commit or rollback failed. Note that commit failure in some cases
-     *      may bring cache transaction into {@link IgniteTxState#UNKNOWN} which will
+     *      may bring cache transaction into {@link TransactionState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
     public abstract void txEnd(boolean commit) throws CacheWriterException;

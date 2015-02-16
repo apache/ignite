@@ -33,7 +33,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStart() throws IllegalStateException;
+    public Transaction txStart() throws IllegalStateException;
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -44,7 +44,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+    public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
@@ -58,7 +58,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
+    public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -68,12 +68,12 @@ public interface IgniteTransactions {
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    public IgniteTx tx();
+    public Transaction tx();
 
     /**
      * @return Transaction metrics.
      */
-    public IgniteTxMetrics metrics();
+    public TransactionMetrics metrics();
 
     /**
      * Resets transaction metrics.

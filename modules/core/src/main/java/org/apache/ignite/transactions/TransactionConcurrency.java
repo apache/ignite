@@ -17,37 +17,29 @@
 
 package org.apache.ignite.transactions;
 
-import java.io.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Transaction metrics, shared across all caches.
+ * Transaction concurrency control. See {@link Transaction} for more information
+ * on transaction concurrency controls.
  */
-public interface IgniteTxMetrics extends Serializable {
-    /**
-     * Gets last time transaction was committed.
-     *
-     * @return Last commit time.
-     */
-    public long commitTime();
+public enum TransactionConcurrency {
+    /** Optimistic concurrency control. */
+    OPTIMISTIC,
+
+    /** Pessimistic concurrency control. */
+    PESSIMISTIC;
+
+    /** Enum values. */
+    private static final TransactionConcurrency[] VALS = values();
 
     /**
-     * Gets last time transaction was rollback.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @return Last rollback time.
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public long rollbackTime();
-
-    /**
-     * Gets total number of transaction commits.
-     *
-     * @return Number of transaction commits.
-     */
-    public int txCommits();
-
-    /**
-     * Gets total number of transaction rollbacks.
-     *
-     * @return Number of transaction rollbacks.
-     */
-    public int txRollbacks();
+    @Nullable public static TransactionConcurrency fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

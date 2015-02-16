@@ -29,8 +29,8 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -152,10 +152,10 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
      * @param txMode Non null tx mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void checkVersion(String key, @Nullable IgniteTxConcurrency txMode) throws Exception {
+    private void checkVersion(String key, @Nullable TransactionConcurrency txMode) throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        IgniteTx tx = null;
+        Transaction tx = null;
 
         if (txMode != null)
             tx = cache.unwrap(Ignite.class).transactions().txStart(txMode, REPEATABLE_READ);

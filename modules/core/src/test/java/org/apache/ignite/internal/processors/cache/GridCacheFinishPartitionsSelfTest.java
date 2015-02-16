@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -33,8 +32,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Abstract class for cache tests.
@@ -129,7 +128,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 IgniteCache<String, String> cache = grid(0).jcache(null);
 
-                IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+                Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 cache.get(key);
 
@@ -189,7 +188,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     public void testMvccFinishKeys() throws Exception {
         IgniteCache<String, Integer> cache = grid(0).jcache(null);
 
-        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
 
             cache.get(key);

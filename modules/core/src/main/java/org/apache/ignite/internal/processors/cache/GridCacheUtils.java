@@ -1201,7 +1201,7 @@ public class GridCacheUtils {
      * @return New transaction.
      */
     public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
-        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+        TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
@@ -1622,8 +1622,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(CacheProjection<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
@@ -1641,10 +1641,10 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
+        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();

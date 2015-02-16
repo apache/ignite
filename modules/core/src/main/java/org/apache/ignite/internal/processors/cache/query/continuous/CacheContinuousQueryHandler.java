@@ -61,6 +61,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Internal flag. */
     private boolean internal;
 
+    /** Notify existing flag. */
+    private boolean notifyExisting;
+
     /** Old value required flag. */
     private boolean oldValRequired;
 
@@ -91,6 +94,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
      * @param internal Internal flag.
+     * @param notifyExisting Notify existing flag.
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
@@ -103,6 +107,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         CacheEntryUpdatedListener<K, V> locLsnr,
         CacheEntryEventFilter<K, V> rmtFilter,
         boolean internal,
+        boolean notifyExisting,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -116,6 +121,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.locLsnr = locLsnr;
         this.rmtFilter = rmtFilter;
         this.internal = internal;
+        this.notifyExisting = notifyExisting;
         this.oldValRequired = oldValRequired;
         this.sync = sync;
         this.ignoreExpired = ignoreExpired;
@@ -254,6 +260,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 return oldValRequired;
             }
 
+            @Override public boolean notifyExisting() {
+                return notifyExisting;
+            }
+
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
@@ -373,6 +383,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             out.writeObject(rmtFilter);
 
         out.writeBoolean(internal);
+        out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
         out.writeBoolean(sync);
         out.writeBoolean(ignoreExpired);
@@ -393,6 +404,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             rmtFilter = (CacheEntryEventFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
+        notifyExisting = in.readBoolean();
         oldValRequired = in.readBoolean();
         sync = in.readBoolean();
         ignoreExpired = in.readBoolean();

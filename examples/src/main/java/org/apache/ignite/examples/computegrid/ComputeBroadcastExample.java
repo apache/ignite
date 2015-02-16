@@ -25,7 +25,7 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 /**
- * Demonstrates broadcasting computations within projection.
+ * Demonstrates broadcasting computations within cluster.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.

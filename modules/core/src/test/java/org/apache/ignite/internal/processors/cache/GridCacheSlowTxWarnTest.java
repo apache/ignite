@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -116,7 +115,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache1 = g.jcache(cacheName);
 
-        IgniteTx tx = g.transactions().txStart();
+        Transaction tx = g.transactions().txStart();
 
         try {
             cache1.put(1, 1);

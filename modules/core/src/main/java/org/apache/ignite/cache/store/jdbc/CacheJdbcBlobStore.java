@@ -177,7 +177,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void txEnd(boolean commit) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Map<String, Connection> props = session().properties();
 
@@ -207,7 +207,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public V load(K key) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store load [key=" + key + ", tx=" + tx + ']');
@@ -242,7 +242,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         K key = entry.getKey();
         V val = entry.getValue();
@@ -285,7 +285,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @Override public void delete(Object key) {
         init();
 
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
@@ -316,7 +316,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
+    private Connection connection(@Nullable Transaction tx) throws SQLException  {
         if (tx != null) {
             Map<String, Connection> props = session().properties();
 
@@ -344,7 +344,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @param conn Allocated connection.
      * @param st Created statement,
      */
-    private void end(@Nullable IgniteTx tx, Connection conn, Statement st) {
+    private void end(@Nullable Transaction tx, Connection conn, Statement st) {
         U.closeQuiet(st);
 
         if (tx == null)
@@ -577,7 +577,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
+    @Nullable private Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;

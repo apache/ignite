@@ -107,7 +107,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         try {
             cache.get(1);
 
-            IgniteTx tx = grid().transactions().txStart();
+            Transaction tx = grid().transactions().txStart();
 
             try {
                 for (int i = 1; i <= 10; i++)

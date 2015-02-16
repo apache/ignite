@@ -33,25 +33,25 @@ import java.util.*;
  * Cache transactions support the following isolation levels:
  * <ul>
  * <li>
- *  {@link IgniteTxIsolation#READ_COMMITTED} isolation level means that always a committed value
+ *  {@link TransactionIsolation#READ_COMMITTED} isolation level means that always a committed value
  *  will be provided for read operations. With this isolation level values are always read
  *  from cache global memory or persistent store every time a value is accessed. In other words,
  *  if the same key is accessed more than once within the same transaction, it may have different
  *  value every time since global cache memory may be updated concurrently by other threads.
  * </li>
  * <li>
- *  {@link IgniteTxIsolation#REPEATABLE_READ} isolation level means that if a value was read once
+ *  {@link TransactionIsolation#REPEATABLE_READ} isolation level means that if a value was read once
  *  within transaction, then all consecutive reads will provide the same in-transaction value. With
  *  this isolation level accessed values are stored within in-transaction memory, so consecutive access
  *  to the same key within the same transaction will always return the value that was previously read or
- *  updated within this transaction. If concurrency is {@link IgniteTxConcurrency#PESSIMISTIC}, then a lock
+ *  updated within this transaction. If concurrency is {@link TransactionConcurrency#PESSIMISTIC}, then a lock
  *  on the key will be acquired prior to accessing the value.
  * </li>
  * <li>
- *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level means that all transactions occur in a completely
+ *  {@link TransactionIsolation#SERIALIZABLE} isolation level means that all transactions occur in a completely
  *  isolated fashion, as if all transactions in the system had executed serially, one after the other.
- *  Read access with this level happens the same way as with {@link IgniteTxIsolation#REPEATABLE_READ} level.
- *  However, in {@link IgniteTxConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
+ *  Read access with this level happens the same way as with {@link TransactionIsolation#REPEATABLE_READ} level.
+ *  However, in {@link TransactionConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
  *  from each other, then one winner will be picked and the other transactions in conflict will result in
  * {@link org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException} being thrown.
  * </li>
@@ -60,7 +60,7 @@ import java.util.*;
  * Cache transactions support the following concurrency models:
  * <ul>
  * <li>
- *  {@link IgniteTxConcurrency#OPTIMISTIC} - in this mode all cache operations are not distributed to other
+ *  {@link TransactionConcurrency#OPTIMISTIC} - in this mode all cache operations are not distributed to other
  *  nodes until {@link #commit()} is called. In this mode one {@code 'PREPARE'}
  *  message will be sent to participating cache nodes to start acquiring per-transaction locks, and once
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
@@ -70,13 +70,13 @@ import java.util.*;
  *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
- *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
+ *  {@link TransactionIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
  *  transactions will never fail optimistically and will always be identically ordered on all participating
  *  grid nodes.
  * </li>
  * <li>
- *  {@link IgniteTxConcurrency#PESSIMISTIC} - in this mode a lock is acquired on all cache operations
- *  with exception of read operations in {@link IgniteTxIsolation#READ_COMMITTED} mode. All optional filters
+ *  {@link TransactionConcurrency#PESSIMISTIC} - in this mode a lock is acquired on all cache operations
+ *  with exception of read operations in {@link TransactionIsolation#READ_COMMITTED} mode. All optional filters
  *  passed into cache operations will be evaluated after successful lock acquisition. Whenever
  *  {@link #commit()} is called, a single one-way {@code 'COMMIT'} message
  *  is sent to participating cache nodes without waiting for reply. Note that there is no reason for
@@ -113,7 +113,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
+public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -147,14 +147,14 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
      *
      * @return Isolation level.
      */
-    public IgniteTxIsolation isolation();
+    public TransactionIsolation isolation();
 
     /**
      * Cache transaction concurrency mode.
      *
      * @return Concurrency mode.
      */
-    public IgniteTxConcurrency concurrency();
+    public TransactionConcurrency concurrency();
 
     /**
      * Flag indicating whether transaction was started automatically by the
@@ -184,7 +184,7 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
      *
      * @return Current transaction state.
      */
-    public IgniteTxState state();
+    public TransactionState state();
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times

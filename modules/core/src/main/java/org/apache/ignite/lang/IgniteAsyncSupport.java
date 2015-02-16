@@ -18,7 +18,7 @@
 package org.apache.ignite.lang;
 
 /**
- * TODO: Add interface description.
+ * Allows to enable asynchronous mode on Ignite APIs.
  */
 public interface IgniteAsyncSupport {
     /**

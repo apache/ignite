@@ -41,8 +41,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Base class for eviction tests.
@@ -363,7 +363,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
 
-                        try (IgniteTx tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             String v = cache.get(key);
 
                             assert v == null || v.equals(Integer.toString(key)) : "Invalid value for key [key=" + key +

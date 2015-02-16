@@ -38,8 +38,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for node failure in transactions.
@@ -165,14 +165,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    private void checkTransaction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Throwable {
+    private void checkTransaction(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         info("Grid will be stopped: " + idx);
 
         Ignite g = grid(idx);
 
-        IgniteTx tx = g.transactions().txStart(concurrency, isolation);
+        Transaction tx = g.transactions().txStart(concurrency, isolation);
 
         try {
             g.jcache(null).put(KEY, VALUE);

@@ -22,12 +22,12 @@ import org.apache.ignite.configuration.*;
 /**
  * Tests replicated query.
  */
-public class GridCacheReplicatedQueryP2PDisabledSelfTest extends GridCacheReplicatedQuerySelfTest {
+public class GridCacheReplicatedQueryP2PEnabledSelfTest extends GridCacheReplicatedQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(false);
+        c.setPeerClassLoadingEnabled(true);
 
         return c;
     }

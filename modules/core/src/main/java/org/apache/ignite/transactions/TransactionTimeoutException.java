@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.transactions;
 
-import org.apache.ignite.examples.computegrid.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.*;
 
 /**
- *
+ * Exception thrown whenever grid transactions time out.
  */
-public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        // Start up a node.
-        startGrid("ignite-projection-example", DFLT_CFG);
+public class TransactionTimeoutException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new timeout exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionTimeoutException(String msg) {
+        super(msg);
     }
 
     /**
-     * @throws Exception If failed.
+     * Creates new timeout exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public void testProjectionExample() throws Exception {
-        ComputeProjectionExample.main(EMPTY_ARGS);
+    public TransactionTimeoutException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

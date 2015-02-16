@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.dsi;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -258,7 +257,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
             ses = new GridDsiSession(terminalId);
 
         try {
-            try (IgniteTx tx = ignite.transactions().txStart()) {
+            try (Transaction tx = ignite.transactions().txStart()) {
                 GridDsiRequest req = new GridDsiRequest(getId());
 
                 req.setMessageId(getId());

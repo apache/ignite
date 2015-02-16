@@ -34,8 +34,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests write-behind store with near and dht commit option.
@@ -171,7 +171,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
 
         IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, String.valueOf(i));
 

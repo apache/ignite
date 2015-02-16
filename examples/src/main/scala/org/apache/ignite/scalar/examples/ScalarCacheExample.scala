@@ -92,12 +92,12 @@ object ScalarCacheExample extends App {
             case None => println("Correct")
         }
 
-        // Print all projection values.
+        // Print all values.
         c.values foreach println
     }
 
     /**
-     * Demos basic type projections.
+     * Demos basic type features.
      */
     def twoViewsOneCache() {
         // Create two typed views on the same cache.

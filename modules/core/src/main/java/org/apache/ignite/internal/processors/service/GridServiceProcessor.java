@@ -47,8 +47,8 @@ import java.util.concurrent.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Grid service processor.
@@ -126,9 +126,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            cfgQryId = cache.context().continuousQueries().executeInternalQuery(new DeploymentListener(), null, true);
+            cfgQryId = cache.context().continuousQueries().executeInternalQuery(
+                new DeploymentListener(), null, true, true);
+
             assignQryId = cache.context().continuousQueries().executeInternalQuery(
-                new AssignmentListener(), null, true);
+                new AssignmentListener(), null, true, true);
         }
         finally {
             if (ctx.deploy().enabled())

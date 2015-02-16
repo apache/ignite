@@ -54,25 +54,6 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return getTestDurationInSeconds() * 2 * 1000;
-    }
-
-    /**
-     * @return Time for load test in seconds.
-     */
-    private int getTestDurationInSeconds() {
-        return 30;
-    }
-
-    /**
-     * @return Number of threads for the test.
-     */
-    private int getThreadCount() {
-        return 10;
-    }
-
     /**
      * @param depMode deployment mode.
      * @throws Throwable If task execution failed.
@@ -99,8 +80,8 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                Integer res1 = fut1.get();
-                Integer res2 = fut2.get();
+                Integer res1 = fut1.get(5000);
+                Integer res2 = fut2.get(5000);
 
                 if (res1 == null || res2 == null)
                     throw new IgniteCheckedException("Received wrong result.");

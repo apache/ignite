@@ -44,4 +44,6 @@ interface CacheContinuousQueryListener<K, V> {
      * @return Whether old value is required.
      */
     public boolean oldValueRequired();
+
+    public boolean notifyExisting();
 }

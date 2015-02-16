@@ -36,8 +36,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -312,7 +312,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         IgniteCache<Integer, String> cache = jcache(0);
         //GridCache<Integer, String> cache = cache(0);
 
-        try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
             cache.put(2, "val");
             cache.put(3, "val");

@@ -96,9 +96,9 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
             GridCache<String, Integer> cache = cache(0);
 
-            for (IgniteTxConcurrency conc : IgniteTxConcurrency.values()) {
-                for (IgniteTxIsolation iso : IgniteTxIsolation.values()) {
-                    try (IgniteTx tx = grid(0).transactions().txStart(conc, iso)) {
+            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+                for (TransactionIsolation iso : TransactionIsolation.values()) {
+                    try (Transaction tx = grid(0).transactions().txStart(conc, iso)) {
                         assertFalse("Invalid result on grid inside tx", cache.containsKey(key));
 
                         assertFalse("Key was enlisted to transaction: " + tx, txContainsKey(tx, key));
@@ -124,8 +124,8 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
      * @param key Key to check.
      * @return {@code True} if key was enlisted.
      */
-    private boolean txContainsKey(IgniteTx tx, String key) {
-        IgniteTxProxyImpl<String, Integer> proxy = (IgniteTxProxyImpl<String, Integer>)tx;
+    private boolean txContainsKey(Transaction tx, String key) {
+        TransactionProxyImpl<String, Integer> proxy = (TransactionProxyImpl<String, Integer>)tx;
 
         IgniteInternalTx<String, Integer> txEx = proxy.tx();
 

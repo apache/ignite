@@ -214,8 +214,8 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
         assertTrue(cache.getAll(expData.keySet()).isEmpty());
 
         if (atomicityMode() == TRANSACTIONAL) {
-            for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
-                for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     for (Integer key : keys()) {
                         log.info("Test tx [key=" + key +
                             ", concurrency=" + concurrency +
@@ -223,7 +223,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         storeMap.put(key, key);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertEquals(key, cache.getAndPut(key, -1));
 
                             tx.commit();
@@ -233,7 +233,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         assertEquals(key, storeMap.get(key));
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.put(key, -2);
 
                             tx.commit();
@@ -243,7 +243,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         assertEquals(key, storeMap.get(key));
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertEquals(-2, (int)cache.getAndRemove(key));
 
                             tx.commit();
@@ -259,7 +259,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         cache.put(key, key);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertTrue(cache.replace(key, -1));
 
                             tx.commit();
@@ -273,7 +273,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         storeMap.clear();
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.putAll(expData);
 
                             tx.commit();
@@ -283,7 +283,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         assertEquals(expData, cache.getAll(expData.keySet()));
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.invokeAll(expData.keySet(), new EntryProcessor<Integer, Integer, Object>() {
                                 @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args)  {
                                     entry.setValue(1);
@@ -301,7 +301,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         storeMap.putAll(expData);
 
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.removeAll(expData.keySet());
 
                             tx.commit();

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -35,8 +34,8 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Simple cache test.
@@ -284,7 +283,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            IgniteTx tx = ignite1.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+            Transaction tx = ignite1.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
 
             try {
                 cache1.put("tx1", "val1");
@@ -351,7 +350,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
         cache1.put("key", "val");
 
-        IgniteTx tx = ignite1.transactions().txStart();
+        Transaction tx = ignite1.transactions().txStart();
 
         long ttl = 500;
 

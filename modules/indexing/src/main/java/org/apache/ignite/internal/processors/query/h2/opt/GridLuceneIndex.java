@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -81,9 +82,13 @@ public class GridLuceneIndex implements Closeable {
     /** */
     private final GridLuceneDirectory dir;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
+     * @param ctx Kernal context.
      * @param marshaller Indexing marshaller.
      * @param mem Unsafe memory.
      * @param spaceName Space name.
@@ -91,8 +96,9 @@ public class GridLuceneIndex implements Closeable {
      * @param storeVal Store value in index.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(Marshaller marshaller, @Nullable GridUnsafeMemory mem,
+    public GridLuceneIndex(GridKernalContext ctx, Marshaller marshaller, @Nullable GridUnsafeMemory mem,
         @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws IgniteCheckedException {
+        this.ctx = ctx;
         this.marshaller = marshaller;
         this.spaceName = spaceName;
         this.type = type;
@@ -348,7 +354,10 @@ public class GridLuceneIndex implements Closeable {
 
                 String keyStr = doc.get(KEY_FIELD_NAME);
 
-                ClassLoader ldr = null; // TODO
+                ClassLoader ldr = null;
+
+                if (ctx != null && ctx.deploy().enabled())
+                    ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
 
                 K k = marshaller.unmarshal(Base64.decodeBase64(keyStr), ldr);
 

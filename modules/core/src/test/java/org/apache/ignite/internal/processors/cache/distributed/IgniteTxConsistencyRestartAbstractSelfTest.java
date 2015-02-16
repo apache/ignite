@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -156,7 +156,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
                 Collections.sort(keys);
 
-                try (IgniteTx tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Map<Integer, Integer> map = cache.getAll(new LinkedHashSet<Integer>(keys));
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {

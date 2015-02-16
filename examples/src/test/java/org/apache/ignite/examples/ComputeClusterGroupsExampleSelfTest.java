@@ -15,33 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.examples;
 
-import org.apache.ignite.*;
+import org.apache.ignite.examples.computegrid.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Exception thrown whenever grid transactions fail optimistically.
+ *
  */
-public class IgniteTxOptimisticException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new optimistic exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public IgniteTxOptimisticException(String msg) {
-        super(msg);
+public class ComputeClusterGroupsExampleSelfTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        // Start up a node.
+        startGrid("ignite-cluster-groups-example", DFLT_CFG);
     }
 
     /**
-     * Creates new optimistic exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
+     * @throws Exception If failed.
      */
-    public IgniteTxOptimisticException(String msg, Throwable cause) {
-        super(msg, cause);
+    public void testComputeClusterGroupsExample() throws Exception {
+        ComputeClusterGroupsExample.main(EMPTY_ARGS);
     }
 }

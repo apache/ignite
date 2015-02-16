@@ -66,7 +66,7 @@ import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Cache processor.

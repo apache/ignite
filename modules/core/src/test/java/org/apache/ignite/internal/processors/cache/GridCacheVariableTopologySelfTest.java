@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -129,7 +128,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
 
-                    try (IgniteTx tx = grid(0).transactions().txStart()) {
+                    try (Transaction tx = grid(0).transactions().txStart()) {
                         int kv = RAND.nextInt(keyRange);
 
                         cache.put(kv, kv);
@@ -138,7 +137,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteTxOptimisticException e) {
+                    catch (TransactionOptimisticException e) {
                         info("Caught cache optimistic exception: " + e);
                     }
 

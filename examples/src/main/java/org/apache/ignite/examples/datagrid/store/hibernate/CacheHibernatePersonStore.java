@@ -20,7 +20,7 @@ package org.apache.ignite.examples.datagrid.store.hibernate;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.transactions.Transaction;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
@@ -51,7 +51,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -72,7 +72,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends Person> entry) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Long key = entry.getKey();
 
@@ -104,7 +104,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
     @Override public void delete(Object key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -166,11 +166,11 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void rollback(Session ses, IgniteTx tx) {
+    private void rollback(Session ses, Transaction tx) {
         // Rollback only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null && hTx.isActive())
                 hTx.rollback();
@@ -183,11 +183,11 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void end(Session ses, @Nullable IgniteTx tx) {
+    private void end(Session ses, @Nullable Transaction tx) {
         // Commit only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null && hTx.isActive())
                 hTx.commit();
@@ -200,14 +200,14 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     @Override public void txEnd(boolean commit) {
         CacheStoreSession storeSes = session();
 
-        IgniteTx tx = storeSes.transaction();
+        Transaction tx = storeSes.transaction();
 
         Map<String, Session> props = storeSes.properties();
 
         Session ses = props.remove(ATTR_SES);
 
         if (ses != null) {
-            Transaction hTx = ses.getTransaction();
+            org.hibernate.Transaction hTx = ses.getTransaction();
 
             if (hTx != null) {
                 try {
@@ -238,7 +238,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      * @param tx Cache transaction.
      * @return Session.
      */
-    private Session session(@Nullable IgniteTx tx) {
+    private Session session(@Nullable Transaction tx) {
         Session ses;
 
         if (tx != null) {
@@ -270,7 +270,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
+    @Nullable private Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;

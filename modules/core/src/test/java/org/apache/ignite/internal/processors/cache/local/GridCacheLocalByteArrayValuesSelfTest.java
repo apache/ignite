@@ -32,8 +32,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Byte values test for LOCAL cache.
@@ -205,7 +205,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction(IgniteCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransaction(IgniteCache<Integer, Object> cache, TransactionConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed(cache, concurrency, key, val, null, null);
     }
@@ -221,10 +221,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed(IgniteCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed(IgniteCache<Integer, Object> cache, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
-        IgniteTx tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ);
+        Transaction tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ);
 
         try {
             cache.put(key1, val1);

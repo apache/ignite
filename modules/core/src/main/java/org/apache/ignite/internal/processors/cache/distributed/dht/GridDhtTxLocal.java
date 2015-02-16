@@ -37,9 +37,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Replicated user transaction.
@@ -106,8 +105,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,

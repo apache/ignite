@@ -15,20 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.transactions;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.*;
 
 /**
- * Tests for partitioned cache queries.
+ * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class GridCachePartitionedQueryP2PDisabledSelfTest extends GridCachePartitionedQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+public class TransactionRollbackException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        c.setPeerClassLoadingEnabled(false);
+    /**
+     * Creates new rollback exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionRollbackException(String msg) {
+        super(msg);
+    }
 
-        return c;
+    /**
+     * Creates new rollback exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be <tt>null</tt>).
+     */
+    public TransactionRollbackException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

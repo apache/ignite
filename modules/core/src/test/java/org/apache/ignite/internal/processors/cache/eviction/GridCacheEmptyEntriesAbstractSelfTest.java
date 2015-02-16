@@ -55,10 +55,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private CacheStore<String, String> testStore;
 
     /** Tx concurrency to use. */
-    private IgniteTxConcurrency txConcurrency;
+    private TransactionConcurrency txConcurrency;
 
     /** Tx isolation to use. */
-    private IgniteTxIsolation txIsolation;
+    private TransactionIsolation txIsolation;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -164,10 +164,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkPolicy0() throws Exception {
-        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             txConcurrency = concurrency;
 
-            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 txIsolation = isolation;
 
                 Ignite g = startGrids();
@@ -226,7 +226,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private void checkExplicitTx(Ignite ignite, IgniteCache<String, String> cache) throws Exception {
         IgniteCache<String, String> asyncCache = cache.withAsync();
 
-        IgniteTx tx = ignite.transactions().txStart();
+        Transaction tx = ignite.transactions().txStart();
 
         try {
             assertNull(cache.get("key1"));

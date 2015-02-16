@@ -41,8 +41,8 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -292,9 +292,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         if (atomicityMode() == TRANSACTIONAL) {
-            IgniteTxConcurrency[] txModes = {PESSIMISTIC};
+            TransactionConcurrency[] txModes = {PESSIMISTIC};
 
-            for (IgniteTxConcurrency txMode : txModes) {
+            for (TransactionConcurrency txMode : txModes) {
                 for (final Integer key : keys()) {
                     log.info("Test txGet [key=" + key + ", txMode=" + txMode + ']');
 
@@ -302,7 +302,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 }
             }
 
-            for (IgniteTxConcurrency txMode : txModes) {
+            for (TransactionConcurrency txMode : txModes) {
                 log.info("Test txGetAll [txMode=" + txMode + ']');
 
                 txGetAll(txMode);
@@ -334,14 +334,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGet(Integer key, IgniteTxConcurrency txMode) throws Exception {
+    private void txGet(Integer key, TransactionConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         cache.put(key, 1);
 
         checkTtl(key, 60_000L);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals((Integer)1, cache.get(key));
 
             tx.commit();
@@ -349,7 +349,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).get(key));
 
             tx.commit();
@@ -362,7 +362,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGetAll(IgniteTxConcurrency txMode) throws Exception {
+    private void txGetAll(TransactionConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         Map<Integer, Integer> vals = new HashMap<>();
@@ -372,7 +372,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.putAll(vals);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals(vals, cache.getAll(vals.keySet()));
 
             tx.commit();
@@ -381,7 +381,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 62_000L);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals(vals, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).getAll(vals.keySet()));
 
             tx.commit();
@@ -523,9 +523,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         createUpdatePutAll(null);
 
         if (atomicityMode() == TRANSACTIONAL) {
-            IgniteTxConcurrency[] txModes = new IgniteTxConcurrency[]{PESSIMISTIC, OPTIMISTIC};
+            TransactionConcurrency[] txModes = new TransactionConcurrency[]{PESSIMISTIC, OPTIMISTIC};
 
-            for (IgniteTxConcurrency tx : txModes) {
+            for (TransactionConcurrency tx : txModes) {
                 for (final Integer key : keys()) {
                     log.info("Test createUpdate [key=" + key + ", tx=" + tx + ']');
 
@@ -547,7 +547,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdatePutAll(@Nullable IgniteTxConcurrency txConcurrency) throws Exception {
+    private void createUpdatePutAll(@Nullable TransactionConcurrency txConcurrency) throws Exception {
         Map<Integer, Integer> vals = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
@@ -557,7 +557,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.removeAll(vals.keySet());
 
-        IgniteTx tx = startTx(txConcurrency);
+        Transaction tx = startTx(txConcurrency);
 
         // Create.
         cache.putAll(vals);
@@ -623,13 +623,13 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdateCustomPolicy(Integer key, @Nullable IgniteTxConcurrency txConcurrency)
+    private void createUpdateCustomPolicy(Integer key, @Nullable TransactionConcurrency txConcurrency)
         throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         assertNull(cache.get(key));
 
-        IgniteTx tx = startTx(txConcurrency);
+        Transaction tx = startTx(txConcurrency);
 
         cache.withExpiryPolicy(new TestPolicy(10_000L, 20_000L, 30_000L)).put(key, 1);
 
@@ -682,7 +682,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdate(Integer key, @Nullable IgniteTxConcurrency txConcurrency)
+    private void createUpdate(Integer key, @Nullable TransactionConcurrency txConcurrency)
         throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -690,7 +690,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (int i = 0; i < 3; i++) {
             log.info("Iteration: " + i);
 
-            IgniteTx tx = startTx(txConcurrency);
+            Transaction tx = startTx(txConcurrency);
 
             cache.put(key, 1); // Create.
 
@@ -736,7 +736,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @return Transaction.
      */
-    @Nullable private IgniteTx startTx(@Nullable IgniteTxConcurrency txMode) {
+    @Nullable private Transaction startTx(@Nullable TransactionConcurrency txMode) {
         return txMode == null ? null : ignite(0).transactions().txStart(txMode, REPEATABLE_READ);
     }
 

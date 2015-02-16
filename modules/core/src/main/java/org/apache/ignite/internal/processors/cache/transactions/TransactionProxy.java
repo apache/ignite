@@ -15,20 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 
 /**
- * Tests for fields queries.
+ * Marker interface for transaction proxy.
  */
-public class GridCacheReplicatedFieldsQueryP2PDisabledSelfTest extends GridCacheReplicatedFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.setPeerClassLoadingEnabled(false);
-
-        return c;
-    }
+public interface TransactionProxy extends Transaction {
+    // No-op.
 }

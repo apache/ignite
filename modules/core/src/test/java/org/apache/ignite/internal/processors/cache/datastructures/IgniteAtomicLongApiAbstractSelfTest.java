@@ -251,7 +251,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
 
         IgniteCache<Object, Object> cache = ignite.jcache(TRANSACTIONAL_CACHE_NAME);
 
-        try (IgniteTx tx = ignite.transactions().txStart()) {
+        try (Transaction tx = ignite.transactions().txStart()) {
             cache.put(1, 1);
 
             long newVal = RND.nextLong();

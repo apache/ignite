@@ -20,21 +20,38 @@ package org.apache.ignite.transactions;
 import org.jetbrains.annotations.*;
 
 /**
- * Defines different cache transaction isolation levels. See {@link IgniteTx}
- * documentation for more information about cache transaction isolation levels.
+ * Cache transaction state.
  */
-public enum IgniteTxIsolation {
-    /** Read committed isolation level. */
-    READ_COMMITTED,
+public enum TransactionState {
+    /** Transaction started. */
+    ACTIVE,
 
-    /** Repeatable read isolation level. */
-    REPEATABLE_READ,
+    /** Transaction validating. */
+    PREPARING,
 
-    /** Serializable isolation level. */
-    SERIALIZABLE;
+    /** Transaction validation succeeded. */
+    PREPARED,
 
-    /** Enum values. */
-    private static final IgniteTxIsolation[] VALS = values();
+    /** Transaction is marked for rollback. */
+    MARKED_ROLLBACK,
+
+    /** Transaction commit started (validating finished). */
+    COMMITTING,
+
+    /** Transaction commit succeeded. */
+    COMMITTED,
+
+    /** Transaction rollback started (validation failed). */
+    ROLLING_BACK,
+
+    /** Transaction rollback succeeded. */
+    ROLLED_BACK,
+
+    /** Transaction rollback failed or is otherwise unknown state. */
+    UNKNOWN;
+
+    /** Enumerated values. */
+    private static final TransactionState[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -42,8 +59,7 @@ public enum IgniteTxIsolation {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable
-    public static IgniteTxIsolation fromOrdinal(int ord) {
+    @Nullable public static TransactionState fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

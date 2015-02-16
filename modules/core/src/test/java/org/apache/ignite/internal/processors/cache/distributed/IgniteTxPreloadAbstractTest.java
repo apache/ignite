@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Tests transaction during cache preloading.
@@ -149,7 +149,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @param txConcurrency Transaction concurrency;
      * @throws Exception If failed.
      */
-    private void testLocalTxPreloading(IgniteTxConcurrency txConcurrency) throws Exception {
+    private void testLocalTxPreloading(TransactionConcurrency txConcurrency) throws Exception {
         Map<String, Integer> map = new HashMap<>();
 
         for (int i = 0; i < 10000; i++)
@@ -172,7 +172,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
             IgniteTransactions txs = ignite(i).transactions();
 
-            try (IgniteTx tx = txs.txStart(txConcurrency, IgniteTxIsolation.READ_COMMITTED)) {
+            try (Transaction tx = txs.txStart(txConcurrency, TransactionIsolation.READ_COMMITTED)) {
                 cache.invoke(TX_KEY, new EntryProcessor<String, Integer, Void>() {
                     @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
                         Integer val = e.getValue();

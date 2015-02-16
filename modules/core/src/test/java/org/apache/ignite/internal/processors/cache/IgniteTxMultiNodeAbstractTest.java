@@ -42,8 +42,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 
 /**
@@ -165,7 +165,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before near get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -217,7 +217,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before item primary get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -269,7 +269,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -360,7 +360,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
