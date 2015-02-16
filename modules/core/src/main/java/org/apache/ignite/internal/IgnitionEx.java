@@ -1359,6 +1359,8 @@ public class IgnitionEx {
 
             myCfg.setIgniteHome(ggHome);
 
+            myCfg.setTransactionConfiguration(new TransactionConfiguration(cfg.getTransactionConfiguration()));
+
             ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
             if (clientCfg != null)
