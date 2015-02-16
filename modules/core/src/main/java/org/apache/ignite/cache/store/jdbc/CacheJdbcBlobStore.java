@@ -142,6 +142,10 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Flag for schema initialization. */
     private boolean initSchema = true;
 
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
@@ -581,5 +585,12 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;
+    }
+
+    /**
+     * @return Store session.
+     */
+    protected CacheStoreSession session() {
+        return ses;
     }
 }

@@ -65,8 +65,8 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration = {
-        val cfg = new CacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+        val cfg = new CacheConfiguration[Object, Object]
 
         cfg.setCacheMode(REPLICATED)
         cfg.setAtomicityMode(TRANSACTIONAL)

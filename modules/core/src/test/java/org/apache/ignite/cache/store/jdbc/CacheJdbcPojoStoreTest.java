@@ -111,7 +111,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     protected void inject(CacheAbstractJdbcStore store) throws Exception {
         getTestResources().inject(store);
 
-        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
+        GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "ses", ses);
 
         URL cfgUrl;
 

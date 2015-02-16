@@ -34,7 +34,7 @@ import static javax.cache.Cache.*;
  * Test store.
  */
 @SuppressWarnings({"TypeParameterExtendsFinalClass"})
-public class GridCacheGenericTestStore<K, V> extends CacheStore<K, V> {
+public class GridCacheGenericTestStore<K, V> implements CacheStore<K, V> {
     /** Store. */
     private final Map<K, V> map = new ConcurrentHashMap<>();
 
