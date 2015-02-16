@@ -134,7 +134,6 @@
         <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
-        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
@@ -989,7 +988,7 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>

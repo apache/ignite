@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -123,7 +124,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return IGNITEs.get(i).cache(null);
+        return ((IgniteKernal)IGNITEs.get(i)).cache(null);
     }
 
     /**

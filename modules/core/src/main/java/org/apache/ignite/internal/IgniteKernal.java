@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
@@ -424,8 +423,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override
-            public String apply(Map.Entry<String,?> e) {
+            @Override public String apply(Map.Entry<String,?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -508,7 +506,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param cfg Grid configuration to use.
      * @param utilityCachePool Utility cache pool.
      * @param execSvc
-     *@param sysExecSvc
+     * @param sysExecSvc
      * @param p2pExecSvc
      * @param mgmtExecSvc
      * @param igfsExecSvc
@@ -579,7 +577,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         ackClassPaths(rtBean);
         ackSystemProperties();
         ackEnvironmentVariables();
-        ackSmtpConfiguration();
         ackCacheConfiguration();
         ackP2pConfiguration();
 
@@ -671,7 +668,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, (GridProcessor)EMAIL.create(ctx, cfg.getSmtpHost() == null), attrs);
             startProcessor(ctx, new GridPortProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
 
@@ -963,46 +959,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
-
-        // Send node start email notification, if enabled.
-        if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
-            SB sb = new SB();
-
-            for (GridPortRecord rec : ctx.ports().records())
-                sb.a(rec.protocol()).a(":").a(rec.port()).a(" ");
-
-            String nid = localNode().id().toString().toUpperCase();
-            String nid8 = U.id8(localNode().id()).toUpperCase();
-
-            String body =
-                "Ignite node started with the following parameters:" + NL +
-                NL +
-                "----" + NL +
-                "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR + NL +
-                "Grid name: " + gridName + NL +
-                "Node ID: " + nid + NL +
-                "Node order: " + localNode().order() + NL +
-                "Node addresses: " + U.addressesAsString(localNode()) + NL +
-                "Local ports: " + sb + NL +
-                "OS name: " + U.osString() + NL +
-                "OS user: " + System.getProperty("user.name") + NL +
-                "CPU(s): " + localNode().metrics().getTotalCpus() + NL +
-                "Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
-                "JVM name: " + U.jvmName() + NL +
-                "JVM vendor: " + U.jvmVendor() + NL +
-                "JVM version: " + U.jvmVersion() + NL +
-                "VM name: " + rtBean.getName() + NL +
-                "----" + NL +
-                NL +
-                "NOTE:" + NL +
-                "This message is sent automatically to all configured admin emails." + NL +
-                "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
-                NL + NL +
-                "| " + SITE + NL +
-                "| support@gridgain.com" + NL;
-
-            sendAdminEmailAsync("Ignite node started: " + nid8, body, false);
-        }
     }
 
     /**
@@ -1731,7 +1687,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
             }
 
-            IgniteEmailProcessorAdapter email = ctx.email();
             GridCacheProcessor cacheProcessor = ctx.cache();
 
             List<GridComponent> comps = ctx.components();
@@ -1894,54 +1849,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         NL);
                 }
 
-            // Send node start email notification, if enabled.
-            if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
-                String errOk = errOnStop ? "with ERRORS" : "OK";
-
-                String headline = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR +
-                    " stopped " + errOk + ":";
-                String subj = "Ignite node stopped " + errOk + ": " + nid8;
-
-                String body =
-                    headline + NL + NL +
-                    "----" + NL +
-                    "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR + NL +
-                    "Grid name: " + gridName + NL +
-                    "Node ID: " + nid + NL +
-                    "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
-                    "----" + NL +
-                    NL +
-                    "NOTE:" + NL +
-                    "This message is sent automatically to all configured admin emails." + NL +
-                    "To change this behavior use 'lifeCycleEmailNotify' grid configuration property.";
-
-                if (errOnStop)
-                    body +=
-                        NL + NL +
-                            "NOTE:" + NL +
-                            "See node's log for detailed error message." + NL +
-                            "Some errors during stop can prevent grid from" + NL +
-                            "maintaining correct topology since this node may " + NL +
-                            "have not exited grid properly.";
-
-                body +=
-                    NL + NL +
-                        "| " + SITE + NL +
-                        "| support@gridgain.com" + NL;
-
-                if (email != null) {
-                    try {
-                        email.sendNow(subj,
-                            body,
-                            false,
-                            Arrays.asList(cfg.getAdminEmails()));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send lifecycle email notification.", e);
-                    }
-                }
-            }
-
             U.onGridStop();
         }
         else {
@@ -2069,28 +1976,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * Whether or not SMTP is configured. Note that SMTP is considered configured if
-     * SMTP host is provided in configuration (see {@link IgniteConfiguration#getSmtpHost()}.
-     * <p>
-     * If SMTP is not configured all emails notifications will be disabled.
-     *
-     * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     * @see IgniteConfiguration#getSmtpFromEmail()
-     * @see IgniteConfiguration#getSmtpHost()
-     * @see IgniteConfiguration#getSmtpPassword()
-     * @see IgniteConfiguration#getSmtpPort()
-     * @see IgniteConfiguration#getSmtpUsername()
-     * @see IgniteConfiguration#isSmtpSsl()
-     * @see IgniteConfiguration#isSmtpStartTls()
-     * @see #sendAdminEmailAsync(String, String, boolean)
-     */
-    @Override public boolean isSmtpEnabled() {
-        assert cfg != null;
-
-        return cfg.getSmtpHost() != null;
-    }
-
-    /**
      * Prints all configuration properties in info mode and SPIs in debug mode.
      */
     private void ackSpis() {
@@ -2164,53 +2049,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (log.isInfoEnabled())
             log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
-    }
-
-    /**
-     * Prints out SMTP configuration.
-     */
-    private void ackSmtpConfiguration() {
-        assert log != null;
-
-        String host = cfg.getSmtpHost();
-
-        boolean ssl = cfg.isSmtpSsl();
-        int port = cfg.getSmtpPort();
-
-        if (host == null) {
-            U.warn(log, "SMTP is not configured - email notifications are off.");
-
-            return;
-        }
-
-        String from = cfg.getSmtpFromEmail();
-
-        if (log.isQuiet())
-            U.quiet(false, "SMTP enabled [host=" + host + ":" + port + ", ssl=" + (ssl ? "on" : "off") + ", from=" +
-                from + ']');
-
-        if (log.isInfoEnabled()) {
-            String[] adminEmails = cfg.getAdminEmails();
-
-            log.info("SMTP enabled [host=" + host + ", port=" + port + ", ssl=" + ssl + ", from=" + from + ']');
-            log.info("Admin emails: " + (!isAdminEmailsSet() ? "N/A" : Arrays.toString(adminEmails)));
-        }
-
-        if (!isAdminEmailsSet())
-            U.warn(log, "Admin emails are not set - automatic email notifications are off.");
-    }
-
-    /**
-     * Tests whether or not admin emails are set.
-     *
-     * @return {@code True} if admin emails are set and not empty.
-     */
-    private boolean isAdminEmailsSet() {
-        assert cfg != null;
-
-        String[] a = cfg.getAdminEmails();
-
-        return a != null && a.length > 0;
     }
 
     /**
@@ -2342,44 +2180,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         catch (IgniteException e) {
             throw U.jmException(e);
         }
-    }
-
-    /**
-     * Schedule sending of given email to all configured admin emails. If no admin emails are configured this
-     * method is no-op. If SMTP is not configured this method is no-op.
-     * <p>
-     * Note that this method returns immediately with the future and all emails will be sent asynchronously
-     * in a different thread. If email queue is full or sending has failed - the email will be lost.
-     * Email queue can fill up if rate of scheduling emails is greater than the rate of SMTP sending.
-     * <p>
-     * Implementation is not performing any throttling and it is responsibility of the caller to properly
-     * throttle the emails, if necessary.
-     *
-     * @param subj Subject of the email.
-     * @param body Body of the email.
-     * @param html If {@code true} the email body will have MIME {@code html} subtype.
-     * @return Email's future. You can use this future to check on the status of the email. If future
-     *      completes ok and its result value is {@code true} email was successfully sent. In all
-     *      other cases - sending process has failed.
-     * @see #isSmtpEnabled()
-     * @see IgniteConfiguration#getAdminEmails()
-     */
-    @Override public IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
-        A.notNull(subj, "subj");
-        A.notNull(body, "body");
-
-        if (isSmtpEnabled() && isAdminEmailsSet()) {
-            guard();
-
-            try {
-                return ctx.email().schedule(subj, body, html, Arrays.asList(cfg.getAdminEmails()));
-            }
-            finally {
-                unguard();
-            }
-        }
-        else
-            return new GridFinishedFuture<>(ctx, false);
     }
 
     /** {@inheritDoc} */
@@ -2771,8 +2571,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    /**
+     * @param name Cache name.
+     * @return Cache.
+     */
+    public <K, V> GridCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {
@@ -2795,8 +2598,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> caches() {
+    /**
+     * @return Public caches.
+     */
+    public Collection<GridCache<?, ?>> caches() {
         guard();
 
         try {

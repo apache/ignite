@@ -23,7 +23,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
@@ -36,9 +35,6 @@ public class VisorLifecycleConfiguration implements Serializable {
     /** Lifecycle beans. */
     private String beans;
 
-    /** Whether or not email notifications should be used on node start and stop. */
-    private boolean ntf;
-
     /**
      * @param c Grid configuration.
      * @return Data transfer object for node lifecycle configuration properties.
@@ -47,7 +43,6 @@ public class VisorLifecycleConfiguration implements Serializable {
         VisorLifecycleConfiguration cfg = new VisorLifecycleConfiguration();
 
         cfg.beans(compactArray(c.getLifecycleBeans()));
-        cfg.emailNotification(boolValue(IGNITE_LIFECYCLE_EMAIL_NOTIFY, c.isLifeCycleEmailNotification()));
 
         return cfg;
     }
@@ -64,20 +59,6 @@ public class VisorLifecycleConfiguration implements Serializable {
      */
     public void beans(@Nullable String beans) {
         this.beans = beans;
-    }
-
-    /**
-     * @return Whether or not email notifications should be used on node start and stop.
-     */
-    public boolean emailNotification() {
-        return ntf;
-    }
-
-    /**
-     * @param ntf New whether or not email notifications should be used on node start and stop.
-     */
-    public void emailNotification(boolean ntf) {
-        this.ntf = ntf;
     }
 
     /** {@inheritDoc} */

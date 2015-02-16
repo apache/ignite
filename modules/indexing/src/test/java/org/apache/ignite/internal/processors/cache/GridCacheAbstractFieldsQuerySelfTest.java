@@ -1044,7 +1044,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             }
         };
 
-        CacheProjection<Integer, Integer> cachePrj = grid(0).<Integer, Integer>cache(null).projection(p);
+        CacheProjection<Integer, Integer> cachePrj = ((IgniteKernal)grid(0))
+            .<Integer, Integer>cache(null).projection(p);
 
         CacheQuery<List<?>> q = cachePrj.queries()
             .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");

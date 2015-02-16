@@ -1375,7 +1375,6 @@ public class IgnitionEx {
             myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
             myCfg.setDaemon(cfg.isDaemon());
             myCfg.setIncludeProperties(cfg.getIncludeProperties());
-            myCfg.setLifeCycleEmailNotification(cfg.isLifeCycleEmailNotification());
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
@@ -1391,11 +1390,6 @@ public class IgnitionEx {
 
             if (clientCfg != null)
                 clientCfg = new ConnectorConfiguration(clientCfg);
-
-            String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
-
-            if (ntfStr != null)
-                myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
@@ -1651,15 +1645,6 @@ public class IgnitionEx {
 
             myCfg.setAddressResolver(cfg.getAddressResolver());
 
-            // Set SMTP configuration.
-            myCfg.setSmtpFromEmail(cfg.getSmtpFromEmail());
-            myCfg.setSmtpHost(cfg.getSmtpHost());
-            myCfg.setSmtpPort(cfg.getSmtpPort());
-            myCfg.setSmtpSsl(cfg.isSmtpSsl());
-            myCfg.setSmtpUsername(cfg.getSmtpUsername());
-            myCfg.setSmtpPassword(cfg.getSmtpPassword());
-            myCfg.setAdminEmails(cfg.getAdminEmails());
-
             // REST configuration.
             myCfg.setConnectorConfiguration(clientCfg);
 
@@ -1681,40 +1666,6 @@ public class IgnitionEx {
             myCfg.setSegmentCheckFrequency(cfg.getSegmentCheckFrequency());
             myCfg.setWaitForSegmentOnStart(cfg.isWaitForSegmentOnStart());
             myCfg.setAllSegmentationResolversPassRequired(cfg.isAllSegmentationResolversPassRequired());
-
-            // Override SMTP configuration from system properties
-            // and environment variables, if specified.
-            String fromEmail = IgniteSystemProperties.getString(IGNITE_SMTP_FROM);
-
-            if (fromEmail != null)
-                myCfg.setSmtpFromEmail(fromEmail);
-
-            String smtpHost = IgniteSystemProperties.getString(IGNITE_SMTP_HOST);
-
-            if (smtpHost != null)
-                myCfg.setSmtpHost(smtpHost);
-
-            String smtpUsername = IgniteSystemProperties.getString(IGNITE_SMTP_USERNAME);
-
-            if (smtpUsername != null)
-                myCfg.setSmtpUsername(smtpUsername);
-
-            String smtpPwd = IgniteSystemProperties.getString(IGNITE_SMTP_PWD);
-
-            if (smtpPwd != null)
-                myCfg.setSmtpPassword(smtpPwd);
-
-            int smtpPort = IgniteSystemProperties.getInteger(IGNITE_SMTP_PORT, -1);
-
-            if(smtpPort != -1)
-                myCfg.setSmtpPort(smtpPort);
-
-            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(IGNITE_SMTP_SSL));
-
-            String adminEmails = IgniteSystemProperties.getString(IGNITE_ADMIN_EMAILS);
-
-            if (adminEmails != null)
-                myCfg.setAdminEmails(adminEmails.split(","));
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 

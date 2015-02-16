@@ -162,16 +162,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> caches() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
         return null;
     }

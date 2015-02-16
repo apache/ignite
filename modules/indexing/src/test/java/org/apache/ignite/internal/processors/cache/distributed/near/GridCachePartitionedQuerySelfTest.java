@@ -95,7 +95,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         Ignite ignite0 = grid(0);
 
-        GridCache<UUID, Person> cache0 = ignite0.cache(null);
+        GridCache<UUID, Person> cache0 = ((IgniteKernal)ignite0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

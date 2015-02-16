@@ -512,7 +512,8 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             caches.add(cache);
 
             GridCacheAdapter<Integer, Integer> cache0 =
-                (GridCacheAdapter<Integer, Integer>)cache.unwrap(Ignite.class).<Integer, Integer>cache(CACHE_NAME);
+                (GridCacheAdapter<Integer, Integer>)((IgniteKernal)cache.unwrap(Ignite.class))
+                    .<Integer, Integer>cache(CACHE_NAME);
 
             if (cache0.isNear()) {
                 if (dhtCaches == null)
