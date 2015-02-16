@@ -18,26 +18,35 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Session for store.
+ * Session for the cache store operations.
  */
 public interface CacheStoreSession {
     /**
+     * Gets transaction spanning multiple store operations, or {@code null} if
+     * there is no transaction.
+     *
      * @return Transaction belonging to current session.
      */
-    @Nullable public Transaction transaction();
+    public Transaction transaction();
 
     /**
+     * Gets current session properties. You can add properties directly to the
+     * returned map.
+     *
      * @return Current session properties.
      */
     public <K, V> Map<K, V> properties();
 
     /**
-     * @return Cache name.
+     * Cache name for the current store operation. Note that if the same store
+     * is reused between different caches, then the cache name will change between
+     * different store operations.
+     *
+     * @return Cache name for the current store operation.
      */
-    @Nullable public String cacheName();
+    public String cacheName();
 }

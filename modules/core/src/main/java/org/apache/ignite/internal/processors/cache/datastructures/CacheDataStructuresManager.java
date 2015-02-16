@@ -217,7 +217,8 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         }
                     },
                     new QueueHeaderPredicate(),
-                    cctx.isLocal() || cctx.isReplicated());
+                    cctx.isLocal() || cctx.isReplicated(),
+                    true);
             }
 
             GridCacheQueueProxy queue = queuesMap.get(hdr.id());
