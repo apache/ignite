@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.jobtracker;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.*;

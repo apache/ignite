@@ -18,6 +18,7 @@
 package org.apache.ignite.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -27,7 +28,7 @@ import java.util.*;
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
  * {@ignitelink org.apache.ignite.cache.jta.CacheTmLookup}
- * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.CacheProjection} API
+ * interface. Cache transactions can also be started explicitly directly from {@link CacheProjection} API
  * via any of the {@code 'CacheProjection.txStart(..)'} methods.
  * <p>
  * Cache transactions support the following isolation levels:
