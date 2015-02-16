@@ -187,33 +187,6 @@ public interface Ignite extends AutoCloseable {
     public IgniteScheduler scheduler();
 
     /**
-     * Gets the cache instance for the given name, if one does not
-     * exist {@link IllegalArgumentException} will be thrown.
-     * Note that in case named cache instance is used as IGFS data or meta cache, {@link IllegalStateException}
-     * will be thrown.
-     *
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @param name Cache name.
-     * @return Cache instance for given name.
-     * @see org.apache.ignite.configuration.IgfsConfiguration
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
-     */
-    public <K, V> GridCache<K, V> cache(@Nullable String name);
-
-    /**
-     * Gets all configured caches.
-     * Caches that are used as IGFS meta and data caches will not be returned in resulting collection.
-     *
-     * @see org.apache.ignite.configuration.IgfsConfiguration
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getDataCacheName()
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getMetaCacheName()
-     * @return All configured caches.
-     */
-    public Collection<GridCache<?, ?>> caches();
-
-    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *

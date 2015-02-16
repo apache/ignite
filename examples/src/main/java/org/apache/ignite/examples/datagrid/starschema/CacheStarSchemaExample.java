@@ -70,9 +70,8 @@ public class CacheStarSchemaExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         Ignite ignite = Ignition.start("examples/config/example-cache.xml");
 
         System.out.println();
@@ -147,10 +146,8 @@ public class CacheStarSchemaExample {
      * Query all purchases made at a specific store. This query uses cross-cache joins
      * between {@link DimStore} objects stored in {@code 'replicated'} cache and
      * {@link FactPurchase} objects stored in {@code 'partitioned'} cache.
-     *
-     * @throws IgniteException If failed.
      */
-    private static void queryStorePurchases() throws IgniteCheckedException {
+    private static void queryStorePurchases() {
         IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
@@ -173,7 +170,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryProductPurchases() throws IgniteCheckedException {
+    private static void queryProductPurchases() {
         IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for certain product made at store2.
@@ -213,7 +210,7 @@ public class CacheStarSchemaExample {
     /**
      * Gets random value from given collection.
      *
-     * @param c Input collection (no {@code null} and not emtpy).
+     * @param c Input collection (no {@code null} and not empty).
      * @return Random value from the input collection.
      */
     @SuppressWarnings("UnusedDeclaration")

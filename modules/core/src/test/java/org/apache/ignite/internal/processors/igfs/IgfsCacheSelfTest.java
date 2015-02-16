@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
@@ -108,9 +109,9 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
     public void testCache() throws Exception {
         final Ignite g = grid();
 
-        assert g.caches().size() == 1;
+        assert ((IgniteKernal)g).caches().size() == 1;
 
-        assert CACHE_NAME.equals(g.caches().iterator().next().name());
+        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().name());
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {

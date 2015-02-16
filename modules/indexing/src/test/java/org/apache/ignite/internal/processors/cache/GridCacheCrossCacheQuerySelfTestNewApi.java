@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -164,7 +165,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
     private void fillCaches() throws IgniteCheckedException, InterruptedException {
         int idGen = 0;
 
-        GridCache<Integer, Object> dimCache = ignite.cache("replicated");
+        GridCache<Integer, Object> dimCache = ((IgniteKernal)ignite).cache("replicated");
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
@@ -181,7 +182,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
         CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
-        GridCache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
+        GridCache<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).cache("partitioned");
 
         List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {
@@ -218,7 +219,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
     private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
         throws Exception {
         CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
-            ignite.<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
+            ((IgniteKernal)ignite).<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
         List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());

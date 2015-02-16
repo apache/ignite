@@ -294,26 +294,11 @@ class VisorConfigurationCommand {
 
             p2pT.render()
 
-            println("\nEmail:")
-
-            val emailT = VisorTextTable()
-
-            emailT += ("SMTP host", safe(cfg.email().smtpHost(), DFLT))
-            emailT += ("SMTP port", safe(cfg.email().smtpPort(), DFLT))
-            emailT += ("SMTP username", safe(cfg.email().smtpUsername(), DFLT))
-            emailT += ("Admin emails", safe(cfg.email().adminEmails(), DFLT))
-            emailT += ("From email", safe(cfg.email().smtpFromEmail(), DFLT))
-            emailT += ("SMTP SSL enabled", bool2Str(cfg.email().smtpSsl()))
-            emailT += ("SMTP STARTTLS enabled", bool2Str(cfg.email().smtpStartTls()))
-
-            emailT.render()
-
             println("\nLifecycle:")
 
             val lifecycleT = VisorTextTable()
 
             lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
-            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().emailNotification()))
 
             lifecycleT.render()
 
