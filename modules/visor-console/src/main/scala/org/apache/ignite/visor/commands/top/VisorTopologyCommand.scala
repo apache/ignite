@@ -329,8 +329,7 @@ class VisorTopologyCommand {
 
         val m = ignite.forNodes(nodes).metrics()
 
-        val freeHeap = (m.getHeapMemoryMaximum - m.getHeapMemoryUsed) * 100 /
-          m.getHeapMemoryMaximum
+        val freeHeap = (m.getHeapMemoryTotal - m.getHeapMemoryUsed) * 100 / m.getHeapMemoryTotal
 
         val sumT = VisorTextTable()
 
