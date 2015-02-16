@@ -222,17 +222,5 @@
                 </property>
             </bean>
         </property>
-
-        <property name="portableConfiguration">
-            <bean class="org.gridgain.grid.portables.PortableConfiguration">
-                <property name="typeConfigurations">
-                    <list>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
-                        </bean>
-                    </list>
-                </property>
-            </bean>
-        </property>
     </bean>
 </beans>
