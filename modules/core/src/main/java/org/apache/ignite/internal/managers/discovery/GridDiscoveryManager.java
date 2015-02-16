@@ -498,10 +498,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
                 nm.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
                 nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
+                nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
                 nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
                 nm.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());
                 nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
                 nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
+                nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
                 nm.setUpTime(metrics.getUptime());
                 nm.setStartTime(metrics.getStartTime());
                 nm.setNodeStartTime(startTime);

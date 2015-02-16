@@ -138,6 +138,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapMemoryTotal() {
+        return node.metrics().getHeapMemoryTotal();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getHeapMemoryUsed() {
         return node.metrics().getHeapMemoryUsed();
     }
@@ -195,6 +200,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
         return node.metrics().getNonHeapMemoryMaximum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNonHeapMemoryTotal() {
+        return node.metrics().getNonHeapMemoryTotal();
     }
 
     /** {@inheritDoc} */
