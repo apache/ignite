@@ -68,13 +68,6 @@ public enum IgniteComponentType {
         "ignite-ssh"
     ),
 
-    /** Email sending. */
-    EMAIL(
-        "org.apache.ignite.internal.processors.email.IgniteNoopEmailProcessor",
-        "org.apache.ignite.internal.processors.email.IgniteEmailProcessor",
-        "ignite-email"
-    ),
-
     /** Integration of cache transactions with JTA. */
     JTA(
         "org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager",

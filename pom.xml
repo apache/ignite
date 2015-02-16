@@ -104,7 +104,6 @@
         <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
-        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>

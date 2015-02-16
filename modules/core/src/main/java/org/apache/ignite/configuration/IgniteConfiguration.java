@@ -109,18 +109,6 @@ public class IgniteConfiguration {
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
 
-    /** Default SMTP port. */
-    public static final int DFLT_SMTP_PORT = 25;
-
-    /** Default SSL enabled flag. */
-    public static final boolean DFLT_SMTP_SSL = false;
-
-    /** Default STARTTLS enabled flag. */
-    public static final boolean DFLT_SMTP_STARTTLS = false;
-
-    /** Default FROM email address. */
-    public static final String DFLT_SMTP_FROM_EMAIL = "info@gridgain.com";
-
     /** Default time server port base. */
     public static final int DFLT_TIME_SERVER_PORT_BASE = 31100;
 
@@ -204,9 +192,6 @@ public class IgniteConfiguration {
 
     /** IGFS pool size. */
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
-
-    /** Lifecycle email notification. */
-    private boolean lifeCycleEmailNtf = true;
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
@@ -340,30 +325,6 @@ public class IgniteConfiguration {
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
 
-    /** */
-    private String smtpHost;
-
-    /** */
-    private int smtpPort = DFLT_SMTP_PORT;
-
-    /** */
-    private String smtpUsername;
-
-    /** */
-    private String smtpPwd;
-
-    /** */
-    private String[] adminEmails;
-
-    /** */
-    private String smtpFromEmail = DFLT_SMTP_FROM_EMAIL;
-
-    /** */
-    private boolean smtpSsl = DFLT_SMTP_SSL;
-
-    /** */
-    private boolean smtpStartTls = DFLT_SMTP_STARTTLS;
-
     /** Local host. */
     private String locHost;
 
@@ -443,7 +404,6 @@ public class IgniteConfiguration {
          * Order alphabetically for maintenance purposes.
          */
         addrRslvr = cfg.getAddressResolver();
-        adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
@@ -465,7 +425,6 @@ public class IgniteConfiguration {
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         lifecycleBeans = cfg.getLifecycleBeans();
-        lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
         lsnrs = cfg.getLocalEventListeners();
@@ -490,13 +449,6 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        smtpHost = cfg.getSmtpHost();
-        smtpPort = cfg.getSmtpPort();
-        smtpUsername = cfg.getSmtpUsername();
-        smtpPwd = cfg.getSmtpPassword();
-        smtpFromEmail = cfg.getSmtpFromEmail();
-        smtpSsl = cfg.isSmtpSsl();
-        smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -505,311 +457,6 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-    }
-
-    /**
-     * Whether or not send email notifications on node start and stop. Note if enabled
-     * email notifications will only be sent if SMTP is configured and at least one
-     * admin email is provided.
-     * <p>
-     * By default - email notifications are enabled.
-     *
-     * @return {@code True} to enable lifecycle email notifications.
-     * @see #getSmtpHost()
-     * @see #getAdminEmails()
-     */
-    public boolean isLifeCycleEmailNotification() {
-        return lifeCycleEmailNtf;
-    }
-
-    /**
-     * Whether or not to use SSL fot SMTP. Default is {@link #DFLT_SMTP_SSL}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return Whether or not to use SSL fot SMTP.
-     * @see #DFLT_SMTP_SSL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_SSL
-     */
-    public boolean isSmtpSsl() {
-        return smtpSsl;
-    }
-
-    /**
-     * Whether or not to use STARTTLS fot SMTP. Default is {@link #DFLT_SMTP_STARTTLS}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return Whether or not to use STARTTLS fot SMTP.
-     * @see #DFLT_SMTP_STARTTLS
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_STARTTLS
-     */
-    public boolean isSmtpStartTls() {
-        return smtpStartTls;
-    }
-
-    /**
-     * Gets SMTP host name or {@code null} if SMTP is not configured.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@code getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP host name or {@code null} if SMTP is not configured.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_HOST
-     */
-    public String getSmtpHost() {
-        return smtpHost;
-    }
-
-    /**
-     * Gets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP port.
-     * @see #DFLT_SMTP_PORT
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PORT
-     */
-    public int getSmtpPort() {
-        return smtpPort;
-    }
-
-    /**
-     * Gets SMTP username or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP username or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_USERNAME
-     */
-    public String getSmtpUsername() {
-        return smtpUsername;
-    }
-
-    /**
-     * SMTP password or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP password or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PWD
-     */
-    public String getSmtpPassword() {
-        return smtpPwd;
-    }
-
-    /**
-     * Gets optional set of admin emails where email notifications will be set.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     *
-     * @return Optional set of admin emails where email notifications will be set.
-     *      If {@code null} - emails will be sent only to the email in the license
-     *      if one provided.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_ADMIN_EMAILS
-     */
-    public String[] getAdminEmails() {
-        return adminEmails;
-    }
-
-    /**
-     * Gets optional FROM email address for email notifications. By default
-     * {@link #DFLT_SMTP_FROM_EMAIL} will be used.
-     *
-     * @return Optional FROM email address for email notifications. If {@code null}
-     *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
-     * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_FROM
-     */
-    public String getSmtpFromEmail() {
-        return smtpFromEmail;
-    }
-
-    /**
-     * Sets whether or not to enable lifecycle email notifications.
-     *
-     * @param lifeCycleEmailNtf {@code True} to enable lifecycle email notifications.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_LIFECYCLE_EMAIL_NOTIFY
-     */
-    public void setLifeCycleEmailNotification(boolean lifeCycleEmailNtf) {
-        this.lifeCycleEmailNtf = lifeCycleEmailNtf;
-    }
-
-    /**
-     * Sets whether or not SMTP uses SSL.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpSsl Whether or not SMTP uses SSL.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_SSL
-     */
-    public void setSmtpSsl(boolean smtpSsl) {
-        this.smtpSsl = smtpSsl;
-    }
-
-    /**
-     * Sets whether or not SMTP uses STARTTLS.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpStartTls Whether or not SMTP uses STARTTLS.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_STARTTLS
-     */
-    public void setSmtpStartTls(boolean smtpStartTls) {
-        this.smtpStartTls = smtpStartTls;
-    }
-
-    /**
-     * Sets SMTP host.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@code #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpHost SMTP host to set or {@code null} to disable sending emails.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_HOST
-     */
-    public void setSmtpHost(String smtpHost) {
-        this.smtpHost = smtpHost;
-    }
-
-    /**
-     * Sets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpPort SMTP port to set.
-     * @see #DFLT_SMTP_PORT
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PORT
-     */
-    public void setSmtpPort(int smtpPort) {
-        this.smtpPort = smtpPort;
-    }
-
-    /**
-     * Sets SMTP username or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpUsername SMTP username or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_USERNAME
-     */
-    public void setSmtpUsername(String smtpUsername) {
-        this.smtpUsername = smtpUsername;
-    }
-
-    /**
-     * Sets SMTP password or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpPwd SMTP password or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PWD
-     */
-    public void setSmtpPassword(String smtpPwd) {
-        this.smtpPwd = smtpPwd;
-    }
-
-    /**
-     * Sets optional set of admin emails where email notifications will be set.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     *
-     * @param adminEmails Optional set of admin emails where email notifications will be set.
-     *      If {@code null} - emails will be sent only to the email in the license
-     *      if one provided.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_ADMIN_EMAILS
-     */
-    public void setAdminEmails(String[] adminEmails) {
-        this.adminEmails = adminEmails;
-    }
-
-    /**
-     * Sets optional FROM email address for email notifications. By default
-     * {@link #DFLT_SMTP_FROM_EMAIL} will be used.
-     *
-     * @param smtpFromEmail Optional FROM email address for email notifications. If {@code null}
-     *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
-     * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_FROM
-     */
-    public void setSmtpFromEmail(String smtpFromEmail) {
-        this.smtpFromEmail = smtpFromEmail;
     }
 
     /**
