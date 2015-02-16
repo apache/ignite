@@ -868,7 +868,7 @@
                                 <goals>
                                     <goal>aggregate</goal>
                                 </goals>
-                                <phase>prepare-package</phase>
+                                <phase>process-test-classes</phase>
                                 <configuration>
                                     <taglets>
                                         <taglet>
@@ -1096,24 +1096,10 @@
                                             </fileset>
                                         </copy>
 
-                                        <copy todir="${basedir}/target/javadoc/client">
-                                            <fileset dir="assembly/docfiles">
-                                                <include name="img/**"/>
-                                                <include name="*.js"/>
-                                            </fileset>
-                                        </copy>
-
                                         <taskdef name="doctask"
                                                  classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
                                         <doctask css="dotted" dir="target/javadoc/core">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
-                                        </doctask>
-
-                                        <doctask css="dotted" dir="target/javadoc/client">
                                             <include name="**/*.html"/>
                                             <exclude name="overview-frame.html"/>
                                             <exclude name="allclasses-frame.html"/>
