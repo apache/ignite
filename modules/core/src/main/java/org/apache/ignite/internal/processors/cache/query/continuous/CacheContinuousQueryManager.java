@@ -412,7 +412,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         }
 
                         @Override public boolean hasNext() {
-                            return it.hasNext();
+                            return next != null;
                         }
 
                         @Override public CacheEntryEvent<? extends K, ? extends V> next() {
