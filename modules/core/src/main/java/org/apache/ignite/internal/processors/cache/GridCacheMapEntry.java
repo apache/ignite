@@ -1170,7 +1170,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
             if (intercept) {
-                interceptRes = cctx.config().<K, V>getInterceptor().onBeforeRemove(key, old);
+                interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
                 if (cctx.cancelRemove(interceptRes))
                     return new GridCacheUpdateTxResult<>(false, cctx.<V>unwrapTemporary(interceptRes.get2()));
@@ -2017,7 +2017,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
             else {
                 if (intercept) {
-                    interceptRes = cctx.config().<K, V>getInterceptor().onBeforeRemove(key, old);
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
                     if (cctx.cancelRemove(interceptRes))
                         return new GridCacheUpdateAtomicResult<>(false,

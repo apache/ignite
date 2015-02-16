@@ -188,6 +188,10 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     @LoggerResource
     private IgniteLogger log;
 
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -590,5 +594,12 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }

@@ -410,7 +410,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     protected void inject(T store) throws Exception {
         getTestResources().inject(store);
 
-        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
+        GridTestUtils.setFieldValue(store, "ses", ses);
     }
 
     /** {@inheritDoc} */

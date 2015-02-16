@@ -107,7 +107,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx);
 
-            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
@@ -647,7 +647,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (portableIds == null) {
             portableIds = new HashMap<>();
 
-            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
@@ -673,7 +673,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (declaredTypesById == null) {
             declaredTypesById = new HashMap<>();
 
-            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {

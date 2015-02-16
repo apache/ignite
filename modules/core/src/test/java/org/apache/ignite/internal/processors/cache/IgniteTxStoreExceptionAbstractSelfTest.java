@@ -596,7 +596,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      *
      */
-    private static class TestStore extends CacheStore<Object, Object> {
+    private static class TestStore implements CacheStore<Object, Object> {
         /** Fail flag. */
         private volatile boolean fail;
 
