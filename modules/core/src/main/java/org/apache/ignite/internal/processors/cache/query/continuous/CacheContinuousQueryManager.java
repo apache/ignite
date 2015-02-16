@@ -596,8 +596,12 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         /** */
         private final Cache<K, V> cache;
 
+        /** */
+        private final IgniteLogger log;
+
         /**
          * @param impl Listener.
+         * @param cache Cache.
          */
         JCacheQueryLocalListener(CacheEntryListener<K, V> impl, Cache<K, V> cache) {
             assert impl != null;
@@ -605,42 +609,49 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
             this.impl = impl;
             this.cache = cache;
+
+            log = cache.unwrap(Ignite.class).log().getLogger(CacheContinuousQueryManager.class);
         }
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
             for (CacheEntryEvent<? extends K, ? extends V> evt : evts) {
-                switch (evt.getEventType()) {
-                    case CREATED:
-                        assert impl instanceof CacheEntryCreatedListener;
+                try {
+                    switch (evt.getEventType()) {
+                        case CREATED:
+                            assert impl instanceof CacheEntryCreatedListener;
 
-                        ((CacheEntryCreatedListener<K, V>)impl).onCreated(singleton(evt));
+                            ((CacheEntryCreatedListener<K, V>)impl).onCreated(singleton(evt));
 
-                        break;
+                            break;
 
-                    case UPDATED:
-                        assert impl instanceof CacheEntryUpdatedListener;
+                        case UPDATED:
+                            assert impl instanceof CacheEntryUpdatedListener;
 
-                        ((CacheEntryUpdatedListener<K, V>)impl).onUpdated(singleton(evt));
+                            ((CacheEntryUpdatedListener<K, V>)impl).onUpdated(singleton(evt));
 
-                        break;
+                            break;
 
-                    case REMOVED:
-                        assert impl instanceof CacheEntryRemovedListener;
+                        case REMOVED:
+                            assert impl instanceof CacheEntryRemovedListener;
 
-                        ((CacheEntryRemovedListener<K, V>)impl).onRemoved(singleton(evt));
+                            ((CacheEntryRemovedListener<K, V>)impl).onRemoved(singleton(evt));
 
-                        break;
+                            break;
 
-                    case EXPIRED:
-                        assert impl instanceof CacheEntryExpiredListener;
+                        case EXPIRED:
+                            assert impl instanceof CacheEntryExpiredListener;
 
-                        ((CacheEntryExpiredListener<K, V>)impl).onExpired(singleton(evt));
+                            ((CacheEntryExpiredListener<K, V>)impl).onExpired(singleton(evt));
 
-                        break;
+                            break;
 
-                    default:
-                        throw new IllegalStateException("Unknown type: " + evt.getEventType());
+                        default:
+                            throw new IllegalStateException("Unknown type: " + evt.getEventType());
+                    }
+                }
+                catch (Exception e) {
+                    U.error(log, "CacheEntryCreatedListener failed: " + e);
                 }
             }
         }
