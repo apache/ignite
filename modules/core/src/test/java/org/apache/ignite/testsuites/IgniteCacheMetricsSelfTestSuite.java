@@ -33,18 +33,19 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
-        suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheNearMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedMetricsSelfTest.class));
+        suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
 
         // Atomic cache.
-        suite.addTest(new TestSuite(GridCacheAtomicLocalMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class));
-        suite.addTest(new TestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class));
+        suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
+        suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
 
         return suite;
     }

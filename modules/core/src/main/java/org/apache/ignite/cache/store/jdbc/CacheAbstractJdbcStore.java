@@ -76,7 +76,7 @@ import static java.sql.Statement.*;
  * <p>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Max attempt write count. */
     protected static final int MAX_ATTEMPT_WRITE_COUNT = 2;
 
@@ -91,6 +91,14 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
     /** Empty column value. */
     protected static final Object[] EMPTY_COLUMN_VALUE = new Object[] { null };
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
+    /** Auto injected ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Auto-injected logger instance. */
     @LoggerResource
@@ -1228,6 +1236,20 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
      */
     public void setParallelLoadCacheMinimumThreshold(int parallelLoadCacheMinThreshold) {
         this.parallelLoadCacheMinThreshold = parallelLoadCacheMinThreshold;
+    }
+
+    /**
+     * @return Ignite instance.
+     */
+    protected Ignite ignite() {
+        return ignite;
+    }
+
+    /**
+     * @return Store session.
+     */
+    protected CacheStoreSession session() {
+        return ses;
     }
 
     /**
