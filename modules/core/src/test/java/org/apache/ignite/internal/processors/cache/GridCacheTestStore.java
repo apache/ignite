@@ -323,7 +323,7 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
 
     /**
      * @param ses Session.
-     * @param load {@code True} is {@link #loadAll method is called.}
+     * @param load {@code True} if {@link #loadAll} method is called.
      */
     private void checkTx(@Nullable CacheStoreSession ses, boolean load) {
         Transaction tx = ses != null ? ses.transaction() : null;

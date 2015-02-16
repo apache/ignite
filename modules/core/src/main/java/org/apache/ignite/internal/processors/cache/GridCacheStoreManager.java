@@ -802,7 +802,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param tx Current transaction.
-     * @return {@code True} if session
+     * @return {@code True} if session was initialized.
      */
     private boolean initSession(@Nullable IgniteInternalTx<?, ?> tx) {
         if (!sesEnabled)
