@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -37,6 +38,10 @@ import java.util.*;
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /** Transaction metadata attribute name. */
     private static final String ATTR_NAME = "SIMPLE_STORE_CONNECTION";
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
 
     /**
      * Constructor.
@@ -69,7 +74,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     @Override public void txEnd(boolean commit) {
         Transaction tx = transaction();
 
-        Map<String, Connection> props = session().properties();
+        Map<String, Connection> props = ses.properties();
 
         try (Connection conn = props.remove(ATTR_NAME)) {
             if (conn != null) {
@@ -230,7 +235,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      */
     private Connection connection(@Nullable Transaction tx) throws SQLException  {
         if (tx != null) {
-            Map<Object, Object> props = session().properties();
+            Map<Object, Object> props = ses.properties();
 
             Connection conn = (Connection)props.get(ATTR_NAME);
 
@@ -298,8 +303,6 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Current transaction.
      */
     @Nullable private Transaction transaction() {
-        CacheStoreSession ses = session();
-
         return ses != null ? ses.transaction() : null;
     }
 }

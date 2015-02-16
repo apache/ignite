@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Test store that generates objects on demand.
  */
-public class GridGeneratingTestStore extends CacheStore<String, String> {
+public class GridGeneratingTestStore implements CacheStore<String, String> {
     /** Number of entries to be generated. */
     private static final int DFLT_GEN_CNT = 100;
 

@@ -1211,7 +1211,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param ldr Class loader to undeploy.
      */
     public void onUndeploy(ClassLoader ldr) {
-        ctx.deploy().onUndeploy(ldr);
+        ctx.deploy().onUndeploy(ldr, context());
     }
 
     /** {@inheritDoc} */

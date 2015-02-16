@@ -40,6 +40,10 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     @CacheNameResource
     private String cacheName;
 
+    /** */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Dummy database. */
     private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
@@ -105,5 +109,12 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }
