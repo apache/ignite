@@ -17,6 +17,8 @@
 
 package org.apache.ignite.scalar.examples
 
+import org.apache.ignite.configuration.CacheConfiguration
+
 import java.util._
 
 import org.apache.ignite.{IgniteCache, Ignite}
@@ -64,7 +66,7 @@ object ScalarCacheQueryExample {
         // Using distributed queries for partitioned cache and local queries for replicated cache.
         // Since in replicated caches data is available on all nodes, including local one,
         // it is enough to just query the local node.
-        val prj = if (cache$(CACHE_NAME).get.configuration().getCacheMode == PARTITIONED)
+        val prj = if (cache.getConfiguration(classOf[CacheConfiguration[CacheAffinityKey[UUID], Person]]).getCacheMode == PARTITIONED)
             ignite.cluster().forRemotes()
         else
             ignite.cluster().forLocal()

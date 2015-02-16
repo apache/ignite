@@ -18,13 +18,11 @@
 package org.apache.ignite.scalar.pimps
 
 import org.apache.ignite.cache.query._
-import org.apache.ignite.configuration.CacheConfiguration
 
 import javax.cache.Cache
 
 import org.apache.ignite._
 import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer}
-import org.apache.ignite.scalar.pimps.ScalarCacheConfigurationHelper._
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
 
@@ -32,7 +30,6 @@ import java.util.{List => JavaList, Set => JavaSet}
 
 import scala.collection._
 import scala.collection.JavaConversions._
-
 
 /**
  * Companion object.
@@ -96,8 +93,6 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      * @param that Another cache instance to compare names with.
      */
     def compare(that: IgniteCache[K, V]): Int = that.getName.compareTo(value.getName)
-
-    def configuration(): CacheConfiguration = extract(value)
 
     /**
      * Gets iterator for cache entries.
