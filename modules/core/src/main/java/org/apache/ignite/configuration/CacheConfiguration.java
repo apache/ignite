@@ -448,7 +448,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheEvictionPolicy<K, V> getEvictionPolicy() {
+    @Nullable public CacheEvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -509,7 +509,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
+    @Nullable public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
@@ -821,7 +821,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache store factory.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
+    public Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
         return (Factory<CacheStore<? super K, ? super V>>)storeFactory;
     }
 
@@ -831,7 +831,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storeFactory Cache store factory.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
+    public void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
     }
 
@@ -1546,7 +1546,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache interceptor.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheInterceptor<K, V> getInterceptor() {
+    @Nullable public CacheInterceptor<K, V> getInterceptor() {
         return (CacheInterceptor<K, V>)interceptor;
     }
 
@@ -1555,7 +1555,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param interceptor Cache interceptor.
      */
-    public <K, V> void setInterceptor(CacheInterceptor<K, V> interceptor) {
+    public void setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
     }
 
