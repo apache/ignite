@@ -123,40 +123,36 @@ public class CommunicationMessageCodeGenerator {
 
     /**
      * @param args Arguments.
+     * @throws Exception In case of error.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
 
-        try {
-            gen.generateAll(true);
+        gen.generateAll(true);
 
-//            gen.generateAndWrite(GridDistributedLockRequest.class);
-//            gen.generateAndWrite(GridDistributedLockResponse.class);
-//            gen.generateAndWrite(GridNearLockRequest.class);
-//            gen.generateAndWrite(GridNearLockResponse.class);
-//            gen.generateAndWrite(GridDhtLockRequest.class);
-//            gen.generateAndWrite(GridDhtLockResponse.class);
+//        gen.generateAndWrite(GridDistributedLockRequest.class);
+//        gen.generateAndWrite(GridDistributedLockResponse.class);
+//        gen.generateAndWrite(GridNearLockRequest.class);
+//        gen.generateAndWrite(GridNearLockResponse.class);
+//        gen.generateAndWrite(GridDhtLockRequest.class);
+//        gen.generateAndWrite(GridDhtLockResponse.class);
 //
-//            gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
-//            gen.generateAndWrite(GridNearTxPrepareRequest.class);
-//            gen.generateAndWrite(GridNearTxPrepareResponse.class);
-//            gen.generateAndWrite(GridDhtTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDhtTxPrepareResponse.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
+//        gen.generateAndWrite(GridNearTxPrepareRequest.class);
+//        gen.generateAndWrite(GridNearTxPrepareResponse.class);
+//        gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDhtTxPrepareResponse.class);
 //
-//            gen.generateAndWrite(GridDistributedTxFinishRequest.class);
-//            gen.generateAndWrite(GridDistributedTxFinishResponse.class);
-//            gen.generateAndWrite(GridNearTxFinishRequest.class);
-//            gen.generateAndWrite(GridNearTxFinishResponse.class);
-//            gen.generateAndWrite(GridDhtTxFinishRequest.class);
-//            gen.generateAndWrite(GridDhtTxFinishResponse.class);
+//        gen.generateAndWrite(GridDistributedTxFinishRequest.class);
+//        gen.generateAndWrite(GridDistributedTxFinishResponse.class);
+//        gen.generateAndWrite(GridNearTxFinishRequest.class);
+//        gen.generateAndWrite(GridNearTxFinishResponse.class);
+//        gen.generateAndWrite(GridDhtTxFinishRequest.class);
+//        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 //
-//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
-//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
+//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
     }
 
     /**
@@ -189,7 +185,7 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
+    public void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
@@ -272,7 +268,7 @@ public class CommunicationMessageCodeGenerator {
      * @param cls Class.
      * @throws Exception In case of error.
      */
-    public void generate(Class<? extends MessageAdapter> cls) throws Exception {
+    private void generate(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         write.clear();
