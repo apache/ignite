@@ -58,6 +58,7 @@ public class VisorExecutorServiceConfiguration implements Serializable {
         cfg.systemThreadPoolSize(c.getSystemThreadPoolSize());
         cfg.managementThreadPoolSize(c.getManagementThreadPoolSize());
         cfg.peerClassLoadingThreadPoolSize(c.getPeerClassLoadingThreadPoolSize());
+        cfg.igfsThreadPoolSize(c.getIgfsThreadPoolSize());
 
         ConnectorConfiguration cc = c.getConnectorConfiguration();
 
