@@ -49,6 +49,10 @@ includeToClassPath() {
                 IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
+            if [ -d "${file}/target/test-classes" ]; then
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+            fi
+
             if [ -d "${file}/target/libs" ]; then
                 IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
             fi
@@ -57,11 +61,11 @@ includeToClassPath() {
 }
 
 #
-# Include target libraries for opensourse modules to classpath.
+# Include target libraries for enterprise modules to classpath.
 #
-includeToClassPath ${IGNITE_HOME}/os/modules
+includeToClassPath modules
 
 #
-# Include target libraries for enterprise modules to classpath.
+# Include target libraries for opensourse modules to classpath.
 #
 includeToClassPath ${IGNITE_HOME}/modules
