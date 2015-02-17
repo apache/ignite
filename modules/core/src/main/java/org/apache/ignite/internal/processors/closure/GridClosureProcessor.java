@@ -217,9 +217,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
-                Map<ComputeJob, ClusterNode> map = new HashMap<>(jobs.size(), 1);
-
-                JobMapper mapper = new JobMapper(map);
+                JobMapper mapper = new JobMapper(jobs.size());
 
                 switch (mode) {
                     case BROADCAST: {
@@ -241,7 +239,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                return map;
+                return mapper.map();
             }
             else
                 return Collections.emptyMap();
@@ -271,9 +269,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
-                Map<ComputeJob, ClusterNode> map = new HashMap<>(jobs.size(), 1);
-
-                JobMapper mapper = new JobMapper(map);
+                JobMapper mapper = new JobMapper(jobs.size());
 
                 switch (mode) {
                     case BROADCAST: {
@@ -295,7 +291,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                return map;
+                return mapper.map();
             }
             else
                 return Collections.emptyMap();
@@ -1026,13 +1022,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private boolean hadLocNode;
 
         /**
-         * @param map Jobs map.
+         * @param expJobCnt Expected Jobs count.
          */
-        private JobMapper(Map<ComputeJob, ClusterNode> map) {
-            assert map != null;
-            assert map.isEmpty();
-
-            this.map = map;
+        private JobMapper(int expJobCnt) {
+            map = IgniteUtils.newHashMap(expJobCnt);
         }
 
         /**
@@ -1055,6 +1048,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             }
 
             map.put(job, node);
+        }
+
+        public Map<ComputeJob, ClusterNode> map() {
+            return map;
         }
     }
 
@@ -1427,9 +1424,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             try {
-                Map<ComputeJob, ClusterNode> map = new HashMap<>(args.size(), 1);
-
-                JobMapper mapper = new JobMapper(map);
+                JobMapper mapper = new JobMapper(args.size());
 
                 for (T jobArg : args) {
                     ComputeJob job = job(this.job, jobArg);
@@ -1437,7 +1432,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     mapper.map(job, lb.getBalancedNode(job, null));
                 }
 
-                return map;
+                return mapper.map();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1485,9 +1480,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             try {
-                Map<ComputeJob, ClusterNode> map = new HashMap<>(args.size(), 1);
-
-                JobMapper mapper = new JobMapper(map);
+                JobMapper mapper = new JobMapper(args.size());
 
                 for (T jobArg : args) {
                     ComputeJob job = job(this.job, jobArg);
@@ -1495,7 +1488,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     mapper.map(job, lb.getBalancedNode(job, null));
                 }
 
-                return map;
+                return mapper.map();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1548,14 +1541,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return Collections.emptyMap();
 
             try {
-                Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size(), 1);
-
-                JobMapper mapper = new JobMapper(map);
+                JobMapper mapper = new JobMapper(subgrid.size());
 
                 for (ClusterNode n : subgrid)
                     mapper.map(job(job, this.arg), n);
 
-                return map;
+                return mapper.map();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1593,7 +1584,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Argument.
          */
-        public C1(IgniteClosure<T, R> job, T arg) {
+        C1(IgniteClosure<T, R> job, T arg) {
             this.job = job;
             this.arg = arg;
         }
