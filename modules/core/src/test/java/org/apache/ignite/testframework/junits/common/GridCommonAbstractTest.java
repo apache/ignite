@@ -451,7 +451,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
     }
 
     /**
@@ -533,7 +533,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
     }
 
     /**
