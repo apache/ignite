@@ -422,7 +422,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Local node.
      */
     public static ClusterNode localNode(IgniteCache<?, ?> cache) {
-        return cache.unwrap(Ignite.class).cluster().node();
+        return cache.unwrap(Ignite.class).cluster().localNode();
     }
 
     /**
