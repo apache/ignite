@@ -33,7 +33,7 @@ import static java.lang.reflect.Modifier.*;
 /**
 * Direct marshallable code generator.
 */
-public class CommunicationMessageCodeGenerator {
+public class MessageCodeGenerator {
     /** */
     private static final Comparator<Field> FIELD_CMP = new Comparator<Field>() {
         @Override public int compare(Field f1, Field f2) {
@@ -42,7 +42,7 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = MessageAdapter.class;
@@ -116,6 +116,9 @@ public class CommunicationMessageCodeGenerator {
     private final Map<Class<?>, Integer> fieldCnt = new HashMap<>();
 
     /** */
+    private final String srcDir;
+
+    /** */
     private List<Field> fields;
 
     /** */
@@ -126,7 +129,12 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
+        String srcDir = DFLT_SRC_DIR;
+
+        if (args != null && args.length > 0)
+            srcDir = args[0];
+
+        MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
         gen.generateAll(true);
 
@@ -153,6 +161,13 @@ public class CommunicationMessageCodeGenerator {
 //
 //        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
 //        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
+    }
+
+    /**
+     * @param srcDir Source directory.
+     */
+    public MessageCodeGenerator(String srcDir) {
+        this.srcDir = srcDir;
     }
 
     /**
@@ -190,10 +205,10 @@ public class CommunicationMessageCodeGenerator {
 
         generate(cls);
 
-        File file = new File(SRC_DIR, cls.getName().replace('.', File.separatorChar) + ".java");
+        File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
 
         if (!file.exists() || !file.isFile()) {
-            System.out.println("    Source file not found: " + file.getPath());
+            System.out.println("Source file not found: " + file.getPath());
 
             return;
         }

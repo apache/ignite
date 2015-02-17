@@ -112,21 +112,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     public <T> T[] extensions(Class<T> extensionItf) {
         Map<Class<?>, Object[]> extensions = this.extensions;
 
-        T[] res = (T[])extensions.get(extensionItf);
-
-        if (res != null)
-            return res;
-
-        res = (T[])Array.newInstance(extensionItf, 0);
-
-        // Store empty array to map to avoid array creation on the next access.
-        Map<Class<?>, Object[]> extensionsCp = new HashMap<>((extensions.size() + 1) * 2, 2.0f);
-
-        extensionsCp.put(extensionItf, res);
-
-        this.extensions = extensionsCp;
-
-        return res;
+        return (T[])extensions.get(extensionItf);
     }
 
     /**
