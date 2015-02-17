@@ -6185,6 +6185,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             out.writeObject(p);
 
             out.writeObject(args);
+
+            U.writeString(out, cacheName);
         }
 
         /** {@inheritDoc} */
@@ -6193,6 +6195,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             p = (IgniteBiPredicate<K, V>)in.readObject();
 
             args = (Object[])in.readObject();
+
+            cacheName = U.readString(in);
         }
 
         /** {@inheritDoc} */

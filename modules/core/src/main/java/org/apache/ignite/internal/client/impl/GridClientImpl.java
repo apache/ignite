@@ -409,7 +409,7 @@ public class GridClientImpl implements GridClient {
             Class<?> cls = Class.forName(ENT_CONN_MGR_CLS);
 
             Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
-                Collection.class, GridClientTopology.class, Byte.class);
+                Collection.class, GridClientTopology.class, Byte.class, boolean.class);
 
             mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId,
                 routerClient);
