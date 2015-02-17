@@ -10,14 +10,14 @@ Ignite In-Memory Data Fabric is designed to deliver uncompromised performance fo
 
 Following main components are included in the fabric:
 * `Advanced Clustering` - support for auto-discovery of cluster nodes in any environment, including, public clouds (e.g. AWS), private clouds, or hybrid clouds.
+* `Compute Grid` - includes distributed clustering, messaging, events, and computational features.
+* `Data Grid` - partitioned in-memory key-value store with support for ACID transactions, off-heap memory, SQL, and more.
+* `Service Grid` - support for managed user-defined services, like cluster singletons, node-singletons, and services with custom deployment topology.
+* `Distributed Data Structures` - support for common distributed data structures, like maps, sets, queues, atomics, etc.
+* `Streaming & CEP` - supports event workflow, rolling data windows and indexing, continuous querying, and more.
+* `Distributed Filesystem` - distributed Hadoop-compliant in-memory file system.
 * `Distributed Messaging` - support for topic-based and point-to-point message exchange between cluster nodes.
 * `Distributed Events` - support for cluster-wide event notifications.
-* `Managed Services` - support for managed user-defined services, like cluster singletons, node-singletons, and services with custom deployment topology.
-* `Distributed Data Structures` - support for common distributed data structures, like maps, sets, queues, atomics, etc.
-* `In-Memory Compute Grid` - includes distributed clustering, messaging, events, and computational features.
-* `In-Memory Data Grid` - partitioned in-memory key-value store with support for ACID transactions, off-heap memory, SQL, and more.
-* `In-Memory Streaming` - supports event workflow, rolling data windows and indexing, continuous querying, and more.
-* `In-Memory Filesystem` - distributed Hadoop-compliant in-memory file system.
 
 ## 2. Apache Ignite Installation
 Ignite distribution comes in a ZIP file that simply needs to be unzipped, and `IGNITE_HOME` environment variable can optionally be set to point to it.
