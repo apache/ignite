@@ -3003,23 +3003,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (comp != null)
             return comp;
 
-        // TODO 9341: get rid of ent/os after moving ent code to plugin.
         Class<T> implCls = null;
 
         try {
-            implCls = (Class<T>)Class.forName(enterpriseClassName(cls));
+            implCls = (Class<T>)Class.forName(componentClassName(cls));
         }
         catch (ClassNotFoundException ignore) {
             // No-op.
-        }
-
-        if (implCls == null) {
-            try {
-                implCls = (Class<T>)Class.forName(openSourceClassName(cls));
-            }
-            catch (ClassNotFoundException ignore) {
-                // No-op.
-            }
         }
 
         if (implCls == null)
@@ -3049,17 +3039,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * @param cls Component interface.
-     * @return Name of component implementation class for enterprise edition.
-     */
-    private static String enterpriseClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".ent." + cls.getSimpleName().replace("Grid", "GridEnt");
-    }
-
-    /**
-     * @param cls Component interface.
      * @return Name of component implementation class for open source edition.
      */
-    private static String openSourceClassName(Class<?> cls) {
+    private static String componentClassName(Class<?> cls) {
         return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
     }
 
