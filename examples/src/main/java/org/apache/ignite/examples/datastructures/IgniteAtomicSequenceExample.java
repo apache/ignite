@@ -53,21 +53,13 @@ public final class IgniteAtomicSequenceExample {
             // Initialize atomic sequence.
             IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
 
-            // First value of atomic sequence on this node.
-            long firstVal = seq.get();
-
-            System.out.println("Sequence initial value: " + firstVal);
-
             // Try increment atomic sequence on all cluster nodes. Note that this node is also part of the cluster.
             ignite.compute().broadcast(new SequenceClosure(seqName));
 
-            System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
-                seq.get() + ']');
+            System.out.println();
+            System.out.println("Finished atomic sequence example...");
+            System.out.println("Check all nodes for output (this node is also part of the cluster).");
         }
-
-        System.out.println();
-        System.out.println("Finished atomic sequence example...");
-        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**
@@ -88,9 +80,18 @@ public final class IgniteAtomicSequenceExample {
         @Override public void run() {
             IgniteAtomicSequence seq = Ignition.ignite().atomicSequence(seqName, 0, true);
 
+            // First value of atomic sequence on this node.
+            long firstVal = seq.get();
+
+            System.out.println("Sequence initial value on local node: " + firstVal);
+
             for (int i = 0; i < RETRIES; i++)
                 System.out.println("Sequence [currentValue=" + seq.get() + ", afterIncrement=" +
                     seq.incrementAndGet() + ']');
+
+
+            System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
+                seq.get() + ']');
         }
     }
 }
