@@ -4025,26 +4025,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "ClassReferencesSubclass"})
-    @Nullable @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
-        A.notNull(name, "name", c, "c");
-
-        synchronized (this) {
-            V1 v = meta(name);
-
-            if (v == null)
-                try {
-                    return addMeta(name, c.call());
-                }
-                catch (Exception e) {
-                    throw F.wrap(e);
-                }
-
-            return v;
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
         A.notNull(name, "name", newVal, "newVal", curVal, "curVal");

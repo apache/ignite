@@ -265,38 +265,7 @@ public class GridMetadataAwareAdapter {
     }
 
     /**
-     * Adds given metadata value only if it was absent.
-     *
-     * @param name Metadata name.
-     * @param c Factory closure to produce value to add if it's not attached already.
-     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
-     *      not be called unless the value is required and therefore value will only be created
-     *      when it is actually needed.
-     * @param <V> Type of the value.
-     * @return {@code null} if new value was put, or current value if put didn't happen.
-     */
-    @SuppressWarnings({"unchecked", "ClassReferencesSubclass"})
-    @Nullable public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-        A.notNull(name, "name", c, "c");
-
-        synchronized (mux) {
-            V v = (V) meta(name);
-
-            if (v == null)
-                try {
-                    return addMeta(name, c.call());
-                }
-                catch (Exception e) {
-                    throw F.wrap(e);
-                }
-
-            return v;
-        }
-    }
-
-    /**
-     * Adds given metadata value only if it was absent. Unlike
-     * {@link #putMetaIfAbsent(String, Callable)}, this method always returns
+     * Adds given metadata value only if it was absent. This method always returns
      * the latest value and never previous one.
      *
      * @param name Metadata name.

@@ -985,19 +985,6 @@ public interface GridCacheEntryEx<K, V> {
     @Nullable public <V> V putMetaIfAbsent(String name, V val);
 
     /**
-     * Adds given metadata value only if it was absent.
-     *
-     * @param name Metadata name.
-     * @param c Factory closure to produce value to add if it's not attached already.
-     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
-     *      not be called unless the value is required and therefore value will only be created
-     *      when it is actually needed.
-     * @param <V> Type of the value.
-     * @return {@code null} if new value was put, or current value if put didn't happen.
-     */
-    @Nullable public <V> V putMetaIfAbsent(String name, Callable<V> c);
-
-    /**
      * Replaces given metadata with new {@code newVal} value only if its current value
      * is equal to {@code curVal}. Otherwise, it is no-op.
      *
