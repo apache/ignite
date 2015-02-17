@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
@@ -651,7 +652,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     }
                 }
                 catch (Exception e) {
-                    U.error(log, "CacheEntryCreatedListener failed: " + e);
+                    U.error(log, "CacheEntryListener failed: " + e);
                 }
             }
         }
@@ -683,6 +684,10 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         /** */
         private byte types;
 
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
         /**
          * For {@link Externalizable}.
          */
@@ -703,7 +708,14 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> evt) {
-            return (types & flag(evt.getEventType())) != 0 && (impl == null || impl.evaluate(evt));
+            try {
+                return (types & flag(evt.getEventType())) != 0 && (impl == null || impl.evaluate(evt));
+            }
+            catch (Exception e) {
+                U.error(log, "CacheEntryEventFilter failed: " + e);
+
+                return true;
+            }
         }
 
         /** {@inheritDoc} */

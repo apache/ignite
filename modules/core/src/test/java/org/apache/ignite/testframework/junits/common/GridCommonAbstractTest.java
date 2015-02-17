@@ -105,10 +105,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param idx Grid index.
+     * @param cacheName Cache name.
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).cache(cacheName);
     }
 
     /**
@@ -421,7 +422,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Local node.
      */
     public static ClusterNode localNode(IgniteCache<?, ?> cache) {
-        return cache.unwrap(Ignite.class).cluster().node();
+        return cache.unwrap(Ignite.class).cluster().localNode();
     }
 
     /**
@@ -450,7 +451,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
     }
 
     /**
@@ -532,7 +533,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
     }
 
     /**

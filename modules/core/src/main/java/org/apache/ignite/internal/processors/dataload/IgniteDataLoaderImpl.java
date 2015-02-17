@@ -1403,13 +1403,23 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             GridCacheVersion ver = cctx.versions().next(topVer);
 
+            boolean portable = cctx.portableEnabled();
+
             for (Map.Entry<K, V> e : entries) {
                 try {
-                    GridCacheEntryEx<K, V> entry = internalCache.entryEx(e.getKey(), topVer);
+                    K key = e.getKey();
+                    V val = e.getValue();
+
+                    if (portable) {
+                        key = (K)cctx.marshalToPortable(key);
+                        val = (V)cctx.marshalToPortable(val);
+                    }
+
+                    GridCacheEntryEx<K, V> entry = internalCache.entryEx(key, topVer);
 
                     entry.unswap(true, false);
 
-                    entry.initialValue(e.getValue(), null, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
+                    entry.initialValue(val, null, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
 
                     cctx.evicts().touch(entry, topVer);
                 }
