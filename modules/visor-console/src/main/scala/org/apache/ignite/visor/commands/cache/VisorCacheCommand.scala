@@ -829,9 +829,6 @@ object VisorCacheCommand {
         cacheT += ("Near Eviction Synchronized", evictCfg.nearSynchronized())
         cacheT += ("Near Eviction Policy Max Size", nearCfg.nearEvictMaxSize())
 
-        cacheT += ("Default Isolation", defaultCfg.txIsolation())
-        cacheT += ("Default Concurrency", defaultCfg.txConcurrency())
-        cacheT += ("Default Transaction Timeout", defaultCfg.txTimeout())
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
