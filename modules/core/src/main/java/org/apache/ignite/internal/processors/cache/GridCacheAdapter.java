@@ -3896,7 +3896,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheEntryEx<K, V> entry = entryEx(key, false);
 
         try {
-            entry.initialValue(val, null, ver, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
+            entry.initialValue(val, null, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
+                replicate ? DR_LOAD : DR_NONE);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to put cache value: " + entry, e);
