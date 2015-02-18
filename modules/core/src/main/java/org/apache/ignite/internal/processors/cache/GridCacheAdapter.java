@@ -1752,7 +1752,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (!F.isEmpty(keys)) {
-            final String uid = CU.uuid(); // Get meta UUID for this thread.
+            final UUID uid = CU.uuid(); // Get meta UUID for this thread.
 
             assert keys != null;
 

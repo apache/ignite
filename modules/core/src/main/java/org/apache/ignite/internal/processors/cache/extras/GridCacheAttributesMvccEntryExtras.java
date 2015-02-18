@@ -23,12 +23,14 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Extras where attributes and MVCC are set.
  */
 public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** Attributes data. */
-    private GridLeanMap<String, Object> attrData;
+    private GridLeanMap<UUID, Object> attrData;
 
     /** MVCC. */
     private GridCacheMvcc<K> mvcc;
@@ -39,7 +41,7 @@ public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasA
      * @param attrData Attributes data.
      * @param mvcc MVCC.
      */
-    public GridCacheAttributesMvccEntryExtras(GridLeanMap<String, Object> attrData, GridCacheMvcc<K> mvcc) {
+    public GridCacheAttributesMvccEntryExtras(GridLeanMap<UUID, Object> attrData, GridCacheMvcc<K> mvcc) {
         assert attrData != null;
         assert mvcc != null;
 
@@ -48,12 +50,12 @@ public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasA
     }
 
     /** {@inheritDoc} */
-    @Override public GridLeanMap<String, Object> attributesData() {
+    @Override public GridLeanMap<UUID, Object> attributesData() {
         return attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 

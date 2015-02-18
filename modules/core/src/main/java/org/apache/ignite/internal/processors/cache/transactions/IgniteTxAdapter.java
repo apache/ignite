@@ -1622,17 +1622,17 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object addMeta(String name, Object val) {
+        @Nullable @Override public Object addMeta(UUID name, Object val) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object removeMeta(String name) {
+        @Nullable @Override public Object removeMeta(UUID name) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object meta(String name) {
+        @Nullable @Override public Object meta(UUID name) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

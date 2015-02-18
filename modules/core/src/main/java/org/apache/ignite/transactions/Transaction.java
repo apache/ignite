@@ -252,7 +252,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <V> V removeMeta(String name);
+    @Nullable public <V> V removeMeta(UUID name);
 
     /**
      * Gets metadata by name.
@@ -261,7 +261,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <V> V meta(String name);
+    @Nullable public <V> V meta(UUID name);
 
     /**
      * Adds a new metadata.
@@ -272,5 +272,5 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <V> V addMeta(String name, V val);
+    @Nullable public <V> V addMeta(UUID name, V val);
 }

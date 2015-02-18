@@ -31,7 +31,6 @@ import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Internal API for cache entry ({@code 'Ex'} stands for extended).
@@ -952,7 +951,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param name Name of the metadata to test.
      * @return Whether or not given metadata is set.
      */
-    public boolean hasMeta(String name);
+    public boolean hasMeta(UUID name);
 
     /**
      * Gets metadata by name.
@@ -961,7 +960,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <V> V meta(String name);
+    @Nullable public <V> V meta(UUID name);
 
     /**
      * Adds a new metadata.
@@ -972,7 +971,7 @@ public interface GridCacheEntryEx<K, V> {
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <V> V addMeta(String name, V val);
+    @Nullable public <V> V addMeta(UUID name, V val);
 
     /**
      * Adds given metadata value only if it was absent.
@@ -982,7 +981,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @Nullable public <V> V putMetaIfAbsent(String name, V val);
+    @Nullable public <V> V putMetaIfAbsent(UUID name, V val);
 
     /**
      * Replaces given metadata with new {@code newVal} value only if its current value
@@ -993,7 +992,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param newVal New value.
      * @return {@code true} if replacement occurred, {@code false} otherwise.
      */
-    public <V> boolean replaceMeta(String name, V curVal, V newVal);
+    public <V> boolean replaceMeta(UUID name, V curVal, V newVal);
 
     /**
      * Removes metadata by name.
@@ -1002,7 +1001,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <V> V removeMeta(String name);
+    @Nullable public <V> V removeMeta(UUID name);
 
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.
@@ -1012,5 +1011,5 @@ public interface GridCacheEntryEx<K, V> {
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    public <V> boolean removeMeta(String name, V val);
+    public <V> boolean removeMeta(UUID name, V val);
 }

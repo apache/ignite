@@ -25,12 +25,14 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
 public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /** */
-    private static final String META_KEY = "ignite-eviction-entry-meta";
+    private static final UUID META_KEY = UUID.randomUUID();
 
     /** Cached entry. */
     @GridToStringInclude
