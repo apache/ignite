@@ -336,7 +336,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             @Override public SecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
-                return new GridSecurityContext(subj);
+                return ((IgniteKernal) grid()).context().security().createSecurityContext(subj);
             }
 
             @Override public boolean isGlobalNodeAuthentication() {
