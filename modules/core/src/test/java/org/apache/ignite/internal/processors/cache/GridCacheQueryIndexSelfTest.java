@@ -67,9 +67,9 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < ENTRY_CNT; i++)
             putToStore(i, new CacheValue(i));
 
-        GridCache<Integer, CacheValue> cache0 = ((IgniteKernal)grid(0)).cache(null);
+        grid(0).jcache(null).localLoadCache(null, 0);
 
-        cache0.loadCache(null, 0);
+        GridCache<Integer, CacheValue> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         checkCache(cache0);
         checkQuery(cache0, true);

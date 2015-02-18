@@ -338,6 +338,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param txEntry TX entry.
+     * @return Expiry policy for the given TX entry.
+     */
+    @Nullable public ExpiryPolicy expiryForTxEntry(IgniteTxEntry txEntry) {
+        ExpiryPolicy plc = txEntry.expiry();
+
+        return plc != null ? plc : expiryPlc;
+    }
+
+    /**
      * @param mgr Manager to add.
      * @return Added manager.
      */
@@ -1572,11 +1582,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Check whether conflict resolution is required.
      *
-     * @param oldVer Old version.
-     * @param newVer New version.
      * @return {@code True} in case DR is required.
      */
-    public boolean conflictNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+    public boolean conflictNeedResolve() {
         return conflictRslvr != null;
     }
 

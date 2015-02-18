@@ -28,5 +28,5 @@ public interface ExtensionRegistry {
      * @param extensionImpl Extension implementation.
      * @param <T> Extension type.
      */
-    public <T> void registerExtension(Class<T> extensionItf, T extensionImpl);
+    public <T extends Extension> void registerExtension(Class<T> extensionItf, T extensionImpl);
 }

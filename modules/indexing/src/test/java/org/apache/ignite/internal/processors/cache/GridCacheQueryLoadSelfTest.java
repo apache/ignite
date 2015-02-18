@@ -112,9 +112,9 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        grid().jcache(null).localLoadCache(null);
 
-        cache.loadCache(null, 0);
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT;
 
@@ -130,9 +130,13 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> asyncCache = grid().<Integer, ValueObject>jcache(null).withAsync();
 
-        cache.loadCacheAsync(null, 0).get();
+        asyncCache.localLoadCache(null);
+
+        asyncCache.future().get();
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT;
 
@@ -148,13 +152,13 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
-
-        cache.loadCache(new P2<Integer, ValueObject>() {
+        grid().<Integer, ValueObject>jcache(null).localLoadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
+        });
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT - 5;
 
@@ -170,13 +174,17 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> asyncCache = grid().<Integer, ValueObject>jcache(null).withAsync();
 
-        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
+        asyncCache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0).get();
+        });
+
+        asyncCache.future().get();
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT - 5;
 
