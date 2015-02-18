@@ -398,7 +398,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final ExpiryPolicy plc = ctx.expiry();
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+
+        final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
