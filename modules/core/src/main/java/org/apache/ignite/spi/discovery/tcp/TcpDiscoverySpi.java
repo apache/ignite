@@ -3095,7 +3095,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             // Ignore join request.
                             return;
-                        } else {
+                        }
+                        else {
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, null,

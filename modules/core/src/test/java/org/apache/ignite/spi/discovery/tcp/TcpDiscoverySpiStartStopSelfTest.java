@@ -17,10 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
