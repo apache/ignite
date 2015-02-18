@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.dsi.cacheget;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 
 import java.util.concurrent.atomic.*;
 

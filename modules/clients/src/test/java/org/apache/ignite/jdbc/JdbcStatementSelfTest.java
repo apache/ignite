@@ -17,8 +17,8 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -69,7 +69,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -78,7 +78,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Person> cache = grid(0).cache(null);
+        IgniteCache<String, Person> cache = grid(0).jcache(null);
 
         assert cache != null;
 
@@ -251,19 +251,19 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int id;
 
         /** First name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String firstName;
 
         /** Last name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String lastName;
 
         /** Age. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int age;
 
         /**

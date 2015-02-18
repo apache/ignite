@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -37,6 +38,10 @@ import java.util.*;
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /** Transaction metadata attribute name. */
     private static final String ATTR_NAME = "SIMPLE_STORE_CONNECTION";
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
 
     /**
      * Constructor.
@@ -67,9 +72,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void txEnd(boolean commit) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
-        Map<String, Connection> props = session().properties();
+        Map<String, Connection> props = ses.properties();
 
         try (Connection conn = props.remove(ATTR_NAME)) {
             if (conn != null) {
@@ -88,7 +93,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Nullable @Override public Person load(Long key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -118,7 +123,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Long key = entry.getKey();
 
@@ -164,7 +169,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -228,9 +233,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
+    private Connection connection(@Nullable Transaction tx) throws SQLException  {
         if (tx != null) {
-            Map<Object, Object> props = session().properties();
+            Map<Object, Object> props = ses.properties();
 
             Connection conn = (Connection)props.get(ATTR_NAME);
 
@@ -255,7 +260,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @param tx Active transaction, if any.
      * @param conn Allocated connection.
      */
-    private void end(@Nullable IgniteTx tx, @Nullable Connection conn) {
+    private void end(@Nullable Transaction tx, @Nullable Connection conn) {
         if (tx == null && conn != null) {
             // Close connection right away if there is no transaction.
             try {
@@ -297,9 +302,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
-        CacheStoreSession ses = session();
-
+    @Nullable private Transaction transaction() {
         return ses != null ? ses.transaction() : null;
     }
 }

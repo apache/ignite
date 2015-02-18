@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -75,7 +76,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         vals = new ArrayList<>(VALS);
 
@@ -112,7 +113,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -123,9 +124,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, false);
-
-                    cache.putx(key, val, p);
+                    cache.put(key, val);
                 }
 
                 return null;
@@ -137,7 +136,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testRemove() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -148,12 +147,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, true);
-
                     if (rnd.nextBoolean())
-                        cache.removex(key, p);
+                        cache.remove(key);
                     else
-                        cache.putx(key, val, p);
+                        cache.put(key, val);
                 }
 
                 return null;
@@ -231,7 +228,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestPredicate implements P1<CacheEntry<Integer, Object>> {
+    protected abstract static class TestPredicate implements P1<Cache.Entry<Integer, Object>> {
         /** */
         protected String expVal;
 
@@ -248,10 +245,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public final boolean apply(CacheEntry<Integer, Object> e) {
+        @Override public final boolean apply(Cache.Entry<Integer, Object> e) {
             assertNotNull(e);
 
-            Object val = e.peek();
+            Object val = e.getValue();
 
             if (val == null) {
                 if (!acceptNull)

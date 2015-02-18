@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -82,6 +81,69 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
 
             assertEquals(0, syncMsgFuts.size());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExceptionIgnored() throws Exception {
+        CacheEntryListenerConfiguration<Integer, Integer> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+            new Factory<CacheEntryListener<Integer, Integer>>() {
+                @Override public CacheEntryListener<Integer, Integer> create() {
+                    return new ExceptionListener();
+                }
+            },
+            null,
+            false,
+            false
+        );
+
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.registerCacheEntryListener(lsnrCfg);
+
+        try {
+            for (Integer key : keys()) {
+                log.info("Check listener exceptions are ignored [key=" + key + ']');
+
+                cache.put(key, key);
+
+                cache.remove(key);
+            }
+        }
+        finally {
+            cache.deregisterCacheEntryListener(lsnrCfg);
+        }
+
+        lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+            new Factory<CacheEntryListener<Integer, Integer>>() {
+                @Override public CacheEntryListener<Integer, Integer> create() {
+                    return new CreateUpdateRemoveExpireListener();
+                }
+            },
+            new Factory<CacheEntryEventFilter<? super Integer, ? super Integer>>() {
+                @Override public CacheEntryEventFilter<? super Integer, ? super Integer> create() {
+                    return new ExceptionFilter();
+                }
+            },
+            false,
+            false
+        );
+
+        cache.registerCacheEntryListener(lsnrCfg);
+
+        try {
+            for (Integer key : keys()) {
+                log.info("Check filter exceptions are ignored [key=" + key + ']');
+
+                cache.put(key, key);
+
+                cache.remove(key);
+            }
+        }
+        finally {
+            cache.deregisterCacheEntryListener(lsnrCfg);
         }
     }
 
@@ -955,6 +1017,49 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         @Override public void onExpired(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                 onEvent(evt);
+        }
+    }
+
+    /**
+     *
+     */
+    static class ExceptionFilter implements CacheEntryEventFilter<Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+            throw new RuntimeException("Test filter error.");
+        }
+    }
+
+    /**
+     *
+     */
+    static class ExceptionListener extends CreateUpdateListener
+        implements CacheEntryRemovedListener<Integer, Integer>, CacheEntryExpiredListener<Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            error();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            error();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onExpired(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            error();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onRemoved(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            error();
+        }
+
+        /**
+         * Throws exception.
+         */
+        private void error() {
+            throw new RuntimeException("Test listener error.");
         }
     }
 

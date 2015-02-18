@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -66,7 +66,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)g).cache(null);
 
             CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
                 "0 order by _key");
@@ -121,7 +121,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
         CacheQueryFuture<List<?>> fut = null;
 

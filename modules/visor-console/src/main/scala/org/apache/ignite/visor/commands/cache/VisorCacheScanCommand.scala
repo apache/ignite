@@ -139,8 +139,8 @@ class VisorCacheScanCommand {
         }
 
         val cachePrj = node match {
-            case Some(n) => grid.forNode(n).forCacheNodes(cacheName)
-            case _ => grid.forCacheNodes(cacheName)
+            case Some(n) => ignite.forNode(n).forCacheNodes(cacheName)
+            case _ => ignite.forCacheNodes(cacheName)
         }
 
         if (cachePrj.nodes().isEmpty) {
@@ -158,7 +158,7 @@ class VisorCacheScanCommand {
 
         val fullRes =
             try
-                grid.compute(qryPrj)
+                ignite.compute(qryPrj)
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorQueryTask],
@@ -205,7 +205,7 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = grid.compute(qryPrj)
+                        res = ignite.compute(qryPrj)
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
                             .execute(classOf[VisorQueryNextPageTask],

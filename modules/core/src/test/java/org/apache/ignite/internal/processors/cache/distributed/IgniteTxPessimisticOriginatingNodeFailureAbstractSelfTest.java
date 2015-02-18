@@ -39,7 +39,7 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Abstract test for originating node failure.
@@ -142,7 +142,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -167,30 +167,28 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         if (fullFailure)
-            ignoreMessages(ignoreMessageClasses(), allNodeIds());
-        else
             ignoreMessages(ignoreMessageClasses(), F.asList(grid(1).localNode().id()));
 
         final IgniteEx originatingNodeGrid = grid(originatingNode());
 
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                GridCache<Integer, String> cache = originatingNodeGrid.cache(null);
+                IgniteCache<Integer, String> cache = originatingNodeGrid.jcache(null);
 
                 assertNotNull(cache);
 
-                IgniteTx tx = cache.txStart();
+                Transaction tx = originatingNodeGrid.transactions().txStart();
 
                 try {
                     cache.putAll(map);
 
                     info("Before commitAsync");
 
-                    tx = (IgniteTx)tx.withAsync();
+                    tx = (Transaction)tx.withAsync();
 
                     tx.commit();
 
-                    IgniteFuture<IgniteTx> fut = tx.future();
+                    IgniteFuture<Transaction> fut = tx.future();
 
                     info("Got future for commitAsync().");
 
@@ -251,12 +249,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.peek(key));
+                            fullFailure ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
@@ -266,7 +264,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())
-                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+                assertEquals(fullFailure ? initVal : e.getValue(), g.jcache(null).get(e.getKey()));
         }
     }
 
@@ -277,7 +275,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void checkPrimaryNodeCrash(final boolean commmit) throws Exception {
-        Collection<Integer> keys = new ArrayList<>(20);
+        Set<Integer> keys = new HashSet<>();
 
         for (int i = 0; i < 20; i++)
             keys.add(i);
@@ -298,21 +296,21 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).jcache(null);
 
         info("Failing node ID: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(affinity(cache).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(primaryNode);
 
@@ -324,23 +322,38 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         assertNotNull(cache);
 
-        try (IgniteTx tx = cache.txStart()) {
+        try (Transaction tx = grid(0).transactions().txStart()) {
             cache.getAll(keys);
 
             // Should not send any messages.
             cache.putAll(map);
 
-            // Fail the node in the middle of transaction.
-            info(">>> Stopping primary node " + primaryNode);
+            TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
-            G.stop(G.ignite(primaryNode.id()).name(), true);
+            IgniteInternalTx txEx = txProxy.tx();
 
-            info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+            if (commmit) {
+                txEx.prepare();
 
-            if (commmit)
+                // Fail the node in the middle of transaction.
+                info(">>> Stopping primary node " + primaryNode);
+
+                G.stop(Ignition.ignite(primaryNode.id()).name(), true);
+
+                info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+
                 tx.commit();
-            else
+            }
+            else {
+                // Fail the node in the middle of transaction.
+                info(">>> Stopping primary node " + primaryNode);
+
+                G.stop(G.ignite(primaryNode.id()).name(), true);
+
+                info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
+
                 tx.rollback();
+            }
         }
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -382,12 +395,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            !commmit ? initVal : val, cache.peek(key));
+                            !commmit ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
@@ -397,7 +410,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())
-                assertEquals(!commmit ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+                assertEquals(!commmit ? initVal : e.getValue(), g.jcache(null).get(e.getKey()));
         }
     }
 

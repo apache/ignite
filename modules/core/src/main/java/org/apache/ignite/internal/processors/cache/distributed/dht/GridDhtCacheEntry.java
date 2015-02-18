@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -39,9 +38,6 @@ import java.util.*;
  */
 @SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Size overhead. */
     private static final int DHT_SIZE_OVERHEAD = 16;
 
@@ -372,7 +368,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // If remote node has no near cache, don't add it.
-        if (!U.hasNearCache(node, cacheName()) && !(key instanceof GridCacheInternal)) {
+        if (!U.hasNearCache(node, cacheName())) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
 
@@ -612,34 +608,16 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * Sets mappings into entry.
      *
      * @param ver Version.
-     * @param mappings Mappings to set.
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> mappings(GridCacheVersion ver, Collection<UUID> mappings)
+    @Nullable public synchronized GridCacheMvccCandidate<K> mappings(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        GridCacheMvccCandidate<K> cand = mvcc == null ? null : mvcc.candidate(ver);
-
-        if (cand != null)
-            cand.mappedNodeIds(mappings);
-
-        return cand;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheContext<K, V> nearCtx = cctx.dht().near().context();
-
-        GridCacheProjectionImpl<K, V> prjPerCall = nearCtx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, nearCtx, key, this);
-
-        return new GridPartitionedCacheEntryImpl<>(null, nearCtx, key, this);
+        return mvcc == null ? null : mvcc.candidate(ver);
     }
 
     /**

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -27,9 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * Cache entry for colocated cache.
  */
 public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
@@ -43,16 +38,6 @@ public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     public GridDhtColocatedCacheEntry(GridCacheContext<K, V> ctx, long topVer, K key, int hash, V val,
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
         super(ctx, topVer, key, hash, val, next, ttl, hdrId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = cctx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
-
-        return new GridDhtCacheEntryImpl<>(null, cctx, key, this);
     }
 
     /** {@inheritDoc} */

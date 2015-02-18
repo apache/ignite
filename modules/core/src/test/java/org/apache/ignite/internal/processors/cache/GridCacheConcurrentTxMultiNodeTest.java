@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -48,8 +49,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -616,12 +617,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          *
          */
         private void doWork()  {
-            GridCache cache = ignite.cache(null);
-
             Session ses = new Session(terminalId());
 
             try {
-                try (IgniteTx tx = cache.txStart()) {
+                try (Transaction tx = ignite.transactions().txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());
@@ -679,7 +678,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            CacheProjection<Object, Request> cache = ignite.cache(null).projection(Object.class, Request.class);
+            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).cache(null).projection(Object.class, Request.class);
 
             CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
@@ -709,13 +708,14 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
-
-            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
-
-            CacheEntry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
-
-            entry.setx(o);
+//            GridCache<CacheAffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//
+//            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
+//
+//            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+//
+//            entry.setx(o);
+            assert false;
         }
 
         /**
@@ -728,28 +728,28 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
             Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.jcache(null).get(key);
         }
     }
 
     /**
      *
      */
-    @CacheQueryGroupIndex(name = "msg_tx")
+    @QueryGroupIndex(name = "msg_tx")
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Long id;
 
         /** */
-        @CacheQuerySqlField(name = "messageId")
-        @CacheQuerySqlField.Group(name = "msg_tx", order = 3)
+        @QuerySqlField(name = "messageId")
+        @QuerySqlField.Group(name = "msg_tx", order = 3)
         private long msgId;
 
         /** */
-        @CacheQuerySqlField(name = "transactionId")
-        @CacheQuerySqlField.Group(name = "msg_tx", order = 1)
+        @QuerySqlField(name = "transactionId")
+        @QuerySqlField.Group(name = "msg_tx", order = 1)
         private long txId;
 
         /**
@@ -780,15 +780,15 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Response implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Long id;
 
         /** */
-        @CacheQuerySqlField(name = "messageId")
+        @QuerySqlField(name = "messageId")
         private long msgId;
 
         /** */
-        @CacheQuerySqlField(name = "transactionId")
+        @QuerySqlField(name = "transactionId")
         private long txId;
 
         /**
@@ -811,7 +811,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String terminalId;
 
         /**

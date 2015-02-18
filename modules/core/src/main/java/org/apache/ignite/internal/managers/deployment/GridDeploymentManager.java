@@ -69,7 +69,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             locDep = ann != null ?
                 new LocalDeployment(
                     ctx.config().getDeploymentMode(),
-                    U.gridClassLoader(),
+                    ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                     IgniteUuid.fromUuid(ctx.localNodeId()),
                     ctx.userVersion(U.gridClassLoader()),
                     String.class.getName()) :
@@ -551,9 +551,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      *
      */
     private static class LocalDeployment extends GridDeployment {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /**
          * @param depMode Mode.
          * @param clsLdr Loader.

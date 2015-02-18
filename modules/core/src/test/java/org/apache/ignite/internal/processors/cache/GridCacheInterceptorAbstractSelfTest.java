@@ -843,8 +843,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return;
 
         if (atomicityMode() == TRANSACTIONAL) {
-            for (IgniteTxConcurrency txConcurrency : IgniteTxConcurrency.values()) {
-                for (IgniteTxIsolation txIsolation : IgniteTxIsolation.values()) {
+            for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
                     for (Operation op : Operation.values()) {
                         testNearNodeKey(txConcurrency, txIsolation, op);
 
@@ -863,8 +863,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param op Operation type.
      * @throws Exception If failed.
      */
-    private void testNearNodeKey(@Nullable IgniteTxConcurrency txConcurrency,
-        @Nullable IgniteTxIsolation txIsolation, @Nullable Operation op) throws Exception {
+    private void testNearNodeKey(@Nullable TransactionConcurrency txConcurrency,
+        @Nullable TransactionIsolation txIsolation, @Nullable Operation op) throws Exception {
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
@@ -890,7 +890,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             assertNotNull(txIsolation);
             assertNotNull(op);
 
-            try (IgniteTx tx = ignite(0).transactions().txStart(txConcurrency, txIsolation)) {
+            try (Transaction tx = ignite(0).transactions().txStart(txConcurrency, txIsolation)) {
                 update(0, op, key1, 100, 1);
                 update(0, op, key2, 200, 2);
                 update(0, op, key3, 300, 3);
@@ -1446,7 +1446,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(null).get(key));
+                assertEquals("Unexpected value for grid " + i, expVal, grid(i).jcache(null).get(key));
         }
         finally {
             interceptor.disabled = false;

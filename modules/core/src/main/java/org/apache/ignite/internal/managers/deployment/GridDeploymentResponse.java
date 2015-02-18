@@ -106,54 +106,34 @@ public class GridDeploymentResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDeploymentResponse _clone = new GridDeploymentResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDeploymentResponse _clone = (GridDeploymentResponse)_msg;
-
-        _clone.success = success;
-        _clone.errMsg = errMsg;
-        _clone.byteSrc = byteSrc != null ? (GridByteArrayList)byteSrc.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeMessage("byteSrc", byteSrc))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeString("errMsg", errMsg))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeBoolean("success", success))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -161,18 +141,17 @@ public class GridDeploymentResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 byteSrc = reader.readMessage("byteSrc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 errMsg = reader.readString("errMsg");
@@ -180,7 +159,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 success = reader.readBoolean("success");
@@ -188,7 +167,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

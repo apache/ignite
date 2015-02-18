@@ -17,9 +17,9 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -63,7 +63,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -72,14 +72,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).jcache(null);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).jcache(null);
 
         assert personCache != null;
 
@@ -284,15 +284,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int age;
 
         /** Organization ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int orgId;
 
         /**
@@ -317,11 +317,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /**

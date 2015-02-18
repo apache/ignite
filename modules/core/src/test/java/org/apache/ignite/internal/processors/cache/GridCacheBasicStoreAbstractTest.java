@@ -36,8 +36,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Basic store test.
@@ -125,7 +125,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cache.put(100, "hacuna matata");
         assertEquals(1, map.size());
 
-        cache.localEvict(Collections.<Integer>singleton(100));
+        cache.localEvict(Collections.singleton(100));
         assertEquals(1, map.size());
 
         assertEquals("hacuna matata", cache.getAndRemove(100));
@@ -150,7 +150,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++) {
                     cache.put(i, Integer.toString(i));
 
@@ -183,7 +183,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         store.resetLastMethod();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = grid().transactions().txStart()) {
+            try (Transaction tx = grid().transactions().txStart()) {
                 for (int i = 1; i <= 10; i++) {
                     String val = cache.getAndRemove(i);
 
@@ -221,7 +221,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++)
                     cache.put(i, Integer.toString(i));
 
@@ -566,8 +566,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
             checkLastMethod("load");
 
-            assert val != null;
-            assert val.equals("reloaded-" + i);
+            assertEquals("reloaded-" + i, val);
 
             store.resetLastMethod();
 

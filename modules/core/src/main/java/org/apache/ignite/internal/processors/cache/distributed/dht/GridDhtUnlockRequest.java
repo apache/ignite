@@ -104,46 +104,25 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtUnlockRequest _clone = new GridDhtUnlockRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtUnlockRequest _clone = (GridDhtUnlockRequest)_msg;
-
-        _clone.nearKeyBytes = nearKeyBytes;
-        _clone.nearKeys = nearKeys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 9:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -151,21 +130,20 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 9:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
+                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

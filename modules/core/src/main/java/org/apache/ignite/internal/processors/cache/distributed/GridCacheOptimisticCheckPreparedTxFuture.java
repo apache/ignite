@@ -158,7 +158,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                         nodeTransactions(id), futureId(), fut.futureId());
 
                     try {
-                        cctx.io().send(id, req);
+                        cctx.io().send(id, req, tx.ioPolicy());
                     }
                     catch (ClusterTopologyCheckedException ignored) {
                         fut.onNodeLeft();
@@ -175,11 +175,11 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(tx,
-                        nodeTransactions(nodeId), futureId(), fut.futureId());
+                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
+                    tx, nodeTransactions(nodeId), futureId(), fut.futureId());
 
                 try {
-                    cctx.io().send(nodeId, req);
+                    cctx.io().send(nodeId, req, tx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     fut.onNodeLeft();

@@ -30,10 +30,16 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Public pool size. */
-    private int execPoolSz;
+    private int pubPoolSize;
 
     /** System pool size. */
     private int sysPoolSz;
+
+    /** Management pool size. */
+    private int mgmtPoolSize;
+
+    /** IGFS pool size. */
+    private int igfsPoolSize;
 
     /** Peer-to-peer pool size. */
     private int p2pPoolSz;
@@ -48,16 +54,16 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     public static VisorExecutorServiceConfiguration from(IgniteConfiguration c) {
         VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
-        cfg.executeService(c.getPublicThreadPoolSize());
+        cfg.publicThreadPoolSize(c.getPublicThreadPoolSize());
+        cfg.systemThreadPoolSize(c.getSystemThreadPoolSize());
+        cfg.managementThreadPoolSize(c.getManagementThreadPoolSize());
+        cfg.peerClassLoadingThreadPoolSize(c.getPeerClassLoadingThreadPoolSize());
+        cfg.igfsThreadPoolSize(c.getIgfsThreadPoolSize());
 
-        cfg.systemExecutorService(c.getSystemThreadPoolSize());
-
-        cfg.p2pExecutorService(c.getPeerClassLoadingThreadPoolSize());
-
-        ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
+        ConnectorConfiguration cc = c.getConnectorConfiguration();
 
         if (cc != null)
-            cfg.restExecutorService(cc.getRestThreadPoolSize());
+            cfg.restThreadPoolSize(cc.getThreadPoolSize());
 
         return cfg;
     }
@@ -65,58 +71,87 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     /**
      * @return Public pool size.
      */
-    public int executeService() {
-        return execPoolSz;
+    public int publicThreadPoolSize() {
+        return pubPoolSize;
     }
 
     /**
-     * @param execPoolSz Public pool size.
+     * @param pubPoolSize Public pool size.
      */
-    public void executeService(int execPoolSz) {
-        this.execPoolSz = execPoolSz;
+    public void publicThreadPoolSize(int pubPoolSize) {
+        this.pubPoolSize = pubPoolSize;
     }
 
     /**
      * @return System pool size.
      */
-    public int systemExecutorService() {
+    public int systemThreadPoolSize() {
         return sysPoolSz;
     }
 
     /**
-     * @param sysExecSvc System pool size.
+     * @param sysPoolSz System pool size.
      */
-    public void systemExecutorService(int sysExecSvc) {
-        this.sysPoolSz = sysExecSvc;
+    public void systemThreadPoolSize(int sysPoolSz) {
+        this.sysPoolSz = sysPoolSz;
+    }
+
+    /**
+     * @return Management pool size.
+     */
+    public int managementThreadPoolSize() {
+        return mgmtPoolSize;
+    }
+
+    /**
+     * @param mgmtPoolSize New Management pool size.
+     */
+    public void managementThreadPoolSize(int mgmtPoolSize) {
+        this.mgmtPoolSize = mgmtPoolSize;
+    }
+
+    /**
+     * @return IGFS pool size.
+     */
+    public int igfsThreadPoolSize() {
+        return igfsPoolSize;
+    }
+
+    /**
+     * @param igfsPoolSize New iGFS pool size.
+     */
+    public void igfsThreadPoolSize(int igfsPoolSize) {
+        this.igfsPoolSize = igfsPoolSize;
     }
 
     /**
      * @return Peer-to-peer pool size.
      */
-    public int p2pExecutorService() {
+    public int peerClassLoadingThreadPoolSize() {
         return p2pPoolSz;
     }
 
     /**
-     * @param p2pExecSvc New peer-to-peer pool size.
+     * @param p2pPoolSz New peer-to-peer pool size.
      */
-    public void p2pExecutorService(int p2pExecSvc) {
-        this.p2pPoolSz = p2pExecSvc;
-    }
-
-    /**
-     * @param restPoolSz REST requests pool size.
-     */
-    public void restExecutorService(int restPoolSz) {
-        this.restPoolSz = restPoolSz;
+    public void peerClassLoadingThreadPoolSize(int p2pPoolSz) {
+        this.p2pPoolSz = p2pPoolSz;
     }
 
     /**
      * @return REST requests pool size.
      */
-    public int restExecutorService() {
+    public int restThreadPoolSize() {
         return restPoolSz;
     }
+
+    /**
+     * @param restPoolSz REST requests pool size.
+     */
+    public void restThreadPoolSize(int restPoolSz) {
+        this.restPoolSz = restPoolSz;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

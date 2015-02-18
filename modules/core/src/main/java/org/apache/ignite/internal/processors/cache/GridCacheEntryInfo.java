@@ -80,6 +80,13 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     }
 
     /**
+     * @param cacheId Cache ID.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /**
      * @param key Entry key.
      */
     public void key(K key) {
@@ -254,6 +261,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(cacheId);
         out.writeBoolean(keyBytesSent);
         out.writeBoolean(valBytesSent);
 
@@ -299,6 +307,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cacheId = in.readInt();
         keyBytesSent = in.readBoolean();
         valBytesSent = in.readBoolean();
 

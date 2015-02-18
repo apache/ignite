@@ -27,6 +27,7 @@ public class VisorThreadInfo implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private static final int MAX_FRAMES = 8;
 
     /** Thread name. */
@@ -57,13 +58,13 @@ public class VisorThreadInfo implements Serializable {
     private final Boolean suspended;
 
     /** Waited count. */
-    private final Long waitedCount;
+    private final Long waitedCnt;
 
     /** Waited time. */
     private final Long waitedTime;
 
     /** Blocked count. */
-    private final Long blockedCount;
+    private final Long blockedCnt;
 
     /** Blocked time. */
     private final Long blockedTime;
@@ -87,9 +88,9 @@ public class VisorThreadInfo implements Serializable {
         String lockOwnerName,
         Boolean inNative,
         Boolean suspended,
-        Long waitedCount,
+        Long waitedCnt,
         Long waitedTime,
-        Long blockedCount,
+        Long blockedCnt,
         Long blockedTime,
         StackTraceElement[] stackTrace,
         VisorThreadLockInfo[] locks,
@@ -104,9 +105,9 @@ public class VisorThreadInfo implements Serializable {
         this.lockOwnerName = lockOwnerName;
         this.inNative = inNative;
         this.suspended = suspended;
-        this.waitedCount = waitedCount;
+        this.waitedCnt = waitedCnt;
         this.waitedTime = waitedTime;
-        this.blockedCount = blockedCount;
+        this.blockedCnt = blockedCnt;
         this.blockedTime = blockedTime;
         this.stackTrace = stackTrace;
         this.locks = locks;
@@ -217,7 +218,7 @@ public class VisorThreadInfo implements Serializable {
      * @return Waited count.
      */
     public Long waitedCount() {
-        return waitedCount;
+        return waitedCnt;
     }
 
     /**
@@ -231,7 +232,7 @@ public class VisorThreadInfo implements Serializable {
      * @return Blocked count.
      */
     public Long blockedCount() {
-        return blockedCount;
+        return blockedCnt;
     }
 
     /**

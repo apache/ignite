@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,13 +26,14 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * {@link org.apache.ignite.cache.query.CacheQueries} implementation.
+ * {@link CacheQueries} implementation.
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
@@ -151,7 +151,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /**
-     * Query for {@link GridIndexingSpi}.
+     * Query for {@link IndexingSpi}.
      *
      * @return Query.
      */
@@ -182,11 +182,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
-        return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
         A.notNull(cls, "cls");
 
@@ -206,7 +201,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
     }
 
@@ -238,7 +233,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @return Optional projection filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private IgnitePredicate<CacheEntry<Object, Object>> filter() {
+    @Nullable private IgnitePredicate<Cache.Entry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 

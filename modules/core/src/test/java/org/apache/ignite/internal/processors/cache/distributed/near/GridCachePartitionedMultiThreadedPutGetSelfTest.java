@@ -34,8 +34,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Multithreaded partition cache put get test.
@@ -102,12 +102,12 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).cache(null).removeAll();
+            grid(0).jcache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).cache(null).clearLocally();
+            internalCache(i).clearLocally();
 
-            assert grid(i).cache(null).isEmpty();
+            assert internalCache(i).isEmpty();
         }
     }
 
@@ -171,27 +171,27 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
-    private void doTest(final IgniteTxConcurrency concurrency, final IgniteTxIsolation isolation)
+    private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> c = grid(0).cache(null);
+                IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    try (IgniteTx tx = c.txStart(concurrency, isolation)) {
+                    try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 
                         // Again.
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 

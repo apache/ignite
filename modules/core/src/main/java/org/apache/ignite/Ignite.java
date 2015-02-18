@@ -21,11 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.configuration.IgniteFsConfiguration;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -48,7 +46,6 @@ import java.util.concurrent.*;
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
- * <li>{@link IgniteProduct} - functionality for licence management and update and product related information.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
@@ -176,11 +173,11 @@ public interface Ignite extends AutoCloseable {
     public ExecutorService executorService(ClusterGroup grp);
 
     /**
-     * Gets information about product as well as license management capabilities.
+     * Gets Ignite version.
      *
-     * @return Instance of product.
+     * @return Ignite version.
      */
-    public IgniteProduct product();
+    public IgniteProductVersion version();
 
     /**
      * Gets an instance of cron-based scheduler.
@@ -188,40 +185,6 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of scheduler.
      */
     public IgniteScheduler scheduler();
-
-    /**
-     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridSecurity} interface.
-     */
-    public GridSecurity security();
-
-    /**
-     * Gets the cache instance for the given name, if one does not
-     * exist {@link IllegalArgumentException} will be thrown.
-     * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}
-     * will be thrown.
-     *
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @param name Cache name.
-     * @return Cache instance for given name.
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
-     */
-    public <K, V> GridCache<K, V> cache(@Nullable String name);
-
-    /**
-     * Gets all configured caches.
-     * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
-     *
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
-     * @return All configured caches.
-     */
-    public Collection<GridCache<?, ?>> caches();
 
     /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
@@ -250,15 +213,15 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - Ignite In-Memory File System, if one is not
+     * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
-     * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
+     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
      * documentation on Hadoop integration shipped with Ignite.
      *
-     * @param name GGFS name.
-     * @return GGFS instance.
+     * @param name IGFS name.
+     * @return IGFS instance.
      */
     public IgniteFs fileSystem(String name);
 

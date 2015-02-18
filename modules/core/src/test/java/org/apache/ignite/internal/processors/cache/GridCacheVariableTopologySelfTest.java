@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -122,14 +121,14 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
             private int cnt;
 
             @SuppressWarnings({"BusyWait"})
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 while (cnt++ < txCnt && !done.get()) {
-                    GridCache<Object, Object> cache = grid(0).cache(null);
+                    IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
 
-                    try (IgniteTx tx = cache.txStart()) {
+                    try (Transaction tx = grid(0).transactions().txStart()) {
                         int kv = RAND.nextInt(keyRange);
 
                         cache.put(kv, kv);
@@ -138,7 +137,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteTxOptimisticCheckedException e) {
+                    catch (TransactionOptimisticException e) {
                         info("Caught cache optimistic exception: " + e);
                     }
 
@@ -165,7 +164,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
         GridFuture<?> debugFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
-                Cache<Object, Object> cache = grid(0).cache(null);
+                Cache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
 
                 try {
                     Thread.sleep(15000);

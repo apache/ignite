@@ -25,11 +25,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -42,7 +40,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.event.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,8 +54,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.cache.query.CacheQueryType.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 
 /**
  * Continuous queries tests.
@@ -143,7 +143,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
                 try {
-                    grid(i).cache(null).removeAll();
+                    ((IgniteKernal)grid(i)).cache(null).removeAll();
 
                     break;
                 }
@@ -160,7 +160,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + grid(i).cache(null).entrySet(), 0, grid(i).cache(null).size());
+            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0, ((IgniteKernal)grid(i)).cache(null).size());
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
@@ -173,7 +173,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStopAck")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
-            GridCacheContinuousQueryManager mgr =
+            CacheContinuousQueryManager mgr =
                 ((IgniteKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
@@ -201,14 +201,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testApi() throws Exception {
-        final CacheContinuousQuery<Object, Object> q = grid(0).cache(null).queries().createContinuousQuery();
+    public void testIllegalArguments() throws Exception {
+        final ContinuousQuery<Object, Object> q = Query.continuous();
 
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.bufferSize(-1);
+                    q.setBufferSize(-1);
 
                     return null;
                 }
@@ -217,134 +217,25 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             null
         );
 
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    q.setBufferSize(0);
+
+                    return null;
+                }
+            }, IllegalArgumentException.class, null
+        );
+
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.bufferSize(0);
+                    q.setTimeInterval(-1);
 
                     return null;
                 }
             },
             IllegalArgumentException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.timeInterval(-1);
-
-                    return null;
-                }
-            },
-            IllegalArgumentException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.execute();
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
-            null
-        );
-
-        q.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>>() {
-            @Override public boolean apply(UUID uuid, Collection<CacheContinuousQueryEntry<Object, Object>> entries) {
-                return true;
-            }
-        });
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.execute(grid(0).forPredicate(F.<ClusterNode>alwaysFalse()));
-
-                    return null;
-                }
-            },
-            ClusterTopologyCheckedException.class,
-            null
-        );
-
-        q.execute();
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>>() {
-                        @Override public boolean apply(UUID uuid, Collection<CacheContinuousQueryEntry<Object, Object>> entries) {
-                            return false;
-                        }
-                    });
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.remoteFilter(null);
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.bufferSize(10);
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.timeInterval(10);
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
-            null
-        );
-
-        q.close();
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    q.execute();
-
-                    return null;
-                }
-            },
-            IllegalStateException.class,
             null
         );
     }
@@ -353,17 +244,16 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testAllEntries() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -378,21 +268,17 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        try {
-            qry.execute();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.put(3, 3);
 
-            cache.putx(1, 1);
-            cache.putx(2, 2);
-            cache.putx(3, 3);
+            cache.remove(2);
 
-            cache.removex(2);
-
-            cache.putx(1, 10);
+            cache.put(1, 10);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -418,25 +304,22 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(1, vals.size());
             assertEquals(3, (int)vals.get(0));
         }
-        finally {
-            qry.close();
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testEntriesByFilter() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(4);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -451,46 +334,26 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        qry.remoteFilter(new P1<CacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(CacheContinuousQueryEntry<Integer, Integer> e) {
-                return e.getKey() > 2;
+        qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                return evt.getKey() > 2;
             }
         });
 
-        // Second query to wait for notifications about all updates.
-        CacheContinuousQuery<Integer, Integer> qry0 = cache.queries().createContinuousQuery();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.put(3, 3);
+            cache.put(4, 4);
 
-        final CountDownLatch latch0 = new CountDownLatch(8);
+            cache.remove(2);
+            cache.remove(3);
 
-        qry0.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID uuid,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> ignored : entries)
-                    latch0.countDown();
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-            qry0.execute();
-
-            cache.putx(1, 1);
-            cache.putx(2, 2);
-            cache.putx(3, 3);
-            cache.putx(4, 4);
-
-            cache.removex(2);
-            cache.removex(3);
-
-            cache.putx(1, 10);
-            cache.putx(4, 40);
+            cache.put(1, 10);
+            cache.put(4, 40);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -509,91 +372,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(2, vals.size());
             assertEquals(4, (int)vals.get(0));
             assertEquals(40, (int)vals.get(1));
-
-            assert latch0.await(2, SECONDS);
-        }
-        finally {
-            qry.close();
-            qry0.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testProjection() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        // Queries for non-partitioned caches always run locally.
-        if (cache.configuration().getCacheMode() != PARTITIONED)
-            return;
-
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
-
-        final Map<Integer, List<Integer>> map = new HashMap<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
-                    synchronized (map) {
-                        List<Integer> vals = map.get(e.getKey());
-
-                        if (vals == null) {
-                            vals = new ArrayList<>();
-
-                            map.put(e.getKey(), vals);
-                        }
-
-                        vals.add(e.getValue());
-                    }
-
-                    latch.countDown();
-                }
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute(grid(0).forRemotes());
-
-            int locKey = -1;
-            int rmtKey = -1;
-
-            int key = 0;
-
-            while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
-
-                assert n != null;
-
-                if (n.equals(grid(0).localNode()))
-                    locKey = key;
-                else
-                    rmtKey = key;
-
-                key++;
-
-                if (locKey >= 0 && rmtKey >= 0)
-                    break;
-            }
-
-            cache.putx(locKey, 1);
-            cache.putx(rmtKey, 2);
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(1, map.size());
-
-            List<Integer> vals = map.get(rmtKey);
-
-            assertNotNull(vals);
-            assertEquals(1, vals.size());
-            assertEquals(2, (int)vals.get(0));
-        }
-        finally {
-            qry.close();
         }
     }
 
@@ -601,20 +379,19 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testLocalNodeOnly() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        // Queries for non-partitioned caches always run locally.
-        if (cache.configuration().getCacheMode() != PARTITIONED)
+        if (((IgniteKernal)grid(0)).cache(null).configuration().getCacheMode() != PARTITIONED)
             return;
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -629,14 +406,10 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        try {
-            qry.execute(grid(0).forLocal());
-
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.localQuery(qry)) {
             int locKey = -1;
             int rmtKey = -1;
 
@@ -658,8 +431,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     break;
             }
 
-            cache.putx(locKey, 1);
-            cache.putx(rmtKey, 2);
+            cache.put(locKey, 1);
+            cache.put(rmtKey, 2);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -671,103 +444,25 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(1, vals.size());
             assertEquals(1, (int)vals.get(0));
         }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStopByCallback() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
-
-        final Map<Integer, List<Integer>> map = new HashMap<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
-                    synchronized (map) {
-                        List<Integer> vals = map.get(e.getKey());
-
-                        if (vals == null) {
-                            vals = new ArrayList<>();
-
-                            map.put(e.getKey(), vals);
-                        }
-
-                        vals.add(e.getValue());
-                    }
-
-                    latch.countDown();
-                }
-
-                return false;
-            }
-        });
-
-        // Second query to wait for notifications about all updates.
-        CacheContinuousQuery<Integer, Integer> qry0 = cache.queries().createContinuousQuery();
-
-        final CountDownLatch latch0 = new CountDownLatch(3);
-
-        qry0.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> ignored : entries)
-                    latch0.countDown();
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-            qry0.execute();
-
-            cache.putx(1, 1);
-            cache.putx(2, 2);
-            cache.putx(3, 3);
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(1, map.size());
-
-            List<Integer> list = F.first(map.values());
-
-            assert list != null;
-
-            assertEquals(1, list.size());
-
-            assert latch0.await(2, SECONDS);
-        }
-        finally {
-            qry.close();
-            qry0.close();
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testBuffering() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        // Buffering make sense only for remote nodes, so test only for partitioned cache.
-        if (cache.configuration().getCacheMode() != PARTITIONED)
+        if (((IgniteKernal)grid(0)).cache(null).configuration().getCacheMode() != PARTITIONED)
             return;
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -782,17 +477,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        qry.bufferSize(5);
+        qry.setBufferSize(5);
 
-        try {
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
             ClusterNode node = F.first(grid(0).forRemotes().nodes());
-
-            qry.execute(grid(0).forNode(node));
 
             Collection<Integer> keys = new HashSet<>();
 
@@ -815,12 +506,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             Iterator<Integer> it = keys.iterator();
 
             for (int i = 0; i < 4; i++)
-                cache.putx(it.next(), 0);
+                cache.put(it.next(), 0);
 
             assert !latch.await(2, SECONDS);
 
             for (int i = 0; i < 2; i++)
-                cache.putx(it.next(), 0);
+                cache.put(it.next(), 0);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -838,29 +529,25 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 assertEquals(0, (int)vals.get(0));
             }
         }
-        finally {
-            qry.close();
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTimeInterval() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        // Buffering make sense only for remote nodes, so test only for partitioned cache.
-        if (cache.configuration().getCacheMode() != PARTITIONED)
+        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -875,15 +562,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        qry.bufferSize(10);
-        qry.timeInterval(3000);
+        qry.setBufferSize(10);
+        qry.setTimeInterval(3000);
 
-        try {
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
             ClusterNode node = F.first(grid(0).forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
@@ -905,9 +590,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
 
             for (Integer k : keys)
-                cache.putx(k, 0);
-
-            qry.execute(grid(0).forNode(node));
+                cache.put(k, 0);
 
             assert !latch.await(2, SECONDS);
             assert latch.await(1000 + LATCH_TIMEOUT, MILLISECONDS);
@@ -926,94 +609,112 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 assertEquals(0, (int)vals.get(0));
             }
         }
-        finally {
-            qry.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInitialPredicate() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+
+        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+            @Override public boolean apply(Integer k, Integer v) {
+                return k >= 5;
+            }
+        }));
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                assert false;
+            }
+        });
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry)) {
+            List<Cache.Entry<Integer, Integer>> res = cur.getAll();
+
+            Collections.sort(res, new Comparator<Cache.Entry<Integer, Integer>>() {
+                @Override public int compare(Cache.Entry<Integer, Integer> e1, Cache.Entry<Integer, Integer> e2) {
+                    return e1.getKey().compareTo(e2.getKey());
+                }
+            });
+
+            assertEquals(5, res.size());
+
+            int exp = 5;
+
+            for (Cache.Entry<Integer, Integer> e : res) {
+                assertEquals(exp, e.getKey().intValue());
+                assertEquals(exp, e.getValue().intValue());
+
+                exp++;
+            }
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIteration() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+    public void testInitialPredicateAndUpdates() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+
+        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+            @Override public boolean apply(Integer k, Integer v) {
+                return k >= 5;
+            }
+        }));
 
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(10);
+        final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId,
-                Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     map.put(e.getKey(), e.getValue());
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        try {
-            for (int i = 0; i < 10; i++)
-                cache.putx(i, i);
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
 
-            qry.execute();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry)) {
+            List<Cache.Entry<Integer, Integer>> res = cur.getAll();
 
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(10, map.size());
-
-            for (int i = 0; i < 10; i++)
-                assertEquals(i, (int)map.get(i));
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIterationAndUpdates() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
-
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(12);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
-                    map.put(e.getKey(), e.getValue());
-
-                    latch.countDown();
+            Collections.sort(res, new Comparator<Cache.Entry<Integer, Integer>>() {
+                @Override public int compare(Cache.Entry<Integer, Integer> e1, Cache.Entry<Integer, Integer> e2) {
+                    return e1.getKey().compareTo(e2.getKey());
                 }
+            });
 
-                return true;
+            assertEquals(5, res.size());
+
+            int exp = 5;
+
+            for (Cache.Entry<Integer, Integer> e : res) {
+                assertEquals(exp, e.getKey().intValue());
+                assertEquals(exp, e.getValue().intValue());
+
+                exp++;
             }
-        });
 
-        try {
-            for (int i = 0; i < 10; i++)
-                cache.putx(i, i);
-
-            qry.execute();
-
-            cache.putx(10, 10);
-            cache.putx(11, 11);
+            cache.put(10, 10);
+            cache.put(11, 11);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : latch.getCount();
 
-            assertEquals(12, map.size());
+            assertEquals(2, map.size());
 
-            for (int i = 0; i < 12; i++)
+            for (int i = 11; i < 12; i++)
                 assertEquals(i, (int)map.get(i));
-        }
-        finally {
-            qry.close();
         }
     }
 
@@ -1021,30 +722,25 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     map.put(e.getKey(), e.getValue());
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        try {
-            qry.execute();
-
-            for (int i = 0; i < gridCount(); i++)
-                grid(i).cache(null).loadCache(null, 0);
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            cache.loadCache(null, 0);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : "Count: " + latch.getCount();
 
@@ -1052,170 +748,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             for (int i = 0; i < 10; i++)
                 assertEquals(i, (int)map.get(i));
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTypedProjection() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry =
-            cache.projection(Integer.class, Integer.class).queries().createContinuousQuery();
-
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
-                    map.put(e.getKey(), e.getValue());
-
-                    latch.countDown();
-                }
-
-                return true;
-            }
-        });
-
-        qry.remoteFilter(new P1<CacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(CacheContinuousQueryEntry<Integer, Integer> e) {
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            cache.putx(1, 1);
-            cache.putx("a", "a");
-            cache.putx(2, 2);
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(2, map.size());
-
-            assertEquals(1, (int)map.get(1));
-            assertEquals(2, (int)map.get(2));
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEntryFilterProjection() throws Exception {
-        CacheProjection<Integer, Integer> cache = grid(0).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry = cache.projection(
-            new P1<CacheEntry<Integer, Integer>>() {
-                @Override public boolean apply(CacheEntry<Integer, Integer> e) {
-                    Integer i = e.peek();
-
-                    return i != null && i > 10;
-                }
-            }).queries().createContinuousQuery();
-
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (CacheContinuousQueryEntry<Integer, Integer> e : entries) {
-                    info("Query entry: " + e);
-
-                    map.put(e.getKey(), e.getValue());
-
-                    latch.countDown();
-                }
-
-                return true;
-            }
-        });
-
-        qry.remoteFilter(new P1<CacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(CacheContinuousQueryEntry<Integer, Integer> e) {
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            cache.putx(1, 1);
-            cache.putx(11, 11);
-            cache.putx(2, 2);
-            cache.putx(22, 22);
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals("Invalid number of entries notified: " + map, 2, map.size());
-
-            assertEquals(11, (int)map.get(11));
-            assertEquals(22, (int)map.get(22));
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testKeyValueFilterProjection() throws Exception {
-        CacheProjection<Integer, Integer> cache = grid(0).cache(null);
-
-        CacheContinuousQuery<Integer, Integer> qry = cache.projection(
-            new P2<Integer, Integer>() {
-                @Override public boolean apply(Integer key, Integer val) {
-                    return val > 10;
-                }
-            }).queries().createContinuousQuery();
-
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (Map.Entry<Integer, Integer> e : entries) {
-                    map.put(e.getKey(), e.getValue());
-
-                    latch.countDown();
-                }
-
-                return true;
-            }
-        });
-
-        qry.remoteFilter(new P1<CacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(CacheContinuousQueryEntry<Integer, Integer> e) {
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            cache.putx(1, 1);
-            cache.putx(11, 11);
-            cache.putx(2, 2);
-            cache.putx(22, 22);
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(2, map.size());
-
-            assertEquals(11, (int)map.get(11));
-            assertEquals(22, (int)map.get(22));
-        }
-        finally {
-            qry.close();
         }
     }
 
@@ -1226,33 +758,28 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         if (atomicityMode() == ATOMIC)
             return;
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Object, Object> qry = Query.continuous();
 
         final Map<Object, Object> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>>() {
-            @Override public boolean apply(UUID nodeId,
-                Collection<CacheContinuousQueryEntry<Object, Object>> entries) {
-                for (Map.Entry<Object, Object> e : entries) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                for (CacheEntryEvent<?, ?> e : evts) {
                     map.put(e.getKey(), e.getValue());
 
                     latch.countDown();
                 }
-
-                return true;
             }
         });
 
-        try {
-            qry.execute();
+        try (QueryCursor<Cache.Entry<Object, Object>> ignored = cache.query(qry)) {
+            cache.put(new GridCacheInternalKeyImpl("test"), 1);
 
-            cache.putx(new GridCacheInternalKeyImpl("test"), 1);
-
-            cache.putx(1, 1);
-            cache.putx(2, 2);
+            cache.put(1, 1);
+            cache.put(2, 2);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -1261,153 +788,45 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(1, (int)map.get(1));
             assertEquals(2, (int)map.get(2));
         }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If filter.
-     */
-    public void testUpdateInFilter() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        cache.putx(1, 1);
-
-        CacheProjection<Integer, Integer> prj = cache.projection(new P1<CacheEntry<Integer, Integer>>() {
-            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public boolean apply(final CacheEntry<Integer, Integer> e) {
-                GridTestUtils.assertThrows(
-                    log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            e.set(1000);
-
-                            return null;
-                        }
-                    },
-                    CacheFlagException.class,
-                    null
-                );
-
-                return true;
-            }
-        });
-
-        CacheContinuousQuery<Integer, Integer> qry = prj.queries().createContinuousQuery();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                latch.countDown();
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-        }
-        finally {
-            qry.close();
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNodeJoin() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-        final Collection<Map.Entry<Integer, Integer>> all = new ConcurrentLinkedDeque8<>();
+        final Collection<CacheEntryEvent<? extends Integer, ? extends Integer>> all = new ConcurrentLinkedDeque8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                assertEquals(1, entries.size());
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                int size = 0;
 
-                all.addAll(entries);
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
+                    all.add(evt);
+
+                    size++;
+                }
+
+                assertEquals(1, size);
 
                 latch.countDown();
-
-                return true;
             }
         });
 
-        qry.execute();
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            cache.put(1, 1);
 
-        cache.putx(1, 1);
-
-        try {
             startGrid("anotherGrid");
 
-            cache.putx(2, 2);
+            cache.put(2, 2);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : all;
 
             assertEquals(2, all.size());
-        }
-        finally {
-            stopGrid("anotherGrid");
-
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCallbackForPreload() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        if (cache.configuration().getCacheMode() == LOCAL)
-            return;
-
-        Map<Integer, Integer> map = new HashMap<>();
-
-        final int keysCnt = 1000;
-
-        for (int i = 0; i < keysCnt; i++)
-            map.put(i, i);
-
-        cache.putAll(map);
-
-        Ignite ignite = startGrid("anotherGrid");
-
-        try {
-            cache = ignite.cache(null);
-
-            CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery();
-
-            final CountDownLatch latch = new CountDownLatch(1);
-            final Collection<Integer> keys = new GridConcurrentHashSet<>();
-
-            qry.localCallback(new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-                @Override public boolean apply(UUID nodeId,
-                    Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                    for (Map.Entry<Integer, Integer> e : entries) {
-                        keys.add(e.getKey());
-
-                        if (keys.size() >= keysCnt)
-                            latch.countDown();
-                    }
-
-                    return true;
-                }
-            });
-
-            qry.execute();
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-
-            assertEquals(keysCnt, keys.size());
-
-            qry.close();
         }
         finally {
             stopGrid("anotherGrid");
@@ -1475,26 +894,25 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 grid(i).events().localListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-            try (CacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery()) {
-                qry.localCallback(new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-                    @Override public boolean apply(UUID uuid,
-                        Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                        return true;
-                    }
-                });
+            ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-                qry.remoteFilter(new IgnitePredicate<CacheContinuousQueryEntry<Integer, Integer>>() {
-                    @Override public boolean apply(CacheContinuousQueryEntry<Integer, Integer> e) {
-                        return e.getValue() >= 50;
-                    }
-                });
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                    // No-op.
+                }
+            });
 
-                qry.execute();
+            qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
+                @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                    return evt.getValue() >= 50;
+                }
+            });
 
+            try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
                 for (int i = 0; i < 100; i++)
-                    cache.putx(i, i);
+                    cache.put(i, i);
 
                 assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
                 assert execLatch.await(LATCH_TIMEOUT, MILLISECONDS);
@@ -1515,8 +933,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      */
     private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            Object... args) {
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (int i = 0; i < 10; i++)
                 clo.apply(i, i);
         }

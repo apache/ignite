@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -234,6 +235,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         cfg.setDiscoverySpi(discoSpi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(ccfg);
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }
@@ -276,13 +278,13 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     Ignite ignite = G.ignite(nodeName(0));
 
-                    GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+                    IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
 
                     int startKey = keysPerThread * idx;
                     int endKey = keysPerThread * (idx + 1);
 
                     Map<Integer, Integer> putMap = new HashMap<>();
-                    Collection<Integer> rmvSet = new HashSet<>();
+                    Set<Integer> rmvSet = new HashSet<>();
 
                     while (!stop.get()) {
                         for (int i = 0; i < 100; i++) {
@@ -300,7 +302,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             }
                         }
                         try {
-                            IgniteTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
+                            Transaction tx = atomicityMode() == TRANSACTIONAL ? ignite.transactions().txStart() : null;
 
                             try {
                                 cache.putAll(putMap);
@@ -319,7 +321,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             for (Integer key : rmvSet)
                                 expVals.remove(key);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Exception e) {
                             log.error("Cache update failed [putMap=" + putMap+ ", rmvSet=" + rmvSet + ']', e);
 
                             errCtr.incrementAndGet();
@@ -499,18 +501,19 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      */
     @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
-        List<GridCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
+        List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
-            GridCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = G.ignite(nodeName(i)).jcache(CACHE_NAME);
 
             assert cache != null;
 
             caches.add(cache);
 
             GridCacheAdapter<Integer, Integer> cache0 =
-                (GridCacheAdapter<Integer, Integer>)cache.<Integer, Integer>cache();
+                (GridCacheAdapter<Integer, Integer>)((IgniteKernal)cache.unwrap(Ignite.class))
+                    .<Integer, Integer>cache(CACHE_NAME);
 
             if (cache0.isNear()) {
                 if (dhtCaches == null)
@@ -525,7 +528,8 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         Collection<Integer> dhtCacheKeys = new HashSet<>();
 
         for (int i = 0; i < dataNodes(); i++) {
-            cacheKeys.addAll(caches.get(i).keySet());
+            for (Cache.Entry<Integer, Integer> entry : caches.get(i))
+                cacheKeys.add(entry.getKey());
 
             if (dhtCaches != null)
                 dhtCacheKeys.addAll(dhtCaches.get(i).keySet());
@@ -586,14 +590,12 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
             for (Integer key : failedKeys) {
                 for (int i = 0; i < dataNodes(); i++) {
-                    CacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
+                    IgniteCache<Integer, Integer> cache = caches.get(i);
 
                     UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 
-                    if (!F.eq(cacheEntry.get(), expVals.get(key)))
-                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + cacheEntry.get() +
-                            ", primary=" + cacheEntry.primary() + ", backup=" + cacheEntry.backup() +
-                            ", nodeId=" + nodeId);
+                    if (!F.eq(cache.get(key), expVals.get(key)))
+                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", nodeId=" + nodeId);
                 }
             }
 

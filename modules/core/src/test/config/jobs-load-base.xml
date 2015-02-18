@@ -77,6 +77,8 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
+        <property name="connectorConfiguration"><null/></property>
+
         <property name="cacheConfiguration">
             <list/>
         </property>

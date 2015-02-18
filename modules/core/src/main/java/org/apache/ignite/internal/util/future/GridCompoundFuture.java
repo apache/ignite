@@ -103,6 +103,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         this.rdc = rdc;
 
         addAll(futs);
+
+        markInitialized();
     }
 
     /** {@inheritDoc} */

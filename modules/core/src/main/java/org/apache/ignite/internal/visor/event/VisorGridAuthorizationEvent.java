@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.security.*;
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.AuthorizationEvent}.
+ * Lightweight counterpart for AuthorizationEvent.
  */
 public class VisorGridAuthorizationEvent extends VisorGridEvent {
     /** */
@@ -43,8 +43,8 @@ public class VisorGridAuthorizationEvent extends VisorGridEvent {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      */
     public VisorGridAuthorizationEvent(
@@ -52,13 +52,13 @@ public class VisorGridAuthorizationEvent extends VisorGridEvent {
         IgniteUuid id,
         String name,
         UUID nid,
-        long timestamp,
-        String message,
+        long ts,
+        String msg,
         String shortDisplay,
         GridSecurityPermission operation,
         GridSecuritySubject subject
     ) {
-        super(typeId, id, name, nid, timestamp, message, shortDisplay);
+        super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.operation = operation;
         this.subject = subject;

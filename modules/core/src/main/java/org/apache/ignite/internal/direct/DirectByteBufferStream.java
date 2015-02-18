@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
 
@@ -209,56 +207,6 @@ public class DirectByteBufferStream {
     private static final Object NULL = new Object();
 
     /** */
-    private static final Map<Class<?>, Type> TYPES = U.newHashMap(30);
-
-    static {
-        TYPES.put(byte.class, Type.BYTE);
-        TYPES.put(Byte.class, Type.BYTE);
-        TYPES.put(short.class, Type.SHORT);
-        TYPES.put(Short.class, Type.SHORT);
-        TYPES.put(int.class, Type.INT);
-        TYPES.put(Integer.class, Type.INT);
-        TYPES.put(long.class, Type.LONG);
-        TYPES.put(Long.class, Type.LONG);
-        TYPES.put(float.class, Type.FLOAT);
-        TYPES.put(Float.class, Type.FLOAT);
-        TYPES.put(double.class, Type.DOUBLE);
-        TYPES.put(Double.class, Type.DOUBLE);
-        TYPES.put(char.class, Type.CHAR);
-        TYPES.put(Character.class, Type.CHAR);
-        TYPES.put(boolean.class, Type.BOOLEAN);
-        TYPES.put(Boolean.class, Type.BOOLEAN);
-        TYPES.put(byte[].class, Type.BYTE_ARR);
-        TYPES.put(short[].class, Type.SHORT_ARR);
-        TYPES.put(int[].class, Type.INT_ARR);
-        TYPES.put(long[].class, Type.LONG_ARR);
-        TYPES.put(float[].class, Type.FLOAT_ARR);
-        TYPES.put(double[].class, Type.DOUBLE_ARR);
-        TYPES.put(char[].class, Type.CHAR_ARR);
-        TYPES.put(boolean[].class, Type.BOOLEAN_ARR);
-        TYPES.put(String.class, Type.STRING);
-        TYPES.put(BitSet.class, Type.BIT_SET);
-        TYPES.put(UUID.class, Type.UUID);
-        TYPES.put(IgniteUuid.class, Type.IGNITE_UUID);
-    }
-
-    /**
-     * @param cls Class.
-     * @return Type enum value.
-     */
-    private static Type type(Class<?> cls) {
-        Type type = TYPES.get(cls);
-
-        if (type == null) {
-            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
-
-            type = Type.MSG;
-        }
-
-        return type;
-    }
-
-    /** */
     private final MessageFactory msgFactory;
 
     /** */
@@ -318,7 +266,7 @@ public class DirectByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(@Nullable MessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 
@@ -481,16 +429,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param val Value.
-     */
-    public void writeByteArray(byte[] val, int off, int len) {
-        if (val != null)
-            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len, true);
-        else
-            writeInt(-1);
-    }
-
-    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {
@@ -589,28 +527,33 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param val Value
-     */
-    public void writeEnum(Enum<?> val) {
-        writeByte(val != null ? (byte)val.ordinal() : -1);
-    }
-
-    /**
      * @param msg Message.
      */
-    public void writeMessage(MessageAdapter msg) {
-        if (msg != null)
-            lastFinished = buf.hasRemaining() && msg.writeTo(buf);
+    public void writeMessage(MessageAdapter msg, MessageWriter writer) {
+        if (msg != null) {
+            if (buf.hasRemaining()) {
+                try {
+                    writer.beforeInnerMessageWrite();
+
+                    lastFinished = msg.writeTo(buf, writer);
+                }
+                finally {
+                    writer.afterInnerMessageWrite(lastFinished);
+                }
+            }
+            else
+                lastFinished = false;
+        }
         else
             writeByte(Byte.MIN_VALUE);
     }
 
     /**
      * @param arr Array.
-     * @param itemCls Component type.
+     * @param itemType Component type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, Class<T> itemCls, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriter writer) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -621,20 +564,11 @@ public class DirectByteBufferStream {
                 it = arrayIterator(arr);
             }
 
-            Type itemType = type(itemCls);
-
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG) {
-                        cur = ((MessageAdapter)cur).clone();
-
-                        ((MessageAdapter)cur).setWriter(writer);
-                    }
-                }
-
-                write(itemType, cur);
+                write(itemType, cur, writer);
 
                 if (!lastFinished)
                     return;
@@ -650,10 +584,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param col Collection.
-     * @param itemCls Item type.
+     * @param itemType Item type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, Class<T> itemCls, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -664,20 +598,11 @@ public class DirectByteBufferStream {
                 it = col.iterator();
             }
 
-            Type itemType = type(itemCls);
-
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG) {
-                        cur = ((MessageAdapter)cur).clone();
-
-                        ((MessageAdapter)cur).setWriter(writer);
-                    }
-                }
-
-                write(itemType, cur);
+                write(itemType, cur, writer);
 
                 if (!lastFinished)
                     return;
@@ -693,12 +618,13 @@ public class DirectByteBufferStream {
 
     /**
      * @param map Map.
-     * @param keyCls Key type.
-     * @param valCls Value type.
+     * @param keyType Key type.
+     * @param valType Value type.
      * @param writer Writer.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, MessageAdapter.Type keyType, MessageAdapter.Type valType,
+        MessageWriter writer) {
         if (map != null) {
             if (it == null) {
                 writeInt(map.size());
@@ -709,41 +635,16 @@ public class DirectByteBufferStream {
                 it = map.entrySet().iterator();
             }
 
-            Type keyType = type(keyCls);
-            Type valType = type(valCls);
-
             while (it.hasNext() || cur != NULL) {
                 Map.Entry<K, V> e;
 
-                if (cur == NULL) {
+                if (cur == NULL)
                     cur = it.next();
 
-                    e = (Map.Entry<K, V>)cur;
-
-                    if (keyType == Type.MSG || valType == Type.MSG) {
-                        K k = e.getKey();
-                        V v = e.getValue();
-
-                        if (k != null && keyType == Type.MSG) {
-                            k = (K)((MessageAdapter)k).clone();
-
-                            ((MessageAdapter)k).setWriter(writer);
-                        }
-
-                        if (v != null && valType == Type.MSG) {
-                            v = (V)((MessageAdapter)v).clone();
-
-                            ((MessageAdapter)v).setWriter(writer);
-                        }
-
-                        cur = e = F.t(k, v);
-                    }
-                }
-                else
-                    e = (Map.Entry<K, V>)cur;
+                e = (Map.Entry<K, V>)cur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey());
+                    write(keyType, e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -751,7 +652,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue());
+                write(valType, e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -910,14 +811,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param len Length.
-     * @return Value.
-     */
-    public byte[] readByteArray(int len) {
-        return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF, len);
-    }
-
-    /**
      /**
       * @return Value.
       */
@@ -1004,17 +897,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param enumCls Enum type.
-     * @return Value.
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends Enum<T>> T readEnum(Class<T> enumCls) {
-        byte ord = readByte();
-
-        return ord >= 0 ? (T)GridEnumCache.get(enumCls)[ord] : null;
-    }
-
-    /**
      * @return Message.
      */
     @SuppressWarnings("unchecked")
@@ -1048,11 +930,12 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemCls Component type.
+     * @param itemType Component type.
+     * @param itemCls Component class.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(Class<?> itemCls) {
+    public <T> T[] readObjectArray(MessageAdapter.Type itemType, Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1065,8 +948,6 @@ public class DirectByteBufferStream {
         if (readSize >= 0) {
             if (objArr == null)
                 objArr = (Object[])Array.newInstance(itemCls, readSize);
-
-            Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
@@ -1092,11 +973,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemCls Item type.
+     * @param itemType Item type.
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<T>, T> C readCollection(Class<T> itemCls) {
+    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1109,8 +990,6 @@ public class DirectByteBufferStream {
         if (readSize >= 0) {
             if (col == null)
                 col = new ArrayList<>(readSize);
-
-            Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
@@ -1128,21 +1007,21 @@ public class DirectByteBufferStream {
         readItems = 0;
         cur = null;
 
-        Collection<T> col0 = (Collection<T>)col;
+        C col0 = (C)col;
 
         col = null;
 
-        return (C)col0;
+        return col0;
     }
 
     /**
-     * @param keyCls Key type.
-     * @param valCls Value type.
+     * @param keyType Key type.
+     * @param valType Value type.
      * @param linked Whether linked map should be created.
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls, boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType, boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1155,9 +1034,6 @@ public class DirectByteBufferStream {
         if (readSize >= 0) {
             if (map == null)
                 map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
-
-            Type keyType = type(keyCls);
-            Type valType = type(valCls);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
@@ -1187,11 +1063,11 @@ public class DirectByteBufferStream {
         readItems = 0;
         cur = null;
 
-        Map<K, V> map0 = (Map<K, V>)map;
+        M map0 = (M)map;
 
         map = null;
 
-        return (M)map0;
+        return map0;
     }
 
     /**
@@ -1342,8 +1218,9 @@ public class DirectByteBufferStream {
     /**
      * @param type Type.
      * @param val Value.
+     * @param writer Writer.
      */
-    private void write(Type type, Object val) {
+    private void write(MessageAdapter.Type type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1446,7 +1323,16 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
-                writeMessage((MessageAdapter)val);
+                try {
+                    if (val != null)
+                        writer.beforeInnerMessageWrite();
+
+                    writeMessage((MessageAdapter)val, writer);
+                }
+                finally {
+                    if (val != null)
+                        writer.afterInnerMessageWrite(lastFinished);
+                }
 
                 break;
 
@@ -1459,7 +1345,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @return Value.
      */
-    private Object read(Type type) {
+    private Object read(MessageAdapter.Type type) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1563,51 +1449,5 @@ public class DirectByteBufferStream {
          * @return New array.
          */
         public T create(int len);
-    }
-
-    /**
-     */
-    private enum Type {
-        BYTE,
-
-        SHORT,
-
-        INT,
-
-        LONG,
-
-        FLOAT,
-
-        DOUBLE,
-
-        CHAR,
-
-        BOOLEAN,
-
-        BYTE_ARR,
-
-        SHORT_ARR,
-
-        INT_ARR,
-
-        LONG_ARR,
-
-        FLOAT_ARR,
-
-        DOUBLE_ARR,
-
-        CHAR_ARR,
-
-        BOOLEAN_ARR,
-
-        STRING,
-
-        BIT_SET,
-
-        UUID,
-
-        IGNITE_UUID,
-
-        MSG
     }
 }

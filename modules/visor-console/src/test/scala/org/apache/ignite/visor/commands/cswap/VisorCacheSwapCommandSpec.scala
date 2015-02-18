@@ -59,8 +59,8 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration = {
-        val cfg = new CacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+        val cfg = new CacheConfiguration[Object, Object]
 
         cfg.setName(name)
         cfg.setCacheMode(CacheMode.PARTITIONED)
@@ -72,13 +72,13 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cswap' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=<default>")
     }
 
     it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=cache")
     }

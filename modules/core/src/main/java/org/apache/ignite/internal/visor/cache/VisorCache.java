@@ -34,7 +34,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.GridCache}.
+ * Data transfer object for {@link IgniteCache}.
  */
 public class VisorCache implements Serializable {
     /** */
@@ -68,7 +68,7 @@ public class VisorCache implements Serializable {
     private long offHeapAllocatedSize;
 
     /** Number of cache entries stored in off-heap memory. */
-    private long offHeapEntriesCount;
+    private long offHeapEntriesCnt;
 
     /** Size in bytes for swap space. */
     private long swapSize;
@@ -92,19 +92,19 @@ public class VisorCache implements Serializable {
     private GridDhtPartitionMap partsMap;
 
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @param c Actual cache.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
-        assert g != null;
+    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+        assert ignite != null;
         assert c != null;
 
         String cacheName = c.name();
 
-        GridCacheAdapter ca = ((IgniteKernal)g).internalCache(cacheName);
+        GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
 
         long swapSize;
         long swapKeys;
@@ -161,7 +161,7 @@ public class VisorCache implements Serializable {
             }
             else {
                 // Old way of collecting partitions info.
-                ClusterNode node = g.cluster().localNode();
+                ClusterNode node = ignite.cluster().localNode();
 
                 int[] pp = ca.affinity().primaryPartitions(node);
 
@@ -188,11 +188,11 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<CacheEntry> set = ca.entrySet();
+        Set<GridCacheEntryEx> set = ca.map().entries0();
 
         long memSz = 0;
 
-        Iterator<CacheEntry> it = set.iterator();
+        Iterator<GridCacheEntryEx> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 
@@ -243,7 +243,7 @@ public class VisorCache implements Serializable {
         c.dhtSize(dhtSize);
         c.primarySize(primarySize);
         c.offHeapAllocatedSize(offHeapAllocatedSize);
-        c.offHeapEntriesCount(offHeapEntriesCount);
+        c.offHeapEntriesCount(offHeapEntriesCnt);
         c.swapSize(swapSize);
         c.swapKeys(swapKeys);
         c.partitions(partsCnt);
@@ -370,14 +370,14 @@ public class VisorCache implements Serializable {
      * @return Number of cache entries stored in off-heap memory.
      */
     public long offHeapEntriesCount() {
-        return offHeapEntriesCount;
+        return offHeapEntriesCnt;
     }
 
     /**
      * @param offHeapEntriesCnt New number of cache entries stored in off-heap memory.
      */
     public void offHeapEntriesCount(long offHeapEntriesCnt) {
-        offHeapEntriesCount = offHeapEntriesCnt;
+        this.offHeapEntriesCnt = offHeapEntriesCnt;
     }
 
     /**

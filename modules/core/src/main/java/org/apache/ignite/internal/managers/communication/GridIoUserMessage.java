@@ -203,85 +203,58 @@ public class GridIoUserMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridIoUserMessage _clone = new GridIoUserMessage();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridIoUserMessage _clone = (GridIoUserMessage)_msg;
-
-        _clone.body = body;
-        _clone.bodyBytes = bodyBytes;
-        _clone.clsLdrId = clsLdrId;
-        _clone.topic = topic;
-        _clone.topicBytes = topicBytes;
-        _clone.depMode = depMode;
-        _clone.depClsName = depClsName;
-        _clone.userVer = userVer;
-        _clone.ldrParties = ldrParties;
-        _clone.dep = dep;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("bodyBytes", bodyBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeString("depClsName", depClsName))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
-                if (!writer.writeEnum("depMode", depMode))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("ldrParties", ldrParties, UUID.class, IgniteUuid.class))
+                if (!writer.writeMap("ldrParties", ldrParties, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -289,18 +262,17 @@ public class GridIoUserMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 bodyBytes = reader.readByteArray("bodyBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
@@ -308,7 +280,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 depClsName = reader.readString("depClsName");
@@ -316,23 +288,27 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
-                depMode = reader.readEnum("depMode", DeploymentMode.class);
+                byte depModeOrd;
+
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                depMode = DeploymentMode.fromOrdinal(depModeOrd);
+
+                readState++;
 
             case 4:
-                ldrParties = reader.readMap("ldrParties", UUID.class, IgniteUuid.class, false);
+                ldrParties = reader.readMap("ldrParties", Type.UUID, Type.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -340,7 +316,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 userVer = reader.readString("userVer");
@@ -348,7 +324,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

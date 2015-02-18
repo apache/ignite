@@ -138,68 +138,46 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDeploymentInfoBean _clone = new GridDeploymentInfoBean();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDeploymentInfoBean _clone = (GridDeploymentInfoBean)_msg;
-
-        _clone.clsLdrId = clsLdrId;
-        _clone.depMode = depMode;
-        _clone.userVer = userVer;
-        _clone.locDepOwner = locDepOwner;
-        _clone.participants = participants;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
-                if (!writer.writeEnum("depMode", depMode))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
-                if (!writer.writeMap("participants", participants, UUID.class, IgniteUuid.class))
+                if (!writer.writeMap("participants", participants, Type.UUID, Type.IGNITE_UUID))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -207,26 +185,29 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
-                depMode = reader.readEnum("depMode", DeploymentMode.class);
+                byte depModeOrd;
+
+                depModeOrd = reader.readByte("depMode");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                depMode = DeploymentMode.fromOrdinal(depModeOrd);
+
+                readState++;
 
             case 2:
                 locDepOwner = reader.readBoolean("locDepOwner");
@@ -234,15 +215,15 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
-                participants = reader.readMap("participants", UUID.class, IgniteUuid.class, false);
+                participants = reader.readMap("participants", Type.UUID, Type.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 userVer = reader.readString("userVer");
@@ -250,7 +231,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

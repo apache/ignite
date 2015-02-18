@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -81,9 +80,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Version. */
     private GridCacheVersion ver;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -105,6 +101,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
+    /** Skip values flag. */
+    private boolean skipVals;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -120,11 +119,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -133,11 +132,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -149,11 +148,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
-        this.filters = filters;
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
         this.expiryPlc = expiryPlc;
+        this.skipVals = skipVals;
 
         futId = IgniteUuid.randomUuid();
 
@@ -335,8 +334,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        filters,
-                        expiryPlc);
+                        expiryPlc,
+                        skipVals);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -386,15 +385,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     readThrough,
                     reload,
                     topVer,
-                    filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    skipVals);
 
                 add(fut); // Append new future.
 
                 try {
-                    cctx.io().send(n, req);
+                    cctx.io().send(n, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
@@ -444,12 +443,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
                                 /**update-metrics*/false,
-                                /*event*/true,
+                                /*event*/!skipVals,
                                 /*temporary*/false,
                                 subjId,
                                 null,
                                 taskName,
-                                filters,
                                 expiryPlc);
 
                             colocated.context().evicts().touch(entry, topVer);

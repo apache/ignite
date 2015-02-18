@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -33,13 +33,14 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -103,8 +104,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         boolean invalidate,
         long timeout,
         int txSize,
@@ -202,7 +203,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public GridTuple<V> peek(GridCacheContext<K, V> cacheCtx, boolean failFast, K key,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException {
         assert false : "Method peek can only be called on user transaction: " + this;
 
         throw new IllegalStateException("Method peek can only be called on user transaction: " + this);
@@ -345,8 +346,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             entry.groupLockEntry(e.groupLockEntry());
 
             // DR stuff.
-            entry.drVersion(e.drVersion());
-            entry.drExpireTime(e.drExpireTime());
+            entry.conflictVersion(e.conflictVersion());
+            entry.conflictExpireTime(e.conflictExpireTime());
         }
 
         addExplicit(e);
@@ -430,17 +431,17 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
                 while (true) {
-                    GridCacheEntryEx<K, V> cacheEntry = txEntry.cached();
+                    GridCacheEntryEx<K, V> Entry = txEntry.cached();
 
-                    assert cacheEntry != null : "Missing cached entry for transaction entry: " + txEntry;
+                    assert Entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
                     try {
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!txEntry.groupLockEntry() && !cacheEntry.lockedBy(ver)) {
+                        if (!txEntry.groupLockEntry() && !Entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
-                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + cacheEntry +
+                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
                                     ", tx=" + this + ']');
 
                             return;
@@ -503,49 +504,46 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    GridCacheVersion explicitVer = txEntry.drVersion();
+                                    GridCacheVersion explicitVer = txEntry.conflictVersion();
 
-                                    if (finalizationStatus() == FinalizationStatus.RECOVERY_FINISH || optimistic()) {
-                                        // Primary node has left the grid so we have to process conflicts on backups.
-                                        if (explicitVer == null)
-                                            explicitVer = writeVersion(); // Force write version to be used.
+                                    if (txEntry.ttl() == CU.TTL_ZERO)
+                                        op = DELETE;
 
-                                        boolean drNeedResolve =
-                                            cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
+
+                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve();
 
                                         if (drNeedResolve) {
                                             IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
                                                 drRes = conflictResolve(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
+                                                txEntry.ttl(), txEntry.conflictExpireTime(), explicitVer, cached);
 
-                                            assert drRes != null;
+                                        assert drRes != null;
 
                                             GridCacheVersionConflictContext<K, V> drCtx = drRes.get2();
 
-                                            if (drCtx.isUseOld())
-                                                op = NOOP;
-                                            else if (drCtx.isUseNew()) {
-                                                txEntry.ttl(drCtx.ttl());
+                                        if (drCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (drCtx.isUseNew()) {
+                                            txEntry.ttl(drCtx.ttl());
 
-                                                if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
-                                                    txEntry.drExpireTime(drCtx.expireTime());
-                                                else
-                                                    txEntry.drExpireTime(-1L);
-                                            }
-                                            else if (drCtx.isMerge()) {
-                                                op = drRes.get1();
-                                                val = drCtx.mergeValue();
-                                                valBytes = null;
-                                                explicitVer = writeVersion();
-
-                                                txEntry.ttl(drCtx.ttl());
-                                                txEntry.drExpireTime(-1L);
-                                            }
+                                            if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
+                                                txEntry.conflictExpireTime(drCtx.expireTime());
+                                            else
+                                                txEntry.conflictExpireTime(-1L);
                                         }
-                                        else
-                                            // Nullify explicit version so that innerSet/innerRemove will work as usual.
-                                            explicitVer = null;
+                                        else if (drCtx.isMerge()) {
+                                            op = drRes.get1();
+                                            val = drCtx.mergeValue();
+                                            valBytes = null;
+                                            explicitVer = writeVersion();
+
+                                            txEntry.ttl(drCtx.ttl());
+                                            txEntry.conflictExpireTime(-1L);
+                                        }
                                     }
+                                    else
+                                        // Nullify explicit version so that innerSet/innerRemove will work as usual.
+                                        explicitVer = null;
 
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).
@@ -557,7 +555,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
-                                                replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
+                                                replicate ? DR_BACKUP : DR_NONE, txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
                                                 resolveTaskName());
 
@@ -592,10 +590,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             nearCached.updateOrEvict(xidVer, null, null, 0, 0, nodeId);
                                     }
                                     else if (op == RELOAD) {
-                                        V reloaded = cached.innerReload(CU.<K, V>empty());
+                                        V reloaded = cached.innerReload();
 
                                         if (nearCached != null) {
-                                            nearCached.innerReload(CU.<K, V>empty());
+                                            nearCached.innerReload();
 
                                             nearCached.updateOrEvict(cached.version(), reloaded, null,
                                                 cached.expireTime(), cached.ttl(), nodeId);
@@ -659,12 +657,14 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                             }
                         }
                         catch (Throwable ex) {
+                            uncommit();
+
                             state(UNKNOWN);
 
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
-                            err = ex instanceof IgniteCheckedException ? (IgniteCheckedException)ex :
-                                new IgniteCheckedException("Commit produced a runtime exception: " + this, ex);
+                            err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
+                                "(all transaction entries will be invalidated): " + CU.txString(this), ex);
                         }
                     }
                 }
@@ -688,7 +688,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             state(PREPARED);
 
         if (!state(COMMITTING)) {
-            IgniteTxState state = state();
+            TransactionState state = state();
 
             // If other thread is doing commit, then no-op.
             if (state == COMMITTING || state == COMMITTED)
@@ -735,7 +735,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         try {
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
-            if (state(ROLLING_BACK)) {
+            if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this);
 
                 state(ROLLED_BACK);

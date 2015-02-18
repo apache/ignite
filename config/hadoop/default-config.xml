@@ -37,7 +37,7 @@
         Optional description.
     -->
     <description>
-        Spring file for Ignite node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        Spring file for Ignite node configuration with IGFS and Apache Hadoop map-reduce support enabled.
         Ignite node will start with this configuration by default.
     </description>
 
@@ -50,9 +50,9 @@
     </bean>
 
     <!--
-        Abstract GGFS file system configuration to be used as a template.
+        Abstract IGFS file system configuration to be used as a template.
     -->
-    <bean id="ggfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
+    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.IgfsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -62,7 +62,7 @@
     </bean>
 
     <!--
-        Abstract cache configuration for GGFS file data to be used as a template.
+        Abstract cache configuration for IGFS file data to be used as a template.
     -->
     <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
@@ -70,7 +70,7 @@
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="0"/>
         <property name="affinityMapper">
-            <bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper">
+            <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
                 <!-- How many sequential blocks will be stored on the same node. -->
                 <constructor-arg value="512"/>
             </bean>
@@ -78,7 +78,7 @@
     </bean>
 
     <!--
-        Abstract cache configuration for GGFS metadata to be used as a template.
+        Abstract cache configuration for IGFS metadata to be used as a template.
     -->
     <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
@@ -103,19 +103,23 @@
         <!--
             This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
-        <property name="restTcpPort" value="11211"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="11211"/>
+            </bean>
+        </property>
 
         <!--
-            Configure one GGFS file system instance named "ggfs" on this node.
+            Configure one IGFS file system instance named "igfs" on this node.
         -->
-        <property name="ggfsConfiguration">
+        <property name="igfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="ggfsCfgBase">
-                    <property name="name" value="ggfs"/>
+                <bean class="org.apache.ignite.configuration.IgfsConfiguration" parent="igfsCfgBase">
+                    <property name="name" value="igfs"/>
 
                     <!-- Caches with these names must be configured. -->
-                    <property name="metaCacheName" value="ggfs-meta"/>
-                    <property name="dataCacheName" value="ggfs-data"/>
+                    <property name="metaCacheName" value="igfs-meta"/>
+                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Configure TCP endpoint for communication with the file system instance. -->
                     <property name="ipcEndpointConfiguration">
@@ -130,18 +134,18 @@
         </property>
 
         <!--
-            Caches needed by GGFS.
+            Caches needed by IGFS.
         -->
         <property name="cacheConfiguration">
             <list>
                 <!-- File system metadata cache. -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
-                    <property name="name" value="ggfs-meta"/>
+                    <property name="name" value="igfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
-                    <property name="name" value="ggfs-data"/>
+                    <property name="name" value="igfs-data"/>
                 </bean>
             </list>
         </property>

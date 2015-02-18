@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
@@ -202,9 +202,19 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            ses.send(res);
-                        }
-                    });
+                            GridNioFuture<?> sf = ses.send(res);
+
+                            // Check if send failed.
+                            if (sf.isDone())
+                                try {
+                                    sf.get();
+                                }
+                                catch (Exception e) {
+                                    U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']',
+                                        e);
+                                }
+                    }
+            });
                 else
                     U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
                         ", msg=" + msg + ']');
@@ -312,19 +322,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restTopReq.command(TOPOLOGY);
 
             restReq = restTopReq;
-        }
-        else if (msg instanceof GridClientLogRequest) {
-            GridClientLogRequest req = (GridClientLogRequest) msg;
-
-            GridRestLogRequest restLogReq = new GridRestLogRequest();
-
-            restLogReq.command(LOG);
-
-            restLogReq.path(req.path());
-            restLogReq.from(req.from());
-            restLogReq.to(req.to());
-
-            restReq = restLogReq;
         }
 
         if (restReq != null) {

@@ -26,10 +26,10 @@ import java.lang.reflect.*;
  * Component type.
  */
 public enum IgniteComponentType {
-    /** GGFS. */
-    GGFS(
-        "org.apache.ignite.internal.processors.fs.IgniteFsNoopProcessor",
-        "org.apache.ignite.internal.processors.fs.IgniteFsProcessor",
+    /** IGFS. */
+    IGFS(
+        "org.apache.ignite.internal.processors.igfs.IgfsNoopProcessor",
+        "org.apache.ignite.internal.processors.igfs.IgfsProcessor",
         "ignite-hadoop"
     ),
 
@@ -40,10 +40,10 @@ public enum IgniteComponentType {
         "ignite-hadoop"
     ),
 
-    /** GGFS helper component. */
-    GGFS_HELPER(
-        "org.apache.ignite.internal.processors.fs.IgniteFsNoopHelper",
-        "org.apache.ignite.internal.processors.fs.IgniteFsHelperImpl",
+    /** IGFS helper component. */
+    IGFS_HELPER(
+        "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
+        "org.apache.ignite.internal.processors.igfs.IgfsHelperImpl",
         "ignite-hadoop"
     ),
 
@@ -66,13 +66,6 @@ public enum IgniteComponentType {
         null,
         "org.apache.ignite.internal.util.nodestart.IgniteSshProcessorImpl",
         "ignite-ssh"
-    ),
-
-    /** Email sending. */
-    EMAIL(
-        "org.apache.ignite.internal.processors.email.IgniteNoopEmailProcessor",
-        "org.apache.ignite.internal.processors.email.IgniteEmailProcessor",
-        "ignite-email"
     ),
 
     /** Integration of cache transactions with JTA. */

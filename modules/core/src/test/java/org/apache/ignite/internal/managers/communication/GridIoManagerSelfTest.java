@@ -132,7 +132,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         GridIoManager ioMgr = spy(new TestGridIoManager(ctx));
 
         try {
-            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_GGFS, false, 123L);
+            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_IGFS, false, 123L);
         }
         catch (IgniteCheckedException ignored) {
             // No-op. We are using mocks so real sending is impossible.
@@ -156,7 +156,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         GridIoManager ioMgr = spy(new TestGridIoManager(ctx));
 
         try {
-            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_GGFS, true, 123L);
+            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_IGFS, true, 123L);
         }
         catch (Exception ignored) {
             // No-op. We are using mocks so real sending is impossible.
@@ -220,18 +220,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static class Message extends MessageAdapter implements Serializable {
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter _msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             return true;
         }
 

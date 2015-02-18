@@ -114,60 +114,37 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridNearTxFinishResponse _clone = new GridNearTxFinishResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearTxFinishResponse _clone = (GridNearTxFinishResponse)_msg;
-
-        _clone.err = err;
-        _clone.errBytes = errBytes;
-        _clone.miniId = miniId;
-        _clone.nearThreadId = nearThreadId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 5:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeLong("nearThreadId", nearThreadId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -175,21 +152,20 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 5:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 miniId = reader.readIgniteUuid("miniId");
@@ -197,7 +173,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 nearThreadId = reader.readLong("nearThreadId");
@@ -205,7 +181,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

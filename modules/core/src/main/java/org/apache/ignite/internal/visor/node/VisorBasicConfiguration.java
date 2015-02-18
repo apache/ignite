@@ -66,9 +66,6 @@ public class VisorBasicConfiguration implements Serializable {
     /** Network timeout. */
     private long netTimeout;
 
-    /** Node license URL */
-    private String licenseUrl;
-
     /** Logger used on node. */
     private String log;
 
@@ -103,24 +100,23 @@ public class VisorBasicConfiguration implements Serializable {
     private String securityCred;
 
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @param c Grid configuration.
      * @return Data transfer object for node basic configuration properties.
      */
-    public static VisorBasicConfiguration from(IgniteEx g, IgniteConfiguration c) {
+    public static VisorBasicConfiguration from(IgniteEx ignite, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());
         cfg.ggHome(getProperty(IGNITE_HOME, c.getIgniteHome()));
         cfg.localHost(getProperty(IGNITE_LOCAL_HOST, c.getLocalHost()));
-        cfg.nodeId(g.localNode().id());
+        cfg.nodeId(ignite.localNode().id());
         cfg.marshaller(compactClass(c.getMarshaller()));
         cfg.deploymentMode(compactObject(c.getDeploymentMode()));
         cfg.daemon(boolValue(IGNITE_DAEMON, c.isDaemon()));
-        cfg.jmxRemote(g.isJmxRemoteEnabled());
-        cfg.restart(g.isRestartEnabled());
+        cfg.jmxRemote(ignite.isJmxRemoteEnabled());
+        cfg.restart(ignite.isRestartEnabled());
         cfg.networkTimeout(c.getNetworkTimeout());
-        cfg.licenseUrl(c.getLicenseUrl());
         cfg.logger(compactClass(c.getGridLogger()));
         cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
         cfg.mBeanServer(compactClass(c.getMBeanServer()));
@@ -131,7 +127,6 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.quiet(boolValue(IGNITE_QUIET, true));
         cfg.successFile(getProperty(IGNITE_SUCCESS_FILE));
         cfg.updateNotifier(boolValue(IGNITE_UPDATE_NOTIFIER, true));
-        cfg.securityCredentialsProvider(compactClass(c.getSecurityCredentialsProvider()));
 
         return cfg;
     }
@@ -274,20 +269,6 @@ public class VisorBasicConfiguration implements Serializable {
      */
     public void networkTimeout(long netTimeout) {
         this.netTimeout = netTimeout;
-    }
-
-    /**
-     * @return Node license URL
-     */
-    @Nullable public String licenseUrl() {
-        return licenseUrl;
-    }
-
-    /**
-     * @param licenseUrl New node license URL
-     */
-    public void licenseUrl(@Nullable String licenseUrl) {
-        this.licenseUrl = licenseUrl;
     }
 
     /**

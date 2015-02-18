@@ -17,13 +17,11 @@
 
 package org.apache.ignite.visor.commands.alert
 
-import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.util.lang.{GridFunc => F}
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgnitePredicate
 
 import java.util.UUID
@@ -31,7 +29,7 @@ import java.util.concurrent.atomic._
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.immutable._
 import scala.language.implicitConversions
@@ -44,7 +42,7 @@ import scala.util.control.Breaks._
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------+
- * | alert | Generates email alerts for user-defined events.             |
+ * | alert | Generates alerts for user-defined events.                   |
  * |       | Node events and grid-wide events are defined via mnemonics. |
  * +---------------------------------------------------------------------+
  * }}}
@@ -71,9 +69,6 @@ import scala.util.control.Breaks._
  *         Note that only one of the '-u' or '-r' is allowed.
  *         If neither '-u' or '-r' provided - all alerts will be printed.
  *
- *         NOTE: Email settings can be specified in Ignite configu
- *         Email notification will be sent for the alert only
- *         provided mnemonic predicates evaluate to 'true'."
  *     -t
  *         Defines notification frequency in seconds. Default is 15 minutes.
  *         This parameter can only appear with '-r'.
@@ -110,9 +105,6 @@ import scala.util.control.Breaks._
  *           gte - Greater than or equal '>=' to '<value>' number.
  *           lt - Less than '<' to 'NN' number.
  *           lte - Less than or equal '<=' to '<value>' number.
- *
- *         NOTE: Email notification will be sent for the alert only when all
- *               provided mnemonic predicates evaluate to 'true'.
  * }}}
  *
  * ====Examples====
@@ -256,12 +248,6 @@ class VisorAlertCommand {
             if (!isConnected)
                 adviseToConnect()
             else {
-                // Warn but don't halt.
-                if (F.isEmpty(grid.configuration().getAdminEmails))
-                    warn("Admin emails are not configured (ignoring).")
-                else if (!grid.isSmtpEnabled)
-                    warn("SMTP is not configured (ignoring).")
-
                 val dfltNodeF = (_: ClusterNode) => true
                 val dfltGridF = () => true
 
@@ -276,11 +262,11 @@ class VisorAlertCommand {
 
                         n match {
                             // Grid-wide metrics (not node specific).
-                            case "cc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, grid.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(grid.nodes()).size)
+                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.metrics().getTotalCpus)
+                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.nodes().size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(ignite.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
-                                () => (grid.metrics().getAverageCpuLoad * 100).toLong)
+                                () => (ignite.metrics().getAverageCpuLoad * 100).toLong)
 
                             // Per-node current metrics.
                             case "aj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentActiveJobs)
@@ -358,7 +344,7 @@ class VisorAlertCommand {
                 override def apply(evt: Event): Boolean = {
                     val discoEvt = evt.asInstanceOf[DiscoveryEvent]
 
-                    val node = grid.node(discoEvt.eventNode().id())
+                    val node = ignite.node(discoEvt.eventNode().id())
 
                     if (node != null)
                         alerts foreach (t => {
@@ -411,9 +397,6 @@ class VisorAlertCommand {
 
                                     stats = stats + (id -> stat)
 
-                                    // Send alert email notification.
-                                    sendEmail(alert, if (nb) Some(node) else None)
-
                                     // Write to Visor log if it is started (see 'log' command).
                                     logText(
                                         "Alert [" +
@@ -440,7 +423,7 @@ class VisorAlertCommand {
                 }
             }
 
-            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
+            ignite.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 
@@ -451,7 +434,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(true, false)) {
             assert(lsnr != null)
 
-            assert(grid.events().stopLocalListen(lsnr))
+            assert(ignite.events().stopLocalListen(lsnr))
 
             lsnr = null
         }
@@ -463,56 +446,6 @@ class VisorAlertCommand {
     private def reset() {
         unregisterAll()
         unregisterListener()
-    }
-
-    /**
-     * Sends email.
-     *
-     * @param a Alert to send email about.
-     * @param n `Option` for node.
-     */
-    private def sendEmail(a: VisorAlert, n: Option[ClusterNode]) {
-        assert(a != null)
-        assert(n != null)
-
-        val subj = "Visor alert triggered: '" + a.spec + '\''
-        val headline = "Ignite ver. " + grid.product().version()
-
-        val stat = stats(a.id)
-
-        assert(stat != null)
-
-        var body =
-            headline + NL +
-            NL +
-            "----" + NL +
-            "Alert ID: " + a.id + NL +
-            "Alert spec: "  +  a.spec + NL
-
-        if (n.isDefined)
-            body += "Related node ID: " + n.get.id + NL +
-                "Related node addresses: " + n.get.addresses() + NL
-
-        body +=
-            "Send count: " + stat.cnt + NL +
-            "Created on: "  +  formatDateTime(a.createdOn) + NL +
-            "First send: " + (if (stat.firstSnd == 0) "n/a" else formatDateTime(stat.firstSnd)) + NL +
-            "Last send: " + (if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)) + NL +
-            "----" + NL +
-            "Grid name: " + grid.name + NL
-
-        body +=
-            "----" + NL +
-            NL +
-            "NOTE:" + NL +
-            "This message is sent by Visor automatically to all configured admin emails." + NL +
-            "To change this behavior use 'adminEmails' grid configuration property." + NL +
-            NL +
-            "| www.gridgain.com" + NL +
-            "| support@gridgain.com" + NL
-
-        // Schedule sending.
-        grid.sendAdminEmailAsync(subj, body, false)
     }
 
     /**
@@ -735,9 +668,9 @@ sealed private case class VisorStats(
 object VisorAlertCommand {
     addHelp(
         name = "alert",
-        shortInfo = "Email alerts for user-defined events.",
+        shortInfo = "Alerts for user-defined events.",
         longInfo = Seq(
-            "Generates email alerts for user-defined events.",
+            "Generates alerts for user-defined events.",
             "Node events and grid-wide events are defined via mnemonics."
         ),
         spec = Seq(
@@ -759,11 +692,7 @@ object VisorAlertCommand {
             "-r" -> Seq(
                 "Register new alert with mnemonic predicate(s).",
                 "Note that only one of the '-u' or '-r' is allowed.",
-                "If neither '-u' or '-r' provided - all alerts will be printed.",
-                "",
-                "NOTE: Email settings can be specified in Ignite configuration file.",
-                "      Email notification will be sent for the alert only when all",
-                "      provided mnemonic predicates evaluate to 'true'."
+                "If neither '-u' or '-r' provided - all alerts will be printed."
             ),
             "-t" -> Seq(
                 "Defines notification frequency in seconds. Default is 15 minutes.",

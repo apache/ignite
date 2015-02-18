@@ -34,8 +34,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.authentication.noop.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
@@ -52,10 +50,9 @@ import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.spi.indexing.noop.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.securesession.*;
-import org.apache.ignite.spi.securesession.noop.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
@@ -1166,8 +1163,8 @@ public class IgnitionEx {
         /** P2P executor service. */
         private ExecutorService p2pExecSvc;
 
-        /** GGFS executor service. */
-        private ExecutorService ggfsExecSvc;
+        /** IGFS executor service. */
+        private ExecutorService igfsExecSvc;
 
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
@@ -1363,7 +1360,6 @@ public class IgnitionEx {
             myCfg.setIgniteHome(ggHome);
 
             // Copy values that don't need extra processing.
-            myCfg.setLicenseUrl(cfg.getLicenseUrl());
             myCfg.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
             myCfg.setDeploymentMode(cfg.getDeploymentMode());
             myCfg.setNetworkTimeout(cfg.getNetworkTimeout());
@@ -1379,28 +1375,21 @@ public class IgnitionEx {
             myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
             myCfg.setDaemon(cfg.isDaemon());
             myCfg.setIncludeProperties(cfg.getIncludeProperties());
-            myCfg.setLifeCycleEmailNotification(cfg.isLifeCycleEmailNotification());
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
-            myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionConfiguration(new TransactionConfiguration(cfg.getTransactionConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
+            myCfg.setClassLoader(cfg.getClassLoader());
             myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 
-            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+            ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
             if (clientCfg != null)
-                clientCfg = new ClientConnectionConfiguration(clientCfg);
-
-
-            String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
-
-            if (ntfStr != null)
-                myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
+                clientCfg = new ConnectorConfiguration(clientCfg);
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
@@ -1449,14 +1438,12 @@ public class IgnitionEx {
             DiscoverySpi discoSpi = cfg.getDiscoverySpi();
             EventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
-            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
-            SecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             DeploymentSpi deploySpi = cfg.getDeploymentSpi();
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            GridIndexingSpi indexingSpi = cfg.getIndexingSpi();
+            IndexingSpi indexingSpi = cfg.getIndexingSpi();
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub-" + cfg.getGridName(),
@@ -1502,21 +1489,21 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
-            // Note that we do not pre-start threads here as ggfs pool may not be needed.
-            ggfsExecSvc = new IgniteThreadPoolExecutor(
-                "ggfs-" + cfg.getGridName(),
-                cfg.getGgfsThreadPoolSize(),
-                cfg.getGgfsThreadPoolSize(),
+            // Note that we do not pre-start threads here as igfs pool may not be needed.
+            igfsExecSvc = new IgniteThreadPoolExecutor(
+                "igfs-" + cfg.getGridName(),
+                cfg.getIgfsThreadPoolSize(),
+                cfg.getIgfsThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
             if (clientCfg != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    clientCfg.getRestThreadPoolSize(),
-                    clientCfg.getRestThreadPoolSize(),
-                    DFLT_REST_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                    clientCfg.getThreadPoolSize(),
+                    clientCfg.getThreadPoolSize(),
+                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
                 );
             }
 
@@ -1562,15 +1549,15 @@ public class IgnitionEx {
             myCfg.setMarshalLocalJobs(cfg.isMarshalLocalJobs());
             myCfg.setNodeId(nodeId);
 
-            IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+            IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
 
-            if (ggfsCfgs != null) {
-                IgniteFsConfiguration[] clone = ggfsCfgs.clone();
+            if (igfsCfgs != null) {
+                IgfsConfiguration[] clone = igfsCfgs.clone();
 
-                for (int i = 0; i < ggfsCfgs.length; i++)
-                    clone[i] = new IgniteFsConfiguration(ggfsCfgs[i]);
+                for (int i = 0; i < igfsCfgs.length; i++)
+                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
 
-                myCfg.setGgfsConfiguration(clone);
+                myCfg.setIgfsConfiguration(clone);
             }
 
             StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
@@ -1612,12 +1599,6 @@ public class IgnitionEx {
             if (colSpi == null)
                 colSpi = new NoopCollisionSpi();
 
-            if (authSpi == null)
-                authSpi = new NoopAuthenticationSpi();
-
-            if (sesSpi == null)
-                sesSpi = new NoopSecureSessionSpi();
-
             if (deploySpi == null)
                 deploySpi = new LocalDeploymentSpi();
 
@@ -1649,14 +1630,12 @@ public class IgnitionEx {
             }
 
             if (indexingSpi == null)
-                indexingSpi = new GridNoopIndexingSpi();
+                indexingSpi = new NoopIndexingSpi();
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);
             myCfg.setCheckpointSpi(cpSpi);
             myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setAuthenticationSpi(authSpi);
-            myCfg.setSecureSessionSpi(sesSpi);
             myCfg.setDeploymentSpi(deploySpi);
             myCfg.setFailoverSpi(failSpi);
             myCfg.setCollisionSpi(colSpi);
@@ -1666,17 +1645,8 @@ public class IgnitionEx {
 
             myCfg.setAddressResolver(cfg.getAddressResolver());
 
-            // Set SMTP configuration.
-            myCfg.setSmtpFromEmail(cfg.getSmtpFromEmail());
-            myCfg.setSmtpHost(cfg.getSmtpHost());
-            myCfg.setSmtpPort(cfg.getSmtpPort());
-            myCfg.setSmtpSsl(cfg.isSmtpSsl());
-            myCfg.setSmtpUsername(cfg.getSmtpUsername());
-            myCfg.setSmtpPassword(cfg.getSmtpPassword());
-            myCfg.setAdminEmails(cfg.getAdminEmails());
-
             // REST configuration.
-            myCfg.setClientConnectionConfiguration(clientCfg);
+            myCfg.setConnectorConfiguration(clientCfg);
 
             // Hadoop configuration.
             myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
@@ -1696,40 +1666,6 @@ public class IgnitionEx {
             myCfg.setSegmentCheckFrequency(cfg.getSegmentCheckFrequency());
             myCfg.setWaitForSegmentOnStart(cfg.isWaitForSegmentOnStart());
             myCfg.setAllSegmentationResolversPassRequired(cfg.isAllSegmentationResolversPassRequired());
-
-            // Override SMTP configuration from system properties
-            // and environment variables, if specified.
-            String fromEmail = IgniteSystemProperties.getString(IGNITE_SMTP_FROM);
-
-            if (fromEmail != null)
-                myCfg.setSmtpFromEmail(fromEmail);
-
-            String smtpHost = IgniteSystemProperties.getString(IGNITE_SMTP_HOST);
-
-            if (smtpHost != null)
-                myCfg.setSmtpHost(smtpHost);
-
-            String smtpUsername = IgniteSystemProperties.getString(IGNITE_SMTP_USERNAME);
-
-            if (smtpUsername != null)
-                myCfg.setSmtpUsername(smtpUsername);
-
-            String smtpPwd = IgniteSystemProperties.getString(IGNITE_SMTP_PWD);
-
-            if (smtpPwd != null)
-                myCfg.setSmtpPassword(smtpPwd);
-
-            int smtpPort = IgniteSystemProperties.getInteger(IGNITE_SMTP_PORT, -1);
-
-            if(smtpPort != -1)
-                myCfg.setSmtpPort(smtpPort);
-
-            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(IGNITE_SMTP_SSL));
-
-            String adminEmails = IgniteSystemProperties.getString(IGNITE_ADMIN_EMAILS);
-
-            if (adminEmails != null)
-                myCfg.setAdminEmails(adminEmails.split(","));
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
@@ -1829,8 +1765,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(evtSpi);
                 ensureMultiInstanceSupport(colSpi);
                 ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(authSpi);
-                ensureMultiInstanceSupport(sesSpi);
                 ensureMultiInstanceSupport(loadBalancingSpi);
                 ensureMultiInstanceSupport(swapspaceSpi);
             }
@@ -1846,7 +1780,7 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, ggfsExecSvc,
+                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, igfsExecSvc,
                     restExecSvc,
                     new CA() {
                         @Override public void apply() {
@@ -2146,9 +2080,9 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
-            U.shutdownNow(getClass(), ggfsExecSvc, log);
+            U.shutdownNow(getClass(), igfsExecSvc, log);
 
-            ggfsExecSvc = null;
+            igfsExecSvc = null;
 
             if (restExecSvc != null)
                 U.shutdownNow(getClass(), restExecSvc, log);

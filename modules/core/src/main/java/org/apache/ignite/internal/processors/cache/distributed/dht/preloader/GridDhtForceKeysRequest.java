@@ -162,67 +162,43 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtForceKeysRequest _clone = new GridDhtForceKeysRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtForceKeysRequest _clone = (GridDhtForceKeysRequest)_msg;
-
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.keyBytes = keyBytes;
-        _clone.keys = keys;
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
+                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -230,29 +206,28 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
-                keyBytes = reader.readCollection("keyBytes", byte[].class);
+                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
@@ -260,7 +235,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 topVer = reader.readLong("topVer");
@@ -268,7 +243,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

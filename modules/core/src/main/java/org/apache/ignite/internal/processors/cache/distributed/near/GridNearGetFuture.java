@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -41,7 +40,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -84,9 +83,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -104,6 +100,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
+
+    /** Skip values flag. */
+    private boolean skipVals;
 
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
@@ -123,11 +122,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param forcePrimary If {@code true} get will be performed on primary node even if
      *      called on backup node.
      * @param tx Transaction.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
@@ -136,11 +135,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx<K, V> tx,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -151,12 +150,12 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
-        this.filters = filters;
         this.tx = tx;
         this.subjId = subjId;
         this.taskName = taskName;
         this.deserializePortable = deserializePortable;
         this.expiryPlc = expiryPlc;
+        this.skipVals = skipVals;
 
         futId = IgniteUuid.randomUuid();
 
@@ -335,8 +334,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        filters,
-                        expiryPlc);
+                        expiryPlc,
+                        skipVals);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -392,15 +391,15 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     readThrough,
                     reload,
                     topVer,
-                    filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    skipVals);
 
                 add(fut); // Append new future.
 
                 try {
-                    cctx.io().send(n, req);
+                    cctx.io().send(n, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
@@ -444,12 +443,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         /*fail-fast*/true,
                         /*unmarshal*/true,
                         /*metrics*/true,
-                        /*events*/true,
+                        /*events*/!skipVals,
                         /*temporary*/false,
                         subjId,
                         null,
                         taskName,
-                        filters,
                         expiryPlc);
 
                 ClusterNode primary = null;
@@ -470,12 +468,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
                                 /*update-metrics*/false,
-                                /*events*/!isNear,
+                                /*events*/!isNear && !skipVals,
                                 /*temporary*/false,
                                 subjId,
                                 null,
                                 taskName,
-                                filters,
                                 expiryPlc);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -484,13 +481,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         }
 
                         if (v != null) {
-                            if (cctx.cache().configuration().isStatisticsEnabled())
+                            if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                                 near.metrics0().onRead(true);
                         }
                         else {
                             primary = cctx.affinity().primary(key, topVer);
 
-                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled())
+                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                                 near.metrics0().onRead(false);
                         }
                     }
@@ -540,7 +537,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     // Don't add reader if transaction acquires lock anyway to avoid deadlock.
                     boolean addRdr = tx == null || tx.optimistic();
 
-                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(key))
+                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(key)))
                         addRdr = true;
 
                     LinkedHashMap<K, Boolean> old = mappings.get(primary);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.ignite.*;
+import org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem;
 import org.apache.ignite.internal.util.typedef.*;
 
 /**
@@ -39,10 +40,10 @@ public class GridHadoopStartup {
     public static Configuration configuration() {
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.defaultFS", "ggfs://ggfs@localhost");
+        cfg.set("fs.defaultFS", "igfs://igfs@localhost");
 
-        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.igfs.impl", org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.igfs.impl", IgfsHadoopFileSystem.class.getName());
 
         cfg.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
 

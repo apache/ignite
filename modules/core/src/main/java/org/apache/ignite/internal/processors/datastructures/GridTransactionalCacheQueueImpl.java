@@ -26,8 +26,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * {@link org.apache.ignite.IgniteQueue} implementation using transactional cache.
@@ -110,7 +110,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                         retVal = (T)cache.remove(itemKey(idx), null);
 
-                        assert retVal != null;
+                        assert retVal != null : idx;
                     }
                     else
                         retVal = null;
@@ -212,7 +212,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                         boolean rmv = cache.removex(itemKey(idx));
 
-                        assert rmv;
+                        assert rmv : idx;
                     }
 
                     tx.commit();

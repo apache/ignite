@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Basic store test.
@@ -113,7 +113,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
+        Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
         try {
             for (int i = 1; i <= 10; i++) {
@@ -178,7 +178,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i <= 10; i++)
                 cache.put(i, Integer.toString(i));
 

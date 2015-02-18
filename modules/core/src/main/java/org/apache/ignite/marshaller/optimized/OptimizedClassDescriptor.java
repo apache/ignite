@@ -814,7 +814,7 @@ class OptimizedClassDescriptor {
             case TYPE_SERIALIZABLE:
                 if (out.requireSerializable() && !isSerial)
                     throw new NotSerializableException("Must implement java.io.Serializable or " +
-                        "set GridOptimizedMarshaller.setRequireSerializable() to false " +
+                        "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
                 out.writeSerializable(obj, writeObjMtds, fields);

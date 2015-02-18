@@ -32,7 +32,7 @@ public class VisorMetricsConfiguration implements Serializable {
     private long expTime;
 
     /** Number of node metrics stored in memory. */
-    private int historySize;
+    private int histSize;
 
     /** Frequency of metrics log printout. */
     private long logFreq;
@@ -69,14 +69,14 @@ public class VisorMetricsConfiguration implements Serializable {
      * @return Number of node metrics stored in memory.
      */
     public int historySize() {
-        return historySize;
+        return histSize;
     }
 
     /**
-     * @param historySize New number of node metrics stored in memory.
+     * @param histSize New number of node metrics stored in memory.
      */
-    public void historySize(int historySize) {
-        this.historySize = historySize;
+    public void historySize(int histSize) {
+        this.histSize = histSize;
     }
 
     /**

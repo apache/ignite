@@ -42,6 +42,11 @@
     -fx-font-size : 14pt;
 }
 
+.text-area {
+    -fx-font-size: 14;
+    -fx-background-color: transparent, transparent, transparent;
+}
+
 .text-field {
     -fx-font-size: 14;
     -fx-background-color: -fx-text-box-border, -fx-control-inner-background, -fx-control-inner-background;

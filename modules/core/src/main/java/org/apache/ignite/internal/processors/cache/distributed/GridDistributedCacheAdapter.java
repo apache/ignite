@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -27,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -79,10 +79,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         assert tx != null;
 
@@ -91,7 +91,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>... filter) {
+        IgnitePredicate<Cache.Entry<K, V>>... filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
@@ -116,9 +116,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable IgniteTxIsolation isolation,
+        @Nullable TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param key Key to remove.
@@ -277,6 +277,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
                 try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
+
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
                             for (GridDhtCacheEntry<K, V> o : locPart.entries()) {

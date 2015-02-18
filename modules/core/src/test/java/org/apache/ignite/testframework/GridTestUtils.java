@@ -21,9 +21,9 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -36,6 +36,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -126,9 +127,13 @@ public final class GridTestUtils {
         }
         catch (Throwable e) {
             if (cls != e.getClass()) {
-                U.error(log, "Unexpected exception.", e);
+                if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
+                    e = e.getCause();
+                else {
+                    U.error(log, "Unexpected exception.", e);
 
-                fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                    fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                }
             }
 
             if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {
@@ -844,6 +849,14 @@ public final class GridTestUtils {
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Cache context.
+     */
+    public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
     }
 
     /**

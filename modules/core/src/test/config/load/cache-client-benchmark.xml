@@ -60,6 +60,8 @@
             </list>
         </property>
 
+        <property name="connectorConfiguration"><null/></property>
+
         <property name="includeEventTypes">
             <list>
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>

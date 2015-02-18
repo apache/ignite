@@ -32,7 +32,7 @@ public class VisorFileBlock implements Serializable {
     private final String path;
 
     /** Marker position. */
-    private final long offset;
+    private final long off;
 
     /** File size. */
     private final long size;
@@ -50,15 +50,15 @@ public class VisorFileBlock implements Serializable {
      * Create file block with given parameters.
      *
      * @param path File path.
-     * @param offset Marker position.
+     * @param off Marker position.
      * @param size File size.
      * @param lastModified Timestamp of last modification of the file.
      * @param zipped Whether data was zipped.
      * @param data Data bytes.
      */
-    public VisorFileBlock(String path, long offset, long size, long lastModified, boolean zipped, byte[] data) {
+    public VisorFileBlock(String path, long off, long size, long lastModified, boolean zipped, byte[] data) {
         this.path = path;
-        this.offset = offset;
+        this.off = off;
         this.size = size;
         this.lastModified = lastModified;
         this.zipped = zipped;
@@ -76,7 +76,7 @@ public class VisorFileBlock implements Serializable {
      * @return Marker position.
      */
     public long offset() {
-        return offset;
+        return off;
     }
 
     /**

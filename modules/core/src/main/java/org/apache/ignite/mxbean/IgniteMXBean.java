@@ -26,14 +26,6 @@ import java.util.*;
 @MXBeanDescription("MBean that provides access to Kernal information.")
 public interface IgniteMXBean {
     /**
-     * Gets file path of the license.
-     *
-     * @return File path of the license.
-     */
-    @MXBeanDescription("File path of the license.")
-    public String getLicenseFilePath();
-
-    /**
      * Gets string presentation of the version.
      *
      * @return String presentation of the version.
@@ -327,22 +319,6 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
     public String getLoadBalancingSpiFormatted();
-
-    /**
-     * Gets a formatted instance of fully configured authentication SPI implementation.
-     *
-     * @return Grid authentication SPI implementation.
-     */
-    @MXBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
-    public String getAuthenticationSpiFormatted();
-
-    /**
-     * Gets a formatted instance of fully configured secure session SPI implementation.
-     *
-     * @return Grid secure session SPI implementation.
-     */
-    @MXBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
-    public String getSecureSessionSpiFormatted();
 
     /**
      * Gets OS information.

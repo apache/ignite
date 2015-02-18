@@ -46,8 +46,8 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      * @param evtNodeId Event node id.
      * @param addr Event node address.
@@ -58,14 +58,14 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
         IgniteUuid id,
         String name,
         UUID nid,
-        long timestamp,
-        @Nullable String message,
+        long ts,
+        @Nullable String msg,
         String shortDisplay,
         UUID evtNodeId,
         String addr,
         boolean isDaemon
     ) {
-        super(typeId, id, name, nid, timestamp, message, shortDisplay);
+        super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.evtNodeId = evtNodeId;
         this.addr = addr;

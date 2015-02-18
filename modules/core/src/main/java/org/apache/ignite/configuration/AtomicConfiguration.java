@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

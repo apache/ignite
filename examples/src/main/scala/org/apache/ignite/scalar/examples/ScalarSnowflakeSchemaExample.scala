@@ -17,15 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
-import java.util
-import java.util.ConcurrentModificationException
-
-import org.apache.ignite.cache.CacheProjection
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
+
 import org.jdk8.backport.ThreadLocalRandom8
 
-import scala.collection.JavaConversions._
+import javax.cache.Cache
+import java.util.ConcurrentModificationException
+
+import collection.JavaConversions._
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
@@ -68,8 +68,8 @@ object ScalarSnowflakeSchemaExample {
     def main(args: Array[String]) {
         scalar("examples/config/example-cache.xml") {
             // Clean up caches on all nodes before run.
-            cache$(REPL_CACHE_NAME).get.clear(0)
-            cache$(PART_CACHE_NAME).get.clear(0)
+            cache$(REPL_CACHE_NAME).get.clear()
+            cache$(PART_CACHE_NAME).get.clear()
 
             populateDimensions()
             populateFacts()
@@ -127,13 +127,13 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = ignite$.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
 
         val storePurchases = factCache.sql(
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
             "where DimStore.id=FactPurchase.storeId and DimStore.name=?", "Store1")
 
-        printQueryResults("All purchases made at store1:", storePurchases)
+        printQueryResults("All purchases made at store1:", storePurchases.getAll)
     }
 
     /**
@@ -143,14 +143,13 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val dimCache = ignite$.cache[Int, Object](REPL_CACHE_NAME)
-        val factCache = ignite$.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
 
-        val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
-
-        val p1: DimProduct = rand(prods.values)
-        val p2: DimProduct = rand(prods.values)
-        val p3: DimProduct = rand(prods.values)
+        // All purchases for certain product made at store2.
+        // =================================================
+        val p1: DimProduct = rand(dataProduct.values)
+        val p2: DimProduct = rand(dataProduct.values)
+        val p3: DimProduct = rand(dataProduct.values)
 
         println("IDs of products [p1=" + p1.id + ", p2=" + p2.id + ", p3=" + p3.id + ']')
 
@@ -161,7 +160,7 @@ object ScalarSnowflakeSchemaExample {
                 "DimStore.name=? and DimProduct.id in(?, ?, ?)",
             "Store2", p1.id, p2.id, p3.id)
 
-        printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases)
+        printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases.getAll)
     }
 
     /**
@@ -170,7 +169,7 @@ object ScalarSnowflakeSchemaExample {
      * @param msg Initial message.
      * @param res Results to print.
      */
-    private def printQueryResults[V](msg: String, res: Iterable[(Int, V)]) {
+    private def printQueryResults[V](msg: String, res: Iterable[Cache.Entry[Int, V]]) {
         println(msg)
 
         for (e <- res)
@@ -183,7 +182,7 @@ object ScalarSnowflakeSchemaExample {
      * @param c Input collection (no `null` and not emtpy).
      * @return Random value from the input collection.
      */
-    def rand[T](c: util.Collection[_ <: T]): T = {
+    def rand[T](c: Iterable[_ <: T]): T = {
         val n: Int = ThreadLocalRandom8.current.nextInt(c.size)
 
         var i: Int = 0

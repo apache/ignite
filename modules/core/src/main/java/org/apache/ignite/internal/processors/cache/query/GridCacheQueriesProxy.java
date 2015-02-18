@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -151,18 +150,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createContinuousQuery();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <R> CacheQuery<R> createSpiQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -235,7 +222,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

@@ -22,10 +22,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -153,27 +152,12 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
+    @Override public IgniteProductVersion version() {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> caches() {
         return null;
     }
 

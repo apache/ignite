@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
+
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -125,17 +126,17 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If test failed.
      */
-    private void checkTransactionTimeout(IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    private void checkTransactionTimeout(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
 
         boolean wasEx = false;
 
-        IgniteTx tx = null;
+        Transaction tx = null;
 
         try {
-            GridCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-            tx = cache.txStart(concurrency, isolation, 50, 0);
+            tx = ignite.transactions().txStart(concurrency, isolation, 50, 0);
 
             cache.put(1, "1");
 
@@ -145,15 +146,10 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (IgniteTxOptimisticCheckedException e) {
+        catch (CacheException e) {
+            assertTrue(X.hasCause(e, TransactionTimeoutException.class));
+
             info("Received expected optimistic exception: " + e.getMessage());
-
-            wasEx = true;
-
-            tx.rollback();
-        }
-        catch (IgniteTxTimeoutCheckedException e) {
-            info("Received expected timeout exception: " + e.getMessage());
 
             wasEx = true;
 

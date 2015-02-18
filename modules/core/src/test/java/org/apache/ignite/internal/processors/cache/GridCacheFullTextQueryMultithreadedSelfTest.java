@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -74,7 +75,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int logFreq = 50;
         final String txt = "Value";
 
-        final GridCache<Integer, H2TextValue> c = grid(0).cache(null);
+        final GridCache<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).cache(null);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
@@ -132,7 +133,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
      */
     private static class H2TextValue {
         /** */
-        @CacheQueryTextField
+        @QueryTextField
         private final String val;
 
         /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -27,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -67,7 +67,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<Object, Object>> prjFilter;
+    private IgnitePredicate<Cache.Entry<Object, Object>> prjFilter;
 
     /** */
     private byte[] prjFilterBytes;
@@ -198,7 +198,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         String clause,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
-        IgnitePredicate<CacheEntry<Object, Object>> prjFilter,
+        IgnitePredicate<Cache.Entry<Object, Object>> prjFilter,
         IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
@@ -373,7 +373,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
+    public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
         return prjFilter;
     }
 
@@ -441,176 +441,133 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridCacheQueryRequest _clone = new GridCacheQueryRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheQueryRequest _clone = (GridCacheQueryRequest)_msg;
-
-        _clone.id = id;
-        _clone.cacheName = cacheName;
-        _clone.type = type;
-        _clone.fields = fields;
-        _clone.clause = clause;
-        _clone.clsName = clsName;
-        _clone.keyValFilter = keyValFilter;
-        _clone.keyValFilterBytes = keyValFilterBytes;
-        _clone.prjFilter = prjFilter;
-        _clone.prjFilterBytes = prjFilterBytes;
-        _clone.rdc = rdc;
-        _clone.rdcBytes = rdcBytes;
-        _clone.trans = trans;
-        _clone.transBytes = transBytes;
-        _clone.args = args;
-        _clone.argsBytes = argsBytes;
-        _clone.pageSize = pageSize;
-        _clone.incBackups = incBackups;
-        _clone.cancel = cancel;
-        _clone.incMeta = incMeta;
-        _clone.all = all;
-        _clone.keepPortable = keepPortable;
-        _clone.subjId = subjId;
-        _clone.taskHash = taskHash;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeBoolean("all", all))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeByteArray("argsBytes", argsBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeString("cacheName", cacheName))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeBoolean("cancel", cancel))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeString("clause", clause))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeString("clsName", clsName))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 9:
                 if (!writer.writeBoolean("fields", fields))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 10:
                 if (!writer.writeLong("id", id))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 11:
                 if (!writer.writeBoolean("incBackups", incBackups))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 12:
                 if (!writer.writeBoolean("incMeta", incMeta))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 13:
                 if (!writer.writeBoolean("keepPortable", keepPortable))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeByteArray("keyValFilterBytes", keyValFilterBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 15:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeByteArray("prjFilterBytes", prjFilterBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeByteArray("transBytes", transBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 21:
-                if (!writer.writeEnum("type", type))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -618,21 +575,20 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 all = reader.readBoolean("all");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 argsBytes = reader.readByteArray("argsBytes");
@@ -640,7 +596,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 cacheName = reader.readString("cacheName");
@@ -648,7 +604,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 cancel = reader.readBoolean("cancel");
@@ -656,7 +612,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 clause = reader.readString("clause");
@@ -664,7 +620,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 clsName = reader.readString("clsName");
@@ -672,7 +628,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 9:
                 fields = reader.readBoolean("fields");
@@ -680,7 +636,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 10:
                 id = reader.readLong("id");
@@ -688,7 +644,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
                 incBackups = reader.readBoolean("incBackups");
@@ -696,7 +652,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 12:
                 incMeta = reader.readBoolean("incMeta");
@@ -704,7 +660,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 13:
                 keepPortable = reader.readBoolean("keepPortable");
@@ -712,7 +668,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 14:
                 keyValFilterBytes = reader.readByteArray("keyValFilterBytes");
@@ -720,7 +676,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 15:
                 pageSize = reader.readInt("pageSize");
@@ -728,7 +684,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 16:
                 prjFilterBytes = reader.readByteArray("prjFilterBytes");
@@ -736,7 +692,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 17:
                 rdcBytes = reader.readByteArray("rdcBytes");
@@ -744,7 +700,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 18:
                 subjId = reader.readUuid("subjId");
@@ -752,7 +708,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 19:
                 taskHash = reader.readInt("taskHash");
@@ -760,7 +716,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 20:
                 transBytes = reader.readByteArray("transBytes");
@@ -768,15 +724,19 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 21:
-                type = reader.readEnum("type", GridCacheQueryType.class);
+                byte typeOrd;
+
+                typeOrd = reader.readByte("type");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                type = GridCacheQueryType.fromOrdinal(typeOrd);
+
+                readState++;
 
         }
 

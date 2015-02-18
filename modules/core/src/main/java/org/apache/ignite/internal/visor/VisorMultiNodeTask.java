@@ -36,8 +36,9 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * @param <R> Task result type.
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
+    /** Auto-injected grid instance. */
     @IgniteInstanceResource
-    protected IgniteEx g;
+    protected IgniteEx ignite;
 
     /** Debug flag. */
     protected boolean debug;
@@ -65,7 +66,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         taskArg = arg.argument();
 
         if (debug)
-            logStart(g.log(), getClass(), start);
+            logStart(ignite.log(), getClass(), start);
 
         return map0(subgrid, arg);
     }
@@ -92,7 +93,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         }
         finally {
             if (debug)
-                logMapped(g.log(), getClass(), map.values());
+                logMapped(ignite.log(), getClass(), map.values());
         }
     }
 
@@ -118,7 +119,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         }
         finally {
             if (debug)
-                logFinish(g.log(), getClass(), start);
+                logFinish(ignite.log(), getClass(), start);
         }
     }
 }

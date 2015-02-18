@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
@@ -55,7 +53,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestStore extends CacheStore implements LifecycleAware {
+    private static class TestStore implements CacheStore, LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
 
@@ -172,7 +170,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
     }
@@ -187,23 +185,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(CacheEntry entry) {
+        @Override public boolean evictAllowed(Cache.Entry entry) {
             return false;
-        }
-    }
-
-    /**
-     */
-    private static class TestCloner extends TestLifecycleAware implements CacheCloner {
-        /**
-         */
-        TestCloner() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T cloneValue(T val) throws IgniteCheckedException {
-            return val;
         }
     }
 
@@ -313,12 +296,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setEvictionFilter(evictionFilter);
 
         lifecycleAwares.add(evictionFilter);
-
-        TestCloner cloner = new TestCloner();
-
-        ccfg.setCloner(cloner);
-
-        lifecycleAwares.add(cloner);
 
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 

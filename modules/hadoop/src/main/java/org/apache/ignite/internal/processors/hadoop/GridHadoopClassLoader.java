@@ -68,16 +68,16 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * Need to parse only Ignite Hadoop and GGFS classes.
+     * Need to parse only Ignite Hadoop and IGFS classes.
      *
      * @param cls Class name.
      * @return {@code true} if we need to check this class.
      */
-    private static boolean isGgfsOrGgHadoop(String cls) {
+    private static boolean isIgfsOrGgHadoop(String cls) {
         String gg = "org.apache.ignite";
         int len = gg.length();
 
-        return cls.startsWith(gg) && (cls.indexOf("ggfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
+        return cls.startsWith(gg) && (cls.indexOf("igfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
     }
 
     /**
@@ -100,7 +100,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 return loadClassExplicitly(name, resolve);
             }
 
-            if (isGgfsOrGgHadoop(name)) { // For GG Hadoop and GGFS classes we have to check if they depend on Hadoop.
+            if (isIgfsOrGgHadoop(name)) { // For GG Hadoop and IGFS classes we have to check if they depend on Hadoop.
                 Boolean hasDeps = cache.get(name);
 
                 if (hasDeps == null) {
@@ -224,7 +224,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         if (in == null) // The class is external itself, it must be loaded from this class loader.
             return true;
 
-        if (!isGgfsOrGgHadoop(clsName)) // Other classes should not have external dependencies.
+        if (!isIgfsOrGgHadoop(clsName)) // Other classes should not have external dependencies.
             return false;
 
         final ClassReader rdr;

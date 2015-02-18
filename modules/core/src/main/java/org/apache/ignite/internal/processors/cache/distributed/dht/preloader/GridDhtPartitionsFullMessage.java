@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -48,12 +47,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /** Topology version. */
     private long topVer;
-
-    @GridDirectTransient
-    private List<List<ClusterNode>> affAssignment;
-
-    /** */
-    private byte[] affAssignmentBytes;
 
     /**
      * Required by {@link Externalizable}.
@@ -98,9 +91,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         if (parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
-
-        if (affAssignment != null)
-            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
     }
 
     /**
@@ -117,87 +107,40 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         this.topVer = topVer;
     }
 
-    /**
-     * @return Affinity assignment for topology version.
-     */
-    public List<List<ClusterNode>> affinityAssignment() {
-        return affAssignment;
-    }
-
-    /**
-     * @param affAssignment Affinity assignment for topology version.
-     */
-    public void affinityAssignment(List<List<ClusterNode>> affAssignment) {
-        this.affAssignment = affAssignment;
-    }
-
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
-
-        if (affAssignmentBytes != null)
-            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtPartitionsFullMessage _clone = new GridDhtPartitionsFullMessage();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtPartitionsFullMessage _clone = (GridDhtPartitionsFullMessage)_msg;
-
-        _clone.parts = parts;
-        _clone.partsBytes = partsBytes;
-        _clone.topVer = topVer;
-        _clone.affAssignment = affAssignment;
-        _clone.affAssignmentBytes = affAssignmentBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 5:
-                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
-                    return false;
-
-                state++;
-
-            case 6:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -205,37 +148,28 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 5:
-                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 6:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 7:
+            case 6:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

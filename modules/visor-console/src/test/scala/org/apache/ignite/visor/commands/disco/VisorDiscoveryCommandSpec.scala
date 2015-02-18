@@ -47,7 +47,6 @@ class VisorDiscoveryCommandSpec extends VisorRuntimeBaseSpec(4) {
         val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
-        cfg.setLifeCycleEmailNotification(false)
 
         cfg
     }

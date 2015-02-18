@@ -20,10 +20,9 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
@@ -43,7 +42,7 @@ import java.util.*;
  * properties are optional, so users should only change what they need.
  */
 @SuppressWarnings("RedundantFieldInitialization")
-public class CacheConfiguration extends MutableConfiguration {
+public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size of preload thread pool. */
     public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
 
@@ -294,9 +293,6 @@ public class CacheConfiguration extends MutableConfiguration {
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
-    private CacheCloner cloner;
-
-    /** */
     private CacheAffinityKeyMapper affMapper;
 
     /** */
@@ -353,7 +349,6 @@ public class CacheConfiguration extends MutableConfiguration {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
-        cloner = cc.getCloner();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
@@ -408,8 +403,8 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String) Grid.cache(null)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * cache which can be accessed via {@link Ignite#jcache(String)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link Ignite#jcache(String)} method.
      *
      * @return Cache name.
      */
@@ -454,7 +449,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheEvictionPolicy<K, V> getEvictionPolicy() {
+    @Nullable public CacheEvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -515,7 +510,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
+    @Nullable public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
@@ -692,9 +687,9 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets eviction filter to specify which entries should not be evicted
-     * (except explicit evict by calling {@link CacheEntry#evict()}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(CacheEntry)} method returns
-     * {@code false} then eviction policy will not be notified and entry will
+     * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
+     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(javax.cache.Cache.Entry)} method
+     * returns {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
@@ -703,7 +698,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Eviction filter or {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> CacheEvictionFilter<K, V> getEvictionFilter() {
+    public CacheEvictionFilter<K, V> getEvictionFilter() {
         return (CacheEvictionFilter<K, V>)evictFilter;
     }
 
@@ -712,7 +707,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param evictFilter Eviction filter.
      */
-    public <K, V> void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
+    public void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
     }
 
@@ -723,7 +718,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link CacheEntry#timeToLive()} value and should not be confused with entry
+     * {@link javax.cache.expiry.ExpiryPolicy} and should not be confused with entry
      * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.
@@ -827,7 +822,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache store factory.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
+    public Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
         return (Factory<CacheStore<? super K, ? super V>>)storeFactory;
     }
 
@@ -837,7 +832,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @param storeFactory Cache store factory.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
+    public void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
     }
 
@@ -1297,35 +1292,6 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Cloner to be used for cloning values that are returned to user only if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE}
-     * is set on {@link CacheProjection}. Cloning values is useful when it is needed to get value from
-     * cache, change it and put it back (if the value was not cloned, then user would be updating the
-     * cached reference which would violate cache integrity).
-     * <p>
-     * <b>NOTE:</b> by default, cache uses {@link org.apache.ignite.cache.cloner.CacheBasicCloner} implementation which will clone only objects
-     * implementing {@link Cloneable} interface. You can also configure cache to use
-     * {@link org.apache.ignite.cache.cloner.CacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
-     * regardless of the {@link Cloneable} interface. If none of the above cloners fit your
-     * logic, you can also provide your own implementation of {@link org.apache.ignite.cache.cloner.CacheCloner} interface.
-     *
-     * @return Cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on cache projection.
-     */
-    @SuppressWarnings({"unchecked"})
-    public CacheCloner getCloner() {
-        return cloner;
-    }
-
-    /**
-     * Sets cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on projection.
-     *
-     * @param cloner Cloner to use.
-     * @see #getCloner()
-     */
-    public void setCloner(CacheCloner cloner) {
-        this.cloner = cloner;
-    }
-
-    /**
      * Gets size of preloading thread pool. Note that size serves as a hint and implementation
      * may create more threads for preloading than specified here (but never less threads).
      * <p>
@@ -1468,7 +1434,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1482,7 +1448,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;
@@ -1581,7 +1547,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache interceptor.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> CacheInterceptor<K, V> getInterceptor() {
+    @Nullable public CacheInterceptor<K, V> getInterceptor() {
         return (CacheInterceptor<K, V>)interceptor;
     }
 
@@ -1590,7 +1556,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param interceptor Cache interceptor.
      */
-    public <K, V> void setInterceptor(CacheInterceptor<K, V> interceptor) {
+    public void setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
     }
 
@@ -1627,7 +1593,6 @@ public class CacheConfiguration extends MutableConfiguration {
      * Sets query configuration.
      *
      * @param qryCfg Query configuration.
-     * @see org.apache.ignite.cache.query.CacheQueryConfiguration
      */
     public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;

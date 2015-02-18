@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Manages cache indexing.
  */
-public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
+public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -140,7 +140,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public IgniteSpiCloseableIterator<?> query(String space, Collection<Object> params, GridIndexingQueryFilter filters)
+    public IgniteSpiCloseableIterator<?> query(String space, Collection<Object> params, IndexingQueryFilter filters)
         throws IgniteCheckedException {
         if (!enabled())
             throw new IgniteCheckedException("Indexing SPI is not configured.");

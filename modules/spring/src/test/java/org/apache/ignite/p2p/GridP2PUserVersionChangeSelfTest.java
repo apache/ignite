@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -289,13 +290,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            GridCache<Long, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.jcache(null);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final GridCache<Long, Object> cache2 = ignite2.cache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.jcache(null);
 
             assertNotNull(cache2);
 
@@ -315,7 +316,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.cache(null);
+            cache1 = ignite1.jcache(null);
 
             assertNotNull(cache1);
 
@@ -328,12 +329,24 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 @Override public boolean applyx() throws IgniteCheckedException {
                     return cache2.get(1L) == null;
                 }
-            }, getConditionTimeout()) : "2nd condition failed [entries1=" + cache1.entrySet() +
-                ", entries2=" + cache2.entrySet() + ']';
+            }, getConditionTimeout()) : "2nd condition failed [entries1=" + toSet(cache1.iterator()) +
+                ", entries2=" + toSet(cache2.iterator()) + ']';
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     *
+     */
+    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
+        Set<Cache.Entry<K, V>> set = new HashSet<>();
+
+        while (iter.hasNext())
+            set.add(iter.next());
+
+        return set;
     }
 
     /**

@@ -165,7 +165,11 @@ public class PojoField {
 
         keyProp.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
-                if (!newVal)
+                if (newVal) {
+                    if (!use())
+                        useProp.set(true);
+                }
+                else
                     akProp.set(false);
             }
         });

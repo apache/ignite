@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -30,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -91,7 +91,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     private long ttl;
 
     /** DR expire time (explicit) */
-    private long drExpireTime = -1L;
+    private long conflictExpireTime = -1L;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
@@ -102,7 +102,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -132,14 +132,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /** Group lock entry flag. */
     private boolean grpLock;
 
-    /** Flag indicating if this entry should be transferred to remote node. */
-    private boolean transferRequired;
-
     /** Deployment enabled flag. */
     private boolean depEnabled;
 
-    /** Data center replication version. */
-    private GridCacheVersion drVer;
+    /** Conflict version. */
+    private GridCacheVersion conflictVer;
 
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -162,18 +159,18 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param op Operation.
      * @param val Value.
      * @param ttl Time to live.
-     * @param drExpireTime DR expire time.
+     * @param conflictExpireTime DR expire time.
      * @param entry Cache entry.
-     * @param drVer Data center replication version.
+     * @param conflictVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
         IgniteInternalTx<K, V> tx,
         GridCacheOperation op,
         V val,
         long ttl,
-        long drExpireTime,
+        long conflictExpireTime,
         GridCacheEntryEx<K, V> entry,
-        @Nullable GridCacheVersion drVer) {
+        @Nullable GridCacheVersion conflictVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -184,8 +181,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         this.val.value(op, val, false, false);
         this.entry = entry;
         this.ttl = ttl;
-        this.drExpireTime = drExpireTime;
-        this.drVer = drVer;
+        this.conflictExpireTime = conflictExpireTime;
+        this.conflictVer = conflictVer;
 
         key = entry.key();
         keyBytes = entry.keyBytes();
@@ -207,7 +204,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param ttl Time to live.
      * @param entry Cache entry.
      * @param filters Put filters.
-     * @param drVer Data center replication version.
+     * @param conflictVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
         IgniteInternalTx<K, V> tx,
@@ -217,8 +214,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         Object[] invokeArgs,
         long ttl,
         GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<CacheEntry<K, V>>[] filters,
-        GridCacheVersion drVer) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filters,
+        GridCacheVersion conflictVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -230,7 +227,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         this.entry = entry;
         this.ttl = ttl;
         this.filters = filters;
-        this.drVer = drVer;
+        this.conflictVer = conflictVer;
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -281,20 +278,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @param transferRequired Sets flag indicating that transfer is required to remote node.
-     */
-    public void transferRequired(boolean transferRequired) {
-        this.transferRequired = transferRequired;
-    }
-
-    /**
-     * @return Flag indicating whether transfer is required to remote nodes.
-     */
-    public boolean transferRequired() {
-        return transferRequired;
-    }
-
-    /**
      * @param ctx Context.
      * @return Clean copy of this entry.
      */
@@ -313,11 +296,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         cp.val.valueBytes(val.valueBytes());
         cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
-        cp.drExpireTime = drExpireTime;
+        cp.conflictExpireTime = conflictExpireTime;
         cp.explicitVer = explicitVer;
         cp.grpLock = grpLock;
         cp.depEnabled = depEnabled;
-        cp.drVer = drVer;
+        cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
 
         return cp;
@@ -585,17 +568,17 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @return DR expire time.
+     * @return Conflict expire time.
      */
-    public long drExpireTime() {
-        return drExpireTime;
+    public long conflictExpireTime() {
+        return conflictExpireTime;
     }
 
     /**
-     * @param drExpireTime DR expire time.
+     * @param conflictExpireTime Conflict expire time.
      */
-    public void drExpireTime(long drExpireTime) {
-        this.drExpireTime = drExpireTime;
+    public void conflictExpireTime(long conflictExpireTime) {
+        this.conflictExpireTime = conflictExpireTime;
     }
 
     /**
@@ -711,28 +694,28 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return DR version.
      */
-    @Nullable public GridCacheVersion drVersion() {
-        return drVer;
+    @Nullable public GridCacheVersion conflictVersion() {
+        return conflictVer;
     }
 
     /**
      * @param drVer DR version.
      */
-    public void drVersion(@Nullable GridCacheVersion drVer) {
-        this.drVer = drVer;
+    public void conflictVersion(@Nullable GridCacheVersion drVer) {
+        this.conflictVer = drVer;
     }
 
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] filters() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<CacheEntry<K, V>>[] filters) {
+    public void filters(IgnitePredicate<Cache.Entry<K, V>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -866,11 +849,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         val.writeTo(out);
 
         out.writeLong(ttl);
-        out.writeLong(drExpireTime);
+        out.writeLong(conflictExpireTime);
 
         CU.writeVersion(out, explicitVer);
         out.writeBoolean(grpLock);
-        CU.writeVersion(out, drVer);
+        CU.writeVersion(out, conflictVer);
 
         out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
@@ -888,7 +871,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         else {
             key = (K)in.readObject();
             entryProcessorsCol = U.readCollection(in);
-            filters = U.readEntryFilterArray(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
         }
 
         cacheId = in.readInt();
@@ -896,11 +879,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         val.readFrom(in);
 
         ttl = in.readLong();
-        drExpireTime = in.readLong();
+        conflictExpireTime = in.readLong();
 
         explicitVer = CU.readVersion(in);
         grpLock = in.readBoolean();
-        drVer = CU.readVersion(in);
+        conflictVer = CU.readVersion(in);
 
         expiryPlc = (ExpiryPolicy)in.readObject();
     }

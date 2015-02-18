@@ -17,10 +17,7 @@
 
 package org.apache.ignite.scalar.examples
 
-import java.util.concurrent.Callable
-
 import org.apache.ignite._
-import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
 import org.apache.ignite.lang.IgniteCallable
 import org.apache.ignite.scalar.scalar
@@ -54,7 +51,7 @@ object ScalarCacheAffinityExample1 {
     def main(args: Array[String]) {
         scalar(CONFIG) {
             // Clean up caches on all nodes before run.
-            cache$(NAME).get.clear(0)
+            cache$(NAME).get.clear()
 
             var keys = Seq.empty[String]
 
@@ -70,7 +67,6 @@ object ScalarCacheAffinityExample1 {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
-                        @CacheName
                         def cacheName(): String = NAME
 
                         @Nullable def call: String = {
@@ -85,7 +81,7 @@ object ScalarCacheAffinityExample1 {
                                 "Error"
                             }
                             else
-                                cache.get.peek(key)
+                                cache.get.localPeek(key)
                         }
                     },
                     null

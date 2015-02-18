@@ -51,19 +51,22 @@ public class VisorCacheStoreConfiguration implements Serializable {
         return cfg;
     }
 
+    /**
+     * @return {@code true} if cache has store.
+     */
     public boolean enabled() {
         return store != null;
     }
 
     /**
-     * @return Cache store.
+     * @return Cache store class name.
      */
     @Nullable public String store() {
         return store;
     }
 
     /**
-     * @param store New cache store.
+     * @param store Cache store class name.
      */
     public void store(String store) {
         this.store = store;

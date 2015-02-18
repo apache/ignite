@@ -190,81 +190,55 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtPartitionDemandMessage _clone = new GridDhtPartitionDemandMessage();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtPartitionDemandMessage _clone = (GridDhtPartitionDemandMessage)_msg;
-
-        _clone.updateSeq = updateSeq;
-        _clone.parts = parts;
-        _clone.topic = topic;
-        _clone.topicBytes = topicBytes;
-        _clone.timeout = timeout;
-        _clone.workerId = workerId;
-        _clone.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("parts", parts, int.class))
+                if (!writer.writeCollection("parts", parts, Type.INT))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 7:
                 if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 8:
                 if (!writer.writeInt("workerId", workerId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -272,21 +246,20 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
-                parts = reader.readCollection("parts", int.class);
+                parts = reader.readCollection("parts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 timeout = reader.readLong("timeout");
@@ -294,7 +267,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 topVer = reader.readLong("topVer");
@@ -302,7 +275,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -310,7 +283,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 7:
                 updateSeq = reader.readLong("updateSeq");
@@ -318,7 +291,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 8:
                 workerId = reader.readInt("workerId");
@@ -326,7 +299,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

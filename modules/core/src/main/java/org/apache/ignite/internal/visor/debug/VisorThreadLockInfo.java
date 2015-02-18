@@ -30,7 +30,7 @@ public class VisorThreadLockInfo implements Serializable {
     /**
      * Fully qualified name of the class of the lock object.
      */
-    protected final String className;
+    protected final String clsName;
 
     /**
      * Identity hash code of the lock object.
@@ -38,10 +38,10 @@ public class VisorThreadLockInfo implements Serializable {
     protected final Integer identityHashCode;
 
     /** Create thread lock info with given parameters. */
-    public VisorThreadLockInfo(String className, Integer identityHashCode) {
-        assert className != null;
+    public VisorThreadLockInfo(String clsName, Integer identityHashCode) {
+        assert clsName != null;
 
-        this.className = className;
+        this.clsName = clsName;
         this.identityHashCode = identityHashCode;
     }
 
@@ -56,7 +56,7 @@ public class VisorThreadLockInfo implements Serializable {
      * @return Fully qualified name of the class of the lock object.
      */
     public String className() {
-        return className;
+        return clsName;
     }
 
     /**
@@ -68,6 +68,6 @@ public class VisorThreadLockInfo implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return className + '@' + Integer.toHexString(identityHashCode);
+        return clsName + '@' + Integer.toHexString(identityHashCode);
     }
 }

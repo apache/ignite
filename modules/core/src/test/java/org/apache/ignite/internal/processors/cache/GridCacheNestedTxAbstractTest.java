@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -32,8 +31,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Nested transaction emulation.
@@ -86,9 +85,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         super.afterTest();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
 
-            assert grid(i).cache(null).isEmpty();
+            assert grid(i).jcache(null).localSize() == 0;
         }
     }
 
@@ -106,14 +105,14 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoTx() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
         GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
         c.put(CNTR_KEY, 0);
 
         for (int i = 0; i < 10; i++) {
-            try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 c.get(CNTR_KEY);
 
                 ctx.closure().callLocalSafe((new Callable<Boolean>() {
@@ -148,7 +147,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
-                    IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+                    Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
                         int cntr = c.get(CNTR_KEY);
@@ -236,7 +235,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         info("*** Cntr in lock thread: " + cntr);
 
-                        IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED);
+                        Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED);
 
                         try {
 
