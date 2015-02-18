@@ -274,8 +274,6 @@ class VisorConfigurationCommand {
             spisT += ("Communication", spiClass(cfg.spis().communicationSpi()))
             spisT += ("Event storage", spiClass(cfg.spis().eventStorageSpi()))
             spisT += ("Collision", spiClass(cfg.spis().collisionSpi()))
-            spisT += ("Authentication", spiClass(cfg.spis().authenticationSpi()))
-            spisT += ("Secure session", spiClass(cfg.spis().secureSessionSpi()))
             spisT += ("Deployment", spiClass(cfg.spis().deploymentSpi()))
             spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
             spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
