@@ -239,8 +239,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (ctx.security().enabled()) {
             getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                @Override
-                public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
+                @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
                     try {
                         return ctx.security().authenticateNode(node, cred);
                     }
@@ -249,8 +248,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                @Override
-                public boolean isGlobalNodeAuthentication() {
+                @Override public boolean isGlobalNodeAuthentication() {
                     return ctx.security().isGlobalNodeAuthentication();
                 }
             });

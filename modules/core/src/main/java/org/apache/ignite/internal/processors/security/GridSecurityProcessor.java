@@ -87,6 +87,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * Create security context.
      *
      * @subj Security subject.
+     * @return Security context.
      */
     public SecurityContext createSecurityContext(GridSecuritySubject subj);
 

@@ -19,11 +19,8 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
@@ -389,19 +386,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                         // No-op.
                     }
                 });
-
-                spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                    @Override public SecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                        GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                        return ((IgniteKernal) grid()).context().security().createSecurityContext(subj);
-                    }
-
-                    @Override public boolean isGlobalNodeAuthentication() {
-                        return false;
-                    }
-                });
-
 
                 spi.spiStart(getTestGridName() + i);
 
