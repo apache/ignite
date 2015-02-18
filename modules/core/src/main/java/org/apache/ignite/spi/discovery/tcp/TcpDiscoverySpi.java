@@ -1269,23 +1269,25 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                // Authenticate local node.
-                try {
-                    SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+                if (((IgniteKernal)ignite).context().security().enabled()) {
+                    // Authenticate local node.
+                    try {
+                        SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
-                    if (subj == null)
-                        throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
+                        if (subj == null)
+                            throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
 
-                    Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+                        Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                    attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
-                        ignite.configuration().getMarshaller().marshal(subj));
-                    attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
+                            ignite.configuration().getMarshaller().marshal(subj));
+                        attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
-                    locNode.setAttributes(attrs);
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                        locNode.setAttributes(attrs);
+                    }
+                    catch (IgniteException | IgniteCheckedException e) {
+                        throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                    }
                 }
 
                 locNode.order(1);
@@ -3062,51 +3064,25 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                // Authenticate node first.
-                try {
-                    GridSecurityCredentials cred = unmarshalCredentials(node);
+                if (((IgniteKernal)ignite).context().security().enabled()) {
+                    // Authenticate node first.
+                    try {
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
 
-                    SecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                        SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
-                    if (subj == null) {
-                        // Node has not pass authentication.
-                        LT.warn(log, null,
-                            "Authentication failed [nodeId=" + node.id() +
-                                ", addrs=" + U.addressesAsString(node) + ']',
-                            "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                U.addressesAsString(node) + ']');
-
-                        // Always output in debug.
-                        if (log.isDebugEnabled())
-                            log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                                U.addressesAsString(node));
-
-                        try {
-                            trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send unauthenticated message to node " +
-                                    "[node=" + node + ", err=" + e.getMessage() + ']');
-                        }
-
-                        // Ignore join request.
-                        return;
-                    }
-                    else {
-                        if (!(subj instanceof Serializable)) {
+                        if (subj == null) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
-                                "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']',
-                                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                                    ", addrs=" +
+                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
                                     U.addressesAsString(node) + ']');
 
                             // Always output in debug.
                             if (log.isDebugEnabled())
-                                log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
-                                    ", addrs=" + U.addressesAsString(node));
+                                log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                    U.addressesAsString(node));
 
                             try {
                                 trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
@@ -3119,27 +3095,54 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             // Ignore join request.
                             return;
+                        } else {
+                            if (!(subj instanceof Serializable)) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                                        ", addrs=" +
+                                        U.addressesAsString(node) + ']');
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node));
+
+                                try {
+                                    trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send unauthenticated message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+                                }
+
+                                // Ignore join request.
+                                return;
+                            }
+
+                            // Stick in authentication subject to node (use security-safe attributes for copy).
+                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
+                                ignite.configuration().getMarshaller().marshal(subj));
+
+                            node.setAttributes(attrs);
                         }
-
-                        // Stick in authentication subject to node (use security-safe attributes for copy).
-                        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
-                            ignite.configuration().getMarshaller().marshal(subj));
-
-                        node.setAttributes(attrs);
                     }
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                        U.addressesAsString(node) + ']');
+                    catch (IgniteException | IgniteCheckedException e) {
+                        LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                            U.addressesAsString(node) + ']');
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
-                            ", err=" + e + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
+                                ", err=" + e + ']');
 
-                    // Ignore join request.
-                    return;
+                        // Ignore join request.
+                        return;
+                    }
                 }
 
                 IgniteSpiNodeValidationResult err = getSpiContext().validateNode(node);
@@ -3492,7 +3495,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
+                if (!isLocalNodeCoordinator() && ((IgniteKernal)ignite).context().security().enabled() &&
+                    nodeAuth.isGlobalNodeAuthentication()) {
                     boolean authFailed = true;
 
                     try {

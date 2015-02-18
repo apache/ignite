@@ -161,22 +161,24 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        SecurityContext subjCtx = null;
+        if (ctx.security().enabled()) {
+            SecurityContext subjCtx = null;
 
-        try {
-            subjCtx = authenticate(req);
+            try {
+                subjCtx = authenticate(req);
 
-            authorize(req, subjCtx);
-        }
-        catch (GridSecurityException e) {
-            assert subjCtx != null;
+                authorize(req, subjCtx);
+            }
+            catch (GridSecurityException e) {
+                assert subjCtx != null;
 
-            GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+                GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            return new GridFinishedFuture<>(ctx, res);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                return new GridFinishedFuture<>(ctx, res);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
         }
 
         interceptRequest(req);
