@@ -1646,9 +1646,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (entry == null)
                     continue;
 
-                GridCacheVersion newConflictVer = req.drVersion(i);
-                long newConflictTtl = req.drTtl(i);
-                long newConflictExpireTime = req.drExpireTime(i);
+                GridCacheVersion newConflictVer = req.conflictVersion(i);
+                long newConflictTtl = req.conflictTtl(i);
+                long newConflictExpireTime = req.conflictExpireTime(i);
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer; // Plain version is expected here.
 
@@ -1860,7 +1860,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         assert putMap == null ^ rmvKeys == null;
 
-        assert req.drVersions() == null : "updatePartialBatch cannot be called when there are DR entries in the batch.";
+        assert req.conflictVersions() == null : "updatePartialBatch cannot be called when there are DR entries in the batch.";
 
         long topVer = req.topologyVersion();
 
@@ -2266,7 +2266,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Collection<GridCacheDrInfo<V>> drPutVals;
         Collection<GridCacheVersion> drRmvVals;
 
-        if (req.drVersions() == null) {
+        if (req.conflictVersions() == null) {
             vals = req.values();
 
             drPutVals = null;
@@ -2278,13 +2278,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                long ttl = req.drTtl(i);
+                long ttl = req.conflictTtl(i);
 
                 if (ttl == -1L)
-                    drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.drVersion(i)));
+                    drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.conflictVersion(i)));
                 else
-                    drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.drVersion(i), ttl,
-                        req.drExpireTime(i)));
+                    drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.conflictVersion(i), ttl,
+                        req.conflictExpireTime(i)));
             }
 
             vals = null;
@@ -2293,7 +2293,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             assert req.operation() == DELETE;
 
-            drRmvVals = req.drVersions();
+            drRmvVals = req.conflictVersions();
 
             vals = null;
             drPutVals = null;
@@ -2458,7 +2458,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 DELETE;
 
                         long ttl = req.ttl(i);
-                        long expireTime = req.drExpireTime(i);
+                        long expireTime = req.conflictExpireTime(i);
 
                         if (ttl != -1L && expireTime == -1L)
                             expireTime = CU.toExpireTime(ttl);
@@ -2482,7 +2482,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             replicate ? DR_BACKUP : DR_NONE,
                             ttl,
                             expireTime,
-                            req.drVersion(i),
+                            req.conflictVersion(i),
                             false,
                             intercept,
                             req.subjectId(),
