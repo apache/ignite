@@ -655,14 +655,12 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     @Nullable public IgniteInternalTx userTx() {
         IgniteInternalTx<K, V> tx = txContext();
 
-        if (tx != null && tx.user() && (tx.state() != UNKNOWN && tx.state() != ROLLED_BACK && tx.state() != COMMITTED))
+        if (tx != null && tx.user() && tx.state() == ACTIVE)
             return tx;
 
         tx = tx(Thread.currentThread().getId());
 
-        return tx != null &&
-            tx.user() &&
-            (tx.state() != UNKNOWN && tx.state() != ROLLED_BACK && tx.state() != COMMITTED) ? tx : null;
+        return tx != null && tx.user() && tx.state() == ACTIVE ? tx : null;
     }
 
     /**

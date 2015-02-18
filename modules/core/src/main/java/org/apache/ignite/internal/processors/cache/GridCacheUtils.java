@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Cache utility methods.
