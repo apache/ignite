@@ -1269,7 +1269,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                if (((IgniteKernal)ignite).context().security().enabled()) {
+                if (nodeAuth != null) {
                     // Authenticate local node.
                     try {
                         SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
@@ -3064,7 +3064,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                if (((IgniteKernal)ignite).context().security().enabled()) {
+                if (nodeAuth != null) {
                     // Authenticate node first.
                     try {
                         GridSecurityCredentials cred = unmarshalCredentials(node);
@@ -3495,8 +3495,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                if (!isLocalNodeCoordinator() && ((IgniteKernal)ignite).context().security().enabled() &&
-                    nodeAuth.isGlobalNodeAuthentication()) {
+                if (!isLocalNodeCoordinator() && nodeAuth != null && nodeAuth.isGlobalNodeAuthentication()) {
                     boolean authFailed = true;
 
                     try {
