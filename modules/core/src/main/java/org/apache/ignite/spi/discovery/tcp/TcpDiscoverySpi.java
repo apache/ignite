@@ -3512,7 +3512,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         else {
                             SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
-                            GridSecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
+                            SecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {

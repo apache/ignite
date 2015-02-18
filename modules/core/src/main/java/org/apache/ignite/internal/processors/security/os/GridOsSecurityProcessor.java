@@ -69,7 +69,7 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     };
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
+    @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
         throws IgniteCheckedException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE, node.id());
 
@@ -86,7 +86,7 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
+    @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         s.permissions(ALLOW_ALL);
@@ -109,7 +109,7 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
+    @Override public void authorize(String name, GridSecurityPermission perm, @Nullable SecurityContext securityCtx)
         throws GridSecurityException {
         // No-op.
     }

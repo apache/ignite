@@ -161,7 +161,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        GridSecurityContext subjCtx = null;
+        SecurityContext subjCtx = null;
 
         try {
             subjCtx = authenticate(req);
@@ -436,7 +436,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws IgniteCheckedException If authentication failed.
      */
-    private GridSecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
+    private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         // Authenticate client if invalid session.
         AuthenticationContext authCtx = new AuthenticationContext();
 
@@ -466,7 +466,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.credentials(cred);
 
-        GridSecurityContext subjCtx = ctx.security().authenticate(authCtx);
+        SecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
         if (subjCtx == null) {
             if (req.credentials() == null)
@@ -483,7 +483,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param sCtx Security context.
      * @throws GridSecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, GridSecurityContext sCtx) throws GridSecurityException {
+    private void authorize(GridRestRequest req, SecurityContext sCtx) throws GridSecurityException {
         GridSecurityPermission perm = null;
         String name = null;
 
