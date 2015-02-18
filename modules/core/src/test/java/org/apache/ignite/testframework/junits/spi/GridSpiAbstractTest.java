@@ -332,18 +332,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         getTestResources().inject(discoSpi);
 
-        discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public SecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                return ((IgniteKernal) grid()).context().security().createSecurityContext(subj);
-            }
-
-            @Override public boolean isGlobalNodeAuthentication() {
-                return false;
-            }
-        });
-
         configure(discoSpi);
 
         if (discoSpi.getNodeAttributes() != null)
