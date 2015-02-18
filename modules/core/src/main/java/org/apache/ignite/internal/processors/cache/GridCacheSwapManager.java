@@ -724,7 +724,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Collection of swap entries.
      * @throws IgniteCheckedException If failed,
      */
-    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys) throws IgniteCheckedException {
+    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys)
+        throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return Collections.emptyList();
 
@@ -732,13 +733,11 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         final GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
-        Collection<? extends K> unprocessedKeys;
+        Collection<SwapKey> unprocessedKeys = null;
         final Collection<GridCacheBatchSwapEntry<K, V>> res = new ArrayList<>(keys.size());
 
         // First try removing from offheap.
         if (offheapEnabled) {
-            Collection<K> unprocessedKeysList = new ArrayList<>(keys.size());
-
             for (K key : keys) {
                 int part = cctx.affinity().partition(key);
 
@@ -778,33 +777,33 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
                 }
 
-                unprocessedKeysList.add(key);
+                if (swapEnabled) {
+                    if (unprocessedKeys == null)
+                        unprocessedKeys = new ArrayList<>(keys.size());
+
+                    unprocessedKeys.add(
+                        new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
+                }
             }
 
-            unprocessedKeys = unprocessedKeysList;
-
-            if (!swapEnabled || unprocessedKeys.isEmpty())
+            if (unprocessedKeys == null)
                 return res;
         }
-        else
-            unprocessedKeys = keys;
+        else {
+            unprocessedKeys = new ArrayList<>(keys.size());
+
+            for (K key : keys)
+                unprocessedKeys.add(new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
+        }
+
+        assert swapEnabled;
+        assert unprocessedKeys != null;
 
         // Swap is enabled.
         final GridTuple<IgniteCheckedException> err = F.t1();
 
-        Collection<SwapKey> converted = new ArrayList<>(F.viewReadOnly(unprocessedKeys, new C1<K, SwapKey>() {
-            @Override public SwapKey apply(K key) {
-                try {
-                    return new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }));
-
         swapMgr.removeAll(spaceName,
-            converted,
+            unprocessedKeys,
             new IgniteBiInClosure<SwapKey, byte[]>() {
                 @Override public void apply(SwapKey swapKey, byte[] rmv) {
                     if (rmv != null) {
