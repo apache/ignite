@@ -38,7 +38,8 @@ public interface DiscoverySpiDataExchange {
     /**
      * Notifies discovery manager about data received from remote node.
      *
+     * @param nodeId Remote node ID.
      * @param data Collection of discovery data objects from different components.
      */
-    public void onExchange(Map<Integer, Object> data);
+    public void onExchange(UUID nodeId, Map<Integer, Object> data);
 }
