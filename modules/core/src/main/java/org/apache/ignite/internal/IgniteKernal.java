@@ -677,7 +677,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             // Start security processors.
             startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridSecureSessionProcessor.class, ctx), attrs);
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
