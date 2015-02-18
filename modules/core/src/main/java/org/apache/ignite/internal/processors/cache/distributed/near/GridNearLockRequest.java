@@ -328,11 +328,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(new MessageHeader(directType(), (byte)34)))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {

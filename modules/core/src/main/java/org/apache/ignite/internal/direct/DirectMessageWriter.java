@@ -216,12 +216,12 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isTypeWritten() {
+    @Override public boolean isHeaderWritten() {
         return state.isTypeWritten();
     }
 
     /** {@inheritDoc} */
-    @Override public void onTypeWritten() {
+    @Override public void onHeaderWritten() {
         state.onTypeWritten();
     }
 

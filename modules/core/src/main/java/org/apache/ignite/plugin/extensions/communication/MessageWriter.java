@@ -264,14 +264,14 @@ public interface MessageWriter {
         MessageAdapter.Type valType);
 
     /**
-     * @return Whether type of current message is already written.
+     * @return Whether header of current message is already written.
      */
-    public boolean isTypeWritten();
+    public boolean isHeaderWritten();
 
     /**
-     * Callback called when type of the message is written.
+     * Callback called when header of the message is written.
      */
-    public void onTypeWritten();
+    public void onHeaderWritten();
 
     /**
      * Gets current message state.

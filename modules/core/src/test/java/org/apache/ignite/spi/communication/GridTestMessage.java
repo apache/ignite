@@ -97,11 +97,11 @@ public class GridTestMessage extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
+        if (!writer.isHeaderWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {

@@ -291,16 +291,16 @@ public class CommunicationMessageCodeGenerator {
 
         Collections.sort(fields, FIELD_CMP);
 
+        int state = startState(cls);
+
         indent = 2;
 
         boolean hasSuper = cls.getSuperclass() != BASE_CLS;
 
-        start(write, hasSuper ? "writeTo" : null, true);
-        start(read, hasSuper ? "readFrom" : null, false);
+        start(write, hasSuper ? "writeTo" : null, true, state + fields.size());
+        start(read, hasSuper ? "readFrom" : null, false, 0);
 
         indent++;
-
-        int state = startState(cls);
 
         for (Field field : fields)
             processField(field, state++);
@@ -347,8 +347,9 @@ public class CommunicationMessageCodeGenerator {
      * @param code Code lines.
      * @param superMtd Super class method name.
      * @param write Whether write code is generated.
+     * @param fieldCnt Fields count.
      */
-    private void start(Collection<String> code, @Nullable String superMtd, boolean write) {
+    private void start(Collection<String> code, @Nullable String superMtd, boolean write, int fieldCnt) {
         assert code != null;
 
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
@@ -364,14 +365,14 @@ public class CommunicationMessageCodeGenerator {
         }
 
         if (write) {
-            code.add(builder().a("if (!writer.isTypeWritten()) {").toString());
+            code.add(builder().a("if (!writer.isHeaderWritten()) {").toString());
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
+            returnFalseIfFailed(code, "writer.writeHeader", "new MessageHeader(directType(), (byte)" + fieldCnt + ")");
 
             code.add(EMPTY);
-            code.add(builder().a("writer.onTypeWritten();").toString());
+            code.add(builder().a("writer.onHeaderWritten();").toString());
 
             indent--;
 
