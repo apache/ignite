@@ -1699,7 +1699,7 @@ public class GridCacheUtils {
 
         if (duration.getDurationAmount() == 0) {
             if (duration.isEternal())
-                return 0;
+                return TTL_ETERNAL;
 
             assert duration.isZero();
 

@@ -983,10 +983,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         txEntry.op(NOOP);
 
-                        ExpiryPolicy expiry = txEntry.expiry();
+                        assert txEntry.context() != null;
 
-                        if (expiry == null)
-                            expiry = txEntry.context().expiry();
+                        ExpiryPolicy expiry = txEntry.context().expiryForTxEntry(txEntry);
 
                         if (expiry != null)
                             txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
