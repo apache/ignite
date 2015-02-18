@@ -338,6 +338,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param txEntry TX entry.
+     * @return Expiry policy for the given TX entry.
+     */
+    @Nullable public ExpiryPolicy expiryForTxEntry(IgniteTxEntry txEntry) {
+        ExpiryPolicy plc = txEntry.expiry();
+
+        return plc != null ? plc : expiryPlc;
+    }
+
+    /**
      * @param mgr Manager to add.
      * @return Added manager.
      */

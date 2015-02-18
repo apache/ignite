@@ -1010,13 +1010,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param nodeId Node ID.
      * @param req Update request.
-     * @param cached Cached entry if updating single local entry.
      * @param completionCb Completion callback.
      */
     public void updateAllAsyncInternal(
         final UUID nodeId,
         final GridNearAtomicUpdateRequest<K, V> req,
-        @Nullable final GridCacheEntryEx<K, V> cached,
         final CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb
     ) {
         IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
@@ -1648,9 +1646,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (entry == null)
                     continue;
 
-                GridCacheVersion newConflictVer = req.drVersion(i);
-                long newConflictTtl = req.drTtl(i);
-                long newConflictExpireTime = req.drExpireTime(i);
+                GridCacheVersion newConflictVer = req.conflictVersion(i);
+                long newConflictTtl = req.conflictTtl(i);
+                long newConflictExpireTime = req.conflictExpireTime(i);
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer; // Plain version is expected here.
 
@@ -1862,7 +1860,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         assert putMap == null ^ rmvKeys == null;
 
-        assert req.drVersions() == null : "updatePartialBatch cannot be called when there are DR entries in the batch.";
+        assert req.conflictVersions() == null : "updatePartialBatch cannot be called when there are DR entries in the batch.";
 
         long topVer = req.topologyVersion();
 
@@ -1967,15 +1965,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
                         null,
                         replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
-                        -1L,
-                        -1L,
+                        CU.TTL_NOT_CHANGED,
+                        CU.EXPIRE_TIME_CALCULATE,
                         null,
                         false,
                         false,
                         req.subjectId(),
                         taskName);
 
-                    assert updRes.newTtl() == -1L || expiry != null;
+                    assert updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null;
 
                     if (intercept) {
                         if (op == UPDATE)
@@ -2011,7 +2009,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
-                                -1,
+                                CU.EXPIRE_TIME_CALCULATE,
                                 null);
 
                         if (!F.isEmpty(filteredReaders))
@@ -2021,7 +2019,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
-                                -1);
+                                CU.EXPIRE_TIME_CALCULATE);
                     }
 
                     if (hasNear) {
@@ -2038,10 +2036,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         writeVal,
                                         valBytes,
                                         updRes.newTtl(),
-                                        -1);
+                                        CU.EXPIRE_TIME_CALCULATE);
                                 }
                                 else
-                                    res.addNearTtl(idx, updRes.newTtl(), -1);
+                                    res.addNearTtl(idx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
 
                                 if (writeVal != null || !entry.valueBytes().isNull()) {
                                     IgniteInternalFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -2268,7 +2266,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Collection<GridCacheDrInfo<V>> drPutVals;
         Collection<GridCacheVersion> drRmvVals;
 
-        if (req.drVersions() == null) {
+        if (req.conflictVersions() == null) {
             vals = req.values();
 
             drPutVals = null;
@@ -2280,13 +2278,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                long ttl = req.drTtl(i);
+                long ttl = req.conflictTtl(i);
 
-                if (ttl == -1L)
-                    drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.drVersion(i)));
+                if (ttl == CU.TTL_NOT_CHANGED)
+                    drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.conflictVersion(i)));
                 else
-                    drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.drVersion(i), ttl,
-                        req.drExpireTime(i)));
+                    drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.conflictVersion(i), ttl,
+                        req.conflictExpireTime(i)));
             }
 
             vals = null;
@@ -2295,7 +2293,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             assert req.operation() == DELETE;
 
-            drRmvVals = req.drVersions();
+            drRmvVals = req.conflictVersions();
 
             vals = null;
             drPutVals = null;
@@ -2398,7 +2396,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         req.nodeId(ctx.localNodeId());
 
-        updateAllAsyncInternal(nodeId, req, null, updateReplyClos);
+        updateAllAsyncInternal(nodeId, req, updateReplyClos);
     }
 
     /**
@@ -2460,7 +2458,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 DELETE;
 
                         long ttl = req.ttl(i);
-                        long expireTime = req.drExpireTime(i);
+                        long expireTime = req.conflictExpireTime(i);
 
                         if (ttl != -1L && expireTime == -1L)
                             expireTime = CU.toExpireTime(ttl);
@@ -2484,7 +2482,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             replicate ? DR_BACKUP : DR_NONE,
                             ttl,
                             expireTime,
-                            req.drVersion(i),
+                            req.conflictVersion(i),
                             false,
                             intercept,
                             req.subjectId(),
