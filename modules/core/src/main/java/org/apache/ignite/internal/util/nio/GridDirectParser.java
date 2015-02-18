@@ -34,21 +34,39 @@ public class GridDirectParser implements GridNioParser {
     /** */
     private final MessageFactory msgFactory;
 
+    /** */
+    private final MessageFormatter formatter;
+
     /**
      * @param msgFactory Message factory.
+     * @param formatter Formatter.
      */
-    public GridDirectParser(MessageFactory msgFactory) {
+    public GridDirectParser(MessageFactory msgFactory, MessageFormatter formatter) {
         assert msgFactory != null;
+        assert formatter != null;
 
         this.msgFactory = msgFactory;
+        this.formatter = formatter;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
+        throws IOException, IgniteCheckedException {
         MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
-        if (msg == null && buf.hasRemaining())
-            msg = msgFactory.create(buf.get());
+        if (msg == null && buf.hasRemaining()) {
+            MessageReader reader = formatter.reader();
+
+            reader.setBuffer(buf);
+
+            MessageHeader header = reader.readHeader();
+
+            if (reader.isLastRead()) {
+                msg = msgFactory.create(header.messageType());
+
+                msg.setReader(reader);
+            }
+        }
 
         boolean finished = false;
 

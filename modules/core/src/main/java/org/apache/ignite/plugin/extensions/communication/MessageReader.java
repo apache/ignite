@@ -36,6 +36,13 @@ public interface MessageReader {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Reads message header.
+     *
+     * @return Header.
+     */
+    public MessageHeader readHeader();
+
+    /**
      * Reads {@code byte} value.
      *
      * @param name Field name.

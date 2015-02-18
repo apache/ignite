@@ -47,6 +47,15 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public MessageHeader readHeader() {
+        byte type = stream.readByte();
+
+        lastRead = stream.lastFinished();
+
+        return lastRead ? new MessageHeader(type, (byte)0) : null;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte readByte(String name) {
         byte val = stream.readByte();
 

@@ -36,6 +36,13 @@ public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Writes message header.
+     *
+     * @param header Header.
+     */
+    public boolean writeHeader(MessageHeader header);
+
+    /**
      * Writes {@code byte} value.
      *
      * @param name Field name.
