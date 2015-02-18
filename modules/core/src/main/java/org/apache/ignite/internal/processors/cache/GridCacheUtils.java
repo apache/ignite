@@ -74,11 +74,23 @@ public class GridCacheUtils {
     /** Peek flags. */
     private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
 
-    /** */
+    /** TTL: minimum positive value. */
+    public static final long TTL_MINIMUM = 1L;
+
+    /** TTL: eternal. */
+    public static final long TTL_ETERNAL = 0L;
+
+    /** TTL: not changed. */
     public static final long TTL_NOT_CHANGED = -1L;
 
-    /** */
+    /** TTL: zero (immediate expiration). */
     public static final long TTL_ZERO = -2L;
+
+    /** Expire time: eternal. */
+    public static final long EXPIRE_TIME_ETERNAL = 0L;
+
+    /** Expire time: must be calculated based on TTL value. */
+    public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Per-thread generated UID store. */
     private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
@@ -1602,15 +1614,15 @@ public class GridCacheUtils {
      * @return Expire time.
      */
     public static long toExpireTime(long ttl) {
-        assert ttl >= 0L : ttl;
+        assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0;
 
-        if (ttl == 0L)
-            return 0L;
-        else {
-            long expireTime = U.currentTimeMillis() + ttl;
+        long expireTime = ttl == CU.TTL_ETERNAL ? CU.EXPIRE_TIME_ETERNAL : U.currentTimeMillis() + ttl;
 
-            return expireTime > 0L ? expireTime : 0L;
-        }
+        // Account for overflow.
+        if (expireTime < 0)
+            expireTime = CU.EXPIRE_TIME_ETERNAL;
+
+        return expireTime;
     }
 
     /**
