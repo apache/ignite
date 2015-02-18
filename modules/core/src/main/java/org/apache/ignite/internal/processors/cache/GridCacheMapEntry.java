@@ -1607,7 +1607,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             Object transformClo = null;
 
             if (drResolve) {
-                GridCacheVersion oldDrVer = version().drVersion();
+                GridCacheVersion oldDrVer = version().conflictVersion();
 
                 boolean drNeedResolve = cctx.conflictNeedResolve(oldDrVer, drVer);
 
@@ -2149,7 +2149,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
-            cctx.dr().replicate(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(), ver.drVersion(), drType);
+            cctx.dr().replicate(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
     }
 
     /**
@@ -3180,7 +3180,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean isNew = isStartVersion();
 
         return new GridCachePlainVersionedEntry<>(key, isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
-            ttlExtras(), expireTimeExtras(), ver.drVersion(), isNew);
+            ttlExtras(), expireTimeExtras(), ver.conflictVersion(), isNew);
     }
 
     /** {@inheritDoc} */
