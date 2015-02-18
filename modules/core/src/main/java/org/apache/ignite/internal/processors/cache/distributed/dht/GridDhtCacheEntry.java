@@ -578,8 +578,18 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @SuppressWarnings("unchecked")
     public synchronized Collection<ReaderId<K, V>> checkReaders() throws GridCacheEntryRemovedException {
+        return checkReadersLocked();
+    }
+
+    /**
+     * @return Collection of readers after check.
+     * @throws GridCacheEntryRemovedException If removed.
+     */
+    @SuppressWarnings("unchecked")
+    protected Collection<ReaderId<K, V>> checkReadersLocked() throws GridCacheEntryRemovedException {
+        assert Thread.holdsLock(this);
+
         checkObsolete();
 
         ReaderId<K, V>[] rdrs = this.rdrs;
@@ -591,6 +601,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         for (int i = 0; i < rdrs.length; i++) {
             if (!cctx.discovery().alive(rdrs[i].nodeId())) {
+                // Node has left and if new list has already been created, just skip.
+                // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {
                     newRdrs = new ArrayList<>(rdrs.length);
 
@@ -598,10 +610,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                         newRdrs.add(rdrs[i]);
                 }
             }
-            else {
-                if (newRdrs != null)
-                    newRdrs.add(rdrs[i]);
-            }
+            // If node is still alive and no failed nodes
+            // found yet, simply go to next iteration.
+            else if (newRdrs != null)
+                // Some of the nodes has left. Add to list.
+                newRdrs.add(rdrs[i]);
         }
 
         if (newRdrs != null) {
@@ -615,7 +628,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected synchronized boolean hasReaders() throws GridCacheEntryRemovedException {
-        checkReaders();
+        checkReadersLocked();
 
         return rdrs.length > 0;
     }
