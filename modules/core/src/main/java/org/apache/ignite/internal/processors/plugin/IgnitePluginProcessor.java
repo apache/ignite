@@ -182,7 +182,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         Map<String, Object> discData = (Map<String, Object>)data;
 
         if (discData != null) {
@@ -190,7 +190,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                 PluginProvider provider = plugins.get(e.getKey());
 
                 if (provider != null)
-                    provider.receiveDiscoveryData(e.getValue());
+                    provider.receiveDiscoveryData(nodeId, e.getValue());
                 else
                     U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
             }
