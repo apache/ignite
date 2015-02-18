@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.schedule.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
@@ -125,10 +124,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridSecurityProcessor authProc;
-
-    /** */
-    @GridToStringExclude
-    private GridSecureSessionProcessor secProc;
 
     /** */
     @GridToStringExclude
@@ -398,8 +393,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
             authProc = (GridSecurityProcessor)comp;
-        else if (comp instanceof GridSecureSessionProcessor)
-            secProc = (GridSecureSessionProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridSwapSpaceManager)
