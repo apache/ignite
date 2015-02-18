@@ -1346,6 +1346,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         break; // While loop.
                     }
+                    finally {
+                        if (cacheCtx.isNear() && entry != null && readCommitted()) {
+                            if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.key(), topVer)) {
+                                if (entry.markObsolete(xidVer))
+                                    cacheCtx.cache().removeEntry(entry);
+                            }
+                        }
+                    }
                 }
             }
         }

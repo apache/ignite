@@ -29,6 +29,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 /**
  *
  */
+@SuppressWarnings("RedundantMethodOverride")
 public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -54,6 +55,8 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
         Integer key = backupKey(cache);
 
         cache.put(key, key);
+
+        assertEquals(1, cache.localSize());
 
         try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             assertEquals(key, cache.get(key));
