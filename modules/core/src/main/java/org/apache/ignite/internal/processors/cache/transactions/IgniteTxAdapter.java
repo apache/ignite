@@ -1251,10 +1251,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                 if (op == NOOP) {
-                    ExpiryPolicy expiry = txEntry.expiry();
-
-                    if (expiry == null)
-                        expiry = cacheCtx.expiry();
+                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                     if (expiry != null) {
                         long ttl = CU.toTtl(expiry.getExpiryForAccess());

@@ -91,7 +91,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     private long ttl;
 
     /** DR expire time (explicit) */
-    private long conflictExpireTime = -1L;
+    private long conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
+
+    /** Conflict version. */
+    private GridCacheVersion conflictVer;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
@@ -134,9 +137,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Deployment enabled flag. */
     private boolean depEnabled;
-
-    /** Conflict version. */
-    private GridCacheVersion conflictVer;
 
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -695,17 +695,17 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @return DR version.
+     * @return Conflict version.
      */
     @Nullable public GridCacheVersion conflictVersion() {
         return conflictVer;
     }
 
     /**
-     * @param drVer DR version.
+     * @param conflictVer Conflict version.
      */
-    public void conflictVersion(@Nullable GridCacheVersion drVer) {
-        this.conflictVer = drVer;
+    public void conflictVersion(@Nullable GridCacheVersion conflictVer) {
+        this.conflictVer = conflictVer;
     }
 
     /**
@@ -1106,6 +1106,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          * @throws IOException If failed.
          * @throws ClassNotFoundException If failed.
          */
+        @SuppressWarnings("unchecked")
         public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
             hasWriteVal = in.readBoolean();
             valBytesSent = in.readBoolean();
