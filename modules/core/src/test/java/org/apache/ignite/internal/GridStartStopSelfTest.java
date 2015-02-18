@@ -29,8 +29,8 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Checks basic node start/stop operations.
@@ -103,8 +103,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         Thread stopper = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    try (IgniteTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        g0.cache(null).get(1);
+                    try (Transaction ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        g0.jcache(null).get(1);
 
                         latch.countDown();
 
@@ -127,7 +127,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         info("Before remove.");
 
-        g1.cache(null).remove(1);
+        g1.jcache(null).remove(1);
     }
 
     /**

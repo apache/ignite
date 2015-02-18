@@ -60,8 +60,6 @@ public class GridPluginComponent implements GridComponent {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
         plugin.onIgniteStart();
-
-
     }
 
     /** {@inheritDoc} */

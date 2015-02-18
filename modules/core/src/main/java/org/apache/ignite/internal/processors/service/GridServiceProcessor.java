@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -28,7 +26,6 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -36,21 +33,22 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static java.util.Map.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Grid service processor.
@@ -87,11 +85,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();
 
-    /** Deployment listener. */
-    private GridCacheContinuousQueryAdapter<Object, Object> cfgQry;
+    /** Deployment listener ID. */
+    private UUID cfgQryId;
 
-    /** Assignment listener. */
-    private GridCacheContinuousQueryAdapter<Object, Object> assignQry;
+    /** Assignment listener ID. */
+    private UUID assignQryId;
 
     /**
      * @param ctx Kernal context.
@@ -120,7 +118,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
+        cache = ctx.cache().utilityCache();
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
@@ -128,17 +126,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
+            cfgQryId = cache.context().continuousQueries().executeInternalQuery(
+                new DeploymentListener(), null, true, true);
 
-            cfgQry.localCallback(new DeploymentListener());
-
-            cfgQry.execute(ctx.grid().forLocal(), true, false, false, true);
-
-            assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
-
-            assignQry.localCallback(new AssignmentListener());
-
-            assignQry.execute(ctx.grid().forLocal(), true, false, false, true);
+            assignQryId = cache.context().continuousQueries().executeInternalQuery(
+                new AssignmentListener(), null, true, true);
         }
         finally {
             if (ctx.deploy().enabled())
@@ -171,21 +163,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         ctx.event().removeLocalEventListener(topLsnr);
 
-        try {
-            if (cfgQry != null)
-                cfgQry.close();
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to unsubscribe service configuration notifications.", e);
-        }
+        if (cfgQryId != null)
+            cache.context().continuousQueries().cancelInternalQuery(cfgQryId);
 
-        try {
-            if (assignQry != null)
-                assignQry.close();
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to unsubscribe service assignment notifications.", e);
-        }
+        if (assignQryId != null)
+            cache.context().continuousQueries().cancelInternalQuery(assignQryId);
 
         Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
@@ -362,7 +344,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+                            for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
                                 if (e.getKey() instanceof GridServiceAssignmentsKey) {
                                     GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
@@ -454,7 +436,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> cancelAll() {
         Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -473,7 +455,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<ServiceDescriptor> serviceDescriptors() {
         Collection<ServiceDescriptor> descs = new ArrayList<>();
 
-        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -676,7 +658,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 Collection<UUID> used = new HashSet<>();
 
                                 // Avoid redundant moving of services.
-                                for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                for (Map.Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
                                     // Do not assign services to left nodes.
                                     if (ctx.discovery().node(e.getKey()) == null)
                                         continue;
@@ -693,12 +675,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 }
 
                                 if (remainder > 0) {
-                                    List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+                                    List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                                     // Randomize.
                                     Collections.shuffle(entries);
 
-                                    for (Entry<UUID, Integer> e : entries) {
+                                    for (Map.Entry<UUID, Integer> e : entries) {
                                         // Assign only the ones that have not been reused from previous assignments.
                                         if (!used.contains(e.getKey())) {
                                             if (e.getValue() < maxPerNodeCnt) {
@@ -712,12 +694,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 }
                             }
                             else {
-                                List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+                                List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                                 // Randomize.
                                 Collections.shuffle(entries);
 
-                                for (Entry<UUID, Integer> e : entries) {
+                                for (Map.Entry<UUID, Integer> e : entries) {
                                     e.setValue(e.getValue() + 1);
 
                                     if (--remainder == 0)
@@ -916,18 +898,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Service deployment listener.
      */
-    private class DeploymentListener
-        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
-        /** Serial version ID. */
-        private static final long serialVersionUID = 0L;
-
+    private class DeploymentListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
-        @Override public boolean apply(
-            UUID nodeId,
-            final Collection<CacheContinuousQueryEntry<Object, Object>> deps) {
+        @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Entry<Object, Object> e : deps) {
+                    for (CacheEntryEvent<?, ?> e : deps) {
                         if (!(e.getKey() instanceof GridServiceDeploymentKey))
                             continue;
 
@@ -989,8 +965,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
             });
-
-            return true;
         }
 
         /**
@@ -1074,7 +1048,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
-                                for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+                                for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
@@ -1107,7 +1081,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         // Clean up zombie assignments.
-                        for (CacheEntry<Object, Object> e : cache.primaryEntrySetx()) {
+                        for (Cache.Entry<Object, Object> e : cache.primaryEntrySetx()) {
                             if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                                 continue;
 
@@ -1194,18 +1168,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Assignment listener.
      */
-    private class AssignmentListener
-        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
-        /** Serial version ID. */
-        private static final long serialVersionUID = 0L;
-
+    private class AssignmentListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
-        @Override public boolean apply(
-            UUID nodeId,
-            final Collection<CacheContinuousQueryEntry<Object, Object>> assignCol) {
+        @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> assignCol) throws CacheEntryListenerException {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Entry<Object, Object> e : assignCol) {
+                    for (CacheEntryEvent<?, ?> e : assignCol) {
                         if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                             continue;
 
@@ -1253,8 +1221,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
             });
-
-            return true;
         }
     }
 

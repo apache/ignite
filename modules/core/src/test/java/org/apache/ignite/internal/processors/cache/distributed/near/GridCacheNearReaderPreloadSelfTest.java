@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -51,13 +52,13 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** Cache on primary node. */
-    private GridCache<Integer, Integer> cache1;
+    private IgniteCache<Integer, Integer> cache1;
 
     /** Cache on near node. */
-    private GridCache<Integer, Integer> cache2;
+    private IgniteCache<Integer, Integer> cache2;
 
     /** Cache on backup node. */
-    private GridCache<Integer, Integer> cache3;
+    private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -105,9 +106,9 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         info("Node 2: " + node2.cluster().localNode().id());
         info("Node 3: " + node3.cluster().localNode().id());
 
-        cache1 = node1.cache(CACHE_NAME);
-        cache2 = node2.cache(CACHE_NAME);
-        cache3 = node3.cache(CACHE_NAME);
+        cache1 = node1.jcache(CACHE_NAME);
+        cache2 = node2.jcache(CACHE_NAME);
+        cache3 = node3.jcache(CACHE_NAME);
     }
 
     /**
@@ -153,14 +154,14 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         int key = 0;
 
         while (true) {
-            Collection<ClusterNode> affNodes = cache1.affinity().mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> affNodes = affinity(cache1).mapKeyToPrimaryAndBackups(key);
 
             assert !F.isEmpty(affNodes);
 
             ClusterNode primaryNode = F.first(affNodes);
 
-            if (F.eq(primaryNode, cache1.gridProjection().ignite().cluster().localNode()) &&
-                affNodes.contains(cache3.gridProjection().ignite().cluster().localNode()))
+            if (F.eq(primaryNode, cache1.unwrap(Ignite.class).cluster().localNode()) &&
+                affNodes.contains(cache3.unwrap(Ignite.class).cluster().localNode()))
                 break;
 
             key++;
@@ -190,10 +191,10 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @param expVal Expected value.
      * @throws Exception If failed.
      */
-    private void checkCache(GridCache<Integer, Integer> cache, int key, int expVal) throws Exception {
-        CacheEntry<Integer, Integer> entry = cache.entry(key);
+    private void checkCache(IgniteCache<Integer, Integer> cache, int key, int expVal) throws Exception {
+        Integer val = cache.get(key);
 
-        assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
-            ", actual=" + entry.getValue() + ", primary=" + entry.primary() + ", backup=" + entry.backup() + ']';
+        assert F.eq(expVal, val) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
+            ", actual=" + val + ']';
     }
 }

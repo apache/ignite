@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -27,7 +27,7 @@ import java.io.*;
  */
 public class GridCacheTestValue2 implements Serializable {
     /** */
-    @CacheQuerySqlField
+    @QuerySqlField
     private String val;
 
     /**

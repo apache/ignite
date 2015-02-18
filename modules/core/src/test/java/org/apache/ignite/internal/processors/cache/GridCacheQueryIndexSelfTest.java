@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -49,7 +51,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testWithoutStoreLoad() throws Exception {
-        GridCache<Integer, CacheValue> cache = grid(0).cache(null);
+        GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++)
             cache.put(i, new CacheValue(i));
@@ -65,9 +67,9 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < ENTRY_CNT; i++)
             putToStore(i, new CacheValue(i));
 
-        GridCache<Integer, CacheValue> cache0 = grid(0).cache(null);
+        grid(0).jcache(null).localLoadCache(null, 0);
 
-        cache0.loadCache(null, 0);
+        GridCache<Integer, CacheValue> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         checkCache(cache0);
         checkQuery(cache0, true);
@@ -105,7 +107,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * Test cache value.
      */
     private static class CacheValue {
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int val;
 
         CacheValue(int val) {

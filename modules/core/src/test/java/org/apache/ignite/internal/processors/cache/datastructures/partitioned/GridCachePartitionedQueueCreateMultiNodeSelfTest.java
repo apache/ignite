@@ -33,8 +33,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -169,11 +169,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    GridCache<Integer, String> cache = ignite.cache(null);
+                    IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-                    info("Partition: " + cache.affinity().partition(1));
+                    info("Partition: " + ignite.affinity(null).partition(1));
 
-                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");
 
                         String s = cache.get(1);
@@ -185,7 +185,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
 
                             // info("Putting value.");
 
-                            cache.putx(1, "val");
+                            cache.put(1, "val");
 
                             // info("Done putting value");
 

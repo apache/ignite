@@ -19,15 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Simple cache test.
@@ -67,7 +66,15 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return IGNITEs.get(i).cache(null);
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param i Grid index.
+     * @return Cache.
+     */
+    @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
+        return IGNITEs.get(i).jcache(null);
     }
 
     /**
@@ -117,14 +124,14 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If test failed.
      */
-    private void checkTransactionTimeout(IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    private void checkTransactionTimeout(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
 
         int idx = RAND.nextInt(GRID_COUNT);
 
         IgniteCache<Integer, String> cache = jcache(idx);
 
-        IgniteTx tx = ignite(idx).transactions().txStart(concurrency, isolation, TIMEOUT, 0);
+        Transaction tx = ignite(idx).transactions().txStart(concurrency, isolation, TIMEOUT, 0);
 
         try {
             info("Storing value in cache [key=1, val=1]");
@@ -148,7 +155,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
             assert false : "Timeout never happened for transaction: " + tx;
         }
         catch (CacheException e) {
-            if (!(e.getCause() instanceof IgniteTxTimeoutException))
+            if (!(e.getCause() instanceof TransactionTimeoutException))
                 throw e;
 
             info("Received expected timeout exception [msg=" + e.getMessage() + ", tx=" + tx + ']');

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -96,27 +97,33 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+            Set<Integer> keys = new HashSet<>();
 
             // Populate.
-            for (int i = 0; i < ENTRY_CNT; i++)
+            for (int i = 0; i < ENTRY_CNT; i++) {
+                keys.add(i);
+
                 cache.put(i, i);
+            }
 
             info("Put finished.");
 
             // Evict all.
-            cache.evictAll();
+            cache.localEvict(keys);
 
             info("Evict finished.");
 
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertNull(cache.peek(i));
+                assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
-            assert cache.isEmpty();
+            assert cache.localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR,
+                CachePeekMode.ONHEAP) == 0;
 
             startGrid(1);
 
-            int size = grid(1).cache(null).size();
+            int size = grid(1).jcache(null).localSize();
 
             info("New node cache size: " + size);
 
@@ -154,7 +161,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final GridCache<Integer, Integer> cache = grid(0).cache(null);
+            final GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             assertNotNull(cache);
 
@@ -189,12 +196,13 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             done.set(true);
 
-            int size = grid(1).cache(null).size();
+            int size = grid(1).jcache(null).localSize();
 
             info("New node cache size: " + size);
 
             if (size != ENTRY_CNT) {
-                Iterable<Integer> keySet = new TreeSet<>(grid(1).<Integer, Integer>cache(null).keySet());
+                Iterable<Integer> keySet = new TreeSet<>(((IgniteKernal)grid(1))
+                    .<Integer, Integer>cache(null).keySet());
 
                 int next = 0;
 

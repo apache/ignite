@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -37,8 +38,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests reentry in pessimistic repeatable read tx.
@@ -96,12 +97,12 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGrids(gridCount());
 
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             // Find test key.
             int key = testKey();
 
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // One near lock request.
                 cache.get(key);
 

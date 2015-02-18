@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -40,12 +39,12 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  * Colocated cache lock future.
@@ -96,7 +95,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -140,7 +139,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -245,7 +244,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private IgniteTxIsolation isolation() {
+    @Nullable private TransactionIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -440,30 +439,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     private void onError(Throwable t) {
         err.compareAndSet(null, t instanceof GridCacheLockTimeoutException ? null : t);
-    }
-
-    /**
-     * @param cached Entry to check.
-     * @return {@code True} if filter passed.
-     */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
-        try {
-            if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-
-                onFailed(true);
-
-                return false;
-            }
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            onError(e);
-
-            return false;
-        }
     }
 
     /** {@inheritDoc} */
@@ -753,18 +728,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                                 distributedKeys.add(key);
 
-                                if (inTx() && implicitTx() && mappings.size() == 1 && !cctx.writeThrough()) {
-                                    tx.onePhaseCommit(true);
-
-                                    req.onePhaseCommit(true);
-                                }
-
-                                IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
-
-                                if (writeEntry != null)
-                                    // We are sending entry to remote node, clear transfer flag.
-                                    writeEntry.transferRequired(false);
-
                                 if (tx != null)
                                     tx.addKeyMapping(txKey, mapping.node());
 
@@ -773,8 +736,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     node.isLocal() ? null : entry.getOrMarshalKeyBytes(),
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
-                                    writeEntry,
-                                    inTx() ? tx.entry(txKey).drVersion() : null,
                                     cctx);
                             }
 
@@ -871,7 +832,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                    cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
                     assert fut != null;
@@ -886,7 +847,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                            cctx.io().send(node, req, cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             assert fut != null;
@@ -1014,9 +975,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (tx != null) {
                 for (K key : distributedKeys)
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
-
-                if (tx.implicit() && !cctx.writeThrough())
-                    tx.onePhaseCommit(true);
             }
 
             lockLocally(distributedKeys, topVer, null);

@@ -19,23 +19,23 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test node restart.
@@ -163,11 +163,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         startGrids();
 
         try {
-            GridCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
-                    c.putx(i, Integer.toString(i));
+                    c.put(i, Integer.toString(i));
 
                 info("Stored items.");
 
@@ -181,7 +181,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.cache(CACHE_NAME);
+                c = ignite.jcache(CACHE_NAME);
 
                 checkGet(c, j);
             }
@@ -196,7 +196,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param attempt Attempt.
      * @throws Exception If failed.
      */
-    private void checkGet(GridCache<Integer, String> c, int attempt) throws Exception {
+    private void checkGet(IgniteCache<Integer, String> c, int attempt) throws Exception {
         for (int i = 0; i < keyCnt; i++) {
             String v = c.get(i);
 
@@ -220,7 +220,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @return Transaction concurrency to use in tests.
      */
-    protected IgniteTxConcurrency txConcurrency() {
+    protected TransactionConcurrency txConcurrency() {
         return PESSIMISTIC;
     }
 
@@ -496,7 +496,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread...");
 
-                            GridCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = grid(gridIdx).jcache(CACHE_NAME);
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
                                 int key = RAND.nextInt(keyCnt);
@@ -504,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (IgniteTxRollbackCheckedException | ClusterTopologyCheckedException ignored) {
+                                catch (TransactionRollbackException | ClusterTopologyException |CacheException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -616,7 +616,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -632,7 +632,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 int c = 0;
 
                                 try {
-                                    try (IgniteTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                    try (Transaction tx = ignite.transactions().txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
                                         if (c % logFreq == 0)
@@ -652,11 +652,19 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                         tx.commit();
                                     }
-                                    catch (ClusterTopologyCheckedException ignored) {
+                                    catch (ClusterTopologyException | CacheException e) {
+                                        if (e instanceof CacheException
+                                            && !(e.getCause() instanceof ClusterTopologyException))
+                                            throw e;
+
                                         // It is ok if primary node leaves grid.
                                     }
                                 }
-                                catch (ClusterTopologyCheckedException ignored) {
+                                catch (ClusterTopologyException | CacheException e) {
+                                    if (e instanceof CacheException
+                                        && !(e.getCause() instanceof ClusterTopologyException))
+                                        throw e;
+
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -766,7 +774,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -781,7 +789,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = 0;
 
-                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
                                     if (c % logFreq == 0)
@@ -797,7 +805,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                     tx.commit();
                                 }
-                                catch (ClusterTopologyCheckedException ignored) {
+                                catch (ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -877,11 +885,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param key Key.
      * @param attempt Attempt.
      */
-    private void printFailureDetails(GridCache<Integer, String> c, int key, int attempt) {
+    private void printFailureDetails(IgniteCache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
-        error("Partition: " + c.configuration().getAffinity().partition(key));
+        error("Partition: " + c.getConfiguration(CacheConfiguration.class).getAffinity().partition(key));
         error("Attempt: " + attempt);
-        error("Node: " + c.gridProjection().ignite().cluster().localNode().id());
+        error("Node: " + c.unwrap(Ignite.class).cluster().localNode().id());
     }
 }

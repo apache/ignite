@@ -36,7 +36,7 @@ import java.util.*;
  * implementation because it is essentially up to the user to invoke it with
  * specific arguments.
  */
-public abstract class CacheStoreAdapter<K, V> extends CacheStore<K, V> {
+public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
     /**
      * Default empty implementation. This method needs to be overridden only if
      * {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method

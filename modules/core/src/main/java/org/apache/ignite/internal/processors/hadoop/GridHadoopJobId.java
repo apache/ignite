@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -25,7 +26,7 @@ import java.util.*;
 /**
  * Job ID.
  */
-public class GridHadoopJobId implements Externalizable {
+public class GridHadoopJobId implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

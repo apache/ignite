@@ -19,15 +19,16 @@ package org.apache.ignite.visor.commands.config
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.lang.IgniteBiTuple
+
+import java.lang.System._
+
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
-
-import java.lang.System._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -102,7 +103,7 @@ class VisorConfigurationCommand {
      * @return String.
      */
     private def arr2Str[T: ClassTag](arr: Array[T]): String = {
-        if (arr != null && arr.length > 0) IgniteUtils.compact(arr.mkString(", ")) else DFLT
+        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else DFLT
     }
 
     /**
@@ -188,7 +189,7 @@ class VisorConfigurationCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(java.util.UUID.fromString(id.get))
+                    node = ignite.node(java.util.UUID.fromString(id.get))
 
                     if (node == null) {
                         scold("'id' does not match any node: " + id.get)
@@ -206,7 +207,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                grid.compute(grid.forNode(node))
+                ignite.compute(ignite.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
@@ -273,8 +274,6 @@ class VisorConfigurationCommand {
             spisT += ("Communication", spiClass(cfg.spis().communicationSpi()))
             spisT += ("Event storage", spiClass(cfg.spis().eventStorageSpi()))
             spisT += ("Collision", spiClass(cfg.spis().collisionSpi()))
-            spisT += ("Authentication", spiClass(cfg.spis().authenticationSpi()))
-            spisT += ("Secure session", spiClass(cfg.spis().secureSessionSpi()))
             spisT += ("Deployment", spiClass(cfg.spis().deploymentSpi()))
             spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
             spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
@@ -293,26 +292,11 @@ class VisorConfigurationCommand {
 
             p2pT.render()
 
-            println("\nEmail:")
-
-            val emailT = VisorTextTable()
-
-            emailT += ("SMTP host", safe(cfg.email().smtpHost(), DFLT))
-            emailT += ("SMTP port", safe(cfg.email().smtpPort(), DFLT))
-            emailT += ("SMTP username", safe(cfg.email().smtpUsername(), DFLT))
-            emailT += ("Admin emails", safe(cfg.email().adminEmails(), DFLT))
-            emailT += ("From email", safe(cfg.email().smtpFromEmail(), DFLT))
-            emailT += ("SMTP SSL enabled", bool2Str(cfg.email().smtpSsl()))
-            emailT += ("SMTP STARTTLS enabled", bool2Str(cfg.email().smtpStartTls()))
-
-            emailT.render()
-
             println("\nLifecycle:")
 
             val lifecycleT = VisorTextTable()
 
             lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
-            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().emailNotification()))
 
             lifecycleT.render()
 
@@ -322,10 +306,12 @@ class VisorConfigurationCommand {
 
             val execCfg = cfg.executeService()
 
-            execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
+            execSvcT += ("Public thread pool size", safe(execCfg.publicThreadPoolSize(), DFLT))
+            execSvcT += ("System thread pool size", safe(execCfg.systemThreadPoolSize(), DFLT))
+            execSvcT += ("Management thread pool size", safe(execCfg.managementThreadPoolSize(), DFLT))
+            execSvcT += ("IGFS thread pool size", safe(execCfg.igfsThreadPoolSize(), DFLT))
+            execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.peerClassLoadingThreadPoolSize(), DFLT))
+            execSvcT += ("REST thread pool size", safe(execCfg.restThreadPoolSize(), DFLT))
 
             execSvcT.render()
 
@@ -345,7 +331,7 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(IgniteUtils.gridEventName)))
+            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(U.gridEventName)))
 
             evtsT += ("Included event types", inclEvtTypes)
 

@@ -61,13 +61,13 @@ To configure Ignite nodes you can change configuration files at `config` directo
 
 ### 3.1 Distributed File System Configuration
 
-Ignite has it's own distributed in-memory file system called IgniteFS. Hadoop jobs can use it instead of HDFS to achieve maximum performance and scalability. Setting up GGFS is much simpler than HDFS, it requires just few tweaks of Ignite node configuration and does not require starting any additional processes. Default configuration shipped with the Accelerator contains one configured instance named "ignitefs" which can be used as reference.
+Ignite has it's own distributed in-memory file system called IgniteFS. Hadoop jobs can use it instead of HDFS to achieve maximum performance and scalability. Setting up IGFS is much simpler than HDFS, it requires just few tweaks of Ignite node configuration and does not require starting any additional processes. Default configuration shipped with the Accelerator contains one configured instance named "ignitefs" which can be used as reference.
 
 Generally URI for IgniteFS which will be used by Apache Hadoop looks like:
 
-    ignitefs://ignitefs_name@host_name
+    igfs://igfs_name@host_name
 
-Where `ignitefs_name` is IgniteFS instance name, `host_name` is any host running Ignite node with that IgniteFS instance configured. 
+Where `igfs_name` is IgniteFS instance name, `host_name` is any host running Ignite node with that IgniteFS instance configured.
 For more details please refer to IgniteFS documentation.
 
 ### 3.2 Apache Hadoop Client Configuration
@@ -85,7 +85,7 @@ To run Apache Hadoop job with Ignite cluster you have to start one or multiple I
 
 When all the configuration is complete and Ignite nodes are started, running Apache Hadoop job will be the same as with conventional Apache Hadoop distribution except that all Ignite nodes are equal and any of them can be treated as Job Tracker and DFS Name Node.
 
-To run "Word Count" example you can load some text files to GGFS using standard Apache Hadoop tools:
+To run "Word Count" example you can load some text files to IGFS using standard Apache Hadoop tools:
  
     cd $HADOOP_HOME/bin
  

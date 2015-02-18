@@ -17,7 +17,6 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.CacheEntry
 import org.apache.ignite.events.Event
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
@@ -39,21 +38,18 @@ object ScalarCacheExample extends App {
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(NAME).get.clear(0)
+        cache$(NAME).get.clear()
 
         registerListener()
 
         basicOperations()
-        twoViewsOneCache()
     }
 
     /**
      * Demos basic cache operations.
      */
     def basicOperations() {
-        // Create cache predicate-based projection (all values > 30).
-        val c = cache$(NAME).get.viewByType(classOf[String], classOf[Int]).
-            viewByKv((k: String, v: Int) => v < 30)
+        val c = cache$[String, Int](NAME).get
 
         // Add few values.
         c += (1.toString -> 1)
@@ -63,7 +59,6 @@ object ScalarCacheExample extends App {
         c += (1.toString -> 11)
         c += (2.toString -> 22)
 
-        // These should be filtered out by projection.
         c += (1.toString -> 31)
         c += (2.toString -> 32)
         c += ((2.toString, 32))
@@ -74,51 +69,14 @@ object ScalarCacheExample extends App {
         // Put one more value.
         c += (3.toString -> 11)
 
-        val gt10 = (e: CacheEntry[String, Int]) => e.peek() > 10
-
-        // These should pass the predicate.
-        // Note that the predicate checks current state of entry, not the new value.
-        c += (3.toString -> 9, gt10)
-
-        // These should not pass the predicate
-        // because value less then 10 was put on previous step.
-        c += (3.toString -> 8, gt10)
-        c += (3.toString -> 12, gt10)
-
         // Get with option...
         c.opt(44.toString) match {
             case Some(v) => sys.error("Should never happen.")
             case None => println("Correct")
         }
 
-        // Print all projection values.
-        c.values foreach println
-    }
-
-    /**
-     * Demos basic type projections.
-     */
-    def twoViewsOneCache() {
-        // Create two typed views on the same cache.
-        val view1 = cache$(NAME).get.viewByType(classOf[String], classOf[Int])
-        val view2 = cache$(NAME).get.viewByType(classOf[Int], classOf[String])
-
-        view1 += ("key1" -> 1)
-        view1 += ("key2" -> 2)
-
-        // Attempt to update with predicate (will not update due to predicate failing).
-        view1 += ("key2" -> 3, (k: String, v: Int) => v != 2)
-
-        view2 += (1 -> "val1")
-        view2 += (2 -> "val2")
-
-        println("Values in view1:")
-        view1.values foreach println
-        println("view1 size is: " + view1.size)
-
-        println("Values in view2:")
-        view2.values foreach println
-        println("view2 size is: " + view2.size)
+        // Print all values.
+        c.iterator() foreach println
     }
 
     /**

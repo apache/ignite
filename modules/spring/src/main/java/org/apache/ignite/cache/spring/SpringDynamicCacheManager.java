@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.springframework.cache.annotation.*;
 
 import java.io.*;
 import java.util.*;
@@ -39,7 +38,8 @@ import java.util.*;
  * {@link #setDataCacheName(String)} configuration property.
  * <p>
  * Under the hood, this cache manager will create a cache projection
- * for each cache name provided in {@link Cacheable}, {@link CachePut},
+ * for each cache name provided in {@link org.springframework.cache.annotation.Cacheable},
+ * {@link org.springframework.cache.annotation.CachePut},
  * etc. annotations. Note that you're still able to use caches configured in
  * Ignite configuration. Cache projection will be created only
  * cache with provided name doesn't exist.
@@ -104,7 +104,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
         super.afterPropertiesSet();
 
         metaCache = ((IgniteEx)grid).utilityCache(MetaKey.class, org.springframework.cache.Cache.class);
-        dataCache = grid.cache(dataCacheName);
+        dataCache = ((IgniteKernal)grid).cache(dataCacheName);
     }
 
     /** {@inheritDoc} */
@@ -148,12 +148,16 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
             }
         });
 
-        return F.concat(false, names, F.transform(metaCache.entrySetx(),
-            new IgniteClosure<Map.Entry<MetaKey, org.springframework.cache.Cache>, String>() {
-                @Override public String apply(Map.Entry<MetaKey, org.springframework.cache.Cache> e) {
-                    return e.getKey().name;
-                }
-            }));
+        return F.concat(
+            false,
+            names,
+            F.transform(
+                metaCache.entrySetx(),
+                new IgniteClosure<javax.cache.Cache.Entry<MetaKey, org.springframework.cache.Cache>, String>() {
+                    @Override public String apply(javax.cache.Cache.Entry<MetaKey, org.springframework.cache.Cache> e) {
+                        return e.getKey().name;
+                    }
+                }));
     }
 
     /**

@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.rest;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.securesession.*;
-import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
@@ -32,6 +30,8 @@ import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.rest.request.*;
+import org.apache.ignite.internal.processors.securesession.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.authentication.*;
 import org.jdk8.backport.*;
 
 import java.lang.reflect.*;
@@ -175,7 +174,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            if (ctx.isEnterprise()) {
+            if (ctx.secureSession().enabled()) {
                 try {
                     res.sessionTokenBytes(updateSessionToken(req, subjCtx));
                 }
@@ -474,7 +473,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         // Authenticate client if invalid session.
-        AuthenticationContextAdapter authCtx = new AuthenticationContextAdapter();
+        AuthenticationContext authCtx = new AuthenticationContext();
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
@@ -653,8 +652,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
-                "module to classpath).");
+            if (log.isDebugEnabled())
+                log.debug("Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
+                    "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to initialize HTTP REST protocol.", e);

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.cache.query.annotations;
 
+import org.apache.ignite.internal.processors.cache.query.*;
+
 import java.lang.annotation.*;
 
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
- * this annotation. For more information about cache queries see {@link org.apache.ignite.cache.query.CacheQuery} documentation.
- * @see org.apache.ignite.cache.query.CacheQuery
+ * this annotation. For more information about cache queries see {@link CacheQuery} documentation.
+ * @see CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -33,7 +35,7 @@ public @interface QuerySqlField {
      * Just like with databases, field indexing may require additional overhead
      * during updates, but makes select operations faster.
      * <p>
-     * When indexed field is
+     * When indexing SPI and indexed field is
      * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then Ignite will
      * consider this index as spatial providing performance boost for spatial queries.
      *

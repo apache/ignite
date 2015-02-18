@@ -64,8 +64,8 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration = {
-        val cfg = new CacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+        val cfg = new CacheConfiguration[Object, Object]
 
         cfg.setCacheMode(REPLICATED)
         cfg.setName(name)
@@ -76,17 +76,17 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'ccompact' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int](null).clearLocally(1)
+        Ignition.ignite("node-1").jcache[Int, Int](null).localEvict(Set(1))
 
         VisorCacheCompactCommand().compact(Nil, None)
     }
 
     it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").jcache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int]("cache").clearLocally(1)
+        Ignition.ignite("node-1").jcache[Int, Int]("cache").localEvict(Set(1))
 
         visor.cache("-compact -c=cache")
     }

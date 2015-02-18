@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -29,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -86,14 +87,14 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return Isolation level.
      */
-    public IgniteTxIsolation isolation();
+    public TransactionIsolation isolation();
 
     /**
      * Cache transaction concurrency mode.
      *
      * @return Concurrency mode.
      */
-    public IgniteTxConcurrency concurrency();
+    public TransactionConcurrency concurrency();
 
     /**
      * Flag indicating whether transaction was started automatically by the
@@ -123,7 +124,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return Current transaction state.
      */
-    public IgniteTxState state();
+    public TransactionState state();
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
@@ -236,6 +237,11 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @return {@code True} if transaction is started for system cache.
      */
     public boolean system();
+
+    /**
+     * @return Pool where message for the given transaction must be processed.
+     */
+    public GridIoPolicy ioPolicy();
 
     /**
      * @return Last recorded topology version.
@@ -465,13 +471,6 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap();
 
     /**
-     * Gets pessimistic recovery writes, i.e. values that have never been sent to remote nodes with lock requests.
-     *
-     * @return Collection of recovery writes.
-     */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites();
-
-    /**
      * Gets a list of entries that needs to be locked on the next step of prepare stage of
      * optimistic transaction.
      *
@@ -502,7 +501,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
          GridCacheContext<K, V> ctx,
          boolean failFast,
          K key,
-         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.
@@ -573,7 +572,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param state Transaction state.
      * @return {@code True} if transition was valid, {@code false} otherwise.
      */
-    public boolean state(IgniteTxState state);
+    public boolean state(TransactionState state);
 
     /**
      * @param invalidate Invalidate flag.
@@ -702,5 +701,5 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     /**
      * @return Public API proxy.
      */
-    public IgniteTxProxy proxy();
+    public TransactionProxy proxy();
 }

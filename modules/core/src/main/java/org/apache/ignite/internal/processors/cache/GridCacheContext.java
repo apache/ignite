@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -55,6 +54,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -65,6 +65,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
@@ -110,7 +111,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheQueryManager<K, V> qryMgr;
 
     /** Continuous query manager. */
-    private GridCacheContinuousQueryManager<K, V> contQryMgr;
+    private CacheContinuousQueryManager<K, V> contQryMgr;
 
     /** Swap manager. */
     private GridCacheSwapManager<K, V> swapMgr;
@@ -146,19 +147,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAdapter<K, V> cache;
 
     /** No-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] noValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noValArr;
 
     /** Has-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] hasValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasValArr;
 
     /** No-peek-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] noPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noPeekArr;
 
     /** Has-peek-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] hasPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
 
     /** No-op filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] trueArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] trueArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -186,6 +187,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** System cache flag. */
     private boolean sys;
+
+    /** IO policy. */
+    private GridIoPolicy plc;
 
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -236,7 +240,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheStoreManager<K, V> storeMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
-        GridCacheContinuousQueryManager<K, V> contQryMgr,
+        CacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
         CacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
@@ -306,6 +310,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
 
+        plc = sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
         expiryPlc = factory != null ? factory.create() : null;
@@ -329,6 +335,16 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @Nullable public ExpiryPolicy expiry() {
         return expiryPlc;
+    }
+
+    /**
+     * @param txEntry TX entry.
+     * @return Expiry policy for the given TX entry.
+     */
+    @Nullable public ExpiryPolicy expiryForTxEntry(IgniteTxEntry txEntry) {
+        ExpiryPolicy plc = txEntry.expiry();
+
+        return plc != null ? plc : expiryPlc;
     }
 
     /**
@@ -368,6 +384,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy for the given cache.
+     */
+    public GridIoPolicy ioPolicy() {
+        return plc;
     }
 
     /**
@@ -854,7 +877,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Continuous query manager, {@code null} if disabled.
      */
-    public GridCacheContinuousQueryManager<K, V> continuousQueries() {
+    public CacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
     }
 
@@ -930,28 +953,28 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] noGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noGetArray() {
         return noValArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] hasGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasGetArray() {
         return hasValArr;
     }
 
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] noPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
         return noPeekArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] hasPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArray() {
         return hasPeekArr;
     }
 
@@ -960,7 +983,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate array that checks for value.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<CacheEntry<K, V>>[] equalsPeekArray(V val) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] equalsPeekArray(V val) {
         assert val != null;
 
         return new IgnitePredicate[]{F.cacheContainsPeek(val)};
@@ -969,14 +992,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>> truex() {
+    public IgnitePredicate<Cache.Entry<K, V>> truex() {
         return F.alwaysTrue();
     }
 
     /**
      * @return No-op array.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] trueArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] trueArray() {
         return trueArr;
     }
 
@@ -992,7 +1015,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Array containing single predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<CacheEntry<K, V>>[] vararg(IgnitePredicate<CacheEntry<K, V>> p) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
     }
 
@@ -1004,10 +1027,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ErrorNotRethrown"})
-    public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
-        @Nullable IgnitePredicate<CacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.wrap(false), p);
+    public <K1, V1> boolean isAll(
+        GridCacheEntryEx<K1, V1> e,
+        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
+    ) throws IgniteCheckedException {
+        return F.isEmpty(p) || isAll(e.wrapLazyValue(), p);
     }
 
     /**
@@ -1095,15 +1119,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
-        if (obj == null)
-            return obj;
-
-        CacheCloner c = cacheCfg.getCloner();
-
-        if (c != null)
-            return c.cloneValue(obj);
-
-        return X.cloneObject(obj, false, true);
+        return obj == null ? null : X.cloneObject(obj, false, true);
     }
 
     /**
@@ -1487,7 +1503,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
+        @Nullable Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
         assert topVer != -1;
 
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
@@ -1495,25 +1511,27 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
-        Collection<UUID> readers = entry.readers();
-
-        Collection<ClusterNode> nearNodes = null;
-
-        if (!F.isEmpty(readers)) {
-            nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
-
-            if (log.isDebugEnabled())
-                log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Entry has no near readers: " + entry);
-
         Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty())
-            ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+        if (nearMap != null) {
+            Collection<UUID> readers = entry.readers();
+
+            Collection<ClusterNode> nearNodes = null;
+
+            if (!F.isEmpty(readers)) {
+                nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
+
+                if (log.isDebugEnabled())
+                    log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Entry has no near readers: " + entry);
+
+            if (nearNodes != null && !nearNodes.isEmpty())
+                ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+        }
 
         return ret;
     }
@@ -1564,11 +1582,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Check whether conflict resolution is required.
      *
-     * @param oldVer Old version.
-     * @param newVer New version.
      * @return {@code True} in case DR is required.
      */
-    public boolean conflictNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+    public boolean conflictNeedResolve() {
         return conflictRslvr != null;
     }
 

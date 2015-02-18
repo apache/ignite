@@ -674,7 +674,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     protected Collection<InetSocketAddress> registeredAddresses() throws IgniteSpiException {
-        Collection<InetSocketAddress> res = new LinkedList<>();
+        Collection<InetSocketAddress> res = new ArrayList<>();
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
             if (addr.getPort() == 0)
@@ -848,7 +848,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /**
      * Socket timeout object.
      */
-    protected static class SocketTimeoutObject {
+    private static class SocketTimeoutObject {
         /** */
         private static final AtomicLong idGen = new AtomicLong();
 

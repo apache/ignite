@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -39,9 +40,9 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Test for cache swap.
@@ -148,8 +149,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(null);
-            GridCache<Integer, Object> cache2 = ignite2.cache(null);
+            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
+            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -263,7 +264,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED, EVT_SWAP_SPACE_DATA_EVICTED);
 
-            GridCache<Integer, CacheValue> cache = grid(0).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
 
             for (int i = 0; i< 20; i++) {
                 cache.put(i, new CacheValue(i));
@@ -323,7 +324,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
-            GridCache<Integer, CacheValue> cache = grid(0).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
 
             populate(cache);
             evictAll(cache);
@@ -371,7 +372,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);
@@ -416,7 +417,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @throws Exception In case of error.
      */
-    private void populate(CacheProjection<Integer, CacheValue> cache) throws Exception {
+    private void populate(GridCache<Integer, CacheValue> cache) throws Exception {
         resetCounters();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
@@ -427,7 +428,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             assert val != null;
             assert val.value() == i;
 
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            GridCacheEntryEx entry = ((GridCacheAdapter)cache.cache()).peekEx(i);
 
             assert entry != null;
 
@@ -464,8 +465,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void query(CacheProjection<Integer, CacheValue> cache,
-        int lowerBound, int upperBound) throws Exception {
+    private void query(GridCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
         resetCounters();
 
         Collection<Map.Entry<Integer, CacheValue>> res = cache.queries().
@@ -499,8 +499,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void unswap(CacheProjection<Integer, CacheValue> cache,
-        int lowerBound, int upperBound) throws Exception {
+    private void unswap(GridCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
         resetCounters();
 
         assertEquals(0, swapCnt.get());
@@ -534,8 +533,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void unswapAll(CacheProjection<Integer, CacheValue> cache,
-        int lowerBound, int upperBound) throws Exception {
+    private void unswapAll(GridCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
         resetCounters();
 
         Collection<Integer> keys = new HashSet<>();
@@ -565,8 +563,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void get(CacheProjection<Integer, CacheValue> cache,
-        int lowerBound, int upperBound) throws Exception {
+    private void get(GridCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
@@ -595,8 +592,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void peek(CacheProjection<Integer, CacheValue> cache,
-        int lowerBound, int upperBound) throws Exception {
+    private void peek(GridCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
@@ -634,18 +630,20 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @param upperBound Upper key bound.
      * @throws Exception In case of error.
      */
-    private void checkEntries(CacheProjection<Integer, CacheValue> cache,
+    private void checkEntries(GridCache<Integer, CacheValue> cache,
         int lowerBound, int upperBound) throws Exception {
         for (int i = lowerBound; i < upperBound; i++) {
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            cache.promote(i);
+
+            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
 
             assert entry != null;
-            assert entry.getKey() != null;
+            assert entry.key() != null;
 
-            CacheValue val = entry.getValue();
+            CacheValue val = entry.rawGet();
 
             assert val != null;
-            assert entry.getKey() == val.value();
+            assert entry.key() == val.value();
             assert entry.version().equals(versions.get(i));
         }
     }
@@ -655,7 +653,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     private static class CacheValue {
         /** Value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int val;
 
         /**

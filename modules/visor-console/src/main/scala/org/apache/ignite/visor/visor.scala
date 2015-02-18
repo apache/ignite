@@ -32,13 +32,14 @@ import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
+import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
+import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
@@ -157,9 +158,6 @@ object visor extends VisorTag {
     /** Node stop listener. */
     private var nodeStopLsnr: IgnitionListener = null
 
-    /** Visor copyright blurb. */
-    private final val COPYRIGHT = GridProductImpl.COPYRIGHT
-
     /** */
     @volatile private var isCon: Boolean = false
 
@@ -227,7 +225,7 @@ object visor extends VisorTag {
     @volatile var cfgPath: String = null
 
     /** */
-    @volatile var grid: IgniteEx = null
+    @volatile var ignite: IgniteEx = null
 
     /**
      * Get grid node for specified ID.
@@ -237,7 +235,7 @@ object visor extends VisorTag {
      * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
-        val g = grid
+        val g = ignite
 
         if (g == null)
             throw new IgniteException("Visor disconnected")
@@ -254,7 +252,7 @@ object visor extends VisorTag {
     Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
             try
-                if (grid != null && isConnected) {
+                if (ignite != null && isConnected) {
                     // Call all shutdown callbacks.
                     shutdownCbs foreach(_.apply())
 
@@ -851,7 +849,7 @@ object visor extends VisorTag {
         }
         else if (id.isDefined)
             try {
-                val node = Option(grid.node(java.util.UUID.fromString(id.get)))
+                val node = Option(ignite.node(java.util.UUID.fromString(id.get)))
 
                 if (node.isDefined)
                     Right(node)
@@ -1257,7 +1255,7 @@ object visor extends VisorTag {
      * Gets global projection as an option.
      */
     def gridOpt =
-        Option(grid)
+        Option(ignite)
 
     def noop() {}
 
@@ -1289,10 +1287,10 @@ object visor extends VisorTag {
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
         t += ("Grid name",
-            if (grid == null)
+            if (ignite == null)
                 "<n/a>"
             else {
-                val n = grid.name
+                val n = ignite.name
 
                 if (n == null) "<default>" else n
             }
@@ -1493,8 +1491,8 @@ object visor extends VisorTag {
 
                 val cfgs =
                     try
-                        // Cache, GGFS, streamer and DR configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "ggfsConfiguration", "streamerConfiguration",
+                        // Cache, IGFS, streamer and DR configurations should be excluded from daemon node config.
+                        spring.loadConfigurations(url, "cacheConfiguration", "igfsConfiguration", "streamerConfiguration",
                             "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
@@ -1598,7 +1596,7 @@ object visor extends VisorTag {
 
         this.cfgPath = cfgPath
 
-        grid =
+        ignite =
             try
                 Ignition.ignite(startedGridName).asInstanceOf[IgniteEx]
             catch {
@@ -1614,7 +1612,7 @@ object visor extends VisorTag {
         conOwner = true
         conTs = System.currentTimeMillis
 
-        grid.nodes().foreach(n => {
+        ignite.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
             val ip = n.addresses().headOption
@@ -1629,7 +1627,7 @@ object visor extends VisorTag {
                     case de: DiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
-                        val node = grid.node(de.eventNode().id())
+                        val node = ignite.node(de.eventNode().id())
 
                         if (node != null) {
                             val ip = node.addresses().headOption
@@ -1650,7 +1648,7 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
+        ignite.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
         nodeLeftLsnr = new IgnitePredicate[Event]() {
             override def apply(e: Event): Boolean = {
@@ -1664,7 +1662,7 @@ object visor extends VisorTag {
                         val ip = de.eventNode().addresses.headOption
 
                         if (ip.isDefined) {
-                            val last = !grid.nodes().exists(n =>
+                            val last = !ignite.nodes().exists(n =>
                                 n.addresses.size > 0 && n.addresses.head == ip.get
                             )
 
@@ -1681,13 +1679,13 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+        ignite.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
         nodeSegLsnr = new IgnitePredicate[Event] {
             override def apply(e: Event): Boolean = {
                 e match {
                     case de: DiscoveryEvent =>
-                        if (de.eventNode().id() == grid.localNode.id) {
+                        if (de.eventNode().id() == ignite.localNode.id) {
                             warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")
 
@@ -1701,11 +1699,11 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
+        ignite.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
         nodeStopLsnr = new IgnitionListener {
             def onStateChange(name: String, state: IgniteState) {
-                if (name == grid.name && state == IgniteState.STOPPED) {
+                if (name == ignite.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")
 
                     nl()
@@ -1763,12 +1761,12 @@ object visor extends VisorTag {
         assert(id != null)
         assert(isCon)
 
-        val g = grid
+        val g = ignite
 
         if (g != null && g.localNode.id == id)
             "<visor>"
         else {
-            val n = grid.node(id)
+            val n = ignite.node(id)
 
             val id8 = nid8(id)
             val v = mfind(id8)
@@ -1836,7 +1834,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
-        val nodes = grid.nodes().toList
+        val nodes = ignite.nodes().toList
 
         if (nodes.isEmpty) {
             warn("Topology is empty.")
@@ -1900,7 +1898,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
-        val neighborhood = IgniteUtils.neighborhood(grid.nodes()).values().toIndexedSeq
+        val neighborhood = IgniteUtils.neighborhood(ignite.nodes()).values().toIndexedSeq
 
         if (neighborhood.isEmpty) {
             warn("Topology is empty.")
@@ -1958,7 +1956,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(grid.forNodes(neighborhood(a.toInt)))
+                    Some(ignite.forNodes(neighborhood(a.toInt)))
                 catch {
                     case e: Throwable =>
                         warn("Invalid selection: " + a)
@@ -2059,7 +2057,7 @@ object visor extends VisorTag {
     def askNodeId(): Option[String] = {
         assert(isConnected)
 
-        val ids = grid.forRemotes().nodes().map(nid8).toList
+        val ids = ignite.forRemotes().nodes().map(nid8).toList
 
         (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
 
@@ -2160,23 +2158,23 @@ object visor extends VisorTag {
             // Call all close callbacks.
             cbs foreach(_.apply())
 
-            if (grid != null && Ignition.state(grid.name) == IgniteState.STARTED) {
+            if (ignite != null && Ignition.state(ignite.name) == IgniteState.STARTED) {
                 if (nodeJoinLsnr != null)
-                    grid.events().stopLocalListen(nodeJoinLsnr)
+                    ignite.events().stopLocalListen(nodeJoinLsnr)
 
                 if (nodeLeftLsnr != null)
-                    grid.events().stopLocalListen(nodeLeftLsnr)
+                    ignite.events().stopLocalListen(nodeLeftLsnr)
 
                 if (nodeSegLsnr != null)
-                    grid.events().stopLocalListen(nodeSegLsnr)
+                    ignite.events().stopLocalListen(nodeSegLsnr)
             }
 
             if (nodeStopLsnr != null)
                 Ignition.removeListener(nodeStopLsnr)
 
-            if (grid != null && conOwner)
+            if (ignite != null && conOwner)
                 try
-                    Ignition.stop(grid.name, true)
+                    Ignition.stop(ignite.name, true)
                 catch {
                     case e: Exception => warn(e.getMessage)
                 }
@@ -2195,7 +2193,7 @@ object visor extends VisorTag {
             isCon = false
             conOwner = false
             conTs = 0
-            grid = null
+            ignite = null
             nodeJoinLsnr = null
             nodeLeftLsnr = null
             nodeSegLsnr = null
@@ -2406,17 +2404,13 @@ object visor extends VisorTag {
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
 
-                EVT_LIC_CLEARED,
-                EVT_LIC_VIOLATION,
-                EVT_LIC_GRACE_EXPIRED,
-
                 EVT_CACHE_PRELOAD_STARTED,
                 EVT_CACHE_PRELOAD_STOPPED,
                 EVT_CLASS_DEPLOY_FAILED
             )
 
             override def run() {
-                val g = grid
+                val g = ignite
 
                 if (g != null) {
                     try {
@@ -2485,7 +2479,7 @@ object visor extends VisorTag {
      * Does topology snapshot.
      */
     private def snapshot() {
-        val g = grid
+        val g = ignite
 
         if (g != null)
             try
@@ -2519,10 +2513,10 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            IgniteUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
-            grid.nodes().size().toString.padTo(4, ' ') + pipe +
+            IgniteUtils.neighborhood(ignite.nodes()).size.toString.padTo(4, ' ') + pipe +
+            ignite.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
-            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
+            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryTotal) + pipe
         )
     }
 
@@ -2622,7 +2616,7 @@ object visor extends VisorTag {
      * @return Collection of nodes that has specified ID8.
      */
     def nodeById8(id8: String) = {
-        grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
+        ignite.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
     }
 
     /**

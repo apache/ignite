@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
@@ -170,16 +170,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 17:
                 msg = new GridCacheOptimisticCheckPreparedTxResponse();
-
-                break;
-
-            case 18:
-                msg = new GridCachePessimisticCheckCommittedTxRequest();
-
-                break;
-
-            case 19:
-                msg = new GridCachePessimisticCheckCommittedTxResponse();
 
                 break;
 
@@ -404,42 +394,42 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 64:
-                msg = new GridGgfsAckMessage();
+                msg = new IgfsAckMessage();
 
                 break;
 
             case 65:
-                msg = new GridGgfsBlockKey();
+                msg = new IgfsBlockKey();
 
                 break;
 
             case 66:
-                msg = new GridGgfsBlocksMessage();
+                msg = new IgfsBlocksMessage();
 
                 break;
 
             case 67:
-                msg = new GridGgfsDeleteMessage();
+                msg = new IgfsDeleteMessage();
 
                 break;
 
             case 68:
-                msg = new GridGgfsFileAffinityRange();
+                msg = new IgfsFileAffinityRange();
 
                 break;
 
             case 69:
-                msg = new GridGgfsFragmentizerRequest();
+                msg = new IgfsFragmentizerRequest();
 
                 break;
 
             case 70:
-                msg = new GridGgfsFragmentizerResponse();
+                msg = new IgfsFragmentizerResponse();
 
                 break;
 
             case 71:
-                msg = new GridGgfsSyncMessage();
+                msg = new IgfsSyncMessage();
 
                 break;
 

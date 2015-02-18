@@ -69,45 +69,25 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtTxFinishResponse _clone = new GridDhtTxFinishResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxFinishResponse _clone = (GridDhtTxFinishResponse)_msg;
-
-        _clone.miniId = miniId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 5:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -115,21 +95,20 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

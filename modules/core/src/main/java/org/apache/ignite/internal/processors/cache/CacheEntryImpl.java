@@ -51,14 +51,14 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if (!cls.equals(getClass()))
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+        if(cls.isAssignableFrom(getClass()))
+            return cls.cast(this);
 
-        return (T)this;
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheEntry [key=" + key + ", val=" + val + ']';
+        return "Entry [key=" + key + ", val=" + val + ']';
     }
 }

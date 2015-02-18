@@ -31,8 +31,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Simple test for preloading in ATOMIC cache.
@@ -89,7 +89,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkSimpleTxs(boolean nearEnabled, IgniteTxConcurrency concurrency) throws Exception {
+    private void checkSimpleTxs(boolean nearEnabled, TransactionConcurrency concurrency) throws Exception {
         try {
             this.nearEnabled = nearEnabled;
 
@@ -97,7 +97,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             List<Integer> keys = generateKeys(grid(0).localNode(), cache);
 
@@ -112,7 +112,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
                 info(">>>>>>>>>>>>>>>");
 
-                try (IgniteTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                try (Transaction tx = txs.txStart(concurrency, REPEATABLE_READ)) {
                     try {
                         // Lock if pessimistic, read if optimistic.
                         cache.get(key);
@@ -166,14 +166,14 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode node = grid.localNode();
 
-            GridCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.jcache(null);
 
-            boolean primary = cache.affinity().isPrimary(node, key);
-            boolean backup = cache.affinity().isBackup(node, key);
+            boolean primary = grid.affinity(null).isPrimary(node, key);
+            boolean backup = grid.affinity(null).isBackup(node, key);
 
             if (primary || backup)
                 assertEquals("Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +
-                    ", backup=" + backup + ", key=" + key + ']', val, cache.peek(key));
+                    ", backup=" + backup + ", key=" + key + ']', val, cache.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 
@@ -184,10 +184,10 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      * @param cache Cache to get affinity for.
      * @return Collection of keys.
      */
-    private List<Integer> generateKeys(ClusterNode node, GridCache<Object, Object> cache) {
+    private List<Integer> generateKeys(ClusterNode node, IgniteCache<Object, Object> cache) {
         List<Integer> keys = new ArrayList<>(3);
 
-        CacheAffinity<Object> aff = cache.affinity();
+        CacheAffinity<Object> aff = affinity(cache);
 
         int base = 0;
 

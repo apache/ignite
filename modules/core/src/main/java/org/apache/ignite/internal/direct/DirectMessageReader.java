@@ -227,15 +227,6 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Enum<T>> T readEnum(String name, Class<T> enumCls) {
-        T val = stream.readEnum(enumCls);
-
-        lastRead = stream.lastFinished();
-
-        return val;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public <T extends MessageAdapter> T readMessage(String name) {
         T msg = stream.readMessage();
 
@@ -245,8 +236,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(String name, Class<T> itemCls) {
-        T[] msg = stream.readObjectArray(itemCls);
+    @Override public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls) {
+        T[] msg = stream.readObjectArray(itemType, itemCls);
 
         lastRead = stream.lastFinished();
 
@@ -254,8 +245,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls) {
-        C col = stream.readCollection(itemCls);
+    @Override public <C extends Collection<?>> C readCollection(String name, MessageAdapter.Type itemType) {
+        C col = stream.readCollection(itemType);
 
         lastRead = stream.lastFinished();
 
@@ -263,9 +254,9 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls,
-        boolean linked) {
-        M map = stream.readMap(keyCls, valCls, linked);
+    @Override public <M extends Map<?, ?>> M readMap(String name, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType, boolean linked) {
+        M map = stream.readMap(keyType, valType, linked);
 
         lastRead = stream.lastFinished();
 

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Streamer configuration.
@@ -56,11 +55,8 @@ public class StreamerConfiguration {
     /** Maximum number of concurrent sessions to be processed. */
     private int maxConcurrentSessions = DFLT_MAX_CONCURRENT_SESSIONS;
 
-    /** Streamer executor service. */
-    private ExecutorService execSvc;
-
-    /** Executor service shutdown flag. */
-    private boolean execSvcShutdown;
+    /** Streamer thread pool size. */
+    private int poolSize = Runtime.getRuntime().availableProcessors();
 
     /**
      *
@@ -74,8 +70,7 @@ public class StreamerConfiguration {
      */
     public StreamerConfiguration(StreamerConfiguration c) {
         atLeastOnce = c.isAtLeastOnce();
-        execSvc = c.getExecutorService();
-        execSvcShutdown = c.isExecutorServiceShutdown();
+        poolSize = c.getThreadPoolSize();
         maxConcurrentSessions = c.getMaximumConcurrentSessions();
         maxFailoverAttempts = c.getMaximumFailoverAttempts();
         name = c.getName();
@@ -227,45 +222,24 @@ public class StreamerConfiguration {
     }
 
     /**
-     * Gets streamer executor service. Defines a thread pool in which streamer stages will be executed.
+     * Gets streamer pool size. Defines a thread pool size in which streamer stages will be executed.
      * <p>
      * If not specified, thread pool executor with max pool size equal to number of cores will be created.
      *
-     * @return Streamer executor service.
+     * @return Streamer thread pool size.
      */
-    public ExecutorService getExecutorService() {
-        return execSvc;
+    public int getThreadPoolSize() {
+        return poolSize;
     }
 
     /**
-     * Sets streamer executor service.
+     * Sets streamer pool size.
      *
-     * @param execSvc Executor service to use.
-     * @see #getExecutorService()
+     * @param poolSize Pool size.
+     * @see #getThreadPoolSize()
      */
-    public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
-    }
-
-    /**
-     * Flag indicating whether streamer executor service should be shut down on Ignite stop. If this flag
-     * is {@code true}, executor service will be shut down regardless of whether executor was specified externally
-     * or it was created by Ignite.
-     *
-     * @return {@code True} if executor service should be shut down on Ignite stop.
-     */
-    public boolean isExecutorServiceShutdown() {
-        return execSvcShutdown;
-    }
-
-    /**
-     * Sets flag indicating whether executor service should be shut down on Ignite stop.
-     *
-     * @param execSvcShutdown {@code True} if executor service should be shut down on Ignite stop.
-     * @see #isExecutorServiceShutdown()
-     */
-    public void setExecutorServiceShutdown(boolean execSvcShutdown) {
-        this.execSvcShutdown = execSvcShutdown;
+    public void setThreadPoolSize(int poolSize) {
+        this.poolSize = poolSize;
     }
 
     /** {@inheritDoc} */

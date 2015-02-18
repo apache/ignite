@@ -22,11 +22,13 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -72,23 +74,23 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @param syncs Transaction synchronizations to register.
      */
-    public void txSynchronize(@Nullable IgniteTxSynchronization syncs);
+    public void txSynchronize(@Nullable TransactionSynchronization syncs);
 
     /**
      * Removes transaction synchronizations.
      *
      * @param syncs Transactions synchronizations to remove.
-     * @see #txSynchronize(IgniteTxSynchronization)
+     * @see #txSynchronize(TransactionSynchronization)
      */
-    public void txUnsynchronize(@Nullable IgniteTxSynchronization syncs);
+    public void txUnsynchronize(@Nullable TransactionSynchronization syncs);
 
     /**
      * Gets registered transaction synchronizations.
      *
      * @return Registered transaction synchronizations.
-     * @see #txSynchronize(IgniteTxSynchronization)
+     * @see #txSynchronize(TransactionSynchronization)
      */
-    public Collection<IgniteTxSynchronization> txSynchronizations();
+    public Collection<TransactionSynchronization> txSynchronizations();
 
     /**
      * Gets affinity service to provide information about data partitioning
@@ -243,7 +245,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
-    @Nullable public CacheEntry<K, V> randomEntry();
+    @Nullable public Cache.Entry<K, V> randomEntry();
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when

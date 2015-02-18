@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -37,8 +38,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for node failure in transactions.
@@ -114,9 +115,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 IGNITEs.set(i, startGrid(i));
             }
 
-            CacheEntry e = cache(i).entry(KEY);
-
-            assert !e.isLocked() : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
+            assert !jcache(i).isLocalLocked(KEY, false) : "Entry is locked for grid [idx=" + i + ']';
         }
     }
 
@@ -125,7 +124,15 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return IGNITEs.get(i).cache(null);
+        return ((IgniteKernal)IGNITEs.get(i)).cache(null);
+    }
+
+    /**
+     * @param i Grid index.
+     * @return Cache.
+     */
+    @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
+        return IGNITEs.get(i).jcache(null);
     }
 
     /**
@@ -158,14 +165,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    private void checkTransaction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Throwable {
+    private void checkTransaction(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         info("Grid will be stopped: " + idx);
 
         Ignite g = grid(idx);
 
-        IgniteTx tx = g.transactions().txStart(concurrency, isolation);
+        Transaction tx = g.transactions().txStart(concurrency, isolation);
 
         try {
             g.jcache(null).put(KEY, VALUE);
@@ -232,7 +239,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Nodes for key [id=" + grid(idx).cache(null).affinity().mapKeyToPrimaryAndBackups(KEY) +
+        info("Nodes for key [id=" + grid(idx).affinity(null).mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);

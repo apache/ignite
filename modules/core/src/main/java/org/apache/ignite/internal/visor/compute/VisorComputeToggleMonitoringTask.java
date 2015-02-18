@@ -72,10 +72,10 @@ public class VisorComputeToggleMonitoringTask extends
 
         /** {@inheritDoc} */
         @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) {
-            if (checkExplicitTaskMonitoring(g))
+            if (checkExplicitTaskMonitoring(ignite))
                 return true;
             else {
-                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = g.nodeLocalMap();
+                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.nodeLocalMap();
 
                 VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 
@@ -94,12 +94,12 @@ public class VisorComputeToggleMonitoringTask extends
 
                 // Set task monitoring state.
                 if (state)
-                    holder.startCollect(g, visorKey);
+                    holder.startCollect(ignite, visorKey);
                 else
-                    holder.stopCollect(g, visorKey);
+                    holder.stopCollect(ignite, visorKey);
 
                 // Return actual state. It could stay the same if events explicitly enabled in configuration.
-                return g.allEventsUserRecordable(VISOR_TASK_EVTS);
+                return ignite.allEventsUserRecordable(VISOR_TASK_EVTS);
             }
         }
 

@@ -67,7 +67,7 @@
         Logs all output to specified file.
         By default, the logging goes to IGNITE_HOME/work/log folder
     -->
-    <appender name="FILE" class="org.apache.ignite.logger.log4j.IgniteLog4jFileAppender">
+    <appender name="FILE" class="org.apache.ignite.logger.log4j.Log4JFileAppender">
         <param name="Threshold" value="DEBUG"/>
         <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
         <param name="Append" value="true"/>

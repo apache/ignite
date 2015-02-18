@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import com.google.common.base.*;
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -36,11 +36,11 @@ import java.util.*;
  * Test of integration with Hadoop client via command line interface.
  */
 public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
-    /** GGFS instance. */
-    private GridGgfsEx ggfs;
+    /** IGFS instance. */
+    private IgfsEx igfs;
 
     /** */
-    private static final String ggfsName = "ggfs";
+    private static final String igfsName = "igfs";
 
     /** */
     private static File testWorkDir;
@@ -193,7 +193,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs = (GridGgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(ggfsName);
+        igfs = (IgfsEx) Ignition.start("config/hadoop/default-config.xml").fileSystem(igfsName);
     }
 
     /** {@inheritDoc} */
@@ -307,17 +307,17 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertEquals(0, executeHadoopCmd("fs", "-put", new File(testWorkDir, "test-data").getAbsolutePath(), "/input"));
 
-        assertTrue(ggfs.exists(new IgniteFsPath("/input/test-data")));
+        assertTrue(igfs.exists(new IgfsPath("/input/test-data")));
 
         assertEquals(0, executeHadoopCmd("jar", examplesJar.getAbsolutePath(), "wordcount", "/input", "/output"));
 
-        IgniteFsPath path = new IgniteFsPath("/user/" + System.getProperty("user.name") + "/");
+        IgfsPath path = new IgfsPath("/user/" + System.getProperty("user.name") + "/");
 
-        assertTrue(ggfs.exists(path));
+        assertTrue(igfs.exists(path));
 
-        IgniteFsPath jobStatPath = null;
+        IgfsPath jobStatPath = null;
 
-        for (IgniteFsPath jobPath : ggfs.listPaths(path)) {
+        for (IgfsPath jobPath : igfs.listPaths(path)) {
             assertNull(jobStatPath);
 
             jobStatPath = jobPath;
@@ -331,9 +331,9 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertTrue(evtCnt >= 22); //It's the minimum amount of events for job with combiner.
 
-        assertTrue(ggfs.exists(new IgniteFsPath("/output")));
+        assertTrue(igfs.exists(new IgfsPath("/output")));
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(ggfs.open(new IgniteFsPath("/output/part-r-00000"))));
+        BufferedReader in = new BufferedReader(new InputStreamReader(igfs.open(new IgfsPath("/output/part-r-00000"))));
 
         List<String> res = new ArrayList<>();
 
@@ -364,7 +364,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
             "location '/result' as " + qry
         ));
 
-        GridGgfsInputStreamAdapter in = ggfs.open(new IgniteFsPath("/result/000000_0"));
+        IgfsInputStreamAdapter in = igfs.open(new IgfsPath("/result/000000_0"));
 
         byte[] buf = new byte[(int) in.length()];
 

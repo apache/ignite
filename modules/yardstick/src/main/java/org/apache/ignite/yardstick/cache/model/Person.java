@@ -17,7 +17,7 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
 
@@ -26,23 +26,23 @@ import java.io.*;
  */
 public class Person implements Externalizable {
     /** Person ID. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Organization ID. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int orgId;
 
     /** First name (not-indexed). */
-    @CacheQuerySqlField
+    @QuerySqlField
     private String firstName;
 
     /** Last name (not indexed). */
-    @CacheQuerySqlField
+    @QuerySqlField
     private String lastName;
 
     /** Salary. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private double salary;
 
     /**

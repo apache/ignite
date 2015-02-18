@@ -51,7 +51,7 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(Void arg) {
-            return g.product().latestVersion();
+            return ignite.latestVersion();
         }
 
         /** {@inheritDoc} */

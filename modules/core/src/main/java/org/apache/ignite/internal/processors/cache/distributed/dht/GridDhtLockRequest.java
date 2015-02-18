@@ -123,7 +123,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         long topVer,
         boolean isInTx,
         boolean isRead,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int dhtCnt,
@@ -235,8 +235,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      *
      * @param key Key.
      * @param keyBytes Key bytes.
-     * @param writeEntry Write entry.
-     * @param drVer DR version.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
@@ -244,14 +242,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     public void addDhtKey(
         K key,
         byte[] keyBytes,
-        IgniteTxEntry<K, V> writeEntry,
-        @Nullable GridCacheVersion drVer,
         boolean invalidateEntry,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, keyBytes, writeEntry, false, null, drVer, ctx);
+        addKeyBytes(key, keyBytes, false, null, ctx);
     }
 
     /**
@@ -341,103 +337,73 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtLockRequest _clone = new GridDhtLockRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtLockRequest _clone = (GridDhtLockRequest)_msg;
-
-        _clone.nearKeys = nearKeys;
-        _clone.nearKeyBytes = nearKeyBytes;
-        _clone.invalidateEntries = invalidateEntries;
-        _clone.miniId = miniId;
-        _clone.owned = owned;
-        _clone.ownedBytes = ownedBytes;
-        _clone.topVer = topVer;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.preloadKeys = preloadKeys;
-        _clone.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
-            case 24:
+        switch (writer.state()) {
+            case 22:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 25:
+            case 23:
                 if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 26:
+            case 24:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 27:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
+            case 25:
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 28:
+            case 26:
                 if (!writer.writeByteArray("ownedBytes", ownedBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 29:
+            case 27:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 30:
+            case 28:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 31:
+            case 29:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 32:
+            case 30:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -445,85 +411,84 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
-            case 24:
+        switch (readState) {
+            case 22:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 25:
+            case 23:
                 invalidateEntries = reader.readBitSet("invalidateEntries");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 26:
+            case 24:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 27:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
+            case 25:
+                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 28:
+            case 26:
                 ownedBytes = reader.readByteArray("ownedBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 29:
+            case 27:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 30:
+            case 28:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 31:
+            case 29:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 32:
+            case 30:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

@@ -196,15 +196,6 @@ public interface MessageReader {
     public IgniteUuid readIgniteUuid(String name);
 
     /**
-     * Reads {@code enum} value.
-     *
-     * @param name Field name.
-     * @param enumCls {@code enum} type.
-     * @return {@code enum} value.
-     */
-    public <T extends Enum<T>> T readEnum(String name, Class<T> enumCls);
-
-    /**
      * Reads nested message.
      *
      * @param name Field name.
@@ -216,30 +207,32 @@ public interface MessageReader {
      * Reads array of objects.
      *
      * @param name Field name.
-     * @param itemCls Array component type.
+     * @param itemType Array component type.
+     * @param itemCls Array component class.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, Class<T> itemCls);
+    public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls);
 
     /**
      * Reads collection.
      *
      * @param name Field name.
-     * @param itemCls Collection item type.
+     * @param itemType Collection item type.
      * @return Collection.
      */
-    public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls);
+    public <C extends Collection<?>> C readCollection(String name, MessageAdapter.Type itemType);
 
     /**
      * Reads map.
      *
      * @param name Field name.
-     * @param keyCls Map key type.
-     * @param valCls Map value type.
+     * @param keyType Map key type.
+     * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
      * @return Map.
      */
-    public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls, boolean linked);
+    public <M extends Map<?, ?>> M readMap(String name, MessageAdapter.Type keyType, MessageAdapter.Type valType,
+        boolean linked);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

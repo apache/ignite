@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test getting the same value twice within the same transaction.
@@ -103,11 +103,11 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.jcache(null);
 
             c.removeAll();
 
-            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + c.entrySet() + ']',
+            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + entrySet(c) + ']',
                 0, c.size());
         }
     }
@@ -219,9 +219,10 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      * @param put If {@code true}, then value will be pre-stored in cache.
      * @throws Exception If failed.
      */
-    private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
+    private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        IgniteEx ignite = grid(0);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         Integer key = 1;
 
@@ -230,13 +231,13 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         if (put)
             cache.put(key, val = Integer.toString(key));
 
-        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        Transaction tx = ignite.transactions().txStart(concurrency, isolation, 0, 0);
 
         try {
             if (isTestDebug()) {
                 info("Started transaction.");
 
-                CacheAffinity<Integer> aff = cache.affinity();
+                CacheAffinity<Integer> aff = affinity(cache);
 
                 int part = aff.partition(key);
 
@@ -265,7 +266,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug())
                 info("Committed transaction: " + tx);
         }
-        catch (IgniteTxOptimisticCheckedException e) {
+        catch (TransactionOptimisticException e) {
             if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                 error("Received invalid optimistic failure.", e);
 
@@ -300,7 +301,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             throw e;
         }
         finally {
-            IgniteTx t = cache.tx();
+            Transaction t = ignite.transactions().tx();
 
             assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                 ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';

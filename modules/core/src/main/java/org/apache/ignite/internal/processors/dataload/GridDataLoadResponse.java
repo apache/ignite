@@ -83,54 +83,34 @@ public class GridDataLoadResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDataLoadResponse _clone = new GridDataLoadResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDataLoadResponse _clone = (GridDataLoadResponse)_msg;
-
-        _clone.reqId = reqId;
-        _clone.errBytes = errBytes;
-        _clone.forceLocDep = forceLocDep;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -138,18 +118,17 @@ public class GridDataLoadResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -157,7 +136,7 @@ public class GridDataLoadResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 reqId = reader.readLong("reqId");
@@ -165,7 +144,7 @@ public class GridDataLoadResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

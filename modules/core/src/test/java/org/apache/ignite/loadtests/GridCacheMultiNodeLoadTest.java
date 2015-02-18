@@ -80,8 +80,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         ignite1 = startGrid(1);
         startGrid(2);
-
-        ignite1.cache(CACHE_NAME);
     }
 
     /** {@inheritDoc} */

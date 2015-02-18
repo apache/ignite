@@ -179,84 +179,58 @@ public class GridIoMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridIoMessage _clone = new GridIoMessage();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("RedundantCast")
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridIoMessage _clone = (GridIoMessage)_msg;
-
-        _clone.plc = plc;
-        _clone.topic = topic;
-        _clone.topicBytes = topicBytes;
-        _clone.topicOrd = topicOrd;
-        _clone.ordered = ordered;
-        _clone.timeout = timeout;
-        _clone.skipOnTimeout = skipOnTimeout;
-        _clone.msg = msg != null ? (MessageAdapter)msg.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeMessage("msg", msg))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeBoolean("ordered", ordered))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
-                if (!writer.writeEnum("plc", plc))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 6:
                 if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -264,18 +238,17 @@ public class GridIoMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 msg = reader.readMessage("msg");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 ordered = reader.readBoolean("ordered");
@@ -283,15 +256,19 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
-                plc = reader.readEnum("plc", GridIoPolicy.class);
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
+
+                readState++;
 
             case 3:
                 skipOnTimeout = reader.readBoolean("skipOnTimeout");
@@ -299,7 +276,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 timeout = reader.readLong("timeout");
@@ -307,7 +284,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -315,7 +292,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 6:
                 topicOrd = reader.readInt("topicOrd");
@@ -323,7 +300,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.cache.hibernate;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -28,6 +30,7 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
 import org.hibernate.service.*;
 
+import javax.cache.Cache;
 import javax.persistence.*;
 import java.util.*;
 
@@ -76,7 +79,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (GridCache<?, ?> cache : grid(0).caches())
+        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
             cache.clear();
     }
 
@@ -232,21 +235,33 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
                 ses.close();
             }
 
-            GridCache<Object, Object> cache1 = grid(0).cache("cache1");
-            GridCache<Object, Object> cache2 = grid(0).cache("cache2");
-            GridCache<Object, Object> cache3 = grid(0).cache("cache3");
-            GridCache<Object, Object> cacheE3 = grid(0).cache(ENTITY3_NAME);
-            GridCache<Object, Object> cacheE4 = grid(0).cache(ENTITY4_NAME);
+            IgniteCache<Object, Object> cache1 = grid(0).jcache("cache1");
+            IgniteCache<Object, Object> cache2 = grid(0).jcache("cache2");
+            IgniteCache<Object, Object> cache3 = grid(0).jcache("cache3");
+            IgniteCache<Object, Object> cacheE3 = grid(0).jcache(ENTITY3_NAME);
+            IgniteCache<Object, Object> cacheE4 = grid(0).jcache(ENTITY4_NAME);
 
-            assertEquals("Unexpected entries: " + cache1.entrySet(), expCache1, cache1.size());
-            assertEquals("Unexpected entries: " + cache2.entrySet(), expCache2, cache2.size());
-            assertEquals("Unexpected entries: " + cache3.entrySet(), expCache3, cache3.size());
-            assertEquals("Unexpected entries: " + cacheE3.entrySet(), expCacheE3, cacheE3.size());
-            assertEquals("Unexpected entries: " + cacheE4.entrySet(), expCacheE4, cacheE4.size());
+            assertEquals("Unexpected entries: " + toSet(cache1.iterator()), expCache1, cache1.size());
+            assertEquals("Unexpected entries: " + toSet(cache2.iterator()), expCache2, cache2.size());
+            assertEquals("Unexpected entries: " + toSet(cache3.iterator()), expCache3, cache3.size());
+            assertEquals("Unexpected entries: " + toSet(cacheE3.iterator()), expCacheE3, cacheE3.size());
+            assertEquals("Unexpected entries: " + toSet(cacheE4.iterator()), expCacheE4, cacheE4.size());
         }
         finally {
             sesFactory.close();
         }
+    }
+
+    /**
+     *
+     */
+    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
+        Set<Cache.Entry<K, V>> set = new HashSet<>();
+
+        while (iter.hasNext())
+            set.add(iter.next());
+
+        return set;
     }
 
     /**

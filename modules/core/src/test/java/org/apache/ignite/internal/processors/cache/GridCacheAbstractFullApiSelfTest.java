@@ -49,9 +49,9 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Full API cache test.
@@ -159,6 +159,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache.size());
 
         dfltIgnite = null;
+    }
+
+    /**
+     * @return A not near-only cache.
+     */
+    protected IgniteCache<String, Integer> fullCache() {
+        return jcache();
     }
 
     /**
@@ -351,15 +358,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAll() throws Exception {
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         final IgniteCache<String, Integer> cache = jcache();
 
-        cache.put("key1", 1);
-        cache.put("key2", 2);
+        try {
+            cache.put("key1", 1);
+            cache.put("key2", 2);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -393,31 +406,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         // Now do the same checks but within transaction.
         if (txEnabled()) {
-            tx = transactions().txStart();
+            try (Transaction tx0 = transactions().txStart()) {
+                assert cache.getAll(Collections.<String>emptySet()).isEmpty();
 
-            assert cache.getAll(Collections.<String>emptySet()).isEmpty();
+                map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
-            map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                info("Retrieved map1: " + map1);
 
-            info("Retrieved map1: " + map1);
+                assert 2 == map1.size() : "Invalid map: " + map1;
 
-            assert 2 == map1.size() : "Invalid map: " + map1;
+                assertEquals(1, (int)map1.get("key1"));
+                assertEquals(2, (int)map1.get("key2"));
+                assertNull(map1.get("key9999"));
 
-            assertEquals(1, (int)map1.get("key1"));
-            assertEquals(2, (int)map1.get("key2"));
-            assertNull(map1.get("key9999"));
+                map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
-            map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                info("Retrieved map2: " + map2);
 
-            info("Retrieved map2: " + map2);
+                assert 2 == map2.size() : "Invalid map: " + map2;
 
-            assert 2 == map2.size() : "Invalid map: " + map2;
+                assertEquals(1, (int)map2.get("key1"));
+                assertEquals(2, (int)map2.get("key2"));
+                assertNull(map2.get("key9999"));
 
-            assertEquals(1, (int)map2.get("key1"));
-            assertEquals(2, (int)map2.get("key2"));
-            assertNull(map2.get("key9999"));
-
-            tx.commit();
+                tx0.commit();
+            }
         }
     }
 
@@ -446,7 +459,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testGetTxNonExistingKey() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx ignored = transactions().txStart()) {
+            try (Transaction ignored = transactions().txStart()) {
                 assert jcache().get("key999123") == null;
             }
         }
@@ -524,29 +537,26 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPutTx() throws Exception {
         if (txEnabled()) {
-            IgniteTx tx = transactions().txStart();
-
             IgniteCache<String, Integer> cache = jcache();
+            
+            try (Transaction tx = transactions().txStart()) {
+                assert cache.getAndPut("key1", 1) == null;
+                assert cache.getAndPut("key2", 2) == null;
 
-            assert cache.getAndPut("key1", 1) == null;
-            assert cache.getAndPut("key2", 2) == null;
+                // Check inside transaction.
+                assert cache.get("key1") == 1;
+                assert cache.get("key2") == 2;
 
-            // Check inside transaction.
-            assert cache.get("key1") == 1;
-            assert cache.get("key2") == 2;
+                // Put again to check returned values.
+                assert cache.getAndPut("key1", 1) == 1;
+                assert cache.getAndPut("key2", 2) == 2;
 
-            // Put again to check returned values.
-            assert cache.getAndPut("key1", 1) == 1;
-            assert cache.getAndPut("key2", 2) == 2;
-
-            checkContainsKey(true, "key1");
-            checkContainsKey(true, "key2");
-
-            assert cache.get("key1") != null;
-            assert cache.get("key2") != null;
-            assert cache.get("wrong") == null;
-
-            tx.commit();
+                assert cache.get("key1") != null;
+                assert cache.get("key2") != null;
+                assert cache.get("wrong") == null;
+                
+                tx.commit();
+            }
 
             // Check outside transaction.
             checkContainsKey(true, "key1");
@@ -594,13 +604,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkTransform(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    private void checkTransform(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
             assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
@@ -676,7 +686,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void checkTransformAll(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    private void checkTransformAll(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -686,7 +696,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             Map<String, EntryProcessorResult<String>> res;
 
-            try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+            try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                 res = cache.invokeAll(F.asSet("key1", "key2", "key3"), INCR_PROCESSOR);
 
                 tx.commit();
@@ -833,19 +843,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkTransformSequential0(boolean startVal, IgniteTxConcurrency concurrency)
+    private void checkTransformSequential0(boolean startVal, TransactionConcurrency concurrency)
         throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
                 cache.put("key", 2);
+            else
+                assertEquals(null, cache.get("key"));
 
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
+            Integer expectedRes = startVal ? 2 : null;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes = startVal ? 3 : 1;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes++;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -883,12 +903,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkTransformAfterRemove(IgniteTxConcurrency concurrency) throws Exception {
+    private void checkTransformAfterRemove(TransactionConcurrency concurrency) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key", 4);
 
-        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             cache.remove("key");
@@ -950,8 +970,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTransformReturnValue(boolean put,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation)
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation)
         throws Exception
     {
         IgniteCache<String, Integer> cache = jcache();
@@ -959,7 +979,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!put)
             cache.put("key", 1);
 
-        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
             if (put)
@@ -1134,19 +1154,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkPut(boolean inTx) throws Exception {
-        IgniteTx tx = inTx ? transactions().txStart() : null;
+        Transaction tx = inTx ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cache = jcache();
 
-        cache.put("key1", 1);
-        cache.put("key2", 2);
+        try {
+            cache.put("key1", 1);
+            cache.put("key2", 2);
+    
+            // Check inside transaction.
+            assert cache.get("key1") == 1;
+            assert cache.get("key2") == 2;
 
-        // Check inside transaction.
-        assert cache.get("key1") == 1;
-        assert cache.get("key2") == 2;
-
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -1164,34 +1190,40 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutAsync() throws Exception {
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
 
-        jcache().put("key2", 1);
+        try {
+            jcache().put("key2", 1);
+    
+            cacheAsync.put("key1", 10);
+    
+            IgniteFuture<?> fut1 = cacheAsync.future();
+    
+            cacheAsync.put("key2", 11);
+    
+            IgniteFuture<?> fut2 = cacheAsync.future();
+    
+            IgniteFuture<Transaction> f = null;
+    
+            if (tx != null) {
+                tx = (Transaction)tx.withAsync();
+    
+                tx.commit();
 
-        cacheAsync.put("key1", 10);
+                f = tx.future();
+            }
+    
+            fut1.get();
+            fut2.get();
 
-        IgniteFuture<?> fut1 = cacheAsync.future();
-
-        cacheAsync.put("key2", 11);
-
-        IgniteFuture<?> fut2 = cacheAsync.future();
-
-        IgniteFuture<IgniteTx> f = null;
-
-        if (tx != null) {
-            tx = (IgniteTx)tx.withAsync();
-
-            tx.commit();
-
-            f = tx.future();
+            assert f == null || f.get().state() == COMMITTED;
         }
-
-        fut1.get();
-        fut2.get();
-
-        assert f == null || f.get().state() == COMMITTED;
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -1243,7 +1275,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 @Override public Void call() throws Exception {
                     IgniteTransactions txs = transactions();
 
-                    try (IgniteTx tx = txs.txStart()) {
+                    try (Transaction tx = txs.txStart()) {
                         cache.put(key, 1);
 
                         cache.put(null, 2);
@@ -1265,7 +1297,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 @Override public Void call() throws Exception {
                     IgniteTransactions txs = transactions();
 
-                    try (IgniteTx tx = txs.txStart()) {
+                    try (Transaction tx = txs.txStart()) {
                         cache.put(key, 2);
 
                         cache.remove(null);
@@ -1293,7 +1325,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     map.put("k2", 2);
                     map.put(null, 3);
 
-                    try (IgniteTx tx = txs.txStart()) {
+                    try (Transaction tx = txs.txStart()) {
                         cache.put(key, 1);
 
                         cache.putAll(map);
@@ -1458,7 +1490,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.putAll(map);
 
-        IgniteFuture<Object> f1 = cacheAsync.future();
+        IgniteFuture<?> f1 = cacheAsync.future();
 
         map.put("key1", 10);
         map.put("key2", 20);
@@ -1480,7 +1512,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAndPutIfAbsent() throws Exception {
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1554,7 +1586,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testGetAndPutIfAbsentAsync() throws Exception {
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1566,14 +1598,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             IgniteFuture<Integer> fut1 = cacheAsync.future();
 
             assert fut1.get() == null;
-            assert cache.get("key") != null && cache.get("key") == 1;
+            assertEquals((Integer)1, cache.get("key"));
 
             cacheAsync.getAndPutIfAbsent("key", 2);
 
             IgniteFuture<Integer> fut2 = cacheAsync.future();
 
-            assert fut2.get() != null && fut2.get() == 1;
-            assert cache.get("key") != null && cache.get("key") == 1;
+            assertEquals((Integer)1, fut2.get());
+            assertEquals((Integer)1, cache.get("key"));
 
             if (tx != null)
                 tx.commit();
@@ -1647,7 +1679,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.localEvict(Collections.singleton("key2"));
 
         // Same checks inside tx.
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         try {
             assertFalse(cache.putIfAbsent("key2", 3));
@@ -1720,7 +1752,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.localEvict(Arrays.asList("key2"));
 
         // Same checks inside tx.
-        IgniteTx tx = inTx ? transactions().txStart() : null;
+        Transaction tx = inTx ? transactions().txStart() : null;
 
         try {
             cacheAsync.putIfAbsent("key2", 3);
@@ -1827,7 +1859,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key"));
 
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         try {
             assert cache.replace("key", 4, 5);
@@ -1873,7 +1905,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key"));
 
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         try {
             assert cache.replace("key", 5);
@@ -1949,7 +1981,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key"));
 
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         try {
             cacheAsync.replace("key", 4, 5);
@@ -2009,7 +2041,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key"));
 
-        IgniteTx tx = txEnabled() ? transactions().txStart() : null;
+        Transaction tx = txEnabled() ? transactions().txStart() : null;
 
         try {
             cacheAsync.replace("key", 5);
@@ -2194,6 +2226,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @param async If {@code true} uses asynchronous operation.
      * @throws Exception In case of error.
      */
     private void globalRemoveAll(boolean async) throws Exception {
@@ -2204,6 +2237,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key3", 3);
 
         checkSize(F.asSet("key1", "key2", "key3"));
+
+        atomicClockModeDelay(cache);
 
         IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
@@ -2226,6 +2261,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
+        atomicClockModeDelay(cache);
+
         if (async) {
             IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
@@ -2245,6 +2282,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
 
+        atomicClockModeDelay(cache);
+
         if (async) {
             asyncCache.removeAll();
 
@@ -2258,7 +2297,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Provides count on entities to be removed in removeAll() test
+     * @return Count of entries to be removed in removeAll() test.
      */
     protected long hugeRemoveAllEntryCount(){
         return 1000L;
@@ -2329,7 +2368,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllDuplicatesTx() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx tx = transactions().txStart()) {
+            try (Transaction tx = transactions().txStart()) {
                 jcache().removeAll(ImmutableSet.of("key1", "key1", "key1"));
 
                 tx.commit();
@@ -2744,14 +2783,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkPeekTxRemove(IgniteTxConcurrency concurrency) throws Exception {
+    private void checkPeekTxRemove(TransactionConcurrency concurrency) throws Exception {
         if (txEnabled()) {
             Ignite ignite = primaryIgnite("key");
             IgniteCache<String, Integer> cache = ignite.jcache(null);
 
             cache.put("key", 1);
 
-            try (IgniteTx tx = ignite.transactions().txStart(concurrency, READ_COMMITTED)) {
+            try (Transaction tx = ignite.transactions().txStart(concurrency, READ_COMMITTED)) {
                 cache.remove("key");
 
                 assertNull(cache.get("key")); // localPeek ignores transactions.
@@ -2779,13 +2818,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
-        GridCache<String, Integer> cache = primaryIgnite(key).cache(null);
+
+        GridCache<String, Integer> cache = ((IgniteKernal)primaryIgnite(key)).cache(null);
 
         cache.put(key, 1);
-
-        CacheEntry<String, Integer> entry = cache.entry(key);
-
-        assert entry.primary();
 
         assert cache.peek(key, F.asList(TX)) == null;
         assert cache.peek(key, F.asList(SWAP)) == null;
@@ -2799,20 +2835,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache.peek(key, F.asList(SMART)) == 1;
 
-        assert entry.peek(F.asList(TX)) == null;
-        assert entry.peek(F.asList(SWAP)) == null;
-        assert entry.peek(F.asList(DB)) == 1;
-        assert entry.peek(F.asList(TX, GLOBAL)) == 1;
-
-        if (cacheMode() == LOCAL) {
-            assert entry.peek(F.asList(TX, NEAR_ONLY)) == 1;
-            assert entry.peek(F.asList(TX, PARTITIONED_ONLY)) == 1;
-        }
-
-        assert entry.peek(F.asList(SMART)) == 1;
-
-        CacheEntry<String, Integer> ew = cache.entry("wrongKey");
-
         assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
 
         if (cacheMode() == LOCAL) {
@@ -2820,15 +2842,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache.peek("wrongKey", F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
         }
 
-        assert ew.peek(F.asList(TX, GLOBAL, SWAP, DB)) == null;
-
-        if (cacheMode() != PARTITIONED) {
-            assert ew.peek(F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
-            assert ew.peek(F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
-        }
-
         if (txEnabled()) {
-            IgniteTx tx = cache.txStart();
+            Transaction tx = cache.txStart();
 
             cache.replace(key, 2);
 
@@ -2843,18 +2858,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache.peek(key, F.asList(SMART)) == 2;
             assert cache.peek(key, F.asList(SWAP)) == null;
             assert cache.peek(key, F.asList(DB)) == 1;
-
-            assertEquals((Integer)1, entry.peek(F.asList(GLOBAL)));
-
-            if (cacheMode() == LOCAL) {
-                assertEquals((Integer)1, entry.peek(F.asList(NEAR_ONLY)));
-                assertEquals((Integer)1, entry.peek(F.asList(PARTITIONED_ONLY)));
-            }
-
-            assertEquals((Integer)2, entry.peek(F.asList(TX)));
-            assertEquals((Integer)2, entry.peek(F.asList(SMART)));
-            assertNull(entry.peek(F.asList(SWAP)));
-            assertEquals((Integer)1, entry.peek(F.asList(DB)));
 
             tx.commit();
         }
@@ -2872,17 +2875,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.peek(key, F.asList(SWAP)));
         assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
 
-        assertEquals((Integer)2, entry.peek(F.asList(GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertEquals((Integer)2, entry.peek(F.asList(NEAR_ONLY)));
-            assertEquals((Integer)2, entry.peek(F.asList(PARTITIONED_ONLY)));
-        }
-
-        assertNull(entry.peek(F.asList(TX)));
-        assertNull(entry.peek(F.asList(SWAP)));
-        assertEquals((Integer)2, entry.peek(F.asList(DB)));
-
         assertTrue(cache.evict(key));
 
         assertNull(cache.peek(key, F.asList(SMART)));
@@ -2897,18 +2889,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
         assertEquals((Integer)2, cache.peek(key, F.asList(SMART, SWAP, DB)));
 
-        assertNull(entry.peek(F.asList(SMART)));
-        assertNull(entry.peek(F.asList(TX, GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertNull(entry.peek(F.asList(TX, NEAR_ONLY)));
-            assertNull(entry.peek(F.asList(TX, PARTITIONED_ONLY)));
-        }
-
         assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-
-        assertEquals((Integer)2, entry.peek(F.asList(DB)));
-        assertEquals((Integer)2, entry.peek(F.asList(SMART, SWAP, DB)));
     }
 
     /**
@@ -2947,7 +2928,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         CacheAffinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+            if (aff.isPrimary(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
+
+            if (aff.isBackup(grid(i).cluster().localNode(), key))
                 assertEquals((Integer)1, peek(jcache(i), key));
         }
     }
@@ -2993,7 +2977,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             String key = "1";
             int ttl = 500;
 
-            try (IgniteTx tx = grid(0).ignite().transactions().txStart()) {
+            try (Transaction tx = grid(0).ignite().transactions().txStart()) {
                 final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
@@ -3041,25 +3025,33 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        final GridCache<String, Integer> c = cache();
+        final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(jcache(), 1).get(0);
 
-        if (oldEntry)
+        GridCacheAdapter<String, Integer> internalCache = internalCache(fullCache());
+
+        if (internalCache.isNear())
+            internalCache = internalCache.context().near().dht();
+
+        GridCacheEntryEx entry;
+
+        if (oldEntry) {
             c.put(key, 1);
 
-        CacheEntry<String, Integer> entry = c.entry(key);
+            entry = internalCache.peekEx(key);
 
-        assert entry != null;
+            assert entry != null;
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
 
         long startTime = System.currentTimeMillis();
 
         if (inTx) {
             // Rollback transaction for the first time.
-            IgniteTx tx = transactions().txStart();
+            Transaction tx = transactions().txStart();
 
             try {
                 jcache().withExpiryPolicy(expiry).put(key, 1);
@@ -3068,12 +3060,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.rollback();
             }
 
-            assertEquals(0, entry.timeToLive());
-            assertEquals(0, entry.expirationTime());
+            if (oldEntry) {
+                entry = internalCache.peekEx(key);
+
+                assertEquals(0, entry.ttl());
+                assertEquals(0, entry.expireTime());
+            }
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
-        IgniteTx tx = inTx ? transactions().txStart() : null;
+        Transaction tx = inTx ? transactions().txStart() : null;
 
         try {
             jcache().withExpiryPolicy(expiry).put(key, 1);
@@ -3089,14 +3085,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                assert curEntry.expirationTime() > startTime;
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
-                expireTimes[i] = curEntry.expirationTime();
+                assertEquals(ttl, curEntry.ttl());
+
+                assert curEntry.expireTime() > startTime;
+
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3117,14 +3118,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                assert curEntry.expirationTime() > expireTimes[i];
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
-                expireTimes[i] = curEntry.expirationTime();
+                assertEquals(ttl, curEntry.ttl());
+
+                assert curEntry.expireTime() > startTime;
+
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3145,14 +3151,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                assert curEntry.expirationTime() > expireTimes[i];
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
-                expireTimes[i] = curEntry.expirationTime();
+                assertEquals(ttl, curEntry.ttl());
+
+                assert curEntry.expireTime() > startTime;
+
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3177,11 +3188,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         log.info("Put 4 done");
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-                assertEquals(expireTimes[i], curEntry.expirationTime());
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
+
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+
+                assertEquals(ttl, curEntry.ttl());
+                assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
 
@@ -3190,7 +3206,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
-            @Override public boolean applyx() throws IgniteCheckedException {
+            @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);
 
@@ -3201,7 +3217,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
 
                     // Get "cache" field from GridCacheProxyImpl.
-                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
+                    GridCacheAdapter c0 = cacheFromCtx(c);
 
                     if (!c0.context().deferredDelete()) {
                         GridCacheEntryEx e0 = c0.peekEx(key);
@@ -3217,20 +3233,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
+        if (internalCache.isLocal())
+            return;
+
+        assert c.get(key) == null;
+
+        internalCache = internalCache(fullCache());
+
+        if (internalCache.isNear())
+            internalCache = internalCache.context().near().dht();
+
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = c.entry(key);
+        entry = internalCache.peekEx(key);
 
-        assert entry.get() == null;
-
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+        assertEquals(0, entry.ttl());
+        assertEquals(0, entry.expireTime());
 
         // Ensure that next update will not pick old expire time.
 
-        tx = inTx ? c.txStart() : null;
+        tx = inTx ? transactions().txStart() : null;
 
         try {
-            entry.set(10);
+            jcache().put(key, 10);
 
             if (tx != null)
                 tx.commit();
@@ -3242,12 +3266,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         U.sleep(2000);
 
-        entry = c.entry(key);
+        entry = internalCache.peekEx(key);
 
-        assertEquals((Integer)10, entry.get());
+        assertEquals((Integer)10, c.get(key));
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+        assertEquals(0, entry.ttl());
+        assertEquals(0, entry.expireTime());
     }
 
     /**
@@ -3314,11 +3338,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Collection<String> locKeys = new HashSet<>();
 
         if (CU.isAffinityNode(cache.configuration())) {
-            locKeys.addAll(cache.projection(F.<String, Integer>cachePrimary()).keySet());
+            locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);
 
-            locKeys.addAll(cache.projection(F.<String, Integer>cacheBackup()).keySet());
+            locKeys.addAll(cache.keySet(new IgnitePredicate<Cache.Entry<String, Integer>>() {
+                @Override public boolean apply(Cache.Entry<String, Integer> e) {
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.getKey());
+                }
+            }));
 
             info("Local keys (primary + backup): " + locKeys);
         }
@@ -3347,9 +3375,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.evict(k2);
         assert cache.evict(k3);
 
-        assert cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k3, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
 
         int cnt = 0;
 
@@ -3395,9 +3423,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.evict(k2);
         cache.evict(k3);
 
-        assert cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
+        assertNull(cache.localPeek(k3, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
 
         cache.promoteAll(F.asList(k2, k3));
 
@@ -3455,7 +3483,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testOptimisticTxMissingKey() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertTrue(jcache().remove(UUID.randomUUID().toString()));
 
@@ -3471,7 +3499,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testOptimisticTxMissingKeyNoCommit() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertTrue(jcache().remove(UUID.randomUUID().toString()));
 
@@ -3513,7 +3541,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkRemovexInTx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    private void checkRemovexInTx(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         if (txEnabled()) {
             final int cnt = 10;
 
@@ -3547,7 +3575,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxMissingKey() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
@@ -3563,7 +3591,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxMissingKeyNoCommit() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
@@ -3577,7 +3605,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxRepeatableRead() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
 
                 assert jcache().get("key") == 1;
@@ -3590,7 +3618,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxRepeatableReadOnUpdate() throws Exception {
         if (txEnabled()) {
-            try (IgniteTx ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
 
                 assert jcache().getAndPut("key", 2) == 1;
@@ -3771,9 +3799,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
+        final int SIZE = 20000;
+
         Map<String, Integer> entries = new HashMap<>();
 
-        for (int i = 0; i < 20000; ++i) {
+        for (int i = 0; i < SIZE; ++i) {
             cache.put(Integer.toString(i), i);
 
             entries.put(Integer.toString(i), i);
@@ -3908,8 +3938,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * Checks iterators are cleared after using.
+     *
+     * @param cache Cache.
+     * @throws Exception If failed.
      */
-    private void checkIteratorEmpty(IgniteCache<String, Integer> cache) throws InterruptedException, InterruptedException {
+    private void checkIteratorEmpty(IgniteCache<String, Integer> cache) throws Exception {
         int cnt = 5;
 
         for (int i = 0; i < cnt; ++i) {
@@ -3937,5 +3970,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 Thread.sleep(500);
             }
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
+        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        if (ccfg.getCacheMode() != LOCAL &&
+            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
+            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
+            U.sleep(100);
     }
 }

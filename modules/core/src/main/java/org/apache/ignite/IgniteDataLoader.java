@@ -70,11 +70,11 @@ import java.util.*;
  *      changing), but it won't be lost anyway. Disabled by default (default value is {@code 0}).
  *  </li>
  *  <li>
- *      {@link #isolated(boolean)} - defines if data loader will assume that there are no other concurrent
+ *      {@link #allowOverwrite(boolean)} - defines if data loader will assume that there are no other concurrent
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(org.apache.ignite.IgniteDataLoader.Updater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(IgniteDataLoader.Updater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -103,21 +103,21 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Gets flag value indicating that this data loader assumes that there are no other concurrent updates to the cache.
-     * Default is {@code false}.
+     * Default is {@code true}.
      *
      * @return Flag value.
      */
-    public boolean isolated();
+    public boolean allowOverwrite();
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(org.apache.ignite.IgniteDataLoader.Updater)} method.
-     * Default is {@code false}.
+     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoader.Updater)} method.
+     * Default is {@code true}. When this flag is set, updates will not be propagated to the cache store.
      *
-     * @param isolated Flag value.
+     * @param allowOverwrite Flag value.
      * @throws IgniteException If failed.
      */
-    public void isolated(boolean isolated) throws IgniteException;
+    public void allowOverwrite(boolean allowOverwrite) throws IgniteException;
 
     /**
      * Gets flag indicating that write-through behavior should be disabled for data loading.
@@ -343,7 +343,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *
      * @param cancel {@code True} to cancel ongoing loading operations.
      * @throws IgniteException If failed to map key to node.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      */
     public void close(boolean cancel) throws IgniteException, IgniteInterruptedException;
 
@@ -359,7 +359,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
     @Override public void close() throws IgniteException, IgniteInterruptedException;
 
     /**
-     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#isolated(boolean)}
+     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#allowOverwrite(boolean)}
      * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
      * performance custom user-defined implementation may help.
      * <p>
@@ -372,7 +372,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
          *
          * @param cache Cache.
          * @param entries Collection of entries.
-         * @throws org.apache.ignite.IgniteException If failed.
+         * @throws IgniteException If failed.
          */
         public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException;
     }

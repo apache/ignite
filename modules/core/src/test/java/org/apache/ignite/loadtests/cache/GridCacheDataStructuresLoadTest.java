@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -379,7 +378,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
         final Ignite ignite = G.ignite();
 
-        final GridCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
         assert cache != null;
 
@@ -390,7 +389,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
                     while (!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (Transaction tx = ignite.transactions().txStart()) {
                                 writeClos.apply(ignite);
 
                                 tx.commit();
@@ -412,7 +411,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
                     while(!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (Transaction tx = ignite.transactions().txStart()) {
                                 readClos.apply(ignite);
 
                                 tx.commit();

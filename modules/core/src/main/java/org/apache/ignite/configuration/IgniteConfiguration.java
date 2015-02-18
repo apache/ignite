@@ -26,10 +26,10 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -37,13 +37,14 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.streamer.*;
 
 import javax.management.*;
+import javax.cache.processor.*;
+import javax.cache.expiry.*;
+import javax.cache.integration.*;
+import javax.cache.event.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -107,18 +108,6 @@ public class IgniteConfiguration {
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
-
-    /** Default SMTP port. */
-    public static final int DFLT_SMTP_PORT = 25;
-
-    /** Default SSL enabled flag. */
-    public static final boolean DFLT_SMTP_SSL = false;
-
-    /** Default STARTTLS enabled flag. */
-    public static final boolean DFLT_SMTP_STARTTLS = false;
-
-    /** Default FROM email address. */
-    public static final String DFLT_SMTP_FROM_EMAIL = "info@gridgain.com";
 
     /** Default time server port base. */
     public static final int DFLT_TIME_SERVER_PORT_BASE = 31100;
@@ -201,11 +190,8 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS pool size. */
-    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
-
-    /** Lifecycle email notification. */
-    private boolean lifeCycleEmailNtf = true;
+    /** IGFS pool size. */
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
@@ -297,12 +283,6 @@ public class IgniteConfiguration {
     /** Collision SPI. */
     private CollisionSpi colSpi;
 
-    /** Authentication SPI. */
-    private AuthenticationSpi authSpi;
-
-    /** Secure session SPI. */
-    private SecureSessionSpi sesSpi;
-
     /** Deployment SPI. */
     private DeploymentSpi deploySpi;
 
@@ -319,7 +299,7 @@ public class IgniteConfiguration {
     private SwapSpaceSpi swapSpaceSpi;
 
     /** Indexing SPI. */
-    private GridIndexingSpi indexingSpi;
+    private IndexingSpi indexingSpi;
 
     /** Address resolver. */
     private AddressResolver addrRslvr;
@@ -345,30 +325,6 @@ public class IgniteConfiguration {
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
 
-    /** */
-    private String smtpHost;
-
-    /** */
-    private int smtpPort = DFLT_SMTP_PORT;
-
-    /** */
-    private String smtpUsername;
-
-    /** */
-    private String smtpPwd;
-
-    /** */
-    private String[] adminEmails;
-
-    /** */
-    private String smtpFromEmail = DFLT_SMTP_FROM_EMAIL;
-
-    /** */
-    private boolean smtpSsl = DFLT_SMTP_SSL;
-
-    /** */
-    private boolean smtpStartTls = DFLT_SMTP_STARTTLS;
-
     /** Local host. */
     private String locHost;
 
@@ -388,14 +344,11 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** GGFS configuration. */
-    private IgniteFsConfiguration[] ggfsCfg;
+    /** IGFS configuration. */
+    private IgfsConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
-
-    /** Security credentials. */
-    private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
@@ -414,6 +367,9 @@ public class IgniteConfiguration {
 
     /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
+
+    /** User's class loader. */
+    private ClassLoader classLdr;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -440,8 +396,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        authSpi = cfg.getAuthenticationSpi();
-        sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
@@ -450,13 +404,13 @@ public class IgniteConfiguration {
          * Order alphabetically for maintenance purposes.
          */
         addrRslvr = cfg.getAddressResolver();
-        adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
+        classLdr = cfg.getClassLoader();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
@@ -465,13 +419,12 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
+        igfsCfg = cfg.getIgfsConfiguration();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         lifecycleBeans = cfg.getLifecycleBeans();
-        lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
         lsnrs = cfg.getLocalEventListeners();
@@ -490,21 +443,12 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
-        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        smtpHost = cfg.getSmtpHost();
-        smtpPort = cfg.getSmtpPort();
-        smtpUsername = cfg.getSmtpUsername();
-        smtpPwd = cfg.getSmtpPassword();
-        smtpFromEmail = cfg.getSmtpFromEmail();
-        smtpSsl = cfg.isSmtpSsl();
-        smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -513,311 +457,6 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-    }
-
-    /**
-     * Whether or not send email notifications on node start and stop. Note if enabled
-     * email notifications will only be sent if SMTP is configured and at least one
-     * admin email is provided.
-     * <p>
-     * By default - email notifications are enabled.
-     *
-     * @return {@code True} to enable lifecycle email notifications.
-     * @see #getSmtpHost()
-     * @see #getAdminEmails()
-     */
-    public boolean isLifeCycleEmailNotification() {
-        return lifeCycleEmailNtf;
-    }
-
-    /**
-     * Whether or not to use SSL fot SMTP. Default is {@link #DFLT_SMTP_SSL}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return Whether or not to use SSL fot SMTP.
-     * @see #DFLT_SMTP_SSL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_SSL
-     */
-    public boolean isSmtpSsl() {
-        return smtpSsl;
-    }
-
-    /**
-     * Whether or not to use STARTTLS fot SMTP. Default is {@link #DFLT_SMTP_STARTTLS}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return Whether or not to use STARTTLS fot SMTP.
-     * @see #DFLT_SMTP_STARTTLS
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_STARTTLS
-     */
-    public boolean isSmtpStartTls() {
-        return smtpStartTls;
-    }
-
-    /**
-     * Gets SMTP host name or {@code null} if SMTP is not configured.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@code getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP host name or {@code null} if SMTP is not configured.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_HOST
-     */
-    public String getSmtpHost() {
-        return smtpHost;
-    }
-
-    /**
-     * Gets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP port.
-     * @see #DFLT_SMTP_PORT
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PORT
-     */
-    public int getSmtpPort() {
-        return smtpPort;
-    }
-
-    /**
-     * Gets SMTP username or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP username or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_USERNAME
-     */
-    public String getSmtpUsername() {
-        return smtpUsername;
-    }
-
-    /**
-     * SMTP password or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #getSmtpHost()} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @return SMTP password or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PWD
-     */
-    public String getSmtpPassword() {
-        return smtpPwd;
-    }
-
-    /**
-     * Gets optional set of admin emails where email notifications will be set.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     *
-     * @return Optional set of admin emails where email notifications will be set.
-     *      If {@code null} - emails will be sent only to the email in the license
-     *      if one provided.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_ADMIN_EMAILS
-     */
-    public String[] getAdminEmails() {
-        return adminEmails;
-    }
-
-    /**
-     * Gets optional FROM email address for email notifications. By default
-     * {@link #DFLT_SMTP_FROM_EMAIL} will be used.
-     *
-     * @return Optional FROM email address for email notifications. If {@code null}
-     *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
-     * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_FROM
-     */
-    public String getSmtpFromEmail() {
-        return smtpFromEmail;
-    }
-
-    /**
-     * Sets whether or not to enable lifecycle email notifications.
-     *
-     * @param lifeCycleEmailNtf {@code True} to enable lifecycle email notifications.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_LIFECYCLE_EMAIL_NOTIFY
-     */
-    public void setLifeCycleEmailNotification(boolean lifeCycleEmailNtf) {
-        this.lifeCycleEmailNtf = lifeCycleEmailNtf;
-    }
-
-    /**
-     * Sets whether or not SMTP uses SSL.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpSsl Whether or not SMTP uses SSL.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_SSL
-     */
-    public void setSmtpSsl(boolean smtpSsl) {
-        this.smtpSsl = smtpSsl;
-    }
-
-    /**
-     * Sets whether or not SMTP uses STARTTLS.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpStartTls Whether or not SMTP uses STARTTLS.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_STARTTLS
-     */
-    public void setSmtpStartTls(boolean smtpStartTls) {
-        this.smtpStartTls = smtpStartTls;
-    }
-
-    /**
-     * Sets SMTP host.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@code #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpHost SMTP host to set or {@code null} to disable sending emails.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_HOST
-     */
-    public void setSmtpHost(String smtpHost) {
-        this.smtpHost = smtpHost;
-    }
-
-    /**
-     * Sets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpPort SMTP port to set.
-     * @see #DFLT_SMTP_PORT
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PORT
-     */
-    public void setSmtpPort(int smtpPort) {
-        this.smtpPort = smtpPort;
-    }
-
-    /**
-     * Sets SMTP username or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpUsername SMTP username or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_USERNAME
-     */
-    public void setSmtpUsername(String smtpUsername) {
-        this.smtpUsername = smtpUsername;
-    }
-
-    /**
-     * Sets SMTP password or {@code null} if not used.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     * <p>
-     * Note that {@link #setSmtpHost(String)} is the only mandatory SMTP
-     * configuration property.
-     *
-     * @param smtpPwd SMTP password or {@code null}.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_PWD
-     */
-    public void setSmtpPassword(String smtpPwd) {
-        this.smtpPwd = smtpPwd;
-    }
-
-    /**
-     * Sets optional set of admin emails where email notifications will be set.
-     * <p>
-     * Note that Ignite uses SMTP to send emails in critical
-     * situations such as license expiration or fatal system errors.
-     * It is <b>highly</b> recommended to configure SMTP in production
-     * environment.
-     *
-     * @param adminEmails Optional set of admin emails where email notifications will be set.
-     *      If {@code null} - emails will be sent only to the email in the license
-     *      if one provided.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_ADMIN_EMAILS
-     */
-    public void setAdminEmails(String[] adminEmails) {
-        this.adminEmails = adminEmails;
-    }
-
-    /**
-     * Sets optional FROM email address for email notifications. By default
-     * {@link #DFLT_SMTP_FROM_EMAIL} will be used.
-     *
-     * @param smtpFromEmail Optional FROM email address for email notifications. If {@code null}
-     *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
-     * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_SMTP_FROM
-     */
-    public void setSmtpFromEmail(String smtpFromEmail) {
-        this.smtpFromEmail = smtpFromEmail;
     }
 
     /**
@@ -914,7 +553,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.apache.ignite.logger.log4j.IgniteLog4jLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j.Log4JLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -986,14 +625,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing GGFS messages.
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
      * <p>
      * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool size to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for IGFS outgoing message sending.
      */
-    public int getGgfsThreadPoolSize() {
-        return ggfsPoolSize;
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
     }
 
     /**
@@ -1037,13 +676,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Set thread pool size that will be used to process outgoing GGFS messages.
+     * Set thread pool size that will be used to process outgoing IGFS messages.
      *
-     * @param poolSize Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsThreadPoolSize()
+     * @param poolSize Executor service to use for outgoing IGFS messages.
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
-    public void setGgfsThreadPoolSize(int poolSize) {
-        this.ggfsPoolSize = poolSize;
+    public void setIgfsThreadPoolSize(int poolSize) {
+        this.igfsPoolSize = poolSize;
     }
 
     /**
@@ -1678,48 +1317,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} will be used.
-     *
-     * @return Grid authentication SPI implementation or {@code null} to use default implementation.
-     */
-    public AuthenticationSpi getAuthenticationSpi() {
-        return authSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi}.
-     *
-     * @param authSpi Fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getAuthenticationSpi()
-     */
-    public void setAuthenticationSpi(AuthenticationSpi authSpi) {
-        this.authSpi = authSpi;
-    }
-
-    /**
-     * Should return fully configured secure session SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} will be used.
-     *
-     * @return Grid secure session SPI implementation or {@code null} to use default implementation.
-     */
-    public SecureSessionSpi getSecureSessionSpi() {
-        return sesSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi}.
-     *
-     * @param sesSpi Fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getSecureSessionSpi()
-     */
-    public void setSecureSessionSpi(SecureSessionSpi sesSpi) {
-        this.sesSpi = sesSpi;
-    }
-
-    /**
      * Should return fully configured deployment SPI implementation. If not provided,
      * {@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi} will be used.
      *
@@ -1858,12 +1455,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * Sets fully configured instances of {@link IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * @param indexingSpi Fully configured instances of {@link IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
-    public void setIndexingSpi(GridIndexingSpi indexingSpi) {
+    public void setIndexingSpi(IndexingSpi indexingSpi) {
         this.indexingSpi = indexingSpi;
     }
 
@@ -1872,7 +1469,7 @@ public class IgniteConfiguration {
      *
      * @return Indexing SPI implementation.
      */
-    public GridIndexingSpi getIndexingSpi() {
+    public IndexingSpi getIndexingSpi() {
         return indexingSpi;
     }
 
@@ -2130,21 +1727,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets GGFS configurations.
+     * Gets IGFS configurations.
      *
-     * @return GGFS configurations.
+     * @return IGFS configurations.
      */
-    public IgniteFsConfiguration[] getGgfsConfiguration() {
-        return ggfsCfg;
+    public IgfsConfiguration[] getIgfsConfiguration() {
+        return igfsCfg;
     }
 
     /**
-     * Sets GGFS configurations.
+     * Sets IGFS configurations.
      *
-     * @param ggfsCfg GGFS configurations.
+     * @param igfsCfg IGFS configurations.
      */
-    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
-        this.ggfsCfg = ggfsCfg;
+    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
     }
 
     /**
@@ -2181,24 +1778,6 @@ public class IgniteConfiguration {
      */
     public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
         this.hadoopCfg = hadoopCfg;
-    }
-
-    /**
-     * Gets security credentials.
-     *
-     * @return Security credentials.
-     */
-    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
-        return securityCred;
-    }
-
-    /**
-     * Sets security credentials.
-     *
-     * @param securityCred Security credentials.
-     */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
-        this.securityCred = securityCred;
     }
 
     /**
@@ -2332,6 +1911,24 @@ public class IgniteConfiguration {
      */
     public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;
+    }
+
+    /**
+     * Sets loader which will be used for instantiating execution context ({@link EntryProcessor EntryProcessors},
+     * {@link CacheEntryListener CacheEntryListeners}, {@link CacheLoader CacheLoaders} and
+     * {@link ExpiryPolicy ExpiryPolicys}).
+     *
+     * @param classLdr Class loader.
+     */
+    public void setClassLoader(ClassLoader classLdr) {
+        this.classLdr = classLdr;
+    }
+
+    /**
+     * @return User's class loader.
+     */
+    public ClassLoader getClassLoader() {
+        return classLdr;
     }
 
     /** {@inheritDoc} */

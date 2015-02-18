@@ -41,12 +41,9 @@ import java.util.concurrent.atomic.*;
  * Server shared memory IPC endpoint.
  */
 public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
-    /** Troubleshooting public wiki page. */
-    public static final String TROUBLESHOOTING_URL = "http://bit.ly/GridGain-Troubleshooting";
-
     /** IPC error message. */
-    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment " +
-        "(for troubleshooting see " + TROUBLESHOOTING_URL + ')';
+    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment"; // todo IGNITE-70 Add
+                                                                                                // link to documentation
 
     /** Default endpoint port number. */
     public static final int DFLT_IPC_PORT = 10500;

@@ -53,7 +53,7 @@ import java.util.*;
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in GridGain configuration.
+ * event storage SPI if they are disabled in Ignite configuration.
  * @see EventType#EVT_JOB_CANCELLED
  * @see EventType#EVT_JOB_FAILED
  * @see EventType#EVT_JOB_FAILED_OVER

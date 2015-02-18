@@ -29,7 +29,7 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 
 /**
@@ -103,7 +103,7 @@ public class GridRouterCommandLineStartup {
             "/___/\\___/_/|_/___/ /_/ /___/  ",
             " ",
             "Ignite Router Command Line Loader",
-            "ver. " + ACK_VER,
+            "ver. " + ACK_VER_STR,
             COPYRIGHT,
             " "
         );

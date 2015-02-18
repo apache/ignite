@@ -48,9 +48,6 @@ public class VisorGridConfiguration implements Serializable {
     /** P2P. */
     private VisorPeerToPeerConfiguration p2p;
 
-    /** Email. */
-    private VisorEmailConfiguration email;
-
     /** Lifecycle. */
     private VisorLifecycleConfiguration lifecycle;
 
@@ -66,6 +63,7 @@ public class VisorGridConfiguration implements Serializable {
     /** Include events types. */
     private int[] inclEvtTypes;
 
+    /** REST configuration. */
     private VisorRestConfiguration rest;
 
     /** User attributes. */
@@ -74,8 +72,8 @@ public class VisorGridConfiguration implements Serializable {
     /** Caches. */
     private Iterable<VisorCacheConfiguration> caches;
 
-    /** Ggfss. */
-    private Iterable<VisorGgfsConfiguration> ggfss;
+    /** Igfss. */
+    private Iterable<VisorIgfsConfiguration> igfss;
 
     /** Streamers. */
     private Iterable<VisorStreamerConfiguration> streamers;
@@ -86,20 +84,25 @@ public class VisorGridConfiguration implements Serializable {
     /** System properties. */
     private Properties sysProps;
 
+    /** Configuration of atomic data structures. */
+    private VisorAtomicConfiguration atomic;
+
+    /** Transactions configuration. */
+    private VisorTransactionConfiguration txCfg;
+
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
      */
-    public VisorGridConfiguration from(IgniteEx g) {
-        assert g != null;
+    public VisorGridConfiguration from(IgniteEx ignite) {
+        assert ignite != null;
 
-        IgniteConfiguration c = g.configuration();
+        IgniteConfiguration c = ignite.configuration();
 
-        basic(VisorBasicConfiguration.from(g, c));
+        basic(VisorBasicConfiguration.from(ignite, c));
         metrics(VisorMetricsConfiguration.from(c));
         spis(VisorSpisConfiguration.from(c));
         p2p(VisorPeerToPeerConfiguration.from(c));
-        email(VisorEmailConfiguration.from(c));
         lifecycle(VisorLifecycleConfiguration.from(c));
         executeService(VisorExecutorServiceConfiguration.from(c));
         segmentation(VisorSegmentationConfiguration.from(c));
@@ -107,11 +110,13 @@ public class VisorGridConfiguration implements Serializable {
         includeEventTypes(c.getIncludeEventTypes());
         rest(VisorRestConfiguration.from(c));
         userAttributes(c.getUserAttributes());
-        caches(VisorCacheConfiguration.list(c.getCacheConfiguration()));
-        ggfss(VisorGgfsConfiguration.list(c.getGgfsConfiguration()));
+        caches(VisorCacheConfiguration.list(ignite, c.getCacheConfiguration()));
+        igfss(VisorIgfsConfiguration.list(c.getIgfsConfiguration()));
         streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
         env(new HashMap<>(getenv()));
         systemProperties(getProperties());
+        atomic(VisorAtomicConfiguration.from(c.getAtomicConfiguration()));
+        transaction(VisorTransactionConfiguration.from(c.getTransactionConfiguration()));
 
         return this;
     }
@@ -170,20 +175,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public void p2p(VisorPeerToPeerConfiguration p2P) {
         p2p = p2P;
-    }
-
-    /**
-     * @return Email.
-     */
-    public VisorEmailConfiguration email() {
-        return email;
-    }
-
-    /**
-     * @param email New email.
-     */
-    public void email(VisorEmailConfiguration email) {
-        this.email = email;
     }
 
     /**
@@ -299,17 +290,17 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @return Ggfss.
+     * @return Igfss.
      */
-    public Iterable<VisorGgfsConfiguration> ggfss() {
-        return ggfss;
+    public Iterable<VisorIgfsConfiguration> igfss() {
+        return igfss;
     }
 
     /**
-     * @param ggfss New ggfss.
+     * @param igfss New igfss.
      */
-    public void ggfss(Iterable<VisorGgfsConfiguration> ggfss) {
-        this.ggfss = ggfss;
+    public void igfss(Iterable<VisorIgfsConfiguration> igfss) {
+        this.igfss = igfss;
     }
 
     /**
@@ -352,6 +343,34 @@ public class VisorGridConfiguration implements Serializable {
      */
     public void systemProperties(Properties sysProps) {
         this.sysProps = sysProps;
+    }
+
+    /**
+     * @return Configuration of atomic data structures.
+     */
+    public VisorAtomicConfiguration atomic() {
+        return atomic;
+    }
+
+    /**
+     * @param atomic New configuration of atomic data structures.
+     */
+    public void atomic(VisorAtomicConfiguration atomic) {
+        this.atomic = atomic;
+    }
+
+    /**
+     * @return Transactions configuration.
+     */
+    public VisorTransactionConfiguration transaction() {
+        return txCfg;
+    }
+
+    /**
+     * @param txCfg New transactions configuration.
+     */
+    public void transaction(VisorTransactionConfiguration txCfg) {
+        this.txCfg = txCfg;
     }
 
     /** {@inheritDoc} */

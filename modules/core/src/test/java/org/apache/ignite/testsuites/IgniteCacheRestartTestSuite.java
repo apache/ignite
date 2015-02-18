@@ -42,7 +42,7 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
 
         // The rest.
         suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
-        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
+//        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class); TODO IGNITE-157
 
         return suite;
     }

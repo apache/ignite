@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -101,7 +102,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -128,7 +129,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final Person p3 = new Person("Mike", 1800, "Bachelor");
         final Person p4 = new Person("Bob", 1900, "Bachelor");
 
-        final GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        final GridCache<UUID, Person> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -199,7 +200,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         for (Map.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 
@@ -210,16 +211,16 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         private UUID id = UUID.randomUUID();
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String name;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int salary;
 
         /** */
-        @CacheQuerySqlField
-        @CacheQueryTextField
+        @QuerySqlField
+        @QueryTextField
         private String degree;
 
         /** Required by {@link Externalizable}. */

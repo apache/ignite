@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -29,9 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -40,8 +36,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache + Deployment test.
@@ -206,14 +200,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.cache(null).isEmpty() && g2.cache(null).isEmpty())
+                if (g1.jcache(null).localSize() == 0 && g2.jcache(null).localSize() == 0)
                     break;
 
                 U.sleep(500);
             }
 
-            assert g1.cache(null).isEmpty();
-            assert g2.cache(null).isEmpty();
+            assert g1.jcache(null).localSize() == 0;
+            assert g2.jcache(null).localSize() == 0;
 
             startGrid(3);
         }
@@ -255,11 +249,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             stopGrid(GRID_NAME);
 
-            assert g1.cache(null).size() == 1;
-            assert g1.cache(null).size() == 1;
+            assert g1.jcache(null).localSize() == 1;
+            assert g1.jcache(null).localSize() == 1;
 
-            assert g2.cache(null).size() == 1;
-            assert g2.cache(null).size() == 1;
+            assert g2.jcache(null).localSize() == 1;
+            assert g2.jcache(null).localSize() == 1;
 
             startGrid(3);
         }
@@ -294,7 +288,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            GridCache<Object, Object> cache = g0.cache(null);
+            IgniteCache<Object, Object> cache = g0.jcache(null);
 
             assert cache != null;
 
@@ -402,51 +396,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g = startGrid(0);
 
-            g.cache(null).put(0, valCls.newInstance());
+            g.jcache(null).put(0, valCls.newInstance());
 
             info("Added value to cache 0.");
 
             startGrid(1);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
-    public void _testDeploymentGroupLock() throws Exception {
-        ClassLoader ldr = getExternalClassLoader();
-
-        Class<?> keyCls = ldr.loadClass(TEST_KEY);
-
-        try {
-            depMode = SHARED;
-
-            Ignite g1 = startGrid(1);
-            startGrid(2);
-
-            Constructor<?> constructor = keyCls.getDeclaredConstructor(String.class);
-
-            Object affKey;
-
-            int i = 0;
-
-            do {
-                affKey = constructor.newInstance(String.valueOf(i));
-
-                i++;
-            }
-            while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
-
-            GridCache<Object, Object> cache = g1.cache(null);
-
-            try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                cache.put(new CacheAffinityKey<>("key1", affKey), "val1");
-
-                tx.commit();
-            }
-
-            assertEquals("val1", cache.get(new CacheAffinityKey<>("key1", affKey)));
         }
         finally {
             stopAllGrids();
@@ -471,9 +425,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         info("Near: " + near);
 
         for (int i = start; i < start + 10000; i++) {
-            if (g.cache(null).affinity().isPrimary(primary, i) && g.cache(null).affinity().isBackup(backup, i)) {
-                assert !g.cache(null).affinity().isPrimary(near, i) : "Key: " + i;
-                assert !g.cache(null).affinity().isBackup(near, i) : "Key: " + i;
+            if (g.affinity(null).isPrimary(primary, i) && g.affinity(null).isBackup(backup, i)) {
+                assert !g.affinity(null).isPrimary(near, i) : "Key: " + i;
+                assert !g.affinity(null).isBackup(near, i) : "Key: " + i;
 
                 return i;
             }

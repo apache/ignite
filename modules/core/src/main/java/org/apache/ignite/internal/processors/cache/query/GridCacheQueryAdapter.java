@@ -29,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -42,7 +43,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final IgnitePredicate<CacheEntry<Object, Object>> prjPred;
+    private final IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
     /** */
     private final GridCacheQueryType type;
@@ -104,7 +105,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
-        @Nullable IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
@@ -147,7 +148,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param taskHash Task hash.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -185,7 +186,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return cache projection filter.
      */
-    @Nullable public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
+    @Nullable public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
         return prjPred;
     }
 
@@ -392,7 +393,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return execute(null, rmtTransform, args);
     }
 
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         return metrics.copy();
     }
 

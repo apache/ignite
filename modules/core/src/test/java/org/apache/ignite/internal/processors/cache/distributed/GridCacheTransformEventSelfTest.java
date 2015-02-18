@@ -40,8 +40,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test for TRANSFORM events recording.
@@ -91,10 +91,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private CacheAtomicityMode atomicityMode;
 
     /** TX concurrency. */
-    private IgniteTxConcurrency txConcurrency;
+    private TransactionConcurrency txConcurrency;
 
     /** TX isolation. */
-    private IgniteTxIsolation txIsolation;
+    private TransactionIsolation txIsolation;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -156,7 +156,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void initialize(CacheMode cacheMode, CacheAtomicityMode atomicityMode,
-        IgniteTxConcurrency txConcurrency, IgniteTxIsolation txIsolation) throws Exception {
+        TransactionConcurrency txConcurrency, TransactionIsolation txIsolation) throws Exception {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
         this.txConcurrency = txConcurrency;
@@ -242,7 +242,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean primary(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isPrimary(grid(gridIdx).cluster().localNode(), key);
     }
@@ -253,7 +253,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean backup(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isBackup(grid(gridIdx).cluster().localNode(), key);
     }
@@ -476,8 +476,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void checkTx(CacheMode cacheMode, IgniteTxConcurrency txConcurrency,
-        IgniteTxIsolation txIsolation) throws Exception {
+    private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws Exception {
         initialize(cacheMode, TRANSACTIONAL, txConcurrency, txIsolation);
 
         System.out.println("BEFORE: " + evts.size());
@@ -541,7 +541,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         else if (cacheMode == REPLICATED) {
             for (int key : keys) {
                 if (primaryOnly)
-                    res.add(grid(0).cache(CACHE_NAME).affinity().mapKeyToNode(key).id());
+                    res.add(grid(0).affinity(CACHE_NAME).mapKeyToNode(key).id());
                 else
                     res.addAll(Arrays.asList(ids));
             }

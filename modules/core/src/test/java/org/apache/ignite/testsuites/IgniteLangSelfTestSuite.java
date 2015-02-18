@@ -36,7 +36,6 @@ public class IgniteLangSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Lang Test Suite");
 
-        suite.addTest(new TestSuite(GridFuncSelfTest.class));
         suite.addTest(new TestSuite(GridTupleSelfTest.class));
         suite.addTest(new TestSuite(GridByteArrayListSelfTest.class));
         suite.addTest(new TestSuite(GridLeanMapSelfTest.class));
@@ -53,7 +52,6 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCircularBufferSelfTest.class));
         suite.addTest(new TestSuite(GridConcurrentLinkedHashMapSelfTest.class));
         suite.addTest(new TestSuite(GridConcurrentLinkedHashMapMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentMapSelfTest.class));
         suite.addTest(new TestSuite(GridStripedLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridFutureAdapterSelfTest.class));

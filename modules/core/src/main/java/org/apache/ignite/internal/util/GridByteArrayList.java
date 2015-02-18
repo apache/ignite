@@ -407,28 +407,28 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("data", data))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeInt("size", size))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -439,14 +439,14 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 data = reader.readByteArray("data");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 size = reader.readInt("size");
@@ -454,7 +454,7 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
@@ -464,24 +464,6 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 84;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        GridByteArrayList _clone = new GridByteArrayList();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridByteArrayList _clone = (GridByteArrayList)_msg;
-
-        _clone.data = data;
-        _clone.size = size;
     }
 
     /** {@inheritDoc} */

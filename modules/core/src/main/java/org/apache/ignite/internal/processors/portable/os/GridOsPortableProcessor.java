@@ -39,6 +39,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public void onCacheProcessorStarted() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         return 0;
     }
@@ -106,5 +111,10 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Override public Object field(Object obj, String fieldName) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasField(Object obj, String fieldName) {
+        return false;
     }
 }

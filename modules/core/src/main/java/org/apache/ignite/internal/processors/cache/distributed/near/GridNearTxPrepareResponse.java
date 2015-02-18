@@ -70,6 +70,20 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     @GridDirectCollection(byte[].class)
     private Collection<byte[]> ownedValsBytes;
 
+    /** Cache return value. */
+    @GridDirectTransient
+    private GridCacheReturn<V> retVal;
+
+    /** Return value bytes. */
+    private byte[] retValBytes;
+
+    /** Filter failed keys. */
+    @GridDirectTransient
+    private Collection<IgniteTxKey<K>> filterFailedKeys;
+
+    /** Filter failed key bytes. */
+    private byte[] filterFailedKeyBytes;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -85,8 +99,15 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param invalidParts Invalid partitions.
      * @param err Error.
      */
-    public GridNearTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, GridCacheVersion dhtVer,
-        Collection<Integer> invalidParts, Throwable err) {
+    public GridNearTxPrepareResponse(
+        GridCacheVersion xid,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        GridCacheVersion dhtVer,
+        Collection<Integer> invalidParts,
+        GridCacheReturn<V> retVal,
+        Throwable err
+    ) {
         super(xid, err);
 
         assert futId != null;
@@ -97,6 +118,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         this.miniId = miniId;
         this.dhtVer = dhtVer;
         this.invalidParts = invalidParts;
+        this.retVal = retVal;
     }
 
     /**
@@ -147,6 +169,9 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param valBytes Value bytes.
      */
     public void addOwnedValue(IgniteTxKey<K> key, GridCacheVersion ver, V val, byte[] valBytes) {
+        if (val == null && valBytes == null)
+            return;
+
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
@@ -159,6 +184,27 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     public Map<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
         return ownedVals == null ? Collections.<IgniteTxKey<K>, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
+    }
+
+    /**
+     * @return Return value.
+     */
+    public GridCacheReturn<V> returnValue() {
+        return retVal;
+    }
+
+    /**
+     * @param filterFailedKeys Collection of keys that did not pass the filter.
+     */
+    public void filterFailedKeys(Collection<IgniteTxKey<K>> filterFailedKeys) {
+        this.filterFailedKeys = filterFailedKeys;
+    }
+
+    /**
+     * @return Collection of keys that did not pass the filter.
+     */
+    public Collection<IgniteTxKey<K>> filterFailedKeys() {
+        return filterFailedKeys == null ? Collections.<IgniteTxKey<K>>emptyList() : filterFailedKeys;
     }
 
     /**
@@ -204,6 +250,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 ownedValsBytes.add(ctx.marshaller().marshal(F.t(entry.getKey(), tup.get1(), valBytes, rawBytes)));
             }
         }
+
+
+        if (retValBytes == null && retVal != null)
+            retValBytes = ctx.marshaller().marshal(retVal);
+
+        if (filterFailedKeyBytes == null && filterFailedKeys != null)
+            filterFailedKeyBytes = ctx.marshaller().marshal(filterFailedKeys);
     }
 
     /** {@inheritDoc} */
@@ -221,84 +274,76 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 ownedVals.put(tup.get1(), F.t(tup.get2(), val, tup.get4() ? null : tup.get3()));
             }
         }
+
+        if (retVal == null && retValBytes != null)
+            retVal = ctx.marshaller().unmarshal(retValBytes, ldr);
+
+        if (filterFailedKeys == null && filterFailedKeyBytes != null)
+            filterFailedKeys = ctx.marshaller().unmarshal(filterFailedKeyBytes, ldr);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridNearTxPrepareResponse _clone = new GridNearTxPrepareResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearTxPrepareResponse _clone = (GridNearTxPrepareResponse)_msg;
-
-        _clone.pending = pending;
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.dhtVer = dhtVer != null ? (GridCacheVersion)dhtVer.clone() : null;
-        _clone.invalidParts = invalidParts;
-        _clone.ownedVals = ownedVals;
-        _clone.ownedValsBytes = ownedValsBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 10:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 11:
+                if (!writer.writeByteArray("filterFailedKeyBytes", filterFailedKeyBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
-
-            case 12:
-                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
-                    return false;
-
-                state++;
+                writer.incrementState();
 
             case 13:
+                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
-
-            case 14:
-                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, byte[].class))
-                    return false;
-
-                state++;
+                writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("pending", pending, GridCacheVersion.class))
+                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
+
+            case 16:
+                if (!writer.writeCollection("pending", pending, Type.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
+                if (!writer.writeByteArray("retValBytes", retValBytes))
+                    return false;
+
+                writer.incrementState();
 
         }
 
@@ -306,61 +351,76 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 10:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 11:
+                filterFailedKeyBytes = reader.readByteArray("filterFailedKeyBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 12:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 12:
-                invalidParts = reader.readCollection("invalidParts", int.class);
+            case 13:
+                invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 13:
+            case 14:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
-
-            case 14:
-                ownedValsBytes = reader.readCollection("ownedValsBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
+                readState++;
 
             case 15:
-                pending = reader.readCollection("pending", GridCacheVersion.class);
+                ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
+
+            case 16:
+                pending = reader.readCollection("pending", Type.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 17:
+                retValBytes = reader.readByteArray("retValBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
         }
 

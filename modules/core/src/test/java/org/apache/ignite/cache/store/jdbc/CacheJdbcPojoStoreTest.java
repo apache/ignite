@@ -51,7 +51,7 @@ import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStor
  * Class for {@code PojoCacheStore} tests.
  */
 public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
-    /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
+    /** DB connection URL. */
     private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Default config with mapping. */
@@ -111,7 +111,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     protected void inject(CacheAbstractJdbcStore store) throws Exception {
         getTestResources().inject(store);
 
-        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
+        GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "ses", ses);
 
         URL cfgUrl;
 
@@ -143,7 +143,8 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
             Map<Object, CacheAbstractJdbcStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
 
             for (CacheTypeMetadata type : typeMeta)
-                entryMappings.put(store.keyTypeId(type.getKeyType()), new CacheAbstractJdbcStore.EntryMapping(dialect, type));
+                entryMappings.put(store.keyTypeId(type.getKeyType()),
+                    new CacheAbstractJdbcStore.EntryMapping(null, dialect, type));
 
             store.prepareBuilders(null, typeMeta);
 
@@ -183,7 +184,8 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
 
-        cacheMappings.get(null).put(OrganizationKey.class, new CacheAbstractJdbcStore.EntryMapping(dialect, typeMeta));
+        cacheMappings.get(null).put(OrganizationKey.class,
+            new CacheAbstractJdbcStore.EntryMapping(null, dialect, typeMeta));
 
         Connection conn = store.openConnection(false);
 
@@ -336,7 +338,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      */
     public void testStore() throws Exception {
         // Create dummy transaction
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -387,7 +389,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException if failed.
      */
     public void testRollback() throws IgniteCheckedException {
-        IgniteTx tx = new DummyTx();
+        Transaction tx = new DummyTx();
 
         ses.newSession(tx);
 
@@ -504,7 +506,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
      * @param tx Transaction.
      * @param commit Commit.
      */
-    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) {
+    private void doTestAllOps(@Nullable Transaction tx, boolean commit) {
         try {
             ses.newSession(tx);
 
@@ -620,7 +622,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 for (int i = 0; i < 1000; i++) {
-                    IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
+                    Transaction tx = rnd.nextBoolean() ? new DummyTx() : null;
 
                     ses.newSession(tx);
 

@@ -36,7 +36,7 @@ public class VisorCacheWriteBehindConfiguration implements Serializable {
     private int batchSize;
 
     /** Frequency with which write-behind cache is flushed to the cache store in milliseconds. */
-    private long flushFrequency;
+    private long flushFreq;
 
     /** Maximum object count in write-behind cache. */
     private int flushSize;
@@ -92,14 +92,14 @@ public class VisorCacheWriteBehindConfiguration implements Serializable {
      * @return Frequency with which write-behind cache is flushed to the cache store in milliseconds.
      */
     public long flushFrequency() {
-        return flushFrequency;
+        return flushFreq;
     }
 
     /**
      * @param flushFreq New frequency with which write-behind cache is flushed to the cache store in milliseconds.
      */
     public void flushFrequency(long flushFreq) {
-        flushFrequency = flushFreq;
+        this.flushFreq = flushFreq;
     }
 
     /**

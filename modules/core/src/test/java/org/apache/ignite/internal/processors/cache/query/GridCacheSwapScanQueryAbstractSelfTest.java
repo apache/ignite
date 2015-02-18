@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -114,9 +114,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        checkQuery(grid(0).cache(ATOMIC_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
 
-        checkQuery(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -172,49 +172,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param expCnt Expected entries in query result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
-    private void checkProjectionFilter(GridCache cache, int expCnt) throws Exception {
-        CacheProjection prj = createProjectionForFilter(cache);
-
-        CacheQuery<Map.Entry<Key, Person>> qry = prj.queries().createScanQuery(
-            new IgniteBiPredicate<Key, Person>() {
-                @Override public boolean apply(Key key, Person p) {
-                    assertEquals(key.id, (Integer)p.salary);
-
-                    return key.id % 2 == 0;
-                }
-            }
-        );
-
-        Collection<Map.Entry<Key, Person>> res = qry.execute().get();
-
-        assertEquals(expCnt, res.size());
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Projection.
-     */
-    protected CacheProjection createProjectionForFilter(GridCache cache) {
-        return cache.projection(new IgnitePredicate<CacheEntry<Key, Person>>() {
-            @Override public boolean apply(CacheEntry<Key, Person> e) {
-                Key key = e.getKey();
-                Person val = e.peek();
-
-                assertNotNull(e.version());
-
-                assertEquals(key.id, (Integer)val.salary);
-
-                return key.id % 100 != 0;
-            }
-        });
-    }
-
-    /**
-     * @param cache Cache.
-     * @param expCnt Expected entries in query result.
-     * @throws Exception If failed.
-     */
     private void testMultithreaded(final GridCache cache, final int expCnt) throws Exception {
         log.info("Starting multithreaded queries.");
 
@@ -249,9 +206,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryPrimitives() throws Exception {
-        checkQueryPrimitives(grid(0).cache(ATOMIC_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
 
-        checkQueryPrimitives(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -305,9 +262,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryValueByteArray() throws Exception {
-        checkQueryValueByteArray(grid(0).cache(ATOMIC_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
 
-        checkQueryValueByteArray(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**

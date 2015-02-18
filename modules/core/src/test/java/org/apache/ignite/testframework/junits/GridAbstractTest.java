@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -427,9 +426,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         // Clear log throttle.
         LT.clear();
-
-        // Clear license registry.
-        GridLicenseUseRegistry.clear();
 
         TestCounters cntrs = getTestCounters();
 
@@ -1416,10 +1412,8 @@ public abstract class GridAbstractTest extends TestCase {
                 int cnt = 0;
 
                 for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                            cnt++;
-                    }
+                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                        cnt++;
 
                 numOfTests = cnt;
             }

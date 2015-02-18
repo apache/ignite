@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -38,14 +37,14 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Base class for transactional DHT caches.
@@ -140,8 +139,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtLockResponse<K, V> res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<K> keys = req.keys();
-        List<IgniteTxEntry<K, V>> writes = req.writeEntries();
-
         GridDhtTxRemote<K, V> tx = null;
 
         int size = F.size(keys);
@@ -154,11 +151,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             IgniteTxKey<K> txKey = ctx.txKey(key);
 
-            IgniteTxEntry<K, V> writeEntry = writes == null ? null : writes.get(i);
-
             assert F.isEmpty(req.candidatesByIndex(i));
-
-            GridCacheVersion drVer = req.drVersionByIndex(i);
 
             if (log.isDebugEnabled())
                 log.debug("Unmarshalled key: " + key);
@@ -222,13 +215,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             tx.addWrite(
                                 ctx,
-                                writeEntry == null ? NOOP : writeEntry.op(),
+                                NOOP,
                                 txKey,
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
-                                writeEntry == null ? null : writeEntry.value(),
-                                writeEntry == null ? null : writeEntry.valueBytes(),
-                                writeEntry == null ? null : writeEntry.entryProcessors(),
-                                drVer,
+                                null,
+                                null,
+                                null,
                                 req.accessTtl());
 
                             if (req.groupLock())
@@ -440,7 +432,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (res != null) {
             try {
                 // Reply back to sender.
-                ctx.io().send(nodeId, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, ctx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
@@ -553,16 +545,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(
+        @Nullable Collection<? extends K> keys,
         long timeout,
         IgniteTxLocalEx<K, V> txx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return lockAllAsyncInternal(keys,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        return lockAllAsyncInternal(
+            keys,
             timeout,
             txx,
             isInvalidate,
@@ -593,9 +587,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -672,7 +666,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
         final GridNearLockRequest<K, V> req,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter0) {
+        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
 
         IgniteInternalFuture<Object> keyFut = null;
@@ -698,7 +692,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
-                    IgnitePredicate<CacheEntry<K, V>>[] filter = filter0;
+                    IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
 
                     // Set message into thread context.
                     GridDhtTxLocal<K, V> tx = null;
@@ -832,16 +826,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (log.isDebugEnabled())
                                 log.debug("Performing DHT lock [tx=" + tx + ", entries=" + entries + ']');
 
-                            assert req.writeEntries() == null || req.writeEntries().size() == entries.size();
-
                             IgniteInternalFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
-                                req.writeEntries(),
                                 req.onePhaseCommit(),
-                                req.drVersions(),
                                 req.messageId(),
-                                req.implicitTx(),
                                 req.txRead(),
                                 req.accessTtl());
 
@@ -1012,7 +1001,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             CU.subjectId(tx, ctx.shared()),
                                             null,
                                             tx != null ? tx.resolveTaskName() : null,
-                                            CU.<K, V>empty(),
                                             null);
 
                                     assert e.lockedBy(mappedVer) ||
@@ -1109,7 +1097,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             // Don't send reply message to this node or if lock was cancelled.
             if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class))
-                ctx.io().send(nearNode, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nearNode, res, ctx.ioPolicy());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send lock reply to originating node (will rollback transaction) [node=" +
@@ -1430,7 +1418,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 req.completedVersions(committed, rolledback);
 
-                ctx.io().send(n, req);
+                ctx.io().send(n, req, ctx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
@@ -1458,7 +1446,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     req.completedVersions(committed, rolledback);
 
-                    ctx.io().send(n, req);
+                    ctx.io().send(n, req, ctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ignore) {
                     if (log.isDebugEnabled())

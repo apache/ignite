@@ -17,19 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
-import java.util.*;
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -71,7 +72,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
                     log.info("Use cache " + idx);
 
-                    GridCache<Object, Object> cache = grid(idx).cache(null);
+                    IgniteCache<Object, Object> cache = grid(idx).jcache(null);
 
                     for (int i = 0; i < 100; i++)
                         putAndCheckEntrySet(cache);
@@ -89,8 +90,8 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @param cache Cache.
      * @throws Exception If failed.
      */
-    private void putAndCheckEntrySet(GridCache<Object, Object> cache) throws Exception {
-        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+    private void putAndCheckEntrySet(IgniteCache<Object, Object> cache) throws Exception {
+        try (Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 
             if (total == null)
@@ -98,18 +99,16 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
             int cntr = 0;
 
-            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
-
-            for (CacheEntry e : entries) {
+            for (Cache.Entry e : cache) {
                 if (e.getKey() instanceof Integer)
                     cntr++;
             }
 
             assertEquals(total, (Integer)cntr);
 
-            cache.putx(cntr + 1, cntr + 1);
+            cache.put(cntr + 1, cntr + 1);
 
-            cache.putx(TX_KEY, cntr + 1);
+            cache.put(TX_KEY, cntr + 1);
 
             tx.commit();
         }

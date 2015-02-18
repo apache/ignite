@@ -30,8 +30,10 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -39,8 +41,8 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -68,6 +70,125 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         stopAllGrids();
 
         storeMap.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnCreate() throws Exception {
+        factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on create, key: " + key);
+
+            zeroOnCreate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnCreate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create with zero duration, should not create cache entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnUpdate() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return Duration.ZERO;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on update, key: " + key);
+
+            zeroOnUpdate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnUpdate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key));
+
+        cache.put(key, 2); // Update should expire entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccess() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return Duration.ZERO;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return null;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on access, key: " + key);
+
+            zeroOnAccess(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnAccess(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
+
+        waitExpired(F.asList(key));
     }
 
     /**
@@ -171,9 +292,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         if (atomicityMode() == TRANSACTIONAL) {
-            IgniteTxConcurrency[] txModes = {PESSIMISTIC};
+            TransactionConcurrency[] txModes = {PESSIMISTIC};
 
-            for (IgniteTxConcurrency txMode : txModes) {
+            for (TransactionConcurrency txMode : txModes) {
                 for (final Integer key : keys()) {
                     log.info("Test txGet [key=" + key + ", txMode=" + txMode + ']');
 
@@ -181,12 +302,31 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 }
             }
 
-            for (IgniteTxConcurrency txMode : txModes) {
+            for (TransactionConcurrency txMode : txModes) {
                 log.info("Test txGetAll [txMode=" + txMode + ']');
 
                 txGetAll(txMode);
             }
         }
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        Collection<Integer> putKeys = keys();
+
+        for (final Integer key : putKeys)
+            cache.put(key, key);
+
+        Iterator<Cache.Entry<Integer, Integer>> it = cache.iterator();
+
+        List<Integer> itKeys = new ArrayList<>();
+
+        while (it.hasNext())
+            itKeys.add(it.next().getKey());
+
+        assertTrue(itKeys.size() >= putKeys.size());
+
+        for (Integer key : itKeys)
+            checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -194,14 +334,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGet(Integer key, IgniteTxConcurrency txMode) throws Exception {
+    private void txGet(Integer key, TransactionConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         cache.put(key, 1);
 
         checkTtl(key, 60_000L);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals((Integer)1, cache.get(key));
 
             tx.commit();
@@ -209,7 +349,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).get(key));
 
             tx.commit();
@@ -222,7 +362,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGetAll(IgniteTxConcurrency txMode) throws Exception {
+    private void txGetAll(TransactionConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         Map<Integer, Integer> vals = new HashMap<>();
@@ -232,7 +372,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.putAll(vals);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals(vals, cache.getAll(vals.keySet()));
 
             tx.commit();
@@ -241,7 +381,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 62_000L);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+        try (Transaction tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals(vals, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).getAll(vals.keySet()));
 
             tx.commit();
@@ -266,11 +406,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+        IgniteCache<Integer, Integer> cache0 = cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE));
+
+        assertEquals((Integer)1, cache0.get(key));
 
         checkTtl(key, TTL_FOR_EXPIRE, true);
 
         waitExpired(key);
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        Integer res = cache.invoke(key, new GetEntryProcessor());
+
+        assertEquals((Integer)1, res);
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -371,9 +523,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         createUpdatePutAll(null);
 
         if (atomicityMode() == TRANSACTIONAL) {
-            IgniteTxConcurrency[] txModes = new IgniteTxConcurrency[]{PESSIMISTIC, OPTIMISTIC};
+            TransactionConcurrency[] txModes = new TransactionConcurrency[]{PESSIMISTIC, OPTIMISTIC};
 
-            for (IgniteTxConcurrency tx : txModes) {
+            for (TransactionConcurrency tx : txModes) {
                 for (final Integer key : keys()) {
                     log.info("Test createUpdate [key=" + key + ", tx=" + tx + ']');
 
@@ -395,7 +547,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdatePutAll(@Nullable IgniteTxConcurrency txConcurrency) throws Exception {
+    private void createUpdatePutAll(@Nullable TransactionConcurrency txConcurrency) throws Exception {
         Map<Integer, Integer> vals = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
@@ -405,7 +557,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.removeAll(vals.keySet());
 
-        IgniteTx tx = startTx(txConcurrency);
+        Transaction tx = startTx(txConcurrency);
 
         // Create.
         cache.putAll(vals);
@@ -471,13 +623,13 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdateCustomPolicy(Integer key, @Nullable IgniteTxConcurrency txConcurrency)
+    private void createUpdateCustomPolicy(Integer key, @Nullable TransactionConcurrency txConcurrency)
         throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         assertNull(cache.get(key));
 
-        IgniteTx tx = startTx(txConcurrency);
+        Transaction tx = startTx(txConcurrency);
 
         cache.withExpiryPolicy(new TestPolicy(10_000L, 20_000L, 30_000L)).put(key, 1);
 
@@ -530,7 +682,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void createUpdate(Integer key, @Nullable IgniteTxConcurrency txConcurrency)
+    private void createUpdate(Integer key, @Nullable TransactionConcurrency txConcurrency)
         throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -538,7 +690,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (int i = 0; i < 3; i++) {
             log.info("Iteration: " + i);
 
-            IgniteTx tx = startTx(txConcurrency);
+            Transaction tx = startTx(txConcurrency);
 
             cache.put(key, 1); // Create.
 
@@ -584,7 +736,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @return Transaction.
      */
-    @Nullable private IgniteTx startTx(@Nullable IgniteTxConcurrency txMode) {
+    @Nullable private Transaction startTx(@Nullable TransactionConcurrency txMode) {
         return txMode == null ? null : ignite(0).transactions().txStart(txMode, REPEATABLE_READ);
     }
 
@@ -810,6 +962,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
+        checkNoValue(keys);
+    }
+
+    /**
+     * @param keys Keys.
+     * @throws Exception If failed.
+     */
+    private void checkNoValue(Collection<Integer> keys) throws Exception {
         IgniteCache<Integer, Object> cache = jcache(0);
 
         for (int i = 0; i < gridCount(); i++) {
@@ -886,7 +1046,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }, 3000);
                 }
 
-                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
+                boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
+                boolean backup = cache.affinity().isBackup(grid.localNode(), key);
+
+                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key + ", e=" + e +
+                    ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);
@@ -908,6 +1072,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cfg.setExpiryPolicyFactory(factory);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private static class GetEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+            return e.getValue();
+        }
     }
 
     /**

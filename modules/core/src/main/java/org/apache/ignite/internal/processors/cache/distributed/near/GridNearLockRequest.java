@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -31,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -53,7 +53,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Implicit flag. */
     private boolean implicitTx;
@@ -124,7 +124,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         boolean implicitTx,
         boolean implicitSingleTx,
         boolean isRead,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
@@ -225,7 +225,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /**
      * @return Filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] filter() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
         return filter;
     }
 
@@ -234,7 +234,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void filter(IgnitePredicate<CacheEntry<K, V>>[] filter, GridCacheContext<K, V> ctx)
+    public void filter(IgnitePredicate<Cache.Entry<K, V>>[] filter, GridCacheContext<K, V> ctx)
         throws IgniteCheckedException {
         this.filter = filter;
     }
@@ -274,8 +274,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param retVal Flag indicating whether value should be returned.
      * @param keyBytes Key bytes.
      * @param dhtVer DHT version.
-     * @param writeEntry Write entry if implicit transaction mapped on one node.
-     * @param drVer DR version.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
@@ -284,14 +282,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable IgniteTxEntry<K, V> writeEntry,
-        @Nullable GridCacheVersion drVer,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, keyBytes, writeEntry, retVal, null, drVer, ctx);
+        addKeyBytes(key, keyBytes, retVal, (Collection<GridCacheMvccCandidate<K>>)null, ctx);
     }
 
     /**
@@ -300,11 +296,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public GridCacheVersion dhtVersion(int idx) {
         return dhtVers[idx];
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean transferExpiryPolicy() {
-        return true;
     }
 
     /**
@@ -331,123 +322,91 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridNearLockRequest _clone = new GridNearLockRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridNearLockRequest _clone = (GridNearLockRequest)_msg;
-
-        _clone.topVer = topVer;
-        _clone.miniId = miniId;
-        _clone.filterBytes = filterBytes;
-        _clone.filter = filter;
-        _clone.implicitTx = implicitTx;
-        _clone.implicitSingleTx = implicitSingleTx;
-        _clone.onePhaseCommit = onePhaseCommit;
-        _clone.dhtVers = dhtVers;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.hasTransforms = hasTransforms;
-        _clone.syncCommit = syncCommit;
-        _clone.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
-            case 24:
+        switch (writer.state()) {
+            case 22:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                state++;
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
 
             case 25:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, GridCacheVersion.class))
-                    return false;
-
-                state++;
-
-            case 26:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, byte[].class))
-                    return false;
-
-                state++;
-
-            case 27:
                 if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 28:
+            case 26:
                 if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 29:
+            case 27:
                 if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 30:
+            case 28:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 31:
+            case 29:
                 if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 32:
+            case 30:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 33:
+            case 31:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 34:
+            case 32:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 35:
+            case 33:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -455,109 +414,108 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
-            case 24:
+        switch (readState) {
+            case 22:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
+
+            case 23:
+                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 24:
+                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR, byte[].class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 25:
-                dhtVers = reader.readObjectArray("dhtVers", GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 26:
-                filterBytes = reader.readObjectArray("filterBytes", byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 27:
                 hasTransforms = reader.readBoolean("hasTransforms");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 28:
+            case 26:
                 implicitSingleTx = reader.readBoolean("implicitSingleTx");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 29:
+            case 27:
                 implicitTx = reader.readBoolean("implicitTx");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 30:
+            case 28:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 31:
+            case 29:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 32:
+            case 30:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 33:
+            case 31:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 34:
+            case 32:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 35:
+            case 33:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

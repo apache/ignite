@@ -24,31 +24,31 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://127.0.0.1:11500/</value>
+        <value>igfs://127.0.0.1:11500/</value>
     </property>
 
     <property>
-        <name>fs.ggfs.impl</name>
-        <value>org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <name>fs.igfs.impl</name>
+        <value>org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem</value>
     </property>
 
     <property>
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
-        <value>org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <name>fs.AbstractFileSystem.igfs.impl</name>
+        <value>org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem</value>
     </property>
 
     <property>
-        <name>fs.ggfs.127.0.0.1:11500.endpoint.no_embed</name>
+        <name>fs.igfs.127.0.0.1:11500.endpoint.no_embed</name>
         <value>true</value>
     </property>
 
     <property>
-        <name>fs.ggfs.127.0.0.1:11500.endpoint.no_local_shmem</name>
+        <name>fs.igfs.127.0.0.1:11500.endpoint.no_local_shmem</name>
         <value>true</value>
     </property>
 
     <property>
-        <name>fs.ggfs.block.size</name>
+        <name>fs.igfs.block.size</name>
         <value>1024</value>
     </property>
 </configuration>

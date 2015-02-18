@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
@@ -53,42 +52,42 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticReadCommitted() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.READ_COMMITTED);
+        checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticRepeatableRead() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.REPEATABLE_READ);
+        checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticSerializable() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.SERIALIZABLE);
+        checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticReadCommitted() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.READ_COMMITTED);
+        checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticRepeatableRead() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.REPEATABLE_READ);
+        checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticSerializable() throws IgniteCheckedException {
-        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.SERIALIZABLE);
+        checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
 
     /**
@@ -97,13 +96,13 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      * @param isolation Transaction isolation.
      * @throws IgniteCheckedException If failed
      */
-    protected void checkTransactionalRead(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    protected void checkTransactionalRead(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws IgniteCheckedException {
         IgniteCache<String, Integer> cache = jcache(0);
 
         cache.clear();
 
-        IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation);
+        Transaction tx = grid(0).transactions().txStart(concurrency, isolation);
 
         try {
             cache.put("key", 1);

@@ -42,12 +42,6 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String[] EXCLUDED_PACKAGES = new String[] {
-        "org.apache.ignite.internal.processors.rest.client.message",
-        "org.apache.ignite.internal.processors.rest.protocols.tcp"
-    };
-
-    /** */
     private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
@@ -63,22 +57,60 @@ public class CommunicationMessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final String STATE_VAR = "state";
+    private static final Map<Class<?>, MessageAdapter.Type> TYPES = U.newHashMap(30);
 
-    /** */
-    private static final String TYPE_WRITTEN_VAR = "typeWritten";
+    static {
+        TYPES.put(byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(Byte.class, MessageAdapter.Type.BYTE);
+        TYPES.put(short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(Short.class, MessageAdapter.Type.SHORT);
+        TYPES.put(int.class, MessageAdapter.Type.INT);
+        TYPES.put(Integer.class, MessageAdapter.Type.INT);
+        TYPES.put(long.class, MessageAdapter.Type.LONG);
+        TYPES.put(Long.class, MessageAdapter.Type.LONG);
+        TYPES.put(float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(Float.class, MessageAdapter.Type.FLOAT);
+        TYPES.put(double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(Double.class, MessageAdapter.Type.DOUBLE);
+        TYPES.put(char.class, MessageAdapter.Type.CHAR);
+        TYPES.put(Character.class, MessageAdapter.Type.CHAR);
+        TYPES.put(boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(Boolean.class, MessageAdapter.Type.BOOLEAN);
+        TYPES.put(byte[].class, MessageAdapter.Type.BYTE_ARR);
+        TYPES.put(short[].class, MessageAdapter.Type.SHORT_ARR);
+        TYPES.put(int[].class, MessageAdapter.Type.INT_ARR);
+        TYPES.put(long[].class, MessageAdapter.Type.LONG_ARR);
+        TYPES.put(float[].class, MessageAdapter.Type.FLOAT_ARR);
+        TYPES.put(double[].class, MessageAdapter.Type.DOUBLE_ARR);
+        TYPES.put(char[].class, MessageAdapter.Type.CHAR_ARR);
+        TYPES.put(boolean[].class, MessageAdapter.Type.BOOLEAN_ARR);
+        TYPES.put(String.class, MessageAdapter.Type.STRING);
+        TYPES.put(BitSet.class, MessageAdapter.Type.BIT_SET);
+        TYPES.put(UUID.class, MessageAdapter.Type.UUID);
+        TYPES.put(IgniteUuid.class, MessageAdapter.Type.IGNITE_UUID);
+    }
+
+    /**
+     * @param cls Class.
+     * @return Type enum value.
+     */
+    private static MessageAdapter.Type typeEnum(Class<?> cls) {
+        MessageAdapter.Type type = TYPES.get(cls);
+
+        if (type == null) {
+            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
+
+            type = MessageAdapter.Type.MSG;
+        }
+
+        return type;
+    }
 
     /** */
     private final Collection<String> write = new ArrayList<>();
 
     /** */
     private final Collection<String> read = new ArrayList<>();
-
-    /** */
-    private final Collection<String> clone = new ArrayList<>();
-
-    /** */
-    private final Collection<String> clone0 = new ArrayList<>();
 
     /** */
     private final Map<Class<?>, Integer> fieldCnt = new HashMap<>();
@@ -97,6 +129,30 @@ public class CommunicationMessageCodeGenerator {
 
         try {
             gen.generateAll(true);
+
+//            gen.generateAndWrite(GridDistributedLockRequest.class);
+//            gen.generateAndWrite(GridDistributedLockResponse.class);
+//            gen.generateAndWrite(GridNearLockRequest.class);
+//            gen.generateAndWrite(GridNearLockResponse.class);
+//            gen.generateAndWrite(GridDhtLockRequest.class);
+//            gen.generateAndWrite(GridDhtLockResponse.class);
+//
+//            gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
+//            gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
+//            gen.generateAndWrite(GridNearTxPrepareRequest.class);
+//            gen.generateAndWrite(GridNearTxPrepareResponse.class);
+//            gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//            gen.generateAndWrite(GridDhtTxPrepareResponse.class);
+//
+//            gen.generateAndWrite(GridDistributedTxFinishRequest.class);
+//            gen.generateAndWrite(GridDistributedTxFinishResponse.class);
+//            gen.generateAndWrite(GridNearTxFinishRequest.class);
+//            gen.generateAndWrite(GridNearTxFinishResponse.class);
+//            gen.generateAndWrite(GridDhtTxFinishRequest.class);
+//            gen.generateAndWrite(GridDhtTxFinishResponse.class);
+//
+//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
+//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -158,14 +214,12 @@ public class CommunicationMessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
-            boolean cloneFound = false;
-            boolean clone0Found = false;
 
             while ((line = rdr.readLine()) != null) {
                 if (!skip) {
                     src.add(line);
 
-                    if (line.contains("public boolean writeTo(ByteBuffer buf)")) {
+                    if (line.contains("public boolean writeTo(ByteBuffer buf, MessageWriter writer)")) {
                         src.addAll(write);
 
                         skip = true;
@@ -178,20 +232,6 @@ public class CommunicationMessageCodeGenerator {
                         skip = true;
 
                         readFound = true;
-                    }
-                    else if (line.contains("public MessageAdapter clone()")) {
-                        src.addAll(clone);
-
-                        skip = true;
-
-                        cloneFound = true;
-                    }
-                    else if (line.contains("protected void clone0(MessageAdapter _msg)")) {
-                        src.addAll(clone0);
-
-                        skip = true;
-
-                        clone0Found = true;
                     }
                 }
                 else if (line.startsWith(TAB + "}")) {
@@ -206,12 +246,6 @@ public class CommunicationMessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
-
-            if (!cloneFound)
-                System.out.println("    clone method doesn't exist.");
-
-            if (!clone0Found)
-                System.out.println("    clone0 method doesn't exist.");
         }
         finally {
             if (rdr != null)
@@ -243,8 +277,6 @@ public class CommunicationMessageCodeGenerator {
 
         write.clear();
         read.clear();
-        clone.clear();
-        clone0.clear();
 
         fields = new ArrayList<>();
 
@@ -262,44 +294,6 @@ public class CommunicationMessageCodeGenerator {
         indent = 2;
 
         boolean hasSuper = cls.getSuperclass() != BASE_CLS;
-
-        String clsName = cls.getSimpleName();
-
-        if (!Modifier.isAbstract(cls.getModifiers())) {
-            clone.add(builder().a(clsName).a(" _clone = new ").a(clsName).a("();").toString());
-            clone.add(EMPTY);
-            clone.add(builder().a("clone0(_clone);").toString());
-            clone.add(EMPTY);
-            clone.add(builder().a("return _clone;").toString());
-        }
-
-        if (hasSuper) {
-            clone0.add(builder().a("super.clone0(_msg);").toString());
-            clone0.add(EMPTY);
-        }
-
-        Collection<Field> cloningFields = new ArrayList<>(declaredFields.length);
-
-        for (Field field: declaredFields)
-            if (!isStatic(field.getModifiers()))
-                cloningFields.add(field);
-
-        if (!cloningFields.isEmpty()) {
-            clone0.add(builder().a(clsName).a(" _clone = (").a(clsName).a(")_msg;").toString());
-            clone0.add(EMPTY);
-
-            for (Field field : cloningFields) {
-                String name = field.getName();
-                Class<?> type = field.getType();
-
-                String res = name;
-
-                if (BASE_CLS.isAssignableFrom(type))
-                    res = name + " != null ? (" + type.getSimpleName() + ")" + name + ".clone() : null";
-
-                clone0.add(builder().a("_clone.").a(name).a(" = ").a(res).a(";").toString());
-            }
-        }
 
         start(write, hasSuper ? "writeTo" : null, true);
         start(read, hasSuper ? "readFrom" : null, false);
@@ -361,20 +355,23 @@ public class CommunicationMessageCodeGenerator {
         code.add(EMPTY);
 
         if (superMtd != null) {
-            returnFalseIfFailed(code, "super." + superMtd, BUF_VAR);
+            if (write)
+                returnFalseIfFailed(code, "super." + superMtd, BUF_VAR, "writer");
+            else
+                returnFalseIfFailed(code, "super." + superMtd, BUF_VAR);
 
             code.add(EMPTY);
         }
 
         if (write) {
-            code.add(builder().a("if (!").a(TYPE_WRITTEN_VAR).a(") {").toString());
+            code.add(builder().a("if (!writer.isTypeWritten()) {").toString());
 
             indent++;
 
             returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
 
             code.add(EMPTY);
-            code.add(builder().a(TYPE_WRITTEN_VAR).a(" = true;").toString());
+            code.add(builder().a("writer.onTypeWritten();").toString());
 
             indent--;
 
@@ -383,7 +380,7 @@ public class CommunicationMessageCodeGenerator {
         }
 
         if (!fields.isEmpty())
-            code.add(builder().a("switch (").a(STATE_VAR).a(") {").toString());
+            code.add(builder().a("switch (").a(write ? "writer.state()" : "readState").a(") {").toString());
     }
 
     /**
@@ -441,7 +438,7 @@ public class CommunicationMessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false);
 
         write.add(EMPTY);
-        write.add(builder().a(STATE_VAR).a("++;").toString());
+        write.add(builder().a("writer.incrementState();").toString());
         write.add(EMPTY);
 
         indent--;
@@ -466,7 +463,7 @@ public class CommunicationMessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null);
 
         read.add(EMPTY);
-        read.add(builder().a(STATE_VAR).a("++;").toString());
+        read.add(builder().a("readState++;").toString());
         read.add(EMPTY);
 
         indent--;
@@ -527,25 +524,28 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeUuid", field, name);
         else if (type == IgniteUuid.class)
             returnFalseIfFailed(write, "writer.writeIgniteUuid", field, name);
-        else if (type.isEnum())
-            returnFalseIfFailed(write, "writer.writeEnum", field, name);
+        else if (type.isEnum()) {
+            String arg = name + " != null ? (byte)" + name + ".ordinal() : -1";
+
+            returnFalseIfFailed(write, "writer.writeByte", field, arg);
+        }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfFailed(write, "writer.writeMessage", field, name);
         else if (type.isArray()) {
             returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
-                type.getComponentType().getSimpleName() + ".class");
+                "Type." + typeEnum(type.getComponentType()));
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfFailed(write, "writer.writeCollection", field, name, colItemType.getSimpleName() + ".class");
+            returnFalseIfFailed(write, "writer.writeCollection", field, name, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            returnFalseIfFailed(write, "writer.writeMap", field, name, mapKeyType.getSimpleName() + ".class",
-                mapValType.getSimpleName() + ".class");
+            returnFalseIfFailed(write, "writer.writeMap", field, name, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapValType));
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);
@@ -604,19 +604,29 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfReadFailed(name, "reader.readUuid", field);
         else if (type == IgniteUuid.class)
             returnFalseIfReadFailed(name, "reader.readIgniteUuid", field);
-        else if (type.isEnum())
-            returnFalseIfReadFailed(name, "reader.readEnum", field, type.getSimpleName() + ".class");
+        else if (type.isEnum()) {
+            String loc = name + "Ord";
+
+            read.add(builder().a("byte ").a(loc).a(";").toString());
+            read.add(EMPTY);
+
+            returnFalseIfReadFailed(loc, "reader.readByte", field);
+
+            read.add(EMPTY);
+            read.add(builder().a(name).a(" = ").a(type.getSimpleName()).a(".fromOrdinal(").a(loc).a(");").toString());
+        }
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfReadFailed(name, "reader.readMessage", field);
         else if (type.isArray()) {
-            returnFalseIfReadFailed(name, "reader.readObjectArray", field,
-                type.getComponentType().getSimpleName() + ".class");
+            Class<?> compType = type.getComponentType();
+
+            returnFalseIfReadFailed(name, "reader.readObjectArray", field, "Type." + typeEnum(compType),
+                compType.getSimpleName() + ".class");
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(name, "reader.readCollection", field,
-                colItemType.getSimpleName() + ".class");
+            returnFalseIfReadFailed(name, "reader.readCollection", field, "Type." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
@@ -624,8 +634,8 @@ public class CommunicationMessageCodeGenerator {
 
             boolean linked = type.equals(LinkedHashMap.class);
 
-            returnFalseIfReadFailed(name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
-                mapValType.getSimpleName() + ".class", linked ? "true" : "false");
+            returnFalseIfReadFailed(name, "reader.readMap", field, "Type." + typeEnum(mapKeyType),
+                "Type." + typeEnum(mapValType), linked ? "true" : "false");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);
@@ -744,6 +754,7 @@ public class CommunicationMessageCodeGenerator {
      * @param col Classes.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     private void processFile(File file, ClassLoader ldr, int prefixLen,
         Collection<Class<? extends MessageAdapter>> col) throws Exception {
         assert file != null;
@@ -765,11 +776,6 @@ public class CommunicationMessageCodeGenerator {
 
             if (path.endsWith(".class")) {
                 String clsName = path.substring(prefixLen, path.length() - 6).replace(File.separatorChar, '.');
-
-                for (String excluded : EXCLUDED_PACKAGES) {
-                    if (clsName.startsWith(excluded))
-                        return;
-                }
 
                 Class<?> cls = Class.forName(clsName, false, ldr);
 

@@ -30,8 +30,6 @@ public class GridTestClockTimer implements Runnable {
                 Thread.sleep(10);
             }
             catch (InterruptedException ignored) {
-                IgniteUtils.log(null, "Timer thread has been interrupted.");
-
                 break;
             }
         }

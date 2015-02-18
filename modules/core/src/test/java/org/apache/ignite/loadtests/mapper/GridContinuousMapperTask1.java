@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.mapper;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -88,7 +89,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
 
                     X.println(">>> Received job for ID: " + jobId);
 
-                    return g.cache("replicated").peek(jobId);
+                    return g.jcache("replicated").localPeek(jobId, CachePeekMode.ONHEAP);
                 }
             }, n);
         }

@@ -271,8 +271,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<Entry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<Entry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                for (Map.Entry<String, Integer> pair : pairs.entrySet()) {
 //                    assert !cache.containsKey(pair.getKey(), hasPrd);
@@ -335,8 +335,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                GridCacheTx tx = cache.txStart();
 //
-//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<Entry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<Entry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                for (Map.Entry<String, Integer> pair : pairs.entrySet()) {
 //                    assert !cache.containsKey(pair.getKey(), hasPrd);
@@ -404,8 +404,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                final Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                P1<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
+//                P1<Entry<String, Integer>> p = new P1<Entry<String, Integer>>() {
+//                    @Override public boolean apply(Entry<String, Integer> e) {
 //                        String key = e.getKey();
 //
 //                        Integer val = pairs.get(key);
@@ -476,8 +476,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                final Map<String, Integer> pairs = commonPairs(size);
 //
-//                P1<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
+//                P1<Entry<String, Integer>> p = new P1<Entry<String, Integer>>() {
+//                    @Override public boolean apply(Entry<String, Integer> e) {
 //                        return pairs.get(e.getKey()).equals(e.peek());
 //                    }
 //                };
@@ -550,8 +550,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<Entry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<Entry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                Collection<String> keys = pairs.keySet();
 //                Collection<Integer> vals = pairs.values();
@@ -635,8 +635,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                Map<String, Integer> pairs = commonPairs(size);
 //
-//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<Entry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<Entry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                Collection<String> keys = pairs.keySet();
 //                Collection<Integer> vals = pairs.values();
@@ -1020,8 +1020,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //        final int min = Collections.min(vals);
 //
-//        final GridPredicate<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
-//            @Override public boolean apply(CacheEntry<String, Integer> e) {
+//        final GridPredicate<Entry<String, Integer>> p = new P1<Entry<String, Integer>>() {
+//            @Override public boolean apply(Entry<String, Integer> e) {
 //                Integer val = e.peek();
 //
 //                return val != null && val >= min;
@@ -1065,8 +1065,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                final int min = Collections.min(vals);
 //
-//                GridPredicate<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
+//                GridPredicate<Entry<String, Integer>> p = new P1<Entry<String, Integer>>() {
+//                    @Override public boolean apply(Entry<String, Integer> e) {
 //                        Integer val = e.peek();
 //
 //                        return val != null && val >= min;
@@ -1883,7 +1883,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //    /**
 //     * Closure for this test.
 //     */
-//    private static class GridCacheClosure extends GridInClosure<CacheEntry<String, Integer>> {
+//    private static class GridCacheClosure extends GridInClosure<Entry<String, Integer>> {
 //        /** 0 - calculates minimum, 1 - maximum, 2 - sum. */
 //        private int type;
 //
@@ -1907,7 +1907,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //        }
 //
 //        /** {@inheritDoc} */
-//        @Override public void apply(CacheEntry<String, Integer> e) {
+//        @Override public void apply(Entry<String, Integer> e) {
 //            Integer i = e.peek();
 //
 //            if (i != null) {

@@ -87,7 +87,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -219,18 +219,6 @@
                             </list>
                         </property>
                     </bean>
-                </property>
-            </bean>
-        </property>
-
-        <property name="portableConfiguration">
-            <bean class="org.gridgain.grid.portables.PortableConfiguration">
-                <property name="typeConfigurations">
-                    <list>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
-                        </bean>
-                    </list>
                 </property>
             </bean>
         </property>

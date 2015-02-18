@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
@@ -186,7 +187,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      */
     private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
         if (offheap)
-            return g.cache(cacheName).offHeapEntriesCount();
+            return ((IgniteKernal)g).cache(cacheName).offHeapEntriesCount();
 
         return g.context().swap().swapSize(swapSpaceName(cacheName, g));
     }
@@ -206,8 +207,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(cacheName);
-            GridCache<Integer, Object> cache2 = grid2.cache(cacheName);
+            IgniteCache<Integer, Object> cache1 = ignite1.jcache(cacheName);
+            IgniteCache<Integer, Object> cache2 = grid2.jcache(cacheName);
 
             Object v1 = valCls.newInstance();
 
@@ -229,9 +230,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
             assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
 
-            assert cache2.evict(2);
-            assert cache2.evict(3);
-            assert cache2.evict(4);
+            cache2.localEvict(ImmutableSet.of(2, 3, 4));
 
             long swapSize = size(cacheName, grid2);
 
@@ -286,7 +285,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheEmpty(CacheProjection<Integer, Object> cache, long timeout)
+    private boolean waitCacheEmpty(IgniteCache<Integer, Object> cache, long timeout)
         throws InterruptedException {
         assert cache != null;
         assert timeout >= 0;
@@ -294,12 +293,12 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         long end = System.currentTimeMillis() + timeout;
 
         while (end - System.currentTimeMillis() >= 0) {
-            if (cache.isEmpty())
+            if (cache.localSize() == 0)
                 return true;
 
             Thread.sleep(500);
         }
 
-        return cache.isEmpty();
+        return cache.localSize() == 0;
     }
 }

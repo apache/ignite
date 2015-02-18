@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -29,6 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -102,16 +102,16 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean invalidate,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return lockAllAsync(keys, timeout, tx, filter);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().localTx();
 
         return lockAllAsync(keys, timeout, tx, filter);
@@ -125,7 +125,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -177,7 +177,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {

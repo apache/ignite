@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -51,20 +51,20 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 
-        GridCache<InternalKey, Object> prj = grid(0).cache(null);
+        IgniteCache<InternalKey, Object> jcache = grid(0).jcache(null);
 
         final InternalKey key = new InternalKey(0); // Hangs on the first remote put.
 
         // Make key belongs to remote node.
-        while (prj.affinity().mapKeyToPrimaryAndBackups(key).iterator().next().isLocal())
+        while (affinity(jcache).mapKeyToPrimaryAndBackups(key).iterator().next().isLocal())
             key.key++;
 
         // Put bytes array(!), for integer numbers it works correctly.
-        prj.put(key, new byte[] {1});
-        assertNotNull(prj.get(key));
+        jcache.put(key, new byte[]{1});
+        assertNotNull(jcache.get(key));
 
-        prj.put(key, new byte[] {2});
-        assertNotNull(prj.get(key));
+        jcache.put(key, new byte[] {2});
+        assertNotNull(jcache.get(key));
     }
 
     /** Test key without {@link GridCacheInternal} parent interface. */

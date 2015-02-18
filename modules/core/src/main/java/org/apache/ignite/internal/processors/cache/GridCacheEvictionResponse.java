@@ -129,60 +129,37 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridCacheEvictionResponse _clone = new GridCacheEvictionResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridCacheEvictionResponse _clone = (GridCacheEvictionResponse)_msg;
-
-        _clone.futId = futId;
-        _clone.rejectedKeys = rejectedKeys;
-        _clone.rejectedKeyBytes = rejectedKeyBytes;
-        _clone.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeBoolean("err", err))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, byte[].class))
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -190,21 +167,20 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 err = reader.readBoolean("err");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 futId = reader.readLong("futId");
@@ -212,15 +188,15 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 5:
-                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", byte[].class);
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

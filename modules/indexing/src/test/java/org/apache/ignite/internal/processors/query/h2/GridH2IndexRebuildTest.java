@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -49,7 +50,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         private volatile boolean sleepInRebuild;
 
         /** */
-        private volatile boolean interrupted;
+        private volatile CountDownLatch interrupted;
 
         /**
          * Constructor.
@@ -65,7 +66,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                     U.sleep(Long.MAX_VALUE);
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
-                    interrupted = true;
+                    interrupted.countDown();
                 }
             }
 
@@ -91,19 +92,19 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue1 {
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private long val1;
 
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private String val2;
 
         /** */
-        @CacheQuerySqlField(groups = "group1")
+        @QuerySqlField(groups = "group1")
         private int val3;
 
         /** */
-        @CacheQuerySqlField(groups = "group1")
+        @QuerySqlField(groups = "group1")
         private int val4;
 
         /**
@@ -122,11 +123,11 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue2 {
         /** */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private long val1;
 
         /** */
-        @CacheQueryTextField
+        @QueryTextField
         private String val2;
 
         /**
@@ -148,8 +149,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         cache().queries().rebuildAllIndexes().get();
 
-        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        GridCache<Integer, TestValue1> cache1 = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<Integer, TestValue2> cache2 = ((IgniteKernal)grid(0)).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache1.put(i, new TestValue1(i, "val2-" + i, i, i));
@@ -194,25 +195,25 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     public void testRebuildInterrupted() throws Exception {
         spi.sleepInRebuild = true;
 
-        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        GridCache<Integer, TestValue1> cache1 = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<Integer, TestValue2> cache2 = ((IgniteKernal)grid(0)).cache(null);
 
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
 
-        checkCancel(grid(0).cache(null).queries().rebuildIndexes("TestValue1"));
+        checkCancel(((IgniteKernal)grid(0)).cache(null).queries().rebuildIndexes("TestValue1"));
 
-        checkCancel(grid(0).cache(null).queries().rebuildAllIndexes());
+        checkCancel(((IgniteKernal)grid(0)).cache(null).queries().rebuildAllIndexes());
 
         spi.sleepInRebuild = false;
 
-        final IgniteInternalFuture<?> fut1 = grid(0).cache(null).queries().rebuildIndexes(TestValue1.class);
+        final IgniteInternalFuture<?> fut1 = ((IgniteKernal)grid(0)).cache(null).queries().rebuildIndexes(TestValue1.class);
 
         assertFalse(fut1.isCancelled());
 
         fut1.get();
 
-        final IgniteInternalFuture<?> fut2 = grid(0).cache(null).queries().rebuildAllIndexes();
+        final IgniteInternalFuture<?> fut2 = ((IgniteKernal)grid(0)).cache(null).queries().rebuildAllIndexes();
 
         assertFalse(fut2.isCancelled());
 
@@ -223,6 +224,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void checkCancel(final IgniteInternalFuture<?> fut) throws Exception {
+        spi.interrupted = new CountDownLatch(1);
+
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -233,9 +236,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
             }
         }, IgniteFutureCancelledCheckedException.class, null);
 
-        assertTrue(spi.interrupted);
-
-        spi.interrupted = false;
+        assertTrue(spi.interrupted.await(5, TimeUnit.SECONDS));
     }
 
     /**

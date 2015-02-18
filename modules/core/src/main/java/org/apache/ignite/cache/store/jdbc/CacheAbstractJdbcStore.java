@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -75,7 +76,7 @@ import static java.sql.Statement.*;
  * <p>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Max attempt write count. */
     protected static final int MAX_ATTEMPT_WRITE_COUNT = 2;
 
@@ -90,6 +91,14 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
     /** Empty column value. */
     protected static final Object[] EMPTY_COLUMN_VALUE = new Object[] { null };
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
+    /** Auto injected ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Auto-injected logger instance. */
     @LoggerResource
@@ -120,25 +129,27 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     /**
      * Get field value from object.
      *
+     * @param cacheName Cache name.
      * @param typeName Type name.
      * @param fieldName Field name.
      * @param obj Cache object.
      * @return Field value from object.
      */
-    @Nullable protected abstract Object extractField(String typeName, String fieldName, Object obj)
+    @Nullable protected abstract Object extractField(String cacheName, String typeName, String fieldName, Object obj)
         throws CacheException;
 
     /**
      * Construct object from query result.
      *
      * @param <R> Type of result object.
+     * @param cacheName Cache name.
      * @param typeName Type name.
      * @param fields Fields descriptors.
      * @param loadColIdxs Select query columns index.
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String typeName, Collection<CacheTypeFieldMetadata> fields,
+    protected abstract <R> R buildObject(String cacheName, String typeName, Collection<CacheTypeFieldMetadata> fields,
         Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException;
 
     /**
@@ -293,7 +304,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     @Override public void txEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
-        IgniteTx tx = ses.transaction();
+        Transaction tx = ses.transaction();
 
         Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
 
@@ -417,8 +428,8 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
                     ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
-                        K key = buildObject(em.keyType(), em.keyColumns(), em.loadColIdxs, rs);
-                        V val = buildObject(em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
+                        K key = buildObject(em.cacheName, em.keyType(), em.keyColumns(), em.loadColIdxs, rs);
+                        V val = buildObject(em.cacheName, em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
 
                         clo.apply(key, val);
                     }
@@ -466,13 +477,13 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().cache(session().cacheName()).configuration()
+            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
                 .getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
 
             for (CacheTypeMetadata type : types)
-                entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(dialect, type));
+                entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(cacheName, dialect, type));
 
             Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
 
@@ -490,14 +501,13 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     }
 
     /**
+     * @param cacheName Cache name.
      * @param keyTypeId Key type id.
      * @param key Key object.
      * @return Entry mapping.
      * @throws CacheException if mapping for key was not found.
      */
-    private EntryMapping entryMapping(Object keyTypeId, Object key) throws CacheException {
-        String cacheName = session().cacheName();
-
+    private EntryMapping entryMapping(String cacheName, Object keyTypeId, Object key) throws CacheException {
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
@@ -522,12 +532,14 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
                 if (log.isDebugEnabled())
                     log.debug("Start loading entries from db using user queries from arguments");
 
+                String cacheName = session().cacheName();
+
                 for (int i = 0; i < args.length; i += 2) {
                     String keyType = args[i].toString();
 
                     String selQry = args[i + 1].toString();
 
-                    EntryMapping em = entryMapping(keyTypeId(keyType), keyType);
+                    EntryMapping em = entryMapping(cacheName, keyTypeId(keyType), keyType);
 
                     futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, selQry, clo)));
                 }
@@ -601,7 +613,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     @Nullable @Override public V load(K key) throws CacheLoaderException {
         assert key != null;
 
-        EntryMapping em = entryMapping(keyTypeId(key), key);
+        EntryMapping em = entryMapping(session().cacheName(), keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start load value from database [table= " + em.fullTableName() + ", key=" + key + "]");
@@ -620,7 +632,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next())
-                return buildObject(em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
+                return buildObject(em.cacheName, em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load object [table=" + em.fullTableName() +
@@ -642,14 +654,16 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
         try {
             conn = connection();
 
-            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(cacheMappings(session().cacheName()).size());
+            String cacheName = session().cacheName();
+
+            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(cacheMappings(cacheName).size());
 
             Map<K, V> res = new HashMap<>();
 
             for (K key : keys) {
                 Object keyTypeId = keyTypeId(key);
 
-                EntryMapping em = entryMapping(keyTypeId, key);
+                EntryMapping em = entryMapping(cacheName, keyTypeId, key);
 
                 LoadWorker<K, V> worker = workers.get(keyTypeId);
 
@@ -755,7 +769,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
         K key = entry.getKey();
 
-        EntryMapping em = entryMapping(keyTypeId(key), key);
+        EntryMapping em = entryMapping(session().cacheName(), keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start write entry to database [table=" + em.fullTableName() + ", entry=" + entry + "]");
@@ -825,6 +839,8 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
             Object currKeyTypeId = null;
 
+            String cacheName = session().cacheName();
+
             if (dialect.hasMerge()) {
                 PreparedStatement mergeStmt = null;
 
@@ -844,7 +860,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
                         Object keyTypeId = keyTypeId(key);
 
-                        em = entryMapping(keyTypeId, key);
+                        em = entryMapping(cacheName, keyTypeId, key);
 
                         if (currKeyTypeId == null || !currKeyTypeId.equals(keyTypeId)) {
                             if (mergeStmt != null) {
@@ -891,7 +907,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
                         Object keyTypeId = keyTypeId(key);
 
-                        EntryMapping em = entryMapping(keyTypeId, key);
+                        EntryMapping em = entryMapping(cacheName, keyTypeId, key);
 
                         if (currKeyTypeId == null || !currKeyTypeId.equals(keyTypeId)) {
                             U.closeQuiet(insStmt);
@@ -927,7 +943,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     @Override public void delete(Object key) throws CacheWriterException {
         assert key != null;
 
-        EntryMapping em = entryMapping(keyTypeId(key), key);
+        EntryMapping em = entryMapping(session().cacheName(), keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start remove value from database [table=" + em.fullTableName() + ", key=" + key + "]");
@@ -1027,10 +1043,12 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
             int fromIdx = 0, prepared = 0;
 
+            String cacheName = session().cacheName();
+
             for (Object key : keys) {
                 Object keyTypeId = keyTypeId(key);
 
-                em = entryMapping(keyTypeId, key);
+                em = entryMapping(cacheName, keyTypeId, key);
 
                 if (delStmt == null) {
                     delStmt = conn.prepareStatement(em.remQry);
@@ -1082,7 +1100,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping em,
         Object key) throws CacheException {
         for (CacheTypeFieldMetadata field : em.keyColumns()) {
-            Object fieldVal = extractField(em.keyType(), field.getJavaName(), key);
+            Object fieldVal = extractField(em.cacheName, em.keyType(), field.getJavaName(), key);
 
             try {
                 if (fieldVal != null)
@@ -1110,28 +1128,28 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
     /**
      * @param stmt Prepare statement.
-     * @param i Start index for parameters.
-     * @param m Type mapping description.
+     * @param idx Start index for parameters.
+     * @param em Type mapping description.
      * @param val Value object.
      * @return Next index for parameters.
      */
-    protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping m, Object val)
+    protected int fillValueParameters(PreparedStatement stmt, int idx, EntryMapping em, Object val)
         throws CacheWriterException {
-        for (CacheTypeFieldMetadata field : m.uniqValFields) {
-            Object fieldVal = extractField(m.valueType(), field.getJavaName(), val);
+        for (CacheTypeFieldMetadata field : em.uniqValFields) {
+            Object fieldVal = extractField(em.cacheName, em.valueType(), field.getJavaName(), val);
 
             try {
                 if (fieldVal != null)
-                    stmt.setObject(i++, fieldVal);
+                    stmt.setObject(idx++, fieldVal);
                 else
-                    stmt.setNull(i++, field.getDatabaseType());
+                    stmt.setNull(idx++, field.getDatabaseType());
             }
             catch (SQLException e) {
                 throw new CacheWriterException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
             }
         }
 
-        return i;
+        return idx;
     }
 
     /**
@@ -1221,38 +1239,55 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     }
 
     /**
+     * @return Ignite instance.
+     */
+    protected Ignite ignite() {
+        return ignite;
+    }
+
+    /**
+     * @return Store session.
+     */
+    protected CacheStoreSession session() {
+        return ses;
+    }
+
+    /**
      * Entry mapping description.
      */
     protected static class EntryMapping {
+        /** Cache name. */
+        private final String cacheName;
+
         /** Database dialect. */
         private final JdbcDialect dialect;
 
         /** Select border for range queries. */
-        protected final String loadCacheSelRangeQry;
+        private final String loadCacheSelRangeQry;
 
         /** Select all items query. */
-        protected final String loadCacheQry;
+        private final String loadCacheQry;
 
         /** Select item query. */
-        protected final String loadQrySingle;
+        private final String loadQrySingle;
 
         /** Select items query. */
         private final String loadQry;
 
         /** Merge item(s) query. */
-        protected final String mergeQry;
+        private final String mergeQry;
 
         /** Update item query. */
-        protected final String insQry;
+        private final String insQry;
 
         /** Update item query. */
-        protected final String updQry;
+        private final String updQry;
 
         /** Remove item(s) query. */
-        protected final String remQry;
+        private final String remQry;
 
         /** Max key count for load query per statement. */
-        protected final int maxKeysPerStmt;
+        private final int maxKeysPerStmt;
 
         /** Database key columns. */
         private final Collection<String> keyCols;
@@ -1273,9 +1308,13 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
         private final String fullTblName;
 
         /**
+         * @param cacheName Cache name.
+         * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
          */
-        public EntryMapping(JdbcDialect dialect, CacheTypeMetadata typeMeta) {
+        public EntryMapping(String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
+            this.cacheName = cacheName;
+
             this.dialect = dialect;
 
             this.typeMeta = typeMeta;
@@ -1456,8 +1495,8 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
                     colIdxs.put(meta.getColumnLabel(i), i);
 
                 while (rs.next()) {
-                    K1 key = buildObject(em.keyType(), em.keyColumns(), colIdxs, rs);
-                    V1 val = buildObject(em.valueType(), em.valueColumns(), colIdxs, rs);
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyColumns(), colIdxs, rs);
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueColumns(), colIdxs, rs);
 
                     clo.apply(key, val);
                 }
@@ -1538,7 +1577,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
                 for (Object key : keys)
                     for (CacheTypeFieldMetadata field : em.keyColumns()) {
-                        Object fieldVal = extractField(em.keyType(), field.getJavaName(), key);
+                        Object fieldVal = extractField(em.cacheName, em.keyType(), field.getJavaName(), key);
 
                         if (fieldVal != null)
                             stmt.setObject(i++, fieldVal);
@@ -1551,8 +1590,8 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
                 Map<K1, V1> entries = U.newHashMap(keys.size());
 
                 while (rs.next()) {
-                    K1 key = buildObject(em.keyType(), em.keyColumns(), em.loadColIdxs, rs);
-                    V1 val = buildObject(em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyColumns(), em.loadColIdxs, rs);
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
 
                     entries.put(key, val);
                 }

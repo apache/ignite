@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
@@ -34,15 +33,17 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests that new transactions do not start until partition exchange is completed.
@@ -149,8 +150,11 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
                             try {
+                                Lock lock = node.jcache(null).lock(key);
+
+                                lock.lock();
+
                                 try {
-                                    node.jcache(null).lock(key).lock();
 
                                     info(">>> Acquired explicit lock for key: " + key);
 
@@ -158,16 +162,22 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    node.jcache(null).lock(key * 10).lock();
+                                    Lock lock10 = node.jcache(null).lock(key * 10);
 
-                                    info(">>> Releasing locks [key1=" + key + ", key2=" + key * 10 + ']');
+                                    lock10.lock();
+
+                                    try {
+                                        info(">>> Releasing locks [key1=" + key + ", key2=" + key * 10 + ']');
+                                    }
+                                    finally {
+                                        lock10.unlock();
+                                    }
                                 }
                                 finally {
-                                    node.cache(null).unlock(key * 10);
-                                    node.cache(null).unlock(key);
+                                    lock.unlock();
                                 }
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (CacheException e) {
                                 info(">>> Failed to perform lock [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -248,10 +258,10 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            GridCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.jcache(null);
 
                             try {
-                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     info(">>> Locked key, waiting for latch: " + key);
@@ -261,7 +271,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     tx.commit();
                                 }
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (CacheException e) {
                                 info("Failed to run tx for key [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -317,12 +327,12 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        GridCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
@@ -331,7 +341,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                 tx.commit();
                             }
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (CacheException e) {
                             info(">>> Failed to execute tx on new topology [key=" + key + ", e=" + e + ']');
                         }
                     }
@@ -402,10 +412,10 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            GridCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.jcache(null);
 
                             try {
-                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     commitLatch.await();
@@ -413,7 +423,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     tx.commit();
                                 }
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (CacheException e) {
                                 info("Failed to run tx for key [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -453,19 +463,19 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        GridCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
                                 tx.commit();
                             }
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (CacheException e) {
                             info(">>> Failed to execute tx on new topology [key=" + key + ", e=" + e + ']');
                         }
                     }
@@ -555,7 +565,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        CacheAffinity<Object> aff = node.cache(null).affinity();
+        CacheAffinity<Object> aff = node.affinity(null);
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             ClusterNode locNode = node.cluster().localNode();

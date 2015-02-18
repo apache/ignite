@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
@@ -36,16 +36,16 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private String gridName;
 
     /** Node topology version. */
-    private long topologyVersion;
+    private long topVer;
 
     /** Task monitoring state collected from node. */
     private boolean taskMonitoringEnabled;
 
     /** Node events. */
-    private final Collection<VisorGridEvent> events = new ArrayList<>();
+    private final Collection<VisorGridEvent> evts = new ArrayList<>();
 
     /** Exception while collecting node events. */
-    private Throwable eventsEx;
+    private Throwable evtsEx;
 
     /** Node caches. */
     private final Collection<VisorCache> caches = new ArrayList<>();
@@ -53,14 +53,14 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node caches. */
     private Throwable cachesEx;
 
-    /** Node GGFSs. */
-    private final Collection<VisorGgfs> ggfss = new ArrayList<>();
+    /** Node IGFSs. */
+    private final Collection<VisorIgfs> igfss = new ArrayList<>();
 
-    /** All GGFS endpoints collected from nodes. */
-    private final Collection<VisorGgfsEndpoint> ggfsEndpoints = new ArrayList<>();
+    /** All IGFS endpoints collected from nodes. */
+    private final Collection<VisorIgfsEndpoint> igfsEndpoints = new ArrayList<>();
 
-    /** Exception while collecting node GGFSs. */
-    private Throwable ggfssEx;
+    /** Exception while collecting node IGFSs. */
+    private Throwable igfssEx;
 
     /** Node streamers. */
     private final Collection<VisorStreamer> streamers = new ArrayList<>();
@@ -86,72 +86,117 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      * @return Current topology version.
      */
     public long topologyVersion() {
-        return topologyVersion;
+        return topVer;
     }
 
     /**
-     * @param topologyVersion New topology version value.
+     * @param topVer New topology version value.
      */
-    public void topologyVersion(long topologyVersion) {
-        this.topologyVersion = topologyVersion;
+    public void topologyVersion(long topVer) {
+        this.topVer = topVer;
     }
 
+    /**
+     * @return Current task monitoring state.
+     */
     public boolean taskMonitoringEnabled() {
         return taskMonitoringEnabled;
     }
 
+    /**
+     * @param taskMonitoringEnabled New value of task monitoring state.
+     */
     public void taskMonitoringEnabled(boolean taskMonitoringEnabled) {
         this.taskMonitoringEnabled = taskMonitoringEnabled;
     }
 
+    /**
+     * @return Collection of collected events.
+     */
     public Collection<VisorGridEvent> events() {
-        return events;
+        return evts;
     }
 
+    /**
+     * @return Exception caught during collecting events.
+     */
     public Throwable eventsEx() {
-        return eventsEx;
+        return evtsEx;
     }
 
-    public void eventsEx(Throwable eventsEx) {
-        this.eventsEx = eventsEx;
+    /**
+     * @param evtsEx Exception caught during collecting events.
+     */
+    public void eventsEx(Throwable evtsEx) {
+        this.evtsEx = evtsEx;
     }
 
+    /**
+     * @return Collected cache metrics.
+     */
     public Collection<VisorCache> caches() {
         return caches;
     }
 
+    /**
+     * @return Exception caught during collecting caches metrics.
+     */
     public Throwable cachesEx() {
         return cachesEx;
     }
 
+    /**
+     * @param cachesEx Exception caught during collecting caches metrics.
+     */
     public void cachesEx(Throwable cachesEx) {
         this.cachesEx = cachesEx;
     }
 
-    public Collection<VisorGgfs> ggfss() {
-        return ggfss;
+    /**
+     * @return Collected IGFSs metrics.
+     */
+    public Collection<VisorIgfs> igfss() {
+        return igfss;
     }
 
-    public Collection<VisorGgfsEndpoint> ggfsEndpoints() {
-        return ggfsEndpoints;
+    /**
+     * @return Collected IGFSs endpoints.
+     */
+    public Collection<VisorIgfsEndpoint> igfsEndpoints() {
+        return igfsEndpoints;
     }
 
-    public Throwable ggfssEx() {
-        return ggfssEx;
+    /**
+     * @return Exception caught during collecting IGFSs metrics.
+     */
+    public Throwable igfssEx() {
+        return igfssEx;
     }
 
-    public void ggfssEx(Throwable ggfssEx) {
-        this.ggfssEx = ggfssEx;
+    /**
+     * @param igfssEx Exception caught during collecting IGFSs metrics.
+     */
+    public void igfssEx(Throwable igfssEx) {
+        this.igfssEx = igfssEx;
     }
 
+    /**
+     * @return Collection of streamers metrics.
+     */
     public Collection<VisorStreamer> streamers() {
         return streamers;
     }
 
+    /**
+     * @return Exception caught during collecting streamers metrics.
+     */
     public Throwable streamersEx() {
         return streamersEx;
     }
 
+    /**
+     * @param streamersEx Exception caught during collecting streamers metrics.
+     */
     public void streamersEx(Throwable streamersEx) {
         this.streamersEx = streamersEx;
     }

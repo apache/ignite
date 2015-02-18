@@ -33,7 +33,7 @@
     </parent>
 
     <properties>
-        <ignite.version>1.0.0-SNAPSHOT</ignite.version>
+        <ignite.version>1.0.0-RC1-SNAPSHOT</ignite.version>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -81,9 +81,39 @@
 
     <developers>
         <developer>
-            <id>gridgain</id>
-            <name>GridGain</name>
-            <email>mvncentral@gridgain.com</email>
+            <id>dsetrakyan</id>
+            <name>Dmitriy Setrakyan</name>
+            <email>dsetrakyan at apache dot org</email>
+        </developer>
+        <developer>
+            <id>agoncharuk</id>
+            <name>Alexey Goncharuk</name>
+            <email>agoncharuk at apache dot org</email>
+        </developer>
+        <developer>
+            <id>vkulichenko</id>
+            <name>Valentin Kulichenko</name>
+            <email>vkulichenko at apache dot org</email>
+        </developer>
+        <developer>
+            <id>svladykin</id>
+            <name>Sergi Vladykin</name>
+            <email>sergi dot vladykin at gmail dot com</email>
+        </developer>
+        <developer>
+            <id>yzhdanov</id>
+            <name>Yakov Zhdanov</name>
+            <email>yzhdanov at apache dot org</email>
+        </developer>
+        <developer>
+            <id>sboikov</id>
+            <name>Semyon Boikov</name>
+            <email>sboikov at gridgain dot com</email>
+        </developer>
+        <developer>
+            <id>vozerov</id>
+            <name>Vladimir Ozerov</name>
+            <email>vozerov at gridgain dot com</email>
         </developer>
     </developers>
 
@@ -94,10 +124,6 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
-        <module>modules/scalar</module>
-        <module>modules/visor-console</module>
-        <module>modules/visor-plugins</module>
-        <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
@@ -108,7 +134,6 @@
         <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
-        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
@@ -258,6 +283,23 @@
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -380,21 +422,6 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <id>core-jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/core-jar.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>ignite-core-${ignite.version}</finalName>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>dependencies</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -402,12 +429,11 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-${ignite.edition}.xml</descriptor>
+                                <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
 
@@ -419,29 +445,11 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-optional-${ignite.edition}.xml</descriptor>
+                                <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>optional</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>dependencies-visor-console</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/dependencies-visor-console.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}/bin</outputDirectory>
-                            <finalName>include</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
 
@@ -455,7 +463,7 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-schema-load.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <outputDirectory>target/release-package/bin</outputDirectory>
                             <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
@@ -640,18 +648,6 @@
                                         </fileset>
 
                                         <fileset>
-                                            <directory>bin/include/visor-common</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/visorcmd</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/visorui</directory>
-                                        </fileset>
-
-                                        <fileset>
                                             <directory>bin/include/schema-load</directory>
                                         </fileset>
                                     </filesets>
@@ -705,11 +701,11 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
-                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <stylesheetfile>${project.basedir}/${parent.relativePath}/assembly/docfiles/javadoc.css</stylesheetfile>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -721,11 +717,11 @@
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -733,11 +729,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -761,7 +757,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -833,23 +829,8 @@
                                             </table>
                                         </td>
                                         <td width="100%" align="right" valign="center">
-                                            <table border=0 cellspacing=0 cellpadding=0>
-                                            <tr>
-                                                <td>
-                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                    </a>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            </table>
+                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
+                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
                                         </td>
                                     </tr>
                                     <tr>
@@ -887,7 +868,7 @@
                                 <goals>
                                     <goal>aggregate</goal>
                                 </goals>
-                                <phase>prepare-package</phase>
+                                <phase>process-test-classes</phase>
                                 <configuration>
                                     <taglets>
                                         <taglet>
@@ -899,7 +880,7 @@
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
-                                    <reportOutputDirectory>target/javadoc</reportOutputDirectory>
+                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <doctitle>Ignite ${ignite.version}</doctitle>
                                     <windowtitle>Ignite ${ignite.version}</windowtitle>
@@ -914,12 +895,12 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
-                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
+                                    <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -931,11 +912,11 @@
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -943,11 +924,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -971,7 +952,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -1007,7 +988,7 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
@@ -1023,7 +1004,7 @@
                                         </group>
                                         <group>
                                             <title>Visor Plugins</title>
-                                            <packages>org.gridgain.visor.plugin</packages>
+                                            <packages>org.apache.ignite.visor.plugin</packages>
                                         </group>
                                         <group>
                                             <title>Spring Caching</title>
@@ -1051,23 +1032,8 @@
                                             </table>
                                         </td>
                                         <td width="100%" align="right" valign="center">
-                                            <table border=0 cellspacing=0 cellpadding=0>
-                                            <tr>
-                                                <td>
-                                                    <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                    </a>
-                                                </td>
-                                                <td style="padding-right: 5px">
-                                                    <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                        <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            </table>
+                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
+                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
                                         </td>
                                     </tr>
                                     <tr>
@@ -1123,14 +1089,7 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <target>
-                                        <copy todir="target/javadoc/core">
-                                            <fileset dir="assembly/docfiles">
-                                                <include name="img/**"/>
-                                                <include name="*.js"/>
-                                            </fileset>
-                                        </copy>
-
-                                        <copy todir="target/javadoc/client">
+                                        <copy todir="${basedir}/target/javadoc/core">
                                             <fileset dir="assembly/docfiles">
                                                 <include name="img/**"/>
                                                 <include name="*.js"/>
@@ -1146,17 +1105,236 @@
                                             <exclude name="allclasses-frame.html"/>
                                             <exclude name="**/class-use/*"/>
                                         </doctask>
-
-                                        <doctask css="dotted" dir="target/javadoc/client">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
-                                        </doctask>
                                     </target>
                                 </configuration>
                             </execution>
 
+                            <execution>
+                                <id>release-postprocessing</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <target>
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
+                                            <substitution expression='pushd "%~dp0"/..'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                            <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replace token="@sh.file.version" value="${ignite.version}">
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <replace token="@bat.file.version" value="${ignite.version}">
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <replace token="@xml.file.version" value="${ignite.version}">
+                                            <fileset dir="${basedir}/target/release-package">
+                                                <include name="**/*.xml"/>
+                                            </fileset>
+                                        </replace>
+
+                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${ignite.version}.zip"
+                                             encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package"
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}"
+                                                        filemode="755">
+                                                <include name="**/*.sh"/>
+                                                <include name="**/configure"/>
+                                                <include name="**/install-sh"/>
+                                                <include name="**/compile"/>
+                                                <include name="**/missing"/>
+                                            </zipfileset>
+                                            <zipfileset dir="${basedir}/target/release-package"
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}">
+                                                <exclude name="**/*.sh"/>
+                                                <exclude name="**/configure"/>
+                                                <exclude name="**/install-sh"/>
+                                                <exclude name="**/compile"/>
+                                                <exclude name="**/missing"/>
+                                            </zipfileset>
+                                        </zip>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>release</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>release-package</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>benchmarks</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>scala</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <modules>
+                <module>modules/scalar</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>dependencies-visor-console</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>scala-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-scala.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>opt-clns-prop</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${ignite.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
                             <execution>
                                 <id>optimized-classnames-generation</id>
                                 <goals>
@@ -1192,161 +1370,16 @@
                                                 <path location="${project.basedir}/modules/visor-console/target/classes"/>
                                                 <path refid="maven.plugin.classpath"/>
                                             </classpath>
-                                            <arg value="${project.basedir}/modules/core/target/classes"/>
+                                            <arg value="${project.basedir}/modules/core/src/main/java"/>
                                             <jvmarg value="-XX:MaxPermSize=1g"/>
                                         </java>
                                     </target>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>release-postprocessing</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>package</phase>
-                                <configuration>
-                                    <target>
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
-                                            <substitution expression='pushd "%~dp0"/..'/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
-                                            <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
-                                            <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
-                                            <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                            <substitution expression="ENABLE_ASSERTIONS=0"/>
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replace token="@sh.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replace>
-
-                                        <replace token="@bat.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replace>
-
-                                        <replace token="@xml.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package">
-                                                <include name="**/*.xml"/>
-                                            </fileset>
-                                        </replace>
-
-                                        <zip destfile="target/ignite-${ignite.edition}-${ignite.version}.zip"
-                                             encoding="UTF-8">
-                                            <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${ignite.edition}-${ignite.version}"
-                                                        filemode="755">
-                                                <include name="**/*.sh"/>
-                                                <include name="**/configure"/>
-                                                <include name="**/install-sh"/>
-                                                <include name="**/compile"/>
-                                                <include name="**/missing"/>
-                                            </zipfileset>
-                                            <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${ignite.edition}-${ignite.version}">
-                                                <exclude name="**/*.sh"/>
-                                                <exclude name="**/configure"/>
-                                                <exclude name="**/install-sh"/>
-                                                <exclude name="**/compile"/>
-                                                <exclude name="**/missing"/>
-                                            </zipfileset>
-                                        </zip>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>release</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
-                                    </descriptors>
-                                    <finalName>release-package</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>benchmarks</id>
-            <modules>
-                <module>modules/yardstick</module>
-            </modules>
         </profile>
     </profiles>
 </project>

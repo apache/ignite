@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -71,7 +72,8 @@ public class GridCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        CacheQuery<List<?>> qry = grid().cache(null).queries().createSqlFieldsQuery("select _VAL from Integer");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid()).cache(null).queries()
+            .createSqlFieldsQuery("select _VAL from Integer");
 
         Collection<List<?>> res = qry.execute().get();
 

@@ -17,15 +17,13 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -130,17 +128,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteProduct product() {
+    @Override public IgniteProductVersion version() {
         assert g != null;
 
-        return g.product();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> caches() {
-        assert g != null;
-
-        return g.caches();
+        return g.version();
     }
 
     /** {@inheritDoc} */
@@ -235,24 +226,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        assert g != null;
-
-        return g.security();
-    }
-
-    /** {@inheritDoc} */
     @Override public String name() {
         assert g != null;
 
         return g.name();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache(String name) {
-        assert g != null;
-
-        return g.cache(name);
     }
 
     /** {@inheritDoc} */

@@ -147,8 +147,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<MessageAdapter>, TcpCommunicationSpiMBean {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower). For troubleshooting see " +
-        IpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
+        "(switching to TCP, may be slower)."; // todo IGNITE-70 Add link to documentation
 
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -2210,7 +2209,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.order(ByteOrder.nativeOrder());
 
-                        boolean written = msg.writeTo(buf);
+                        boolean written = msg.writeTo(buf, getSpiContext().messageFormatter().writer());
 
                         assert written;
 
@@ -2451,13 +2450,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
+                GridDirectParser parser = new GridDirectParser(getSpiContext().messageFactory());
+
                 IpcToNioAdapter<MessageAdapter> adapter = new IpcToNioAdapter<>(
                     metricsLsnr,
                     log,
                     endpoint,
                     srvLsnr,
                     getSpiContext().messageFormatter(),
-                    new GridNioCodecFilter(new GridDirectParser(getSpiContext().messageFactory()), log, true),
+                    new GridNioCodecFilter(parser, log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 
@@ -3032,7 +3033,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 33)
                 return false;
 
@@ -3075,17 +3076,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(HandshakeMessage.class, this);
         }
@@ -3124,7 +3114,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 9)
                 return false;
 
@@ -3148,17 +3138,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return RECOVERY_LAST_ID_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter msg) {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -3205,7 +3184,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             assert nodeIdBytes.length == 16;
 
             if (buf.remaining() < 17)
@@ -3232,17 +3211,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return NODE_ID_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(MessageAdapter _msg) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

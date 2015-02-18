@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.transactions.Transaction;
 import org.objectweb.jotm.*;
 
 import javax.transaction.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Abstract class for cache tests.
@@ -118,7 +118,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
 
             assert cache.getAndPut("key", 1) == null;
 
-            IgniteTx tx = ignite(0).transactions().tx();
+            Transaction tx = ignite(0).transactions().tx();
 
             assert tx != null;
             assert tx.state() == ACTIVE;

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -100,9 +100,9 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2 = grid(1);
         ignite3 = grid(2);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
-        cache3 = ignite3.cache(null);
+        cache1 = ((IgniteKernal)ignite1).cache(null);
+        cache2 = ((IgniteKernal)ignite2).cache(null);
+        cache3 = ((IgniteKernal)ignite3).cache(null);
     }
 
     /**
@@ -112,7 +112,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid("client");
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            GridCache<Integer, Integer> c = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < 10; i++)
                 c.putx(i, i);
@@ -186,7 +186,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     public void testLocalQuery() throws Exception {
         cache1.clear();
 
-        IgniteTx tx = cache1.txStart();
+        Transaction tx = cache1.txStart();
 
         try {
             cache1.put(new CacheKey(1), new CacheValue("1"));
@@ -228,7 +228,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
         ignite3.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
 
-        IgniteTx tx = cache1.txStart();
+        Transaction tx = cache1.txStart();
 
         try {
             for (int i = 1; i <= keyCnt; i++)
@@ -379,7 +379,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        GridCache<Integer, Integer> cache = ((IgniteKernal)ignite).cache(null);
 
         for (int i = 0; i < 1000; i++)
             assertTrue(cache.putx(i, i));
@@ -424,7 +424,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < 1000; i++)
                 assertTrue(cache.putx(i, i));
@@ -613,7 +613,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      */
     private static class CacheValue implements Externalizable {
         /** Value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String val;
 
         /**

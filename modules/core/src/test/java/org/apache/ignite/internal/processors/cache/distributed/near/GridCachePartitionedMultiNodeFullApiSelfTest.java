@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
@@ -78,6 +79,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         c0.putAll(putMap);
 
+        atomicClockModeDelay(c0);
+
         c1.removeAll(putMap.keySet());
 
         for (int i = 0; i < size; i++) {
@@ -100,8 +103,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
-        GridCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
 
         prj0.putAll(putMap);
 
@@ -134,12 +137,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         int size = 10;
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
 
-            assertNull(prj0.put(i, i));
+            prj0.put(i, i);
 
             info("Finished putting value [i=" + i + ']');
         }
@@ -147,19 +150,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             assertEquals(0, context(i).tm().idMapSize());
 
-            GridCache<Object, Object> cache = grid(i).cache(null);
+            IgniteCache<Object, Object> cache = grid(i).jcache(null);
             ClusterNode node = grid(i).localNode();
 
             for (int k = 0; k < size; k++) {
-                if (cache.affinity().isPrimaryOrBackup(node, k))
-                    assertEquals("Check failed for node: " + node.id(), k, cache.peek(k));
+                if (affinity(cache).isPrimaryOrBackup(node, k))
+                    assertEquals("Check failed for node: " + node.id(), k, cache.localPeek(k, ONHEAP));
             }
         }
 
         for (int i = 0; i < size; i++) {
             info("Putting value 2 [i=" + i + ']');
 
-            assertEquals(i, prj0.putIfAbsent(i, i * i));
+            assertEquals(i, prj0.getAndPutIfAbsent(i, i * i));
 
             info("Finished putting value 2 [i=" + i + ']');
         }
@@ -199,9 +202,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> e = cache(i).entry("key");
-
-            if (e.backup()) {
+            if (cache(i).affinity().isBackup(grid(i).localNode(), "key")) {
                 assert cache(i).evict("key") : "Entry was not evicted [idx=" + i + ", entry=" +
                     (nearEnabled() ? dht(i).entryEx("key") : colocated(i).entryEx("key")) + ']';
 
@@ -229,28 +230,20 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            GridCache<String, Integer> c = cache(i);
+            IgniteCache<String, Integer> c = jcache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
+            if (c.unwrap(Ignite.class).affinity(null).isBackup(grid(i).localNode(), "key")) {
+                assertNull(c.localPeek("key", NEAR));
 
-            if (e.backup()) {
-                assertNull("NEAR_ONLY for cache: " + i, e.peek(F.asList(NEAR_ONLY)));
-                assertEquals((Integer)1, e.peek(F.asList(PARTITIONED_ONLY)));
-
-                assertNull(c.peek("key", F.asList(NEAR_ONLY)));
-
-                assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
+                assertEquals((Integer)1, c.localPeek("key", BACKUP));
             }
-            else if (!e.primary() && !e.backup()) {
-                assertEquals((Integer)1, e.get());
+            else if (!c.unwrap(Ignite.class).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                // Initialize near reader.
+                assertEquals((Integer)1, jcache(i).get("key"));
 
-                assertEquals(nearPeekVal, e.peek(Arrays.asList(NEAR_ONLY)));
+                assertEquals(nearPeekVal, c.localPeek("key", NEAR));
 
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == null;
-
-                assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
-
-                assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;
+                assertNull(c.localPeek("key", PRIMARY, BACKUP));
             }
         }
     }
@@ -268,23 +261,14 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
-
-            if (e.backup()) {
-                assert e.peek(F.asList(NEAR_ONLY)) == null;
-
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == 1;
-
+            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
                 assert c.peek("key", Arrays.asList(NEAR_ONLY)) == null;
 
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == 1;
             }
-            else if (!e.primary() && !e.backup()) {
-                assert e.get() == 1;
-
-                assertEquals(nearPeekVal, e.peek(Arrays.asList(NEAR_ONLY)));
-
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == null;
+            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                // Initialize near reader.
+                assertEquals((Integer)1, jcache(i).get("key"));
 
                 assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
 
@@ -387,11 +371,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("All affinity nodes: " + affinityNodes());
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        info("Cache affinity nodes: " + cache.affinity().mapKeyToPrimaryAndBackups(key));
+        info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
-        CacheAffinity<Object> aff = cache.affinity();
+        CacheAffinity<Object> aff = affinity(cache);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
@@ -423,19 +407,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertNotNull(backup);
         assertNotNull(other);
 
-        assertTrue(cache.affinity().isPrimary(primary, key));
-        assertFalse(cache.affinity().isBackup(primary, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(primary, key));
+        assertTrue(affinity(cache).isPrimary(primary, key));
+        assertFalse(affinity(cache).isBackup(primary, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(primary, key));
 
-        assertFalse(cache.affinity().isPrimary(backup, key));
-        assertTrue(cache.affinity().isBackup(backup, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(backup, key));
+        assertFalse(affinity(cache).isPrimary(backup, key));
+        assertTrue(affinity(cache).isBackup(backup, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(backup, key));
 
-        assertFalse(cache.affinity().isPrimary(other, key));
+        assertFalse(affinity(cache).isPrimary(other, key));
 
         if (cacheMode() == PARTITIONED) {
-            assertFalse(cache.affinity().isBackup(other, key));
-            assertFalse(cache.affinity().isPrimaryOrBackup(other, key));
+            assertFalse(affinity(cache).isBackup(other, key));
+            assertFalse(affinity(cache).isPrimaryOrBackup(other, key));
         }
     }
 }

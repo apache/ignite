@@ -834,6 +834,11 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
+
+            if (writer == null)
+                ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
+
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
@@ -883,7 +888,10 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf);
+                        finished = msg.writeTo(buf, writer);
+
+                        if (finished)
+                            writer.reset();
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -902,7 +910,10 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        finished = msg.writeTo(buf);
+                        finished = msg.writeTo(buf, writer);
+
+                        if (finished)
+                            writer.reset();
                     }
 
                     buf.flip();
@@ -999,6 +1010,11 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
+
+            if (writer == null)
+                ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
+
             List<NioOperationFuture<?>> doneFuts = null;
 
             while (true) {
@@ -1020,9 +1036,10 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
-                    msg.setWriter(formatter.writer());
+                    finished = msg.writeTo(buf, writer);
 
-                    finished = msg.writeTo(buf);
+                    if (finished)
+                        writer.reset();
                 }
 
                 // Fill up as many messages as possible to write buffer.
@@ -1041,9 +1058,10 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
-                    msg.setWriter(formatter.writer());
+                    finished = msg.writeTo(buf, writer);
 
-                    finished = msg.writeTo(buf);
+                    if (finished)
+                        writer.reset();
                 }
 
                 buf.flip();
@@ -1869,7 +1887,7 @@ public class GridNioServer<T> {
         private void resetMessage(GridSelectorNioSessionImpl ses) {
             assert commMsg != null;
 
-            commMsg = commMsg.clone();
+//            commMsg = commMsg.clone();
 
             this.ses = ses;
         }

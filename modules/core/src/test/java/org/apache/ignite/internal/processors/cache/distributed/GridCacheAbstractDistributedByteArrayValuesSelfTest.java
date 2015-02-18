@@ -27,8 +27,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 import static org.junit.Assert.*;
 
 /**
@@ -40,13 +40,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     protected static Ignite[] ignites;
 
     /** Regular caches. */
-    private static GridCache<Integer, Object>[] caches;
+    private static IgniteCache<Integer, Object>[] caches;
 
     /** Offheap values caches. */
-    private static GridCache<Integer, Object>[] cachesOffheap;
+    private static IgniteCache<Integer, Object>[] cachesOffheap;
 
     /** Offheap tiered caches. */
-    private static GridCache<Integer, Object>[] cachesOffheapTiered;
+    private static IgniteCache<Integer, Object>[] cachesOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -132,16 +132,16 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         ignites = new Ignite[gridCnt];
 
-        caches = new GridCache[gridCnt];
-        cachesOffheap = new GridCache[gridCnt];
-        cachesOffheapTiered = new GridCache[gridCnt];
+        caches = new IgniteCache[gridCnt];
+        cachesOffheap = new IgniteCache[gridCnt];
+        cachesOffheapTiered = new IgniteCache[gridCnt];
 
         for (int i = 0; i < gridCnt; i++) {
             ignites[i] = startGrid(i);
 
-            caches[i] = ignites[i].cache(CACHE_REGULAR);
-            cachesOffheap[i] = ignites[i].cache(CACHE_OFFHEAP);
-            cachesOffheapTiered[i] = ignites[i].cache(CACHE_OFFHEAP_TIERED);
+            caches[i] = ignites[i].jcache(CACHE_REGULAR);
+            cachesOffheap[i] = ignites[i].jcache(CACHE_OFFHEAP);
+            cachesOffheapTiered[i] = ignites[i].jcache(CACHE_OFFHEAP_TIERED);
         }
     }
 
@@ -270,15 +270,19 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @throws Exception If failed.
      */
     public void testSwap() throws Exception {
-        for (GridCache<Integer, Object> cache : caches)
-            assert cache.configuration().isSwapEnabled();
+        for (IgniteCache<Integer, Object> cache : caches)
+            assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
 
-        GridCache<Integer, Object> primaryCache = null;
+        IgniteCache<Integer, Object> primaryCache = null;
 
-        for (GridCache<Integer, Object> cache : caches) {
-            if (cache.entry(SWAP_TEST_KEY).primary()) {
+        int i = 0;
+
+        for (IgniteCache<Integer, Object> cache : caches) {
+            Ignite ignite = ignites[i++];
+
+            if (affinity(cache).isPrimary(ignite.cluster().localNode(), SWAP_TEST_KEY)) {
                 primaryCache = cache;
 
                 break;
@@ -291,11 +295,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
 
-        assert primaryCache.evict(SWAP_TEST_KEY);
+        primaryCache.localEvict(Collections.singleton(SWAP_TEST_KEY));
 
-        assert primaryCache.peek(SWAP_TEST_KEY) == null;
+        assert primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP) == null;
 
-        assert Arrays.equals(val1, (byte[])primaryCache.promote(SWAP_TEST_KEY));
+        primaryCache.localPromote(Collections.singleton(SWAP_TEST_KEY));
+
+        assert Arrays.equals(val1, (byte[])primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP));
     }
 
     /**
@@ -307,7 +313,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransaction0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed0(caches, concurrency, key, val, null, null);
     }
@@ -323,10 +329,10 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
-        for (GridCache<Integer, Object> cache : caches) {
-            IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+        for (IgniteCache<Integer, Object> cache : caches) {
+            Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
             try {
                 cache.put(key1, val1);
@@ -340,8 +346,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
                 tx.close();
             }
 
-            for (GridCache<Integer, Object> cacheInner : caches) {
-                tx = cacheInner.txStart(concurrency, REPEATABLE_READ);
+            for (IgniteCache<Integer, Object> cacheInner : caches) {
+                tx = cacheInner.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
                 try {
                     assertArrayEquals(val1, (byte[])cacheInner.get(key1));
@@ -359,7 +365,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
                 }
             }
 
-            tx = cache.txStart(concurrency, REPEATABLE_READ);
+            tx = cache.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
             try {
                 cache.remove(key1);

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.loadtests.h2indexing;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.util.*;
 
@@ -26,11 +26,11 @@ import java.util.*;
  */
 public class GridTestEntity {
     /** */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private final String name;
 
     /** */
-    @CacheQuerySqlField(index = false)
+    @QuerySqlField(index = false)
     private final Date date;
 
     /**

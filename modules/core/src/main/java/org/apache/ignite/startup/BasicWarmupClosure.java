@@ -20,6 +20,7 @@ package org.apache.ignite.startup;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -243,8 +244,8 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         ExecutorService svc = Executors.newFixedThreadPool(threadCnt);
 
         try {
-            for (GridCache<?, ?> cache : first.caches()) {
-                GridCache<Object, Object> cache0 = first.cache(cache.name());
+            for (CacheConfiguration cc : first.configuration().getCacheConfiguration()) {
+                GridCache<Object, Object> cache0 = ((IgniteKernal)first).cache(cc.getName());
 
                 for (String warmupMethod : warmupMethods) {
                     Collection<Future> futs = new ArrayList<>(threadCnt);
@@ -302,7 +303,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
                         futs.add(svc.submit(call));
                     }
 
-                    out("Running warmup [cacheName=" + cache.name() + ", method=" + warmupMethod + ']');
+                    out("Running warmup [cacheName=" + cc.getName() + ", method=" + warmupMethod + ']');
 
                     for (Future fut : futs)
                         fut.get();

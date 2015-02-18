@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
@@ -34,8 +36,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests cache access from within jobs.
@@ -77,7 +79,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        CacheProjection<String, int[]> cache = grid(0).cache(null).flagsOn(SYNC_COMMIT).
+        CacheProjection<String, int[]> cache = ((IgniteKernal)grid(0)).cache(null).flagsOn(SYNC_COMMIT).
             projection(String.class, int[].class);
 
         cache.removeAll();
@@ -85,7 +87,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<String, int[]> c = g.cache(null);
+            GridCache<String, int[]> c = ((IgniteKernal)g).cache(null);
 
             assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
         }
@@ -111,7 +113,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
      * @param jobCnt Job count.
      * @throws Exception If fails.
      */
-    private void checkTransactions(final IgniteTxConcurrency concur, final IgniteTxIsolation isolation,
+    private void checkTransactions(final TransactionConcurrency concur, final TransactionIsolation isolation,
         final int jobCnt) throws Exception {
 
         info("Grid 0: " + grid(0).localNode().id());
@@ -131,9 +133,9 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) throws IgniteCheckedException {
-                    GridCache<String, int[]> cache = this.ignite.cache(null);
+                    GridCache<String, int[]> cache = ((IgniteKernal)this.ignite).cache(null);
 
-                    try (IgniteTx tx = cache.txStart(concur, isolation)) {
+                    try (Transaction tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");
 
                         if (arr == null)
@@ -162,12 +164,21 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
+            info("Running iteration: " + i);
+
+            for (int g = 0; g < GRID_CNT; g++) {
+                info("Will check grid: " + g);
+
+                GridCacheEntryEx<Object, Object> testEntry = ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
+
+                info("Entry: " + testEntry);
+            }
+
             IgniteCache<String, int[]> c = grid(i).jcache(null);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
-
-            try (IgniteTx tx = grid(i).transactions().txStart(concur, isolation)) {
+            try (Transaction tx = grid(i).transactions().txStart(concur, isolation)) {
                 int[] arr = c.get("TestKey");
 
                 assertNotNull(arr);

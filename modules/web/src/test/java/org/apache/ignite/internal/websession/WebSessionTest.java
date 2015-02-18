@@ -45,7 +45,7 @@ public class WebSessionTest {
      * @throws IOException In case of I/O error.
      */
     private static void doRequest(int port, boolean addCookie) throws IOException {
-        URLConnection conn = new URL("http://localhost:" + port + "/ggtest/test").openConnection();
+        URLConnection conn = new URL("http://localhost:" + port + "/ignitetest/test").openConnection();
 
         if (addCookie)
             conn.addRequestProperty("Cookie", "JSESSIONID=" + SES_ID.get());

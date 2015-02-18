@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -34,6 +33,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -82,7 +82,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        globalLdr = new CacheClassLoader();
+        globalLdr = new CacheClassLoader(cctx.gridConfig().getClassLoader());
 
         nodeFilter = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -205,35 +205,32 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Undeploys given class loader.
      *
      * @param ldr Class loader to undeploy.
+     * @param ctx Grid cache context.
      */
-    public void onUndeploy(final ClassLoader ldr) {
+    public void onUndeploy(final ClassLoader ldr, final GridCacheContext<K, V> ctx) {
         assert ldr != null;
 
         if (log.isDebugEnabled())
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
         synchronized (undeploys) {
-            for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                List<CA> queue = undeploys.get(cacheCtx.name());
+            List<CA> queue = undeploys.get(ctx.name());
 
-                if (queue == null)
-                    undeploys.put(cacheCtx.name(), queue = new ArrayList<>());
+            if (queue == null)
+                undeploys.put(ctx.name(), queue = new ArrayList<>());
 
-                queue.add(new CA() {
-                    @Override
-                    public void apply() {
-                        onUndeploy0(ldr, cacheCtx);
-                    }
-                });
-            }
+            queue.add(new CA() {
+                @Override
+                public void apply() {
+                    onUndeploy0(ldr, ctx);
+                }
+            });
         }
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            // Unwind immediately for local and replicate caches.
-            // We go through preloader for proper synchronization.
-            if (cacheCtx.isLocal())
-                cacheCtx.preloader().unwindUndeploys();
-        }
+        // Unwind immediately for local and replicate caches.
+        // We go through preloader for proper synchronization.
+        if (ctx.isLocal())
+            ctx.preloader().unwindUndeploys();
     }
 
     /**
@@ -244,8 +241,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
         Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<CacheEntry<K, V>>() {
-                @Override public boolean apply(CacheEntry<K, V> e) {
+            new P1<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
                         undeploy(e, cacheCtx.cache());
                 }
@@ -255,7 +252,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                  * @param cache Cache.
                  * @return {@code True} if entry should be undeployed.
                  */
-                private boolean undeploy(CacheEntry<K, V> e, GridCacheAdapter<K, V> cache) {
+                private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
                     K k = e.getKey();
 
                     GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());
@@ -761,7 +758,17 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          * Sets context class loader as parent.
          */
         private CacheClassLoader() {
-            super(U.detectClassLoader(GridCacheDeploymentManager.class));
+            this(U.detectClassLoader(GridCacheDeploymentManager.class));
+        }
+
+        /**
+         * Sets context class loader.
+         * If user's class loader is null then will be used default class loader.
+         *
+         * @param classLdr User's class loader.
+         */
+        private CacheClassLoader(ClassLoader classLdr) {
+            super(classLdr != null ? classLdr : U.detectClassLoader(GridCacheDeploymentManager.class));
 
             p2pExclude = cctx.gridConfig().getPeerClassLoadingLocalClassPathExclude();
         }

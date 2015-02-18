@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +51,7 @@ public class VisorCacheConfiguration implements Serializable {
     private CacheAtomicityMode atomicityMode;
 
     /** Cache atomic sequence reserve size */
-    private int atomicSequenceReserveSize;
+    private int atomicSeqReserveSize;
 
     /** Cache atomicity write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
@@ -65,10 +69,7 @@ public class VisorCacheConfiguration implements Serializable {
     private boolean swapEnabled;
 
     /** Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache. */
-    private boolean queryIndexEnabled;
-
-    /** Flag indicating whether to persist once on commit, or after every operation. */
-    private boolean batchUpdateOnCommit;
+    private boolean qryIdxEnabled;
 
     /** Invalidate. */
     private boolean invalidate;
@@ -76,29 +77,17 @@ public class VisorCacheConfiguration implements Serializable {
     /** Start size. */
     private int startSize;
 
-    /** Cloner. */
-    private String cloner;
-
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
-
-    /** Flag to enable/disable transaction serializable isolation level. */
-    private boolean txSerializableEnabled;
 
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
 
     /** Max query iterator count */
-    private int maxQueryIteratorCnt;
+    private int maxQryIterCnt;
 
     /** Max concurrent async operations */
     private int maxConcurrentAsyncOps;
-
-    /** Pessimistic tx logger size */
-    private int pessimisticTxLogSize;
-
-    /** Pessimistic tx logger linger. */
-    private int pessimisticTxLogLinger;
 
     /** Memory mode. */
     private CacheMemoryMode memoryMode;
@@ -124,21 +113,58 @@ public class VisorCacheConfiguration implements Serializable {
     /** Default config */
     private VisorCacheDefaultConfiguration dflt;
 
-    /** Dgc config */
-    private VisorCacheDgcConfiguration dgc;
-
     /** Store config */
     private VisorCacheStoreConfiguration store;
 
     /** Write behind config */
     private VisorCacheWriteBehindConfiguration writeBehind;
 
+    /** Collection of type metadata. */
+    private Collection<VisorCacheTypeMetadata> typeMeta;
+
+    /** Whether cache has JDBC store. */
+    private boolean jdbcStore;
+
+    /** Whether cache should operate in read-through mode. */
+    private boolean readThrough;
+
+    /** Whether cache should operate in write-through mode. */
+    private boolean writeThrough;
+
+    /** Whether statistics collection is enabled. */
+    private boolean statisticsEnabled;
+
+    /** Whether management is enabled. */
+    private boolean mgmtEnabled;
+
+    /** Class name of cache loader factory. */
+    private String ldrFactory;
+
+    /** Class name of cache writer factory. */
+    private String writerFactory;
+
+    /** Class name of expiry policy factory. */
+    private String expiryPlcFactory;
+
     /**
+     * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(CacheConfiguration ccfg) {
-        // TODO gg-9141 Update Visor.
+    public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
+        Collection<CacheTypeMetadata> cacheMetadata = ccfg.getTypeMetadata();
+
+        if (cacheMetadata == null)
+            cacheMetadata = Collections.emptyList();
+
+        Collection<VisorCacheTypeMetadata> typeMeta = new ArrayList<>(cacheMetadata!= null ? cacheMetadata.size() : 0);
+
+        for (CacheTypeMetadata m: cacheMetadata)
+            typeMeta.add(VisorCacheTypeMetadata.from(m));
+
+        GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(ccfg.getName()).context();
+
+        boolean jdbcStore = cctx.store().configuredStore() instanceof CacheAbstractJdbcStore;
 
         VisorCacheConfiguration cfg = new VisorCacheConfiguration();
 
@@ -151,17 +177,12 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());
         cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
-//        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
         cfg.invalidate(ccfg.isInvalidate());
         cfg.startSize(ccfg.getStartSize());
-        cfg.cloner(compactClass(ccfg.getCloner()));
         cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
-//        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
         cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
         cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
         cfg.maxConcurrentAsyncOperations(ccfg.getMaxConcurrentAsyncOperations());
-//        cfg.pessimisticTxLoggerSize(ccfg.getPessimisticTxLogSize());
-//        cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
         cfg.memoryMode(ccfg.getMemoryMode());
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));
@@ -170,25 +191,36 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.evictConfiguration(VisorCacheEvictionConfiguration.from(ccfg));
         cfg.nearConfiguration(VisorCacheNearConfiguration.from(ccfg));
         cfg.defaultConfiguration(VisorCacheDefaultConfiguration.from(ccfg));
-        cfg.dgcConfiguration(VisorCacheDgcConfiguration.from(ccfg));
         cfg.storeConfiguration(VisorCacheStoreConfiguration.from(ccfg));
         cfg.writeBehind(VisorCacheWriteBehindConfiguration.from(ccfg));
+
+        cfg.typeMeta(VisorCacheTypeMetadata.list(ccfg.getTypeMetadata()));
+        cfg.jdbcStore(jdbcStore);
+
+        cfg.readThrough(ccfg.isReadThrough());
+        cfg.writeThrough(ccfg.isWriteThrough());
+        cfg.statisticsEnabled(ccfg.isStatisticsEnabled());
+        cfg.managementEnabled(ccfg.isManagementEnabled());
+        cfg.loaderFactory(compactClass(ccfg.getCacheLoaderFactory()));
+        cfg.writerFactory(compactClass(ccfg.getCacheWriterFactory()));
+        cfg.expiryPolicyFactory(compactClass(ccfg.getExpiryPolicyFactory()));
 
         return cfg;
     }
 
     /**
+     * @param ignite Grid.
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfiguration> list(CacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(Ignite ignite, CacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
         final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
 
         for (CacheConfiguration cache : caches)
-            cfgs.add(from(cache));
+            cfgs.add(from(ignite, cache));
 
         return cfgs;
     }
@@ -253,14 +285,14 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Cache atomic sequence reserve size
      */
     public int atomicSequenceReserveSize() {
-        return atomicSequenceReserveSize;
+        return atomicSeqReserveSize;
     }
 
     /**
      * @param atomicSeqReserveSize New cache atomic sequence reserve size
      */
     public void atomicSequenceReserveSize(int atomicSeqReserveSize) {
-        atomicSequenceReserveSize = atomicSeqReserveSize;
+        this.atomicSeqReserveSize = atomicSeqReserveSize;
     }
 
     /**
@@ -337,7 +369,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache.
      */
     public boolean queryIndexEnabled() {
-        return queryIndexEnabled;
+        return qryIdxEnabled;
     }
 
     /**
@@ -345,21 +377,7 @@ public class VisorCacheConfiguration implements Serializable {
      * stored in cache.
      */
     public void queryIndexEnabled(boolean qryIdxEnabled) {
-        queryIndexEnabled = qryIdxEnabled;
-    }
-
-    /**
-     * @return Flag indicating whether to persist once on commit, or after every operation.
-     */
-    public boolean batchUpdateOnCommit() {
-        return batchUpdateOnCommit;
-    }
-
-    /**
-     * @param batchUpdateOnCommit New batch update on commit.
-     */
-    public void batchUpdateOnCommit(boolean batchUpdateOnCommit) {
-        this.batchUpdateOnCommit = batchUpdateOnCommit;
+        this.qryIdxEnabled = qryIdxEnabled;
     }
 
     /**
@@ -391,20 +409,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Cloner.
-     */
-    @Nullable public String cloner() {
-        return cloner;
-    }
-
-    /**
-     * @param cloner New cloner.
-     */
-    public void cloner(@Nullable String cloner) {
-        this.cloner = cloner;
-    }
-
-    /**
      * @return Name of class implementing GridCacheTmLookup.
      */
     @Nullable public String transactionManagerLookupClassName() {
@@ -416,20 +420,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void transactionManagerLookupClassName(@Nullable String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
-    }
-
-    /**
-     * @return Flag to enable/disable transaction serializable isolation level.
-     */
-    public boolean txSerializableEnabled() {
-        return txSerializableEnabled;
-    }
-
-    /**
-     * @param txSerEnabled New flag to enable/disable transaction serializable isolation level.
-     */
-    public void txSerializableEnabled(boolean txSerEnabled) {
-        txSerializableEnabled = txSerEnabled;
     }
 
     /**
@@ -450,14 +440,14 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Max query iterator count
      */
     public int maxQueryIteratorCount() {
-        return maxQueryIteratorCnt;
+        return maxQryIterCnt;
     }
 
     /**
      * @param maxQryIterCnt New max query iterator count
      */
     public void maxQueryIteratorCount(int maxQryIterCnt) {
-        maxQueryIteratorCnt = maxQryIterCnt;
+        this.maxQryIterCnt = maxQryIterCnt;
     }
 
     /**
@@ -472,34 +462,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void maxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-    }
-
-    /**
-     * @return Pessimistic tx logger size
-     */
-    public int pessimisticTxLoggerSize() {
-        return pessimisticTxLogSize;
-    }
-
-    /**
-     * @param pessimisticTxLogSize New pessimistic tx logger size
-     */
-    public void pessimisticTxLoggerSize(int pessimisticTxLogSize) {
-        this.pessimisticTxLogSize = pessimisticTxLogSize;
-    }
-
-    /**
-     * @return Pessimistic tx logger linger.
-     */
-    public int pessimisticTxLoggerLinger() {
-        return pessimisticTxLogLinger;
-    }
-
-    /**
-     * @param pessimisticTxLogLinger New pessimistic tx logger linger.
-     */
-    public void pessimisticTxLoggerLinger(int pessimisticTxLogLinger) {
-        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
     }
 
     /**
@@ -615,20 +577,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Dgc config
-     */
-    public VisorCacheDgcConfiguration dgcConfiguration() {
-        return dgc;
-    }
-
-    /**
-     * @param dgc New dgc config
-     */
-    public void dgcConfiguration(VisorCacheDgcConfiguration dgc) {
-        this.dgc = dgc;
-    }
-
-    /**
      * @return Store config
      */
     public VisorCacheStoreConfiguration storeConfiguration() {
@@ -654,6 +602,132 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void writeBehind(VisorCacheWriteBehindConfiguration writeBehind) {
         this.writeBehind = writeBehind;
+    }
+
+    /**
+     * @param typeMeta New collection of type metadata.
+     */
+    public void typeMeta(Collection<VisorCacheTypeMetadata> typeMeta) {
+        this.typeMeta = typeMeta;
+    }
+
+    /**
+     * @return Collection of type metadata.
+     */
+    public Collection<VisorCacheTypeMetadata> typeMeta() {
+        return typeMeta;
+    }
+
+    /**
+     * @return  {@code true} if cache has JDBC store.
+     */
+    public boolean jdbcStore() {
+        return jdbcStore;
+    }
+
+    /**
+     * @param jdbcStore {@code true} if cache has JDBC store.
+     */
+    public void jdbcStore(boolean jdbcStore) {
+        this.jdbcStore = jdbcStore;
+    }
+
+    /**
+     * @return Whether cache should operate in read-through mode.
+     */
+    public boolean readThrough() {
+        return readThrough;
+    }
+
+    /**
+     * @param readThrough New whether cache should operate in read-through mode.
+     */
+    public void readThrough(boolean readThrough) {
+        this.readThrough = readThrough;
+    }
+
+    /**
+     * @return Whether cache should operate in write-through mode.
+     */
+    public boolean writeThrough() {
+        return writeThrough;
+    }
+
+    /**
+     * @param writeThrough New whether cache should operate in write-through mode.
+     */
+    public void writeThrough(boolean writeThrough) {
+        this.writeThrough = writeThrough;
+    }
+
+    /**
+     * @return  {@code true} if cache statistics enabled.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled  {@code true} if cache statistics enabled.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @return Whether management is enabled.
+     */
+    public boolean managementEnabled() {
+        return mgmtEnabled;
+    }
+
+    /**
+     * @param mgmtEnabled New whether management is enabled.
+     */
+    public void managementEnabled(boolean mgmtEnabled) {
+        this.mgmtEnabled = mgmtEnabled;
+    }
+
+    /**
+     * @return Class name of cache loader factory.
+     */
+    public String loaderFactory() {
+        return ldrFactory;
+    }
+
+    /**
+     * @param ldrFactory New class name of cache loader factory.
+     */
+    public void loaderFactory(String ldrFactory) {
+        this.ldrFactory = ldrFactory;
+    }
+
+    /**
+     * @return Class name of cache writer factory.
+     */
+    public String writerFactory() {
+        return writerFactory;
+    }
+
+    /**
+     * @param writerFactory New class name of cache writer factory.
+     */
+    public void writerFactory(String writerFactory) {
+        this.writerFactory = writerFactory;
+    }
+
+    /**
+     * @return Class name of expiry policy factory.
+     */
+    public String expiryPolicyFactory() {
+        return expiryPlcFactory;
+    }
+
+    /**
+     * @param expiryPlcFactory New class name of expiry policy factory.
+     */
+    public void expiryPolicyFactory(String expiryPlcFactory) {
+        this.expiryPlcFactory = expiryPlcFactory;
     }
 
     /** {@inheritDoc} */

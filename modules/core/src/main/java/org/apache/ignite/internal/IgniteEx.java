@@ -96,11 +96,6 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     public Collection<String> compatibleVersions();
 
     /**
-     * @return Grace period left in minutes if bursting or {@code -1} otherwise.
-     */
-    public long licenseGracePeriodLeft();
-
-    /**
      * Whether or not remote JMX management is enabled for this node.
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
@@ -115,24 +110,12 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     public boolean isRestartEnabled();
 
     /**
-     * Whether or not SMTP is configured.
+     * Get IGFS instance returning null if it doesn't exist.
      *
-     * @return {@code True} if SMTP is configured - {@code false} otherwise.
+     * @param name IGFS name.
+     * @return IGFS.
      */
-    public boolean isSmtpEnabled();
-
-    /**
-     * Schedule sending of given email to all configured admin emails.
-     */
-    IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
-
-    /**
-     * Get GGFS instance returning null if it doesn't exist.
-     *
-     * @param name GGFS name.
-     * @return GGFS.
-     */
-    @Nullable public IgniteFs ggfsx(@Nullable String name);
+    @Nullable public IgniteFs igfsx(@Nullable String name);
 
     /**
      * Get Hadoop facade.
@@ -140,4 +123,11 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return Hadoop.
      */
     public GridHadoop hadoop();
+
+    /**
+     * Get latest version in string form.
+     *
+     * @return Latest version.
+     */
+    @Nullable public String latestVersion();
 }

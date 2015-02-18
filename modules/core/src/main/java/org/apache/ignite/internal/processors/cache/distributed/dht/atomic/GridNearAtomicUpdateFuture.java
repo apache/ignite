@@ -37,6 +37,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -115,7 +116,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Write synchronization mode. */
     private final CacheWriteSynchronizationMode syncMode;
@@ -197,7 +198,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<CacheEntry<K, V>>[] filter,
+        final IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {
@@ -777,7 +778,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         singleReq = req;
 
         if (ctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(nodeId, req, cached,
+            cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>>() {
                     @Override public void apply(GridNearAtomicUpdateRequest<K, V> req,
                         GridNearAtomicUpdateResponse<K, V> res) {
@@ -792,7 +793,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                cctx.io().send(req.nodeId(), req);
+                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
                     onDone(new GridCacheReturn<V>(null, true));
@@ -826,7 +827,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     if (log.isDebugEnabled())
                         log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                    cctx.io().send(req.nodeId(), req);
+                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     addFailedKeys(req.keys(), e);
@@ -844,7 +845,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             opRes = new GridCacheReturn<>(null, true);
 
         if (locUpdate != null) {
-            cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate, cached,
+            cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>>() {
                     @Override public void apply(GridNearAtomicUpdateRequest<K, V> req,
                         GridNearAtomicUpdateResponse<K, V> res) {

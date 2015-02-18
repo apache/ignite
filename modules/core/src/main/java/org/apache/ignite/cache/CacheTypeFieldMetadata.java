@@ -29,7 +29,7 @@ public class CacheTypeFieldMetadata {
     /** Column JDBC type in database. */
     private int dbType;
 
-    /** Column name in database. */
+    /** Field name in java object. */
     private String javaName;
 
     /** Corresponding java type. */

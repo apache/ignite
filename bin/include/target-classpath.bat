@@ -25,7 +25,7 @@
 
 @echo off
 
-for /D %%F in (%IGNITE_HOME%\os\modules\*) do if not %%F == "%IGNITE_HOME%\os\modules" call :includeToClassPath %%F
+for /D %%F in (modules\*) do if not %%F == "modules" call :includeToClassPath %%F
 
 for /D %%F in (%IGNITE_HOME%\modules\*) do if not %%F == "%IGNITE_HOME%\modules" call :includeToClassPath %%F
 
@@ -34,6 +34,8 @@ goto :eof
 :includeToClassPath
 if exist "%1\target\" (
     if exist "%1\target\classes\" call :concat %1\target\classes
+
+    if exist "%1\target\test-classes\" call :concat %1\target\test-classes
 
     if exist "%1\target\libs\" call :concat %1\target\libs\*
 )
