@@ -408,7 +408,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         ctx.denyOnLocalRead();
 
-        Boolean removed = (Boolean)updateAllInternal(DELETE,
+        Boolean rmv = (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
             null,
@@ -418,10 +418,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             filter,
             ctx.writeThrough());
 
-        if (statsEnabled && removed)
+        if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
-        return  removed;
+        return rmv;
     }
 
     /** {@inheritDoc} */
@@ -1132,6 +1132,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
                             updated = ctx.unwrapTemporary(invokeEntry.getValue());
+
+                            if (ctx.portableEnabled())
+                                updated = (V)ctx.marshalToPortable(updated);
 
                             if (computed != null)
                                 invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));

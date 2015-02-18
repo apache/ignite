@@ -54,6 +54,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Cache utility methods.
@@ -1166,7 +1167,12 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If execution failed.
      */
     public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws IgniteCheckedException {
-        if (ctx.tm().inUserTx())
+        IgniteInternalTx<?, ?> tx = ctx.tm().txx();
+
+        boolean inTx = tx != null && tx.user() &&
+            (tx.state() != UNKNOWN && tx.state() != ROLLED_BACK && tx.state() != COMMITTED);
+
+        if (inTx)
             return ctx.closures().callLocalSafe(cmd, false).get();
         else {
             try {

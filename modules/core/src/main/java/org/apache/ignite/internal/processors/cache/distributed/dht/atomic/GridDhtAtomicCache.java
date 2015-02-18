@@ -397,6 +397,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
+        if (ctx.portableEnabled())
+            oldVal = (V)ctx.marshalToPortable(oldVal);
+
         return putxAsync(key, newVal, ctx.equalsPeekArray(oldVal));
     }
 
@@ -415,12 +418,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
+        if (ctx.portableEnabled())
+            val = (V)ctx.marshalToPortable(val);
+
         return removeAllAsync0(F.asList(key), null, null, true, true, ctx.equalsPeekArray(val));
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+        if (ctx.portableEnabled())
+            oldVal = (V)ctx.marshalToPortable(oldVal);
+
         return updateAllAsync0(F.asMap(key, newVal),
             null,
             null,
@@ -524,6 +533,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
+
+        if (ctx.portableEnabled())
+            val = (V)ctx.marshalToPortable(val);
 
         return removexAsync(key, ctx.equalsPeekArray(val));
     }
@@ -1329,6 +1341,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
                         updated = ctx.unwrapTemporary(invokeEntry.getValue());
+
+                        if (ctx.portableEnabled())
+                            updated = (V)ctx.marshalToPortable(updated);
 
                         if (computed != null)
                             invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
