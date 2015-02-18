@@ -41,22 +41,22 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
         throws IgniteCheckedException {
-        throw new UnsupportedOperationException("GridOsSecurityProcessor.authenticateNode()");
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isGlobalNodeAuthentication() {
-        throw new UnsupportedOperationException("GridOsSecurityProcessor.isGlobalNodeAuthentication()");
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
-        throw new UnsupportedOperationException("GridOsSecurityProcessor.authenticate()");
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
-        throw new UnsupportedOperationException("GridOsSecurityProcessor.authenticatedSubjects()");
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -68,11 +68,6 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     @Override public void authorize(String name, GridSecurityPermission perm, @Nullable SecurityContext securityCtx)
         throws GridSecurityException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public SecurityContext createSecurityContext(GridSecuritySubject subj) {
-        throw new UnsupportedOperationException("GridOsSecurityProcessor.createSecurityContext()");
     }
 
     /** {@inheritDoc} */
