@@ -778,7 +778,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         singleReq = req;
 
         if (ctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(nodeId, req, cached,
+            cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>>() {
                     @Override public void apply(GridNearAtomicUpdateRequest<K, V> req,
                         GridNearAtomicUpdateResponse<K, V> res) {
@@ -845,7 +845,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             opRes = new GridCacheReturn<>(null, true);
 
         if (locUpdate != null) {
-            cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate, cached,
+            cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>>() {
                     @Override public void apply(GridNearAtomicUpdateRequest<K, V> req,
                         GridNearAtomicUpdateResponse<K, V> res) {
