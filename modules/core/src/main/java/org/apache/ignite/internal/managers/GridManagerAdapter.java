@@ -585,7 +585,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         // No-op.
     }
 

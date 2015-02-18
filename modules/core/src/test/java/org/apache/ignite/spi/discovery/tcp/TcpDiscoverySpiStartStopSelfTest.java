@@ -51,7 +51,7 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
                 return null;
             }
 
-            @Override public void onExchange(Map<Integer, Object> data) {
+            @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                 // No-op.
             }
         };
