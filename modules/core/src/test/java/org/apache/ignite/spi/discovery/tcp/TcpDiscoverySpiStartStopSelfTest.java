@@ -53,14 +53,4 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
             }
         };
     }
-
-    /**
-     * Discovery SPI authenticator.
-     *
-     * @return Authenticator.
-     */
-    @GridSpiTestConfig
-    public DiscoverySpiNodeAuthenticator getAuthenticator() {
-        return null;
-    }
 }
