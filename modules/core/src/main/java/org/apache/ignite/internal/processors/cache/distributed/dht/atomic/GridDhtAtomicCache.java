@@ -541,11 +541,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        return removeAllAsync(keySet(filter), filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
         removeAllDrAsync(drMap).get();
     }
@@ -1386,7 +1381,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 taskName,
                                 expiry);
 
-                            firstEntryIdx = i + 1;
+                            firstEntryIdx = i;
 
                             putMap = null;
                             entryProcessorMap = null;
@@ -1428,7 +1423,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 taskName,
                                 expiry);
 
-                            firstEntryIdx = i + 1;
+                            firstEntryIdx = i;
 
                             rmvKeys = null;
                             entryProcessorMap = null;

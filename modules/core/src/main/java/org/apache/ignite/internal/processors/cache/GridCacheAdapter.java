@@ -3633,23 +3633,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(final IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        ctx.denyOnLocalRead();
-
-        final Set<? extends K> keys = keySet(filter);
-
-        return asyncOp(new AsyncInOp(keys) {
-            @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter<K, V> tx) {
-                return tx.removeAllAsync(ctx, keys, null, false, null);
-            }
-
-            @Override public String toString() {
-                return "removeAllAsync [filter=" + Arrays.toString(filter) + ']';
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         return new CacheMetricsSnapshot(metrics);
     }

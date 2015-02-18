@@ -1052,12 +1052,18 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public boolean evict(K key) {
-        return cache.evict(key, entryFilter(true));
+        if (predicate() != null)
+            return cache.evict(key, entryFilter(true));
+        else
+            return cache.evict(key);
     }
 
     /** {@inheritDoc} */
     @Override public void evictAll(@Nullable Collection<? extends K> keys) {
-        cache.evictAll(keys, entryFilter(true));
+        if (predicate() != null)
+            cache.evictAll(keys, entryFilter(true));
+        else
+            cache.evictAll(keys);
     }
 
     /** {@inheritDoc} */
@@ -1215,12 +1221,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return removeAllAsync(new IgnitePredicate[0]);
-    }
+        assert predicate() == null;
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        return cache.removeAllAsync(and(filter, false));
+        return cache.removeAllAsync();
     }
 
     /** {@inheritDoc} */

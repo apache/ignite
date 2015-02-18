@@ -1167,12 +1167,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If execution failed.
      */
     public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws IgniteCheckedException {
-        IgniteInternalTx<?, ?> tx = ctx.tm().txx();
-
-        boolean inTx = tx != null && tx.user() &&
-            (tx.state() != UNKNOWN && tx.state() != ROLLED_BACK && tx.state() != COMMITTED);
-
-        if (inTx)
+        if (ctx.tm().inUserTx())
             return ctx.closures().callLocalSafe(cmd, false).get();
         else {
             try {
