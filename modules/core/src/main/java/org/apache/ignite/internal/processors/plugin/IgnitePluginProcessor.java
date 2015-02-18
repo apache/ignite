@@ -51,7 +51,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) {
         super(ctx);
 
-        ExtensionRegistry registry = new ExtensionRegistry();
+        ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
         if (cfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
@@ -109,7 +109,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param extensionItf Extension interface class.
      * @return Returns implementation for provided extension from all plugins.
      */
-    public <T> T[] extensions(Class<T> extensionItf) {
+    @Nullable public <T extends Extension> T[] extensions(Class<T> extensionItf) {
         Map<Class<?>, Object[]> extensions = this.extensions;
 
         return (T[])extensions.get(extensionItf);
@@ -200,12 +200,12 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
+    private static class ExtensionRegistryImpl implements ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public <T> void registerExtension(Class<T> extensionItf, T extensionImpl) {
+        @Override public <T extends Extension> void registerExtension(Class<T> extensionItf, T extensionImpl) {
             List<Object> list = extensionsCollector.get(extensionItf);
 
             if (list == null) {
