@@ -615,7 +615,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
             return nearExpireTimes.get(idx);
         }
 
-        return -1L;
+        return CU.EXPIRE_TIME_CALCULATE;
     }
 
     /**

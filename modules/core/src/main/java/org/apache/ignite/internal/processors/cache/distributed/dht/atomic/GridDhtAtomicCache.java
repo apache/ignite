@@ -1965,15 +1965,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
                         null,
                         replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
-                        -1L,
-                        -1L,
+                        CU.TTL_NOT_CHANGED,
+                        CU.EXPIRE_TIME_CALCULATE,
                         null,
                         false,
                         false,
                         req.subjectId(),
                         taskName);
 
-                    assert updRes.newTtl() == -1L || expiry != null;
+                    assert updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null;
 
                     if (intercept) {
                         if (op == UPDATE)
@@ -2009,7 +2009,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
-                                -1,
+                                CU.EXPIRE_TIME_CALCULATE,
                                 null);
 
                         if (!F.isEmpty(filteredReaders))
@@ -2019,7 +2019,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
-                                -1);
+                                CU.EXPIRE_TIME_CALCULATE);
                     }
 
                     if (hasNear) {
@@ -2036,10 +2036,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         writeVal,
                                         valBytes,
                                         updRes.newTtl(),
-                                        -1);
+                                        CU.EXPIRE_TIME_CALCULATE);
                                 }
                                 else
-                                    res.addNearTtl(idx, updRes.newTtl(), -1);
+                                    res.addNearTtl(idx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
 
                                 if (writeVal != null || !entry.valueBytes().isNull()) {
                                     IgniteInternalFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -2280,7 +2280,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             for (int i = 0; i < size; i++) {
                 long ttl = req.conflictTtl(i);
 
-                if (ttl == -1L)
+                if (ttl == CU.TTL_NOT_CHANGED)
                     drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.conflictVersion(i)));
                 else
                     drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.conflictVersion(i), ttl,

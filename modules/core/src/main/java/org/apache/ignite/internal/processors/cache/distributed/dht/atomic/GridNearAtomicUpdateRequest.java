@@ -328,7 +328,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 conflictTtls = new GridLongList(keys.size());
 
                 for (int i = 0; i < keys.size() - 1; i++)
-                    conflictTtls.add(-1);
+                    conflictTtls.add(CU.TTL_NOT_CHANGED);
             }
 
             conflictTtls.add(conflictTtl);
@@ -339,7 +339,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 conflictExpireTimes = new GridLongList(keys.size());
 
                 for (int i = 0; i < keys.size() - 1; i++)
-                    conflictExpireTimes.add(-1);
+                    conflictExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
             }
 
             conflictExpireTimes.add(conflictExpireTime);
@@ -434,7 +434,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /**
-     * @return COnflict versions.
+     * @return Conflict versions.
      */
     @Nullable public List<GridCacheVersion> conflictVersions() {
         return conflictVers;
@@ -465,7 +465,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
             return conflictTtls.get(idx);
         }
 
-        return -1L;
+        return CU.TTL_NOT_CHANGED;
     }
 
     /**
@@ -479,7 +479,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
             return conflictExpireTimes.get(idx);
         }
 
-        return -1L;
+        return CU.EXPIRE_TIME_CALCULATE;
     }
 
     /**
