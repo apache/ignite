@@ -2492,7 +2492,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void putAllDr(final Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
+    @Override public void putAllConflict(final Map<? extends K, GridCacheDrInfo<V>> drMap)
+        throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return;
 
@@ -2506,13 +2507,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override public String toString() {
-                return "putAllDr [drMap=" + drMap + ']';
+                return "putAllConflict [drMap=" + drMap + ']';
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllDrAsync(final Map<? extends K, GridCacheDrInfo<V>> drMap)
+    @Override public IgniteInternalFuture<?> putAllConflictAsync(final Map<? extends K, GridCacheDrInfo<V>> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
@@ -2527,7 +2528,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override public String toString() {
-                return "putAllDrAsync [drMap=" + drMap + ']';
+                return "putAllConflictAsync [drMap=" + drMap + ']';
             }
         });
     }
@@ -3409,7 +3410,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllDr(final Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+    @Override public void removeAllConflict(final Map<? extends K, GridCacheVersion> drMap)
+        throws IgniteCheckedException {
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(drMap))
@@ -3423,13 +3425,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override public String toString() {
-                return "removeAllDr [drMap=" + drMap + ']';
+                return "removeAllConflict [drMap=" + drMap + ']';
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllDrAsync(final Map<? extends K, GridCacheVersion> drMap)
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(final Map<? extends K, GridCacheVersion> drMap)
         throws IgniteCheckedException {
         ctx.denyOnLocalRead();
 

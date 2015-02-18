@@ -1572,11 +1572,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Check whether conflict resolution is required.
      *
-     * @param oldVer Old version.
-     * @param newVer New version.
      * @return {@code True} in case DR is required.
      */
-    public boolean conflictNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+    public boolean conflictNeedResolve() {
         return conflictRslvr != null;
     }
 
