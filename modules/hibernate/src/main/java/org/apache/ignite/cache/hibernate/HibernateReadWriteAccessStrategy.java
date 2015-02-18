@@ -125,7 +125,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             if (ctx != null)
                 unlock(ctx, key);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -152,7 +152,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
             return false;
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -197,9 +197,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      *
      * @param ctx Transaction context.
      * @param key Key.
-     * @throws IgniteCheckedException If failed.
+     * @throws CacheException If failed.
      */
-    private void unlock(TxContext ctx, Object key) throws IgniteCheckedException {
+    private void unlock(TxContext ctx, Object key) throws CacheException {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 
