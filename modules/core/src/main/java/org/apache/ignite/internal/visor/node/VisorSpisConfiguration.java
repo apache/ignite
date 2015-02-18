@@ -47,12 +47,6 @@ public class VisorSpisConfiguration implements Serializable {
     /** Collision SPI. */
     private IgniteBiTuple<String, Map<String, Object>> colSpi;
 
-    /** Authentication SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> authSpi;
-
-    /** Secure Session SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> sesSpi;
-
     /** Deployment SPI. */
     private IgniteBiTuple<String, Map<String, Object>> deploySpi;
 
@@ -215,34 +209,6 @@ public class VisorSpisConfiguration implements Serializable {
      */
     public void collisionSpi(IgniteBiTuple<String, Map<String, Object>> colSpi) {
         this.colSpi = colSpi;
-    }
-
-    /**
-     * @return Authentication SPI.
-     */
-    public IgniteBiTuple<String, Map<String, Object>> authenticationSpi() {
-        return authSpi;
-    }
-
-    /**
-     * @param authSpi New authentication SPI.
-     */
-    public void authenticationSpi(IgniteBiTuple<String, Map<String, Object>> authSpi) {
-        this.authSpi = authSpi;
-    }
-
-    /**
-     * @return Secure Session SPI.
-     */
-    public IgniteBiTuple<String, Map<String, Object>> secureSessionSpi() {
-        return sesSpi;
-    }
-
-    /**
-     * @param sesSpi New secure Session SPI.
-     */
-    public void secureSessionSpi(IgniteBiTuple<String, Map<String, Object>> sesSpi) {
-        this.sesSpi = sesSpi;
     }
 
     /**
