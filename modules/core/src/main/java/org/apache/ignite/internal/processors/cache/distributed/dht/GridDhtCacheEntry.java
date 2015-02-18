@@ -403,7 +403,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 ReaderId<K, V>[] rdrs = Arrays.copyOf(this.rdrs, this.rdrs.length + 1);
 
-                rdrs[rdrs.length] = reader;
+                rdrs[rdrs.length - 1] = reader;
 
                 // Seal.
                 this.rdrs = rdrs;

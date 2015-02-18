@@ -650,11 +650,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
         A.notNull(key, "key");
 
-        if (ctx.portableEnabled())
-            key = (K)ctx.marshalToPortable(key);
+        final K key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortable(key) : key;
 
         return getAllAsync(
-            Collections.singletonList(key),
+            Collections.singletonList(key0),
             /*force primary*/false,
             /*skip tx*/false,
             /*entry*/null,
@@ -668,7 +667,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 assert map.isEmpty() || map.size() == 1 : map.size();
 
-                return map.isEmpty() ? false : map.values().iterator().next() != null;
+                if (ctx.portableEnabled())
+                    return map.isEmpty() ? false : map.values().iterator().next() != null;
+                else
+                    return map.get(key0) != null;
             }
         });
     }
@@ -5080,7 +5082,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         assert map.isEmpty() || map.size() == 1 : map.size();
 
-        return map.isEmpty() ? null : map.values().iterator().next();
+        if (ctx.portableEnabled())
+            return map.isEmpty() ? null : map.values().iterator().next();
+        else
+            return map.get(key);
     }
 
     /**
@@ -5105,7 +5110,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                     assert map.isEmpty() || map.size() == 1 : map.size();
 
-                    return map.isEmpty() ? null : map.values().iterator().next();
+                    if (ctx.portableEnabled())
+                        return map.isEmpty() ? null : map.values().iterator().next();
+                    else
+                        return map.get(key);
                 }
             });
     }
