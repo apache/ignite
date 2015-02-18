@@ -1271,7 +1271,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Authenticate local node.
                 try {
-                    GridSecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+                    SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
                     if (subj == null)
                         throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
@@ -3066,7 +3066,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     GridSecurityCredentials cred = unmarshalCredentials(node);
 
-                    GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                    SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
                     if (subj == null) {
                         // Node has not pass authentication.
@@ -3510,7 +3510,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             authFailed = false;
                         }
                         else {
-                            GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                            SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
                             GridSecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());

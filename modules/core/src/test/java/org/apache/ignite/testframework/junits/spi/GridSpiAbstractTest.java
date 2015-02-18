@@ -333,7 +333,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         getTestResources().inject(discoSpi);
 
         discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
+            @Override public SecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
                 return new GridSecurityContext(subj);

@@ -390,7 +390,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 });
 
                 spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                    @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
+                    @Override public SecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                         GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
                         return new GridSecurityContext(subj);
