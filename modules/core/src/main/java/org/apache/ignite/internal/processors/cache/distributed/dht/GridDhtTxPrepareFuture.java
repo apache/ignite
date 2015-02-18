@@ -285,7 +285,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 expiry = cacheCtx.expiry();
 
             try {
-                if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
+                if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.conflictExpireTime() == -1L) {
                     if (expiry != null) {
                         Duration duration = cached.hasValue() ?
                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();

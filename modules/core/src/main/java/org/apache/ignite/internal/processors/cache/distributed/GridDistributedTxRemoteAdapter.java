@@ -346,8 +346,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             entry.groupLockEntry(e.groupLockEntry());
 
             // DR stuff.
-            entry.drVersion(e.drVersion());
-            entry.drExpireTime(e.drExpireTime());
+            entry.conflictVersion(e.conflictVersion());
+            entry.conflictExpireTime(e.conflictExpireTime());
         }
 
         addExplicit(e);
@@ -504,7 +504,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    GridCacheVersion explicitVer = txEntry.drVersion();
+                                    GridCacheVersion explicitVer = txEntry.conflictVersion();
 
                                     if (txEntry.ttl() == CU.TTL_ZERO)
                                         op = DELETE;
@@ -515,7 +515,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         if (drNeedResolve) {
                                             IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
                                                 drRes = conflictResolve(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
+                                                txEntry.ttl(), txEntry.conflictExpireTime(), explicitVer, cached);
 
                                         assert drRes != null;
 
@@ -527,9 +527,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             txEntry.ttl(drCtx.ttl());
 
                                             if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
-                                                txEntry.drExpireTime(drCtx.expireTime());
+                                                txEntry.conflictExpireTime(drCtx.expireTime());
                                             else
-                                                txEntry.drExpireTime(-1L);
+                                                txEntry.conflictExpireTime(-1L);
                                         }
                                         else if (drCtx.isMerge()) {
                                             op = drRes.get1();
@@ -538,7 +538,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             explicitVer = writeVersion();
 
                                             txEntry.ttl(drCtx.ttl());
-                                            txEntry.drExpireTime(-1L);
+                                            txEntry.conflictExpireTime(-1L);
                                         }
                                     }
                                     else
@@ -555,7 +555,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
-                                                replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
+                                                replicate ? DR_BACKUP : DR_NONE, txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
                                                 resolveTaskName());
 
