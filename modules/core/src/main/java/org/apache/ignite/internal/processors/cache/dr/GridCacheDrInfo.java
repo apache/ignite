@@ -74,14 +74,14 @@ public class GridCacheDrInfo<V> implements Externalizable {
      * @return TTL.
      */
     public long ttl() {
-        return 0L;
+        return CU.TTL_ETERNAL;
     }
 
     /**
      * @return Expire time.
      */
     public long expireTime() {
-        return 0L;
+        return CU.EXPIRE_TIME_ETERNAL;
     }
 
     /** {@inheritDoc} */
@@ -96,6 +96,7 @@ public class GridCacheDrInfo<V> implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (V)in.readObject();
         ver = CU.readVersion(in);

@@ -766,7 +766,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         }
                                     }
 
-                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
+                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve();
 
                                     if (drNeedResolve) {
                                         IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>

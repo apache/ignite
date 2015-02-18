@@ -1419,7 +1419,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                     entry.unswap(true, false);
 
-                    entry.initialValue(val, null, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
+                    entry.initialValue(val, null, ver, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, false, topVer,
+                        GridDrType.DR_LOAD);
 
                     cctx.evicts().touch(entry, topVer);
                 }
