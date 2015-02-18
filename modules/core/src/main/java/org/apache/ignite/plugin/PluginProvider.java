@@ -106,10 +106,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * on new node during discovery process). This data is provided by
      * {@link #provideDiscoveryData(UUID)} method on the other nodes.
      *
+     * @param nodeId Remote node ID.
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
      */
-    public void receiveDiscoveryData(Object data);
+    public void receiveDiscoveryData(UUID nodeId, Object data);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator
