@@ -72,7 +72,7 @@ import scala.language.implicitConversions
  *         Node ID8.
  *         Either '-id' or '-id8' can be specified.
  *         If called without the arguments - starts in interactive mode.
- *     -e=<ch,de,di,jo,ta,ca,cp,sw,au>
+ *     -e=<ch,de,di,jo,ta,ca,cp,sw>
  *         Comma separated list of event types that should be queried:
  *            ch Checkpoint events.
  *            de Deployment events.
@@ -83,9 +83,6 @@ import scala.language.implicitConversions
  *            ca Cache events.
  *            cp Cache pre-loader events.
  *            sw Swapspace events.
- *            au Authentication events.
-              az Authorization events.
-              se Security session events.
  *     -t=<num>s|m|h|d
  *         Defines time frame for querying events:
  *            =<num>s Queries events fired during last <num> seconds.
@@ -440,7 +437,7 @@ object VisorEventsCommand {
         ),
         spec = List(
             "events",
-            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw,au>}",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -455,7 +452,7 @@ object VisorEventsCommand {
                     "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
                 "If called without the arguments - starts in interactive mode."
             ),
-            "-e=<ch,de,di,jo,ta,ca,cp,sw,au>" -> List(
+            "-e=<ch,de,di,jo,ta,ca,cp,sw>" -> List(
                 "Comma separated list of event types that should be queried:",
                 "   ch Checkpoint events.",
                 "   de Deployment events.",
@@ -464,10 +461,7 @@ object VisorEventsCommand {
                 "   ta Task execution events.",
                 "   ca Cache events.",
                 "   cp Cache pre-loader events.",
-                "   sw Swapspace events.",
-                "   au Authentication events.",
-                "   az Authorization events.",
-                "   se Security session events."
+                "   sw Swapspace events."
             ),
             "-t=<num>s|m|h|d" -> List(
                 "Defines time frame for quering events:",
