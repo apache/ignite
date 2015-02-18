@@ -33,7 +33,7 @@ import org.hibernate.cache.spi.access.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entities. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -61,7 +61,7 @@ import org.hibernate.cache.spi.access.*;
  * values. For this reason, the collection cache should always be used in conjunction with
  * the second-level cache for those entities expected to be cached as part of a collection cache.
  */
-public class GridHibernateCollectionRegion extends GridHibernateTransactionalDataRegion implements CollectionRegion {
+public class HibernateCollectionRegion extends HibernateTransactionalDataRegion implements CollectionRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
@@ -69,7 +69,7 @@ public class GridHibernateCollectionRegion extends GridHibernateTransactionalDat
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
-    public GridHibernateCollectionRegion(GridHibernateRegionFactory factory, String name,
+    public HibernateCollectionRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
@@ -82,18 +82,18 @@ public class GridHibernateCollectionRegion extends GridHibernateTransactionalDat
     /**
      * Collection region access strategy.
      */
-    private class AccessStrategy extends GridHibernateAbstractRegionAccessStrategy
+    private class AccessStrategy extends HibernateAbstractRegionAccessStrategy
         implements CollectionRegionAccessStrategy {
         /**
          * @param stgy Access strategy implementation.
          */
-        private AccessStrategy(GridHibernateAccessStrategyAdapter stgy) {
+        private AccessStrategy(HibernateAccessStrategyAdapter stgy) {
             super(stgy);
         }
 
         /** {@inheritDoc} */
         @Override public CollectionRegion getRegion() {
-            return GridHibernateCollectionRegion.this;
+            return HibernateCollectionRegion.this;
         }
     }
 }

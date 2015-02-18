@@ -33,7 +33,7 @@ import org.hibernate.cache.spi.access.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -50,7 +50,7 @@ import org.hibernate.cache.spi.access.*;
  * public class Entity { ... }
  * </pre>
  */
-public class GridHibernateEntityRegion extends GridHibernateTransactionalDataRegion implements EntityRegion {
+public class HibernateEntityRegion extends HibernateTransactionalDataRegion implements EntityRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
@@ -58,7 +58,7 @@ public class GridHibernateEntityRegion extends GridHibernateTransactionalDataReg
      * @param cache Region cache,
      * @param dataDesc Region data description.
      */
-    public GridHibernateEntityRegion(GridHibernateRegionFactory factory, String name, Ignite ignite,
+    public HibernateEntityRegion(HibernateRegionFactory factory, String name, Ignite ignite,
         GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
@@ -71,18 +71,18 @@ public class GridHibernateEntityRegion extends GridHibernateTransactionalDataReg
     /**
      * Entity region access strategy.
      */
-    private class AccessStrategy extends GridHibernateAbstractRegionAccessStrategy
+    private class AccessStrategy extends HibernateAbstractRegionAccessStrategy
         implements EntityRegionAccessStrategy {
         /**
          * @param stgy Access strategy implementation.
          */
-        private AccessStrategy(GridHibernateAccessStrategyAdapter stgy) {
+        private AccessStrategy(HibernateAccessStrategyAdapter stgy) {
             super(stgy);
         }
 
         /** {@inheritDoc} */
         @Override public EntityRegion getRegion() {
-            return GridHibernateEntityRegion.this;
+            return HibernateEntityRegion.this;
         }
 
         /** {@inheritDoc} */

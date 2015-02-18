@@ -38,7 +38,7 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * region factory for caching:
  * <pre name="code" class="brush: xml; gutter: false;">
  * hibernate.cache.use_second_level_cache=true
- * hibernate.cache.region.factory_class=org.apache.ignite.cache.hibernate.GridHibernateRegionFactory
+ * hibernate.cache.region.factory_class=org.apache.ignite.cache.hibernate.HibernateRegionFactory
  * </pre>
  * Note that before region factory is started you need to start properly configured Ignite node in the same JVM.
  * For example to start Ignite node one of loader provided in {@code org.apache.ignite.grid.startup} package can be used.
@@ -47,8 +47,8 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * <pre name="code" class="brush: xml; gutter: false;">
  * org.apache.ignite.hibernate.grid_name=&lt;grid name&gt;
  * </pre>
- * Each Hibernate cache region must be associated with some {@link org.apache.ignite.cache.GridCache}, by default it is assumed that
- * for each cache region there is a {@link org.apache.ignite.cache.GridCache} with the same name. Also it is possible to define
+ * Each Hibernate cache region must be associated with some {@link GridCache}, by default it is assumed that
+ * for each cache region there is a {@link GridCache} with the same name. Also it is possible to define
  * region to cache mapping using properties with prefix {@code org.apache.ignite.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:
@@ -56,7 +56,7 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * org.apache.ignite.hibernate.region_cache.region1=cache1
  * </pre>
  */
-public class GridHibernateRegionFactory implements RegionFactory {
+public class HibernateRegionFactory implements RegionFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -142,10 +142,10 @@ public class GridHibernateRegionFactory implements RegionFactory {
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
         }
 
-        IgniteLogger log = ignite.log().getLogger(GridHibernateRegionFactory.class);
+        IgniteLogger log = ignite.log().getLogger(HibernateRegionFactory.class);
 
         if (log.isDebugEnabled())
-            log.debug("GridHibernateRegionFactory started [grid=" + gridName + ']');
+            log.debug("HibernateRegionFactory started [grid=" + gridName + ']');
     }
 
     /** {@inheritDoc} */
@@ -170,30 +170,30 @@ public class GridHibernateRegionFactory implements RegionFactory {
     /** {@inheritDoc} */
     @Override public EntityRegion buildEntityRegion(String regionName, Properties props, CacheDataDescription metadata)
         throws CacheException {
-        return new GridHibernateEntityRegion(this, regionName, ignite, regionCache(regionName), metadata);
+        return new HibernateEntityRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties props,
         CacheDataDescription metadata) throws CacheException {
-        return new GridHibernateNaturalIdRegion(this, regionName, ignite, regionCache(regionName), metadata);
+        return new HibernateNaturalIdRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public CollectionRegion buildCollectionRegion(String regionName, Properties props,
         CacheDataDescription metadata) throws CacheException {
-        return new GridHibernateCollectionRegion(this, regionName, ignite, regionCache(regionName), metadata);
+        return new HibernateCollectionRegion(this, regionName, ignite, regionCache(regionName), metadata);
     }
 
     /** {@inheritDoc} */
     @Override public QueryResultsRegion buildQueryResultsRegion(String regionName, Properties props)
         throws CacheException {
-        return new GridHibernateQueryResultsRegion(this, regionName, ignite, regionCache(regionName));
+        return new HibernateQueryResultsRegion(this, regionName, ignite, regionCache(regionName));
     }
 
     /** {@inheritDoc} */
     @Override public TimestampsRegion buildTimestampsRegion(String regionName, Properties props) throws CacheException {
-        return new GridHibernateTimestampsRegion(this, regionName, ignite, regionCache(regionName));
+        return new HibernateTimestampsRegion(this, regionName, ignite, regionCache(regionName));
     }
 
     /**

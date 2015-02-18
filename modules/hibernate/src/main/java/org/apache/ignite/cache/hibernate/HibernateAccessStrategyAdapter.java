@@ -40,49 +40,49 @@ import java.io.*;
  * <ul>
  *     <li>Start DB transaction.</li>
  *     <li>Execute database insert.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#insert}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#insert}.</li>
  *     <li>Commit DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#afterInsert}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#afterInsert}.</li>
  * </ul>
  * In case if some step fails and DB transaction is rolled back then
- * {@link GridHibernateAccessStrategyAdapter#afterInsert} is not called.
+ * {@link HibernateAccessStrategyAdapter#afterInsert} is not called.
  * <p>
  * Update:
  * <ul>
  *     <li>Start DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#lock}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#lock}.</li>
  *     <li>Execute database update.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#update}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#update}.</li>
  *     <li>Commit DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#afterUpdate}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#afterUpdate}.</li>
  * </ul>
- * In case if {@link GridHibernateAccessStrategyAdapter#lock} was called, but some other step fails and DB
- * transaction is rolled back then {@link GridHibernateAccessStrategyAdapter#unlock} is called for all locked keys.
+ * In case if {@link HibernateAccessStrategyAdapter#lock} was called, but some other step fails and DB
+ * transaction is rolled back then {@link HibernateAccessStrategyAdapter#unlock} is called for all locked keys.
  * <p>
  * Delete:
  * <ul>
  *     <li>Start DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#lock} for removing key.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#lock} for removing key.</li>
  *     <li>Execute database delete.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#remove}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#remove}.</li>
  *     <li>Commit DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#unlock}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#unlock}.</li>
  * </ul>
- * In case if {@link GridHibernateAccessStrategyAdapter#lock} was called, but some other step fails and DB
- * transaction is rolled back then {@link GridHibernateAccessStrategyAdapter#unlock} is called for all locked keys.
+ * In case if {@link HibernateAccessStrategyAdapter#lock} was called, but some other step fails and DB
+ * transaction is rolled back then {@link HibernateAccessStrategyAdapter#unlock} is called for all locked keys.
  * <p>
  * In case if custom SQL update query is executed Hibernate clears entire cache region,
  * for this case operations sequence is:
  * <ul>
  *     <li>Start DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#lockRegion}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#lockRegion}.</li>
  *     <li>Execute database query.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#removeAll}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#removeAll}.</li>
  *     <li>Commit DB transaction.</li>
- *     <li>Call {@link GridHibernateAccessStrategyAdapter#unlockRegion}.</li>
+ *     <li>Call {@link HibernateAccessStrategyAdapter#unlockRegion}.</li>
  * </ul>
  */
-public abstract class GridHibernateAccessStrategyAdapter {
+public abstract class HibernateAccessStrategyAdapter {
     /** */
     protected final GridCache<Object, Object> cache;
 
@@ -96,7 +96,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
      * @param ignite Grid.
      * @param cache Cache.
      */
-    protected GridHibernateAccessStrategyAdapter(Ignite ignite, GridCache<Object, Object> cache) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite, GridCache<Object, Object> cache) {
         this.cache = cache;
         this.ignite = ignite;
 

@@ -27,9 +27,9 @@ import java.util.*;
 /**
  * Implementation of {@link Region}. This interface defines base contract for all L2 cache regions.
  */
-public class GridHibernateRegion implements Region {
+public class HibernateRegion implements Region {
     /** */
-    protected final GridHibernateRegionFactory factory;
+    protected final HibernateRegionFactory factory;
 
     /** */
     private final String name;
@@ -46,7 +46,7 @@ public class GridHibernateRegion implements Region {
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public GridHibernateRegion(GridHibernateRegionFactory factory, String name, Ignite ignite,
+    public HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite,
         GridCache<Object, Object> cache) {
         this.factory = factory;
         this.name = name;

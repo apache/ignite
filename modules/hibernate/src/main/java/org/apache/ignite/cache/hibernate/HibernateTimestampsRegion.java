@@ -26,14 +26,14 @@ import org.hibernate.cache.spi.*;
  * caching is enabled and it holds most recent updates timestamps to queryable tables.
  * Name of timestamps region is {@code "org.hibernate.cache.spi.UpdateTimestampsCache"}.
  */
-public class GridHibernateTimestampsRegion extends GridHibernateGeneralDataRegion implements TimestampsRegion {
+public class HibernateTimestampsRegion extends HibernateGeneralDataRegion implements TimestampsRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public GridHibernateTimestampsRegion(GridHibernateRegionFactory factory, String name,
+    public HibernateTimestampsRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, GridCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }

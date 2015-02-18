@@ -38,7 +38,7 @@ import java.util.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -55,7 +55,7 @@ import java.util.*;
  * public class Entity { ... }
  * </pre>
  */
-public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStrategyAdapter {
+public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAdapter {
     /** */
     private final ThreadLocal<WriteContext> writeCtx;
 
@@ -64,7 +64,7 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected GridHibernateNonStrictAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal writeCtx) {
+    protected HibernateNonStrictAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal writeCtx) {
         super(ignite, cache);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;

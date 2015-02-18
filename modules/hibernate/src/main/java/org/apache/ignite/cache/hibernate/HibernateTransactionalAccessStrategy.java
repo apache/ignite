@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
  * Implementation of {@link AccessType#TRANSACTIONAL} cache access strategy.
  * <p>
  * It is supposed that this strategy is used in JTA environment and Hibernate and
- * {@link org.apache.ignite.cache.GridCache} corresponding to the L2 cache region are configured to use the same transaction manager.
+ * {@link GridCache} corresponding to the L2 cache region are configured to use the same transaction manager.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -54,12 +54,12 @@ import org.jetbrains.annotations.*;
  * public class Entity { ... }
  * </pre>
  */
-public class GridHibernateTransactionalAccessStrategy extends GridHibernateAccessStrategyAdapter {
+public class HibernateTransactionalAccessStrategy extends HibernateAccessStrategyAdapter {
     /**
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public GridHibernateTransactionalAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
+    public HibernateTransactionalAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
         super(ignite, cache);
     }
 
