@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
@@ -2046,8 +2045,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
-                "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ']');
     }
 
     /**
