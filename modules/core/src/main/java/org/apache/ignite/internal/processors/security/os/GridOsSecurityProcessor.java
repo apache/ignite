@@ -115,6 +115,11 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext createSecurityContext(GridSecuritySubject subj) {
+        return new GridSecurityContext(subj);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
         // No-op.
     }

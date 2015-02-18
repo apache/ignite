@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Security context.
  */
-public class GridSecurityContext implements Externalizable {
+public class GridSecurityContext implements SecurityContext, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

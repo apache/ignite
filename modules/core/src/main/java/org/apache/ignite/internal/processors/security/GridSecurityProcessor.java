@@ -84,6 +84,13 @@ public interface GridSecurityProcessor extends GridProcessor {
         throws GridSecurityException;
 
     /**
+     * Create security context.
+     *
+     * @subj Security subject.
+     */
+    public SecurityContext createSecurityContext(GridSecuritySubject subj);
+
+    /**
      * Callback invoked when subject session got expired.
      *
      * @param subjId Subject ID.
