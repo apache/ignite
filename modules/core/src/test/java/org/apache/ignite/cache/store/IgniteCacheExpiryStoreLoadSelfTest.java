@@ -31,6 +31,7 @@ import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -86,7 +87,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      */
     private void checkLoad(boolean async) throws Exception {
         IgniteCache<String, Integer> cache = jcache(0)
-           .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, TIME_TO_LIVE)));
+           .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
          List<Integer> keys = new ArrayList<>();
 
@@ -103,6 +104,73 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
         }
         else
             cache.loadCache(null, keys.toArray(new Integer[3]));
+
+        assertEquals(3, cache.size(CachePeekMode.PRIMARY));
+
+        Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
+
+        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalLoadCacheWithExpiry() throws Exception {
+        checkLocalLoad(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalLoadCacheWithExpiryAsync() throws Exception {
+        checkLocalLoad(true);
+    }
+
+    /**
+     * @param async If {@code true} uses asynchronous method.
+     * @throws Exception If failed.
+     */
+    private void checkLocalLoad(boolean async) throws Exception {
+        IgniteCache<String, Integer> cache = jcache(0)
+            .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
+
+        List<Integer> keys = primaryKeys(cache, 3);
+
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
+            asyncCache.localLoadCache(null, keys.toArray(new Integer[3]));
+
+            asyncCache.future().get();
+        }
+        else
+            cache.localLoadCache(null, keys.toArray(new Integer[3]));
+
+        assertEquals(3, cache.localSize());
+
+        Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
+
+        assertEquals(0, cache.localSize(CachePeekMode.PRIMARY));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadAllWithExpiry() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>jcache(null)
+            .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
+
+        Set<Integer> keys = new HashSet<>();
+
+        keys.add(primaryKey(jcache(0)));
+        keys.add(primaryKey(jcache(1)));
+        keys.add(primaryKey(jcache(2)));
+
+        CompletionListenerFuture fut = new CompletionListenerFuture();
+
+        cache.loadAll(keys, false, fut);
+
+        fut.get();
 
         assertEquals(3, cache.size(CachePeekMode.PRIMARY));
 
@@ -135,12 +203,17 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            return null;
+            return key;
         }
 
         /** {@inheritDoc} */
         @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) {
-            return null;
+            Map<Integer, Integer> map = new HashMap<>();
+
+            for (Integer key : keys)
+                map.put(key, key);
+
+            return map;
         }
 
         /** {@inheritDoc} */

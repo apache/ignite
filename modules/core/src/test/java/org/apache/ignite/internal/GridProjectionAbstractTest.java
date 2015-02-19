@@ -257,7 +257,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
             IgnitePredicate<Event> lsnr;
 
-            if (!Ignite.class.isAssignableFrom(projection().getClass())) {
+            if (!IgniteCluster.class.isAssignableFrom(projection().getClass())) {
                 g.events().localListen(lsnr = new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;

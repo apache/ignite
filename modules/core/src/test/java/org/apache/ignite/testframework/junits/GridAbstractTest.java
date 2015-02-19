@@ -581,9 +581,9 @@ public abstract class GridAbstractTest extends TestCase {
             boolean topOk = true;
 
             for (int i = 0; i < cnt; i++) {
-                if (cnt != grid(i).nodes().size()) {
+                if (cnt != grid(i).cluster().nodes().size()) {
                     U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
-                        "[name=" + grid(i).name() + ", size=" + grid(i).nodes().size() + ']');
+                        "[name=" + grid(i).name() + ", size=" + grid(i).cluster().nodes().size() + ']');
 
                     topOk = false;
 

@@ -189,7 +189,7 @@ public class GridStreamerContextImpl implements StreamerContext {
         ClusterGroup prj = streamPrj.get();
 
         if (prj == null) {
-            prj = ctx.grid().forStreamer(streamer.name());
+            prj = ctx.grid().cluster().forStreamer(streamer.name());
 
             streamPrj.compareAndSet(null, prj);
 
