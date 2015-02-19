@@ -267,6 +267,9 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         switch (readState) {
             case 0:
                 gridExBytes = reader.readByteArray("gridExBytes");

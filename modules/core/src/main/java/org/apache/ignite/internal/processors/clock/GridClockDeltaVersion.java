@@ -145,6 +145,9 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         switch (readState) {
             case 0:
                 topVer = reader.readLong("topVer");

@@ -246,6 +246,9 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         if (!super.readFrom(buf))
             return false;
 

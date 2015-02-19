@@ -684,6 +684,9 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         switch (readState) {
             case 0:
                 cacheId = reader.readInt("cacheId");

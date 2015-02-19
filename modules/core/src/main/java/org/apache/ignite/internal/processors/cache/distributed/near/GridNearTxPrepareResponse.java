@@ -354,6 +354,9 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         if (!super.readFrom(buf))
             return false;
 

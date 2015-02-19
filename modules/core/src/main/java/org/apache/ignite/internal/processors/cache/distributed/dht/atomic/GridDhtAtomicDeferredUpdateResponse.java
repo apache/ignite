@@ -102,6 +102,9 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         if (!super.readFrom(buf))
             return false;
 

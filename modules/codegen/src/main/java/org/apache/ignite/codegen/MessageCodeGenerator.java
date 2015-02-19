@@ -366,6 +366,17 @@ public class MessageCodeGenerator {
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
         code.add(EMPTY);
 
+        if (!write) {
+            code.add(builder().a("if (!reader.beforeMessageRead())").toString());
+
+            indent++;
+
+            code.add(builder().a("return false;").toString());
+            code.add(EMPTY);
+
+            indent--;
+        }
+
         if (superMtd != null) {
             if (write)
                 returnFalseIfFailed(code, "super." + superMtd, BUF_VAR, "writer");

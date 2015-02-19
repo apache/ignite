@@ -136,6 +136,9 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         switch (readState) {
             case 0:
                 attrsBytes = reader.readByteArray("attrsBytes");

@@ -184,6 +184,9 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         switch (readState) {
             case 0:
                 evt = reader.readInt("evt");

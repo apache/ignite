@@ -212,6 +212,9 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         if (!super.readFrom(buf))
             return false;
 
