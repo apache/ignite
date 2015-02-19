@@ -238,6 +238,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         }
 
         switch (writer.state()) {
+            case 18:
+                if (!writer.writeBoolean("checkCommitted", checkCommitted))
+                    return false;
+
+                writer.incrementState();
+
             case 19:
                 if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
@@ -305,6 +311,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (readState) {
+            case 18:
+                checkCommitted = reader.readBoolean("checkCommitted");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
             case 19:
                 byte isolationOrd;
 

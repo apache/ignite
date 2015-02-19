@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -239,37 +234,37 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -320,7 +315,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 13:
+            case 12:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -328,7 +323,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 14:
+            case 13:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
@@ -336,7 +331,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 15:
+            case 14:
                 syncRollback = reader.readBoolean("syncRollback");
 
                 if (!reader.isLastRead())
@@ -344,7 +339,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 16:
+            case 15:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -352,7 +347,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 17:
+            case 16:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -360,7 +355,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 readState++;
 
-            case 18:
+            case 17:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())

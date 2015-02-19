@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -37,7 +40,11 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     private IgniteUuid miniId;
 
     /** Error. */
+    @GridDirectTransient
     private Throwable err;
+
+    /** Serialized error. */
+    private byte[] errBytes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -74,6 +81,23 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        if (err != null)
+            errBytes = ctx.marshaller().marshal(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr)
+        throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        if (errBytes != null)
+            err = ctx.marshaller().unmarshal(errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishResponse.class, this, super.toString());
     }
@@ -94,6 +118,12 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (writer.state()) {
             case 5:
+                if (!writer.writeByteArray("errBytes", errBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
@@ -113,6 +143,14 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (readState) {
             case 5:
+                errBytes = reader.readByteArray("errBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
+
+            case 6:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
