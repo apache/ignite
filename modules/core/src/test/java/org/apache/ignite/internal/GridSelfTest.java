@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Test for {@link org.apache.ignite.Ignite}.
+ * Test for {@link org.apache.ignite.IgniteCluster}.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridSelfTest extends GridProjectionAbstractTest {
