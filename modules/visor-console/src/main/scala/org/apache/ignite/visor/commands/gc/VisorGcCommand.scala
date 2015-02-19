@@ -17,8 +17,6 @@
 
 package org.apache.ignite.visor.commands.gc
 
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
-
 import org.apache.ignite._
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}

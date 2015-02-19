@@ -17,23 +17,18 @@
 
 package org.apache.ignite.visor
 
-import java.io._
-import java.net._
-import java.text._
-import java.util.concurrent._
-import java.util.{HashSet => JHashSet, _}
-
 import org.apache.ignite.IgniteSystemProperties._
+import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
+import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
-import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
-import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}
@@ -43,13 +38,20 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorN
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite._
+
 import org.jetbrains.annotations.Nullable
+
+import java.io._
+import java.net._
+import java.text._
+import java.util.concurrent._
+import java.util.{HashSet => JHashSet, _}
+
+import org.apache.ignite.visor.commands.VisorConsole.consoleReader
+import org.apache.ignite.visor.commands._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
-import scala.io.StdIn
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
@@ -2034,14 +2036,12 @@ object visor extends VisorTag {
      * @param prompt User prompt.
      * @param mask Mask character (if `None`, no masking will be applied).
      */
-    private def readLineOpt(prompt: String, mask: Option[Char]): Option[String] =
+    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] =
         try {
-            val reader = new scala.tools.jline.console.ConsoleReader()
-
             val s = if (mask.isDefined)
-                reader.readLine(prompt, mask.get)
+                consoleReader().readLine(prompt, mask.get)
             else
-                reader.readLine(prompt)
+                consoleReader().readLine(prompt)
 
             Option(s)
         }
@@ -2061,11 +2061,15 @@ object visor extends VisorTag {
 
         (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
 
-        println("\nC: Cancel")
+        nl()
 
-        StdIn.readLine("\nChoose node: ") match {
-            case "c" | "C" => None
-            case idx =>
+        println("C: Cancel")
+
+        nl()
+
+        readLineOpt("Choose node: ") match {
+            case Some("c") | Some("C") | None => None
+            case Some(idx) =>
                 try
                     Some(ids(idx.toInt - 1))
                 catch {

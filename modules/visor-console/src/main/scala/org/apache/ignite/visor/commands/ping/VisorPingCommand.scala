@@ -141,7 +141,7 @@ class VisorPingCommand {
                     else {
                         val ns = nodeById8(id8._2)
 
-                        if (ns.size() != 1)
+                        if (ns.size != 1)
                             scold("Unknown ID8: " + argName(id8))
                         else
                             pings +:= Pinger(ns.head, res)
@@ -224,5 +224,5 @@ object VisorPingCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromPing2Visor(vs: VisorTag) = cmd
+    implicit def fromPing2Visor(vs: VisorTag): VisorPingCommand = cmd
 }

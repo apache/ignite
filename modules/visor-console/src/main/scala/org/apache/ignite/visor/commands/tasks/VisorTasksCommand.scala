@@ -1480,5 +1480,5 @@ object VisorTasksCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromTrace2Visor(vs: VisorTag) = cmd
+    implicit def fromTrace2Visor(vs: VisorTag): VisorTasksCommand = cmd
 }

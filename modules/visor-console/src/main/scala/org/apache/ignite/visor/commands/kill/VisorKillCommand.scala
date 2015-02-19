@@ -219,7 +219,7 @@ class VisorKillCommand {
 
         val op = if (restart) "restart" else "kill"
 
-        if (nodes.size() == ignite.nodes().size())
+        if (nodes.size == ignite.nodes().size())
             ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" =>  ask("You are about to " + op + " ALL nodes. " +
                     "Are you 100% sure? (y/n) [n]: ", "n") match {
@@ -230,7 +230,7 @@ class VisorKillCommand {
                 case "n" | "N" => break()
                 case x => nl(); warn("Invalid answer: " + x); break()
             }
-        else if (nodes.size() > 1)
+        else if (nodes.size > 1)
             ask("Are you sure you want to " + op + " several nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" => ()
                 case "n" | "N" => break()
@@ -352,5 +352,5 @@ object VisorKillCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromKill2Visor(vs: VisorTag) = cmd
+    implicit def fromKill2Visor(vs: VisorTag): VisorKillCommand = cmd
 }
