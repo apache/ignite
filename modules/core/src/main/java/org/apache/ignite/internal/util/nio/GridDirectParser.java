@@ -55,7 +55,7 @@ public class GridDirectParser implements GridNioParser {
         MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
         if (msg == null && buf.hasRemaining()) {
-            MessageReader reader = formatter.reader();
+            MessageReader reader = formatter.reader(msgFactory);
 
             reader.setBuffer(buf);
 

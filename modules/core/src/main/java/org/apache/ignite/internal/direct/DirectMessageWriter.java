@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
-    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null, null);
 
     /** State. */
     private final DirectMessageWriterState state = new DirectMessageWriterState();

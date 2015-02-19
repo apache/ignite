@@ -519,8 +519,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader() {
-                    return new DirectMessageReader(messageFactory());
+                @Override public MessageReader reader(MessageFactory factory) {
+                    return new DirectMessageReader(factory);
                 }
             };
         }

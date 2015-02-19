@@ -1494,13 +1494,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         return impl.writer();
                     }
 
-                    @Override public MessageReader reader() {
+                    @Override public MessageReader reader(MessageFactory factory) {
                         if (impl == null)
                             impl = getSpiContext().messageFormatter();
 
                         assert impl != null;
 
-                        return impl.reader();
+                        return impl.reader(factory);
                     }
                 };
 
