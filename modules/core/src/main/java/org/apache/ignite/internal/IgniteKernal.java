@@ -96,7 +96,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class IgniteKernal implements IgniteEx, IgniteMXBean {
+public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1788,13 +1788,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean {
             try {
                 assert gw.getState() == STARTED || gw.getState() == STARTING;
 
-                ClusterNodeLocalMap locMap = cluster.nodeLocalMap();
-
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
 
-                // Clear node local store.
-                locMap.clear();
+                cluster.clearNodeMap();
 
                 if (log.isDebugEnabled())
                     log.debug("Grid " + (gridName == null ? "" : '\'' + gridName + "' ") + "is stopping.");
@@ -2689,6 +2686,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean {
      */
     private static String componentClassName(Class<?> cls) {
         return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        gridName = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, gridName);
+    }
+
+    /**
+     * @return IgniteKernal instance.
+     *
+     * @throws ObjectStreamException If failed.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            return IgnitionEx.gridx(gridName);
+        }
+        catch (IllegalStateException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
     }
 
     /** {@inheritDoc} */

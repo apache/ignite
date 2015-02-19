@@ -31,9 +31,20 @@ import java.util.*;
 /**
  *
  */
-public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster> implements IgniteCluster {
+public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
+    implements IgniteCluster, Externalizable {
     /** */
-    private final IgniteClusterImpl cluster;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private IgniteClusterImpl cluster;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public IgniteClusterAsyncImpl() {
+        // No-op.
+    }
 
     /**
      * @param cluster Cluster.
@@ -258,5 +269,24 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster> i
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
         return cluster.metrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cluster = (IgniteClusterImpl)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cluster);
+    }
+
+    /**
+     * @return Cluster async instance.
+     *
+     * @throws ObjectStreamException If failed.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        return cluster.withAsync();
     }
 }

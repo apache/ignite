@@ -44,6 +44,9 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
  */
 public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private IgniteConfiguration cfg;
 
     /** Node local store. */
@@ -484,6 +487,13 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         });
 
         return true;
+    }
+
+    /**
+     * Clears node local map.
+     */
+    public void clearNodeMap() {
+        nodeLoc.clear();
     }
 
     /** {@inheritDoc} */
