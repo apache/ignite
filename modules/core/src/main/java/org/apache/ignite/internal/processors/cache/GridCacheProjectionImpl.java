@@ -1227,6 +1227,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        cache.localRemoveAll(predicate());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean lock(K key, long timeout,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         return cache.lock(key, timeout, and(filter, false));

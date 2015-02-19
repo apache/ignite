@@ -640,6 +640,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        dht.localRemoveAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localRemoveAll(IgnitePredicate<Cache.Entry<K, V>> filter) {
+        return dht.localRemoveAll(filter);
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
         dht.removeAllConflict(drMap);
     }
