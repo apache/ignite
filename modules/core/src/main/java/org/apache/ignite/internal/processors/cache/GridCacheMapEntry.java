@@ -3533,7 +3533,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             updateTtl(ttl);
 
             /*
-            TODO IGNITE-41.
+            TODO IGNITE-305.
             try {
                 if (var == null || ver.equals(version()))
                     updateTtl(ttl);
