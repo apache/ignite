@@ -222,12 +222,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                try {
-                    updateSession(req, subjCtx0);
-                    res.sessionTokenBytes(new byte[0]);
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Cannot update response session token: " + e.getMessage());
+                if (ctx.security().enabled()) {
+                    try {
+                        updateSession(req, subjCtx0);
+                        res.sessionTokenBytes(new byte[0]);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Cannot update response session token: " + e.getMessage());
+                    }
                 }
 
                 interceptResponse(res, req);
