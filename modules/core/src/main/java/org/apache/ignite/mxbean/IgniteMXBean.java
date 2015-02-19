@@ -359,4 +359,10 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Optional kernal instance name.")
     public String getInstanceName();
+
+    /**
+     * Prints errors.
+     */
+    @MXBeanDescription("Print errors.")
+    public void printLastErrors();
 }
