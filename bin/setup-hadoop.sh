@@ -54,7 +54,7 @@ setIgniteHome
 #
 # Set utility environment.
 #
-export MAIN_CLASS=org.apache.ignite.hadoop.GridHadoopSetup
+export MAIN_CLASS=org.apache.ignite.internal.processors.hadoop.GridHadoopSetup
 
 #
 # Start utility.

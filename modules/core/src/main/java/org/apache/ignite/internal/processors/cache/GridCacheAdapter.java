@@ -5286,7 +5286,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         break;
                     }
                     catch (IgniteCheckedException e) {
-                        throw U.convertToCacheException(e);
+                        throw CU.convertToCacheException(e);
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         // No-op.

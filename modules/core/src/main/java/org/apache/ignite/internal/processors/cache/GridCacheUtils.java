@@ -1739,4 +1739,32 @@ public class GridCacheUtils {
             }
         };
     }
+
+
+    /* Solely to publish U.getExceptionConverter(clazz) without explicit inheritance. */
+    private static class UU extends U {
+        public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+            return U.getExceptionConverter(clazz);
+        }
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    @Nullable
+    public static CacheException convertToCacheException(IgniteCheckedException e) {
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
+            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
+
+        C1<IgniteCheckedException, IgniteException> converter = UU.getExceptionConverter(e.getClass());
+
+        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
+    }
+
 }

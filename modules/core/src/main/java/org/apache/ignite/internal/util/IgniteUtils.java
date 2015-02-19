@@ -47,7 +47,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
-import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -517,6 +516,14 @@ public abstract class IgniteUtils {
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
     }
 
+    /**
+     * Gets IgniteClosure for an IgniteCheckedException class.
+     * @param clazz
+     * @return The IgniteClosure mapped to this exception class, or null if none.
+     */
+    protected static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+        return exceptionConverters.get(clazz);
+    }
 
     /**
      * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
@@ -616,24 +623,6 @@ public abstract class IgniteUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
-        if (e instanceof CachePartialUpdateCheckedException)
-            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
-            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
-
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
