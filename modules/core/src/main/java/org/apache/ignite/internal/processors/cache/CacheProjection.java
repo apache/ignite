@@ -1626,6 +1626,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> removeAllAsync();
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void localRemoveAll() throws IgniteCheckedException;
+
+    /**
      * Synchronously acquires lock on a cached object with given
      * key only if the passed in filter (if any) passes. This method
      * together with filter check will be executed as one atomic operation.
