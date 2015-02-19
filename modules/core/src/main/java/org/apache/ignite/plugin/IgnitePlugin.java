@@ -24,5 +24,8 @@ package org.apache.ignite.plugin;
  * @version @java.version
  */
 public interface IgnitePlugin {
-    // No-op.
+
+    public String name();
+
+    public String version();
 }

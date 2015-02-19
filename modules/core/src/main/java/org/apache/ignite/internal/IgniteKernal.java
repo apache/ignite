@@ -106,6 +106,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
 
+    /** Plugin information. */
+    public static final String PLUGIN_INFO = "Configured plugins: ";
+
     /** System line separator. */
     private static final String NL = U.nl();
 
@@ -605,7 +608,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
         // Ack various information.
-        ackAsciiLogo();
+        ackAsciiLogo(false);
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -768,6 +771,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
+
+            ackAsciiLogo(true);
 
             gw.writeLock();
 
@@ -1519,8 +1524,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     */
-    private void ackAsciiLogo() {
+     *
+     * @param pluginInfo Whether print plugin information or not.
+      */
+    private void ackAsciiLogo(boolean pluginInfo) {
         assert log != null;
 
         String fileName = log.fileName();
@@ -1539,6 +1546,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     " ",
                     ver,
                     COPYRIGHT,
+                    pluginInfo ? pluginInfo() : "",
                     "",
                     "Quiet mode.");
 
@@ -1550,18 +1558,35 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "");
             }
 
-            if (log.isInfoEnabled()) {
-                log.info(NL + NL +
-                    ">>>    __________  ________________  " + NL +
-                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                    ">>>  _/ // (7 7    // /  / / / _/    " + NL +
-                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                    ">>> " + NL +
-                    ">>> " + ver + NL +
-                    ">>> " + COPYRIGHT + NL
-                );
-            }
+            String info = NL + NL +
+                ">>>    __________  ________________  " + NL +
+                ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                ">>> " + NL +
+                ">>> " + ver + NL +
+                ">>> " + COPYRIGHT + NL;
+
+            if (pluginInfo)
+                info += ">>> " + pluginInfo();
+
+            if (log.isInfoEnabled())
+                log.info(info);
         }
+    }
+
+    private String pluginInfo() {
+        Collection<PluginProvider> pluginProviders = ctx.plugins().allProviders();
+
+        if (pluginProviders.size() == 0)
+            return PLUGIN_INFO + "none";
+
+        String info = PLUGIN_INFO + NL;
+
+        for (PluginProvider provider : pluginProviders)
+            info += provider.plugin().name() + " " + provider.plugin().version() + NL;
+
+        return info;
     }
 
     /**
