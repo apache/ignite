@@ -1327,15 +1327,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
                 old = readThrough(null, key, false, subjId, taskName);
 
-                long ttl = 0;
-                long expireTime = 0;
+                long ttl = CU.TTL_ETERNAL;
+                long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
                 if (expiryPlc != null && old != null) {
                     ttl = CU.toTtl(expiryPlc.getExpiryForCreation());
 
                     if (ttl == CU.TTL_ZERO) {
-                        ttl = 1;
-                        expireTime = U.currentTimeMillis() - 1;
+                        ttl = CU.TTL_MINIMUM;
+                        expireTime = CU.expireTimeInPast();
                     }
                     else if (ttl == CU.TTL_NOT_CHANGED)
                         ttl = 0;
@@ -2544,8 +2544,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long expireTime;
 
         if (ttl == CU.TTL_ZERO) {
-            ttl = 1;
-            expireTime = U.currentTimeMillis() - 1;
+            ttl = CU.TTL_MINIMUM;
+            expireTime = CU.expireTimeInPast();
         }
         else
             expireTime = toExpireTime(ttl);

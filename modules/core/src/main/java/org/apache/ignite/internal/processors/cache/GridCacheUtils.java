@@ -1712,6 +1712,13 @@ public class GridCacheUtils {
     }
 
     /**
+     * @return Expire time denoting a point in the past.
+     */
+    public static long expireTimeInPast() {
+        return U.currentTimeMillis() - 1L;
+    }
+
+    /**
      * Reads array from input stream.
      *
      * @param in Input stream.
