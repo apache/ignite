@@ -27,6 +27,9 @@ import java.util.*;
  * Mapper from grid event to Visor data transfer object.
  */
 public class VisorEventMapper implements IgniteClosure<Event, VisorGridEvent> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Map grid event to Visor data transfer object.
      *
