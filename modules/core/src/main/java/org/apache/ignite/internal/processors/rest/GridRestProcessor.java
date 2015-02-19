@@ -70,6 +70,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Workers count. */
     private final LongAdder workersCnt = new LongAdder();
 
+    /** SecurityContext map. */
+    private ConcurrentMap<SubjectKey, SecurityContext> sesMap = new ConcurrentHashMap8<>();
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws IgniteCheckedException {
@@ -161,9 +164,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        if (ctx.security().enabled()) {
-            SecurityContext subjCtx = null;
+        SecurityContext subjCtx = null;
 
+        if (ctx.security().enabled()) {
             try {
                 subjCtx = authenticate(req);
 
@@ -173,6 +176,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 assert subjCtx != null;
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+
+                try {
+                    updateSession(req, subjCtx);
+                    res.sessionTokenBytes(new byte[0]);
+                }
+                catch (IgniteCheckedException e1) {
+                    U.warn(log, "Cannot update response session token: " + e1.getMessage());
+                }
 
                 return new GridFinishedFuture<>(ctx, res);
             }
@@ -191,6 +202,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(ctx,
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
+        final SecurityContext subjCtx0 = subjCtx;
+
         return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
                 GridRestResponse res;
@@ -208,6 +221,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 }
 
                 assert res != null;
+
+                try {
+                    updateSession(req, subjCtx0);
+                    res.sessionTokenBytes(new byte[0]);
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Cannot update response session token: " + e.getMessage());
+                }
 
                 interceptResponse(res, req);
 
@@ -439,6 +460,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If authentication failed.
      */
     private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
+        UUID clientId = req.clientId();
+        SecurityContext secCtx = sesMap.get(new SubjectKey(REMOTE_CLIENT, clientId));
+
+        if (secCtx != null)
+            return secCtx;
+
         // Authenticate client if invalid session.
         AuthenticationContext authCtx = new AuthenticationContext();
 
@@ -478,6 +505,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         return subjCtx;
+    }
+
+    /**
+     * Update session.
+     * @param req REST request.
+     * @param sCtx Security context.
+     */
+    private void updateSession(GridRestRequest req, SecurityContext sCtx) throws IgniteCheckedException {
+        sesMap.put(new SubjectKey(REMOTE_CLIENT, req.clientId()), sCtx);
     }
 
     /**
@@ -638,5 +674,47 @@ public class GridRestProcessor extends GridProcessorAdapter {
         X.println(">>> REST processor memory stats [grid=" + ctx.gridName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
+    }
+
+    /**
+     * Subject key.
+     */
+    private static class SubjectKey {
+        /** */
+        private final GridSecuritySubjectType subjType;
+
+        /** */
+        private final UUID subjId;
+
+        /**
+         * @param subjType Subject type.
+         * @param subjId Subject ID.
+         */
+        private SubjectKey(GridSecuritySubjectType subjType, UUID subjId) {
+            this.subjType = subjType;
+            this.subjId = subjId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof SubjectKey))
+                return false;
+
+            SubjectKey that = (SubjectKey)o;
+
+            return F.eq(subjId, that.subjId) && subjType == that.subjType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = subjType.hashCode();
+
+            res = 31 * res + (subjId == null ? 0 : subjId.hashCode());
+
+            return res;
+        }
     }
 }
