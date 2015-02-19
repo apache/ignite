@@ -35,12 +35,7 @@ public interface MessageReader {
      */
     public void setBuffer(ByteBuffer buf);
 
-    /**
-     * Reads message header.
-     *
-     * @return Header.
-     */
-    public MessageHeader readHeader();
+    public boolean beforeMessageRead();
 
     /**
      * Reads {@code byte} value.

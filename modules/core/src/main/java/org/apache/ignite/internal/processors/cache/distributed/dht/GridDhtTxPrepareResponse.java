@@ -214,7 +214,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)15)))
+            if (!writer.writeHeader(directType(), (byte)15))
                 return false;
 
             writer.onHeaderWritten();

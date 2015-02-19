@@ -257,7 +257,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)4)))
+            if (!writer.writeHeader(directType(), (byte)4))
                 return false;
 
             writer.onHeaderWritten();

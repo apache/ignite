@@ -65,7 +65,7 @@ public class GridTaskCancelRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)1)))
+            if (!writer.writeHeader(directType(), (byte)1))
                 return false;
 
             writer.onHeaderWritten();

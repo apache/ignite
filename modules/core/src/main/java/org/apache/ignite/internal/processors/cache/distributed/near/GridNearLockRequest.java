@@ -329,7 +329,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)34)))
+            if (!writer.writeHeader(directType(), (byte)34))
                 return false;
 
             writer.onHeaderWritten();

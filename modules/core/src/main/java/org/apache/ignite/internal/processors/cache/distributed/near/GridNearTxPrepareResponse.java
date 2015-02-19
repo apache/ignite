@@ -290,7 +290,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)18)))
+            if (!writer.writeHeader(directType(), (byte)18))
                 return false;
 
             writer.onHeaderWritten();

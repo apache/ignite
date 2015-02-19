@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
@@ -64,6 +65,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
     /** {@inheritDoc} */
     @Override public MessageAdapter create(byte type) {
+        U.debug("CREATE: " + type);
+
         MessageAdapter msg = null;
 
         switch (type) {

@@ -247,7 +247,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)8)))
+            if (!writer.writeHeader(directType(), (byte)8))
                 return false;
 
             writer.onHeaderWritten();

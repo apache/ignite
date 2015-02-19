@@ -188,7 +188,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)16)))
+            if (!writer.writeHeader(directType(), (byte)16))
                 return false;
 
             writer.onHeaderWritten();

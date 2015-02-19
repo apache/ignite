@@ -344,7 +344,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)31)))
+            if (!writer.writeHeader(directType(), (byte)31))
                 return false;
 
             writer.onHeaderWritten();

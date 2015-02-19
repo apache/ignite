@@ -231,7 +231,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)28)))
+            if (!writer.writeHeader(directType(), (byte)28))
                 return false;
 
             writer.onHeaderWritten();

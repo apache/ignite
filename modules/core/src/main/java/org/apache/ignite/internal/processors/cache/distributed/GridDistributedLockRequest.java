@@ -353,7 +353,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)22)))
+            if (!writer.writeHeader(directType(), (byte)22))
                 return false;
 
             writer.onHeaderWritten();

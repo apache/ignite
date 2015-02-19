@@ -160,7 +160,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)25)))
+            if (!writer.writeHeader(directType(), (byte)25))
                 return false;
 
             writer.onHeaderWritten();

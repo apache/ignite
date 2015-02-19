@@ -124,7 +124,7 @@ public class GridCacheValueBytes extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)2)))
+            if (!writer.writeHeader(directType(), (byte)2))
                 return false;
 
             writer.onHeaderWritten();

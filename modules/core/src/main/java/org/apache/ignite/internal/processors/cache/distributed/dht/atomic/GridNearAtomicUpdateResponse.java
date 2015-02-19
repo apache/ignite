@@ -425,7 +425,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)14)))
+            if (!writer.writeHeader(directType(), (byte)14))
                 return false;
 
             writer.onHeaderWritten();

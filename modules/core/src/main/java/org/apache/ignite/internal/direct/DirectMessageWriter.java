@@ -40,8 +40,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeHeader(MessageHeader header) {
-        stream.writeByte(header.messageType());
+    @Override public boolean writeHeader(byte type, byte fieldCnt) {
+        stream.writeByte(type);
 
         return stream.lastFinished();
     }

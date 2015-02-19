@@ -253,7 +253,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)19)))
+            if (!writer.writeHeader(directType(), (byte)19))
                 return false;
 
             writer.onHeaderWritten();

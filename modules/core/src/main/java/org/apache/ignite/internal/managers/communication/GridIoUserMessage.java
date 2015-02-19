@@ -207,7 +207,7 @@ public class GridIoUserMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)7)))
+            if (!writer.writeHeader(directType(), (byte)7))
                 return false;
 
             writer.onHeaderWritten();

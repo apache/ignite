@@ -135,7 +135,7 @@ public class GridContinuousMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)4)))
+            if (!writer.writeHeader(directType(), (byte)4))
                 return false;
 
             writer.onHeaderWritten();

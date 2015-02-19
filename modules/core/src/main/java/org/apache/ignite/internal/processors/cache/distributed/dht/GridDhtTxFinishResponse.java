@@ -76,7 +76,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)6)))
+            if (!writer.writeHeader(directType(), (byte)6))
                 return false;
 
             writer.onHeaderWritten();

@@ -81,7 +81,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)5)))
+            if (!writer.writeHeader(directType(), (byte)5))
                 return false;
 
             writer.onHeaderWritten();

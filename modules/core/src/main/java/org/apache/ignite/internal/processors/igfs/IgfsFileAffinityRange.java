@@ -267,7 +267,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)5)))
+            if (!writer.writeHeader(directType(), (byte)5))
                 return false;
 
             writer.onHeaderWritten();

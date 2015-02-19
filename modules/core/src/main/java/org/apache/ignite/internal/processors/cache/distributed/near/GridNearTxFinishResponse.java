@@ -121,7 +121,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)8)))
+            if (!writer.writeHeader(directType(), (byte)8))
                 return false;
 
             writer.onHeaderWritten();

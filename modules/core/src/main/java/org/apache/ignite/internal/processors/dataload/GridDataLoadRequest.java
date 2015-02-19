@@ -227,7 +227,7 @@ public class GridDataLoadRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)13)))
+            if (!writer.writeHeader(directType(), (byte)13))
                 return false;
 
             writer.onHeaderWritten();

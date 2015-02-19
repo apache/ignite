@@ -117,7 +117,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)13)))
+            if (!writer.writeHeader(directType(), (byte)13))
                 return false;
 
             writer.onHeaderWritten();

@@ -122,7 +122,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)9)))
+            if (!writer.writeHeader(directType(), (byte)9))
                 return false;
 
             writer.onHeaderWritten();

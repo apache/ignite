@@ -422,7 +422,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)23)))
+            if (!writer.writeHeader(directType(), (byte)23))
                 return false;
 
             writer.onHeaderWritten();

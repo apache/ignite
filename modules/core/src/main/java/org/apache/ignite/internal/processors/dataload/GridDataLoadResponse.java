@@ -87,7 +87,7 @@ public class GridDataLoadResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)3)))
+            if (!writer.writeHeader(directType(), (byte)3))
                 return false;
 
             writer.onHeaderWritten();

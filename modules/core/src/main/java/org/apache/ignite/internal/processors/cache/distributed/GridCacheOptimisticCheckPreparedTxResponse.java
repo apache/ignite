@@ -92,7 +92,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)11)))
+            if (!writer.writeHeader(directType(), (byte)11))
                 return false;
 
             writer.onHeaderWritten();

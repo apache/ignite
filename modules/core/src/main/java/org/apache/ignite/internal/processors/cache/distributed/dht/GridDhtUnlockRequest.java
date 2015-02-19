@@ -111,7 +111,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)10)))
+            if (!writer.writeHeader(directType(), (byte)10))
                 return false;
 
             writer.onHeaderWritten();

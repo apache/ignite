@@ -380,7 +380,7 @@ public class MessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeHeader", "new MessageHeader(directType(), (byte)" + fieldCnt + ")");
+            returnFalseIfFailed(code, "writer.writeHeader", "directType()", "(byte)" + fieldCnt);
 
             code.add(EMPTY);
             code.add(builder().a("writer.onHeaderWritten();").toString());

@@ -142,7 +142,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)5)))
+            if (!writer.writeHeader(directType(), (byte)5))
                 return false;
 
             writer.onHeaderWritten();

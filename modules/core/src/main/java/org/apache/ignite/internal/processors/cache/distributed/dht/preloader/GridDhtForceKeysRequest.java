@@ -169,7 +169,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)7)))
+            if (!writer.writeHeader(directType(), (byte)7))
                 return false;
 
             writer.onHeaderWritten();

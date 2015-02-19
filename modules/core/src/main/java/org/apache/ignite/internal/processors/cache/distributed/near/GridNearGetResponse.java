@@ -207,7 +207,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(new MessageHeader(directType(), (byte)10)))
+            if (!writer.writeHeader(directType(), (byte)10))
                 return false;
 
             writer.onHeaderWritten();
