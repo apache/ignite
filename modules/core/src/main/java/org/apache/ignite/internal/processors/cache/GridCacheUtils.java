@@ -1717,7 +1717,7 @@ public class GridCacheUtils {
      * @param plc Expiry policy.
      * @return TTL for load operation or {@link #TTL_ZERO} in case of immediate expiration.
      */
-    public static Long ttlForLoad(ExpiryPolicy plc) {
+    public static long ttlForLoad(ExpiryPolicy plc) {
         if (plc != null) {
             long ttl = toTtl(plc.getExpiryForCreation());
 
