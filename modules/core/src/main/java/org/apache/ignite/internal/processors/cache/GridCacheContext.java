@@ -320,7 +320,12 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+    }
 
+    /**
+     * Initialize conflict resolver after all managers are started.
+     */
+    void initConflictResolver() {
         // Conflict resolver is determined in two stages:
         // 1. If DR receiver hub is enabled, then pick it from DR manager.
         // 2. Otherwise instantiate default resolver in case local store is configured.
