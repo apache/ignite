@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- *  Task for collecting next page previously executed SQL or SCAN query.
+ * Task for collecting next page previously executed SQL or SCAN query.
  */
 @GridInternal
 public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<String, Integer>, VisorQueryResult> {

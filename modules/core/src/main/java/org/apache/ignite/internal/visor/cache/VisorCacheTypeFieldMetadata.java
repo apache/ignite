@@ -41,7 +41,6 @@ public class VisorCacheTypeFieldMetadata implements Serializable {
     /** Corresponding java type. */
     private String javaType;
 
-
     /**
      * @param f Actual field metadata.
      * @return Data transfer object for given cache field metadata.
