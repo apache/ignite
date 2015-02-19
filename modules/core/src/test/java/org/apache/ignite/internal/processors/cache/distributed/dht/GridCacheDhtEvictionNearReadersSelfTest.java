@@ -178,7 +178,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     private Collection<ClusterNode> keyNodes(Object key) {
         CacheConsistentHashAffinityFunction aff = affinity(0);
 
-        return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
+        return aff.nodes(aff.partition(key), grid(0).cluster().nodes(), 1);
     }
 
     /**
@@ -218,7 +218,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert backup != null;
 
         // Now calculate other node that doesn't own the key.
-        nodes = new ArrayList<>(grid(0).nodes());
+        nodes = new ArrayList<>(grid(0).cluster().nodes());
 
         nodes.remove(primary);
         nodes.remove(backup);

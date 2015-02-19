@@ -35,7 +35,8 @@ import java.util.concurrent.locks.*;
 /**
  * Future adapter without kernal context.
  */
-public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R>, Externalizable {
+public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R>,
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

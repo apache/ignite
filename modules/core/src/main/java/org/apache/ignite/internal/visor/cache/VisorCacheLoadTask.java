@@ -61,12 +61,22 @@ public class VisorCacheLoadTask extends
             Long ttl = arg.get2();
             Object[] ldrArgs = arg.get3();
 
-            Map<String, Integer> res = new HashMap<>();
+            assert cacheNames != null && !cacheNames.isEmpty();
+            assert ttl != null;
 
-            ExpiryPolicy plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+            Map<String, Integer> res = U.newHashMap(cacheNames.size());
 
-            for (String cacheName: cacheNames) {
-                IgniteCache cache = ignite.jcache(cacheName).withExpiryPolicy(plc);
+            ExpiryPolicy plc = null;
+
+            for (String cacheName : cacheNames) {
+                IgniteCache cache = ignite.jcache(cacheName);
+
+                if (ttl > 0) {
+                    if (plc == null)
+                        plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+
+                    cache = cache.withExpiryPolicy(plc);
+                }
 
                 cache.loadCache(null, ldrArgs);
 

@@ -35,7 +35,8 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Future adapter.
  */
-public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R>, Externalizable {
+public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R>,
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +50,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private static final boolean CONCUR_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
+    private static final boolean CONCUR_NOTIFY =
+        IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Initial state. */
     private static final int INIT = 0;
@@ -620,7 +622,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "ChainFuture[orig=" + fut + ", doneCb=" + doneCb + ']';
+            return "ChainFuture [orig=" + fut + ", doneCb=" + doneCb + ']';
         }
     }
 }

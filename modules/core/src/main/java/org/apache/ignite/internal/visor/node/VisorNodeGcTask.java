@@ -45,7 +45,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
     @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results) {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
-        for (ComputeJobResult res: results) {
+        for (ComputeJobResult res : results) {
             IgniteBiTuple<Long, Long> jobRes = res.getData();
 
             total.put(res.getNode().id(), jobRes);

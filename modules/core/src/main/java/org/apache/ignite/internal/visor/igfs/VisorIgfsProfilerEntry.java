@@ -35,8 +35,8 @@ public class VisorIgfsProfilerEntry implements Serializable {
         new Comparator<VisorIgfsProfilerEntry>() {
             @Override public int compare(VisorIgfsProfilerEntry a, VisorIgfsProfilerEntry b) {
                 return Long.compare(a.ts, b.ts);
-        }
-    };
+            }
+        };
 
     /** Path to file. */
     private final String path;
@@ -71,7 +71,7 @@ public class VisorIgfsProfilerEntry implements Serializable {
     /** Calculated uniformity. */
     private double uniformity = -1;
 
-    /** Counters for uniformity calculation.  */
+    /** Counters for uniformity calculation. */
     private final VisorIgfsProfilerUniformityCounters counters;
 
     /** Read speed in bytes per second or {@code -1} if speed not available. */

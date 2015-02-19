@@ -25,9 +25,9 @@ import java.io.*;
 /**
  * IGFS endpoint descriptor.
  */
-public class VisorIgfsEndpoint implements Serializable{
+public class VisorIgfsEndpoint implements Serializable {
     /** */
-    private static final long  serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
 
     /** IGFS name. */
     private final String igfsName;
@@ -43,6 +43,7 @@ public class VisorIgfsEndpoint implements Serializable{
 
     /**
      * Create IGFS endpoint descriptor with given parameters.
+     *
      * @param igfsName IGFS name.
      * @param gridName Grid name.
      * @param hostName Host address / name.

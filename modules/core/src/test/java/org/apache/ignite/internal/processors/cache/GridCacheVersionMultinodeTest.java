@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -42,6 +43,9 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /** */
     private CacheAtomicWriteOrderMode atomicWriteOrder;
 
+    /** */
+    private CacheDistributionMode distrMode = PARTITIONED_ONLY;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -56,10 +60,14 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
         ccfg.setAtomicityMode(atomicityMode);
 
         if (atomicityMode == null) {
-            assert atomicityMode != null;
+            assert atomicWriteOrder != null;
 
             ccfg.setAtomicWriteOrderMode(atomicWriteOrder);
         }
+
+        assert distrMode != null;
+
+        ccfg.setDistributionMode(distrMode);
 
         return ccfg;
     }
@@ -67,11 +75,6 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -101,6 +104,17 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testVersionTxNearEnabled() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+
+        distrMode = NEAR_PARTITIONED;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testVersionAtomicClock() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -112,10 +126,36 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testVersionAtomicClockNearEnabled() throws Exception {
+        atomicityMode = ATOMIC;
+
+        atomicWriteOrder = CLOCK;
+
+        distrMode = NEAR_PARTITIONED;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testVersionAtomicPrimary() throws Exception {
         atomicityMode = ATOMIC;
 
         atomicWriteOrder = PRIMARY;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionAtomicPrimaryNearEnabled() throws Exception {
+        atomicityMode = ATOMIC;
+
+        atomicWriteOrder = PRIMARY;
+
+        distrMode = NEAR_PARTITIONED;
 
         checkVersion();
     }
@@ -188,13 +228,22 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
+            GridCacheEntryEx<Object, Object> e;
+
             if (cache.affinity().isPrimaryOrBackup(grid.localNode(), key)) {
-                GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+                if (cache instanceof GridNearCacheAdapter)
+                    cache = ((GridNearCacheAdapter<Object, Object>)cache).dht();
+
+                e = cache.peekEx(key);
 
                 assertNotNull(e);
+            }
+            else
+                e = cache.peekEx(key);
 
+            if (e != null) {
                 if (ver != null) {
-                    assertEquals("Non-equal versions for key " + key, ver, e.version());
+                    assertEquals("Non-equal versions for key: " + key, ver, e.version());
 
                     verified = true;
                 }

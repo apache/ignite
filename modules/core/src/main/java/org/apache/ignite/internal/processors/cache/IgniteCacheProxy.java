@@ -77,10 +77,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public IgniteCacheProxy(GridCacheContext<K, V> ctx,
+    public IgniteCacheProxy(
+        GridCacheContext<K, V> ctx,
         GridCacheProjectionEx<K, V> delegate,
         @Nullable GridCacheProjectionImpl<K, V> prj,
-        boolean async) {
+        boolean async
+    ) {
         super(async);
 
         assert ctx != null;
@@ -344,7 +346,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.getBufferSize(),
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
-                loc ? ctx.grid().forLocal() : null);
+                loc ? ctx.grid().cluster().forLocal() : null);
 
             final QueryCursor<Cache.Entry<K, V>> cur;
 
@@ -381,11 +383,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param local Enforce local.
+     * @param loc Enforce local.
      * @return Local node cluster group.
      */
-    private ClusterGroup projection(boolean local) {
-        return local ? ctx.kernalContext().grid().forLocal() : null;
+    private ClusterGroup projection(boolean loc) {
+        return loc ? ctx.kernalContext().grid().cluster().forLocal() : null;
     }
 
     /** {@inheritDoc} */

@@ -439,7 +439,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             keys.add(UUID.randomUUID());
 
         for (Object key : keys) {
-            UUID nodeId = grid(0).mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
+            UUID nodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
 
             UUID clientNodeId = partitioned.affinity(key);
 
@@ -580,7 +580,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         for (int i = 0; i < 100; i++) {
             String key = "key" + i;
 
-            UUID primaryNodeId = grid(0).mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
+            UUID primaryNodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
 
             assertEquals("Affinity mismatch for key: " + key, primaryNodeId, partitioned.affinity(key));
 
@@ -604,7 +604,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         for (int i = 100; i < 200; i++) {
             String pinnedKey = "key" + i;
 
-            UUID primaryNodeId = grid(0).mapKeyToNode(PARTITIONED_CACHE_NAME, pinnedKey).id();
+            UUID primaryNodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, pinnedKey).id();
 
             UUID pinnedNodeId = F.first(F.view(gridsByLocNode.keySet(), F.notEqualTo(primaryNodeId)));
 

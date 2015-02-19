@@ -1228,7 +1228,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                     try {
-                        EntryProcessor processor = t.get1();
+                        EntryProcessor<K, V, ?> processor = t.get1();
 
                         processor.process(invokeEntry, t.get2());
 
@@ -1241,13 +1241,17 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     modified |= invokeEntry.modified();
                 }
 
+                if (modified) {
+                    val = (V)cacheCtx.<V>unwrapTemporary(val);
+
+                    if (cacheCtx.portableEnabled())
+                        val = (V)cacheCtx.marshalToPortable(val);
+                }
+
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                 if (op == NOOP) {
-                    ExpiryPolicy expiry = txEntry.expiry();
-
-                    if (expiry == null)
-                        expiry = cacheCtx.expiry();
+                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                     if (expiry != null) {
                         long ttl = CU.toTtl(expiry.getExpiryForAccess());
@@ -1259,7 +1263,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     }
                 }
 
-                return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
+                return F.t(op, val, null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;

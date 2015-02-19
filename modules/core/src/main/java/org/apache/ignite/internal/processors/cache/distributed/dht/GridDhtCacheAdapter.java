@@ -398,7 +398,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final ExpiryPolicy plc = ctx.expiry();
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+
+        final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
@@ -436,16 +440,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridCacheEntryEx<K, V> entry = null;
 
                 try {
-                    long ttl = 0;
+                    long ttl = CU.ttlForLoad(plc);
 
-                    if (plc != null) {
-                        ttl = CU.toTtl(plc.getExpiryForCreation());
-
-                        if (ttl == CU.TTL_ZERO)
-                            return;
-                        else if (ttl == CU.TTL_NOT_CHANGED)
-                            ttl = 0;
-                    }
+                    if (ttl == CU.TTL_ZERO)
+                        return;
 
                     if (ctx.portableEnabled()) {
                         key = (K)ctx.marshalToPortable(key);
@@ -454,7 +452,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry = entryEx(key, false);
 
-                    entry.initialValue(val, null, ver, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
+                    entry.initialValue(val, null, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
+                        replicate ? DR_LOAD : DR_NONE);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to put cache value: " + entry, e);

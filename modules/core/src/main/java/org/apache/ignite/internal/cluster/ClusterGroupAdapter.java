@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -43,9 +44,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Kernal context. */
     protected transient GridKernalContext ctx;
 
-    /** Parent projection. */
-    private transient ClusterGroup parent;
-
     /** Compute. */
     private transient IgniteComputeImpl compute;
 
@@ -64,7 +62,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Subject ID. */
     private UUID subjId;
 
-    /** Projection predicate. */
+    /** Cluster group predicate. */
     protected IgnitePredicate<ClusterNode> p;
 
     /** Node IDs. */
@@ -78,17 +76,14 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @param parent Parent of this projection.
-     * @param ctx Grid kernal context.
+     * @param subjId Subject ID.
+     * @param ctx Kernal context.
      * @param p Predicate.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
-        @Nullable GridKernalContext ctx,
+    protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p)
     {
-        this.parent = parent;
-
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -99,17 +94,14 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @param parent Parent of this projection.
-     * @param ctx Grid kernal context.
+     * @param ctx Kernal context.
+     * @param subjId Subject ID.
      * @param ids Node IDs.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
-        @Nullable GridKernalContext ctx,
+    protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         Set<UUID> ids)
     {
-        this.parent = parent;
-
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -122,19 +114,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @param parent Parent of this projection.
+     * @param subjId Subject ID.
      * @param ctx Grid kernal context.
      * @param p Predicate.
      * @param ids Node IDs.
      */
-    private ClusterGroupAdapter(@Nullable ClusterGroup parent,
-        @Nullable GridKernalContext ctx,
+    private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
         Set<UUID> ids)
     {
-        this.parent = parent;
-
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -165,27 +154,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * <tt>ctx.gateway().lightCheck()</tt>
-     */
-    protected void lightCheck() {
-        assert ctx != null;
-
-        ctx.gateway().lightCheck();
-    }
-
-    /**
      * Sets kernal context.
      *
      * @param ctx Kernal context to set.
      */
-    protected void setKernalContext(GridKernalContext ctx) {
+    public void setKernalContext(GridKernalContext ctx) {
         assert ctx != null;
         assert this.ctx == null;
 
         this.ctx = ctx;
-
-        if (parent == null)
-            parent = ctx.grid();
 
         gridName = ctx.gridName();
     }
@@ -205,7 +182,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteCompute} for this projection.
+     * @return {@link org.apache.ignite.IgniteCompute} for this cluster group.
      */
     public final IgniteCompute compute() {
         if (compute == null) {
@@ -218,7 +195,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteMessaging} for this projection.
+     * @return {@link org.apache.ignite.IgniteMessaging} for this cluster group.
      */
     public final IgniteMessaging message() {
         if (messaging == null) {
@@ -231,7 +208,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteEvents} for this projection.
+     * @return {@link org.apache.ignite.IgniteEvents} for this cluster group.
      */
     public final IgniteEvents events() {
         if (evts == null) {
@@ -244,7 +221,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteServices} for this projection.
+     * @return {@link org.apache.ignite.IgniteServices} for this cluster group.
      */
     public IgniteServices services() {
         if (svcs == null) {
@@ -257,7 +234,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link ExecutorService} for this projection.
+     * @return {@link ExecutorService} for this cluster group.
      */
     public ExecutorService executorService() {
         assert ctx != null;
@@ -354,7 +331,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         guard();
 
         try {
-            return new ClusterGroupAdapter(this, ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+            return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
         }
         finally {
             unguard();
@@ -390,7 +367,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(node.id());
             }
 
-            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -410,7 +387,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 if (contains(n))
                     nodeIds.add(n.id());
 
-            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -440,7 +417,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -461,7 +438,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -476,8 +453,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forOthers(ClusterGroup prj) {
-        A.notNull(prj, "prj");
+    @Override public ClusterGroup forOthers(ClusterGroup grp) {
+        A.notNull(grp, "grp");
 
         if (ids != null) {
             guard();
@@ -488,18 +465,18 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 for (UUID id : ids) {
                     ClusterNode n = node(id);
 
-                    if (n != null && !prj.predicate().apply(n))
+                    if (n != null && !grp.predicate().apply(n))
                         nodeIds.add(id);
                 }
 
-                return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
             }
         }
         else
-            return forPredicate(F.not(prj.predicate()));
+            return forPredicate(F.not(grp.predicate()));
     }
 
     /** {@inheritDoc} */
@@ -509,7 +486,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      * @param excludeIds Node IDs.
-     * @return New projection.
+     * @return New cluster group.
      */
     private ClusterGroup forOthers(Collection<UUID> excludeIds) {
         assert excludeIds != null;
@@ -525,7 +502,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                         nodeIds.add(id);
                 }
 
-                return new ClusterGroupAdapter(this, ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
@@ -584,12 +561,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public ClusterGroup forOldest() {
-        return new AgeProjection(this, true);
+        return new AgeClusterGroup(this, true);
     }
 
     /** {@inheritDoc} */
     @Override public ClusterGroup forYoungest() {
-        return new AgeProjection(this, false);
+        return new AgeClusterGroup(this, false);
     }
 
     /** {@inheritDoc} */
@@ -600,8 +577,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         guard();
 
         try {
-            return ids != null ? new ClusterGroupAdapter(this, ctx, subjId, ids) :
-                new ClusterGroupAdapter(this, ctx, subjId, p);
+            return ids != null ? new ClusterGroupAdapter(ctx, subjId, ids) :
+                new ClusterGroupAdapter(ctx, subjId, p);
         }
         finally {
             unguard();
@@ -610,7 +587,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      * @param n Node.
-     * @return Whether node belongs to this projection.
+     * @return Whether node belongs to this cluster group.
      */
     private boolean contains(ClusterNode n) {
         assert n != null;
@@ -620,7 +597,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      * @param id Node ID.
-     * @return Whether node belongs to this projection.
+     * @return Whether node belongs to this cluster group.
      */
     private boolean contains(UUID id) {
         assert id != null;
@@ -668,8 +645,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         try {
             IgniteKernal g = IgnitionEx.gridx(gridName);
 
-            return ids != null ? new ClusterGroupAdapter(g, g.context(), subjId, ids) :
-                p != null ? new ClusterGroupAdapter(g, g.context(), subjId, p) : g;
+            return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :
+                p != null ? new ClusterGroupAdapter(g.context(), subjId, p) : g;
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -818,9 +795,9 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * Age-based projection.
+     * Age-based cluster group.
      */
-    private static class AgeProjection extends ClusterGroupAdapter {
+    private static class AgeClusterGroup extends ClusterGroupAdapter {
         /** Serialization version. */
         private static final long serialVersionUID = 0L;
 
@@ -836,16 +813,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /**
          * Required for {@link Externalizable}.
          */
-        public AgeProjection() {
+        public AgeClusterGroup() {
             // No-op.
         }
 
         /**
-         * @param prj Parent projection.
+         * @param parent Parent cluster group.
          * @param isOldest Oldest flag.
          */
-        private AgeProjection(ClusterGroupAdapter prj, boolean isOldest) {
-            super(prj.parent, prj.ctx, prj.subjId, prj.p, prj.ids);
+        private AgeClusterGroup(ClusterGroupAdapter parent, boolean isOldest) {
+            super(parent.ctx, parent.subjId, parent.p, parent.ids);
 
             this.isOldest = isOldest;
 

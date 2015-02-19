@@ -794,14 +794,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
-        cache.putAllDr(drMap);
+    @Override public void putAllConflict(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
+        cache.putAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap)
+    @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<? extends K, GridCacheDrInfo<V>> drMap)
         throws IgniteCheckedException {
-        return cache.putAllDrAsync(drMap);
+        return cache.putAllConflictAsync(drMap);
     }
 
     /** {@inheritDoc} */
@@ -1052,12 +1052,18 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public boolean evict(K key) {
-        return cache.evict(key, entryFilter(true));
+        if (predicate() != null)
+            return cache.evict(key, entryFilter(true));
+        else
+            return cache.evict(key);
     }
 
     /** {@inheritDoc} */
     @Override public void evictAll(@Nullable Collection<? extends K> keys) {
-        cache.evictAll(keys, entryFilter(true));
+        if (predicate() != null)
+            cache.evictAll(keys, entryFilter(true));
+        else
+            cache.evictAll(keys);
     }
 
     /** {@inheritDoc} */
@@ -1130,13 +1136,13 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
-        cache.removeAllDr(drMap);
+    @Override public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+        cache.removeAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
-        return cache.removeAllDrAsync(drMap);
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+        return cache.removeAllConflictAsync(drMap);
     }
 
     /** {@inheritDoc} */
@@ -1215,12 +1221,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return removeAllAsync(new IgnitePredicate[0]);
+        assert predicate() == null;
+
+        return cache.removeAllAsync();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        return cache.removeAllAsync(and(filter, false));
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        cache.localRemoveAll(predicate());
     }
 
     /** {@inheritDoc} */

@@ -1626,29 +1626,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> removeAllAsync();
 
     /**
-     * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do
-     * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
-     * into transaction.
-     * <p>
-     * <b>USE WITH CARE</b> - if your cache has many entries that pass through the filter or if filter
-     * is empty, then transaction will quickly become very heavy and slow.
-     * <p>
-     * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via {@link CacheStore#removeAll(Transaction, Collection)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
-     *
-     * @param filter Filter used to supply keys for remove operation (if {@code null},
-     *      then nothing will be removed).
-     * @return Future for the remove operation. The future will complete whenever
-     *      remove operation completes.
-     * @throws CacheFlagException If flags validation failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public void localRemoveAll() throws IgniteCheckedException;
 
     /**
      * Synchronously acquires lock on a cached object with given

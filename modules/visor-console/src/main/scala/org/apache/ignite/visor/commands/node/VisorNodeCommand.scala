@@ -149,7 +149,7 @@ class VisorNodeCommand {
                     }
                     else if (id.isDefined)
                         try
-                            node = ignite.node(UUID.fromString(id.get))
+                            node = ignite.cluster.node(UUID.fromString(id.get))
                         catch {
                             case e: IllegalArgumentException => warn("Invalid node ID: " + id.get).^^
                         }
