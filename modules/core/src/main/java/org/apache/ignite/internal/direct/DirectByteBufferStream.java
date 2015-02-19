@@ -210,7 +210,7 @@ public class DirectByteBufferStream {
     private final MessageFactory msgFactory;
 
     /** */
-    private final MessageReader msgReader;
+    private final MessageFormatter msgFormatter;
 
     /** */
     private ByteBuffer buf;
@@ -268,11 +268,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param msgFactory Message factory.
-     * @param msgReader Message reader.
+     * @param msgFormatter Message formatter.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, MessageReader msgReader) {
+    public DirectByteBufferStream(MessageFactory msgFactory, MessageFormatter msgFormatter) {
         this.msgFactory = msgFactory;
-        this.msgReader = msgReader;
+        this.msgFormatter = msgFormatter;
     }
 
     /**
@@ -917,7 +917,8 @@ public class DirectByteBufferStream {
 
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
-            msg.setReader(msgReader);
+            if (msg != null)
+                msg.setReader(msgFormatter.reader(msgFactory));
 
             msgTypeDone = true;
         }

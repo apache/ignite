@@ -36,9 +36,10 @@ public class DirectMessageReader implements MessageReader {
 
     /**
      * @param msgFactory Message factory.
+     * @param msgFormatter Message formatter.
      */
-    public DirectMessageReader(MessageFactory msgFactory) {
-        this.stream = new DirectByteBufferStream(msgFactory, this);
+    public DirectMessageReader(MessageFactory msgFactory, MessageFormatter msgFormatter) {
+        this.stream = new DirectByteBufferStream(msgFactory, msgFormatter);
     }
 
     /** {@inheritDoc} */
