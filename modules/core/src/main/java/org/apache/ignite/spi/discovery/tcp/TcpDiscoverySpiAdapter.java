@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -1003,6 +1004,115 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             bout.reset();
 
             TcpDiscoverySpiAdapter.this.writeToSocket(sock, msg, bout);
+        }
+    }
+
+    /**
+     *
+     */
+    protected class SocketMultiConnector {
+        /** */
+        private int connInProgress;
+
+        /** */
+        private boolean closed;
+
+        /** */
+        private final ExecutorService executor;
+
+        /** */
+        private final Queue<GridTuple3<InetSocketAddress, Socket, Exception>> queue = new LinkedList<>();
+
+        /**
+         * @param addrs Addresses.
+         * @param retryCnt Retry count.
+         */
+        public SocketMultiConnector(Collection<InetSocketAddress> addrs, final int retryCnt) {
+            connInProgress = addrs.size();
+
+            executor = new ThreadPoolExecutor(0, 10, 1L, TimeUnit.MILLISECONDS,
+                new SynchronousQueue<Runnable>());
+
+            for (final InetSocketAddress addr : addrs) {
+                executor.execute(new Runnable() {
+                    @Override public void run() {
+                        Exception ex = null;
+                        Socket sock = null;
+
+                        for (int i = 0; i < retryCnt; i++) {
+                            synchronized (SocketMultiConnector.this) {
+                                if (closed)
+                                    return;
+                            }
+
+                            try {
+                                sock = openSocket(addr);
+
+                                break;
+                            }
+                            catch (Exception e) {
+                                ex = e;
+                            }
+                        }
+
+                        synchronized (SocketMultiConnector.this) {
+                            if (closed)
+                                U.closeQuiet(sock);
+                            else
+                                queue.add(new GridTuple3<>(addr, sock, ex));
+
+                            connInProgress--;
+
+                            SocketMultiConnector.this.notifyAll();
+                        }
+                    }
+                });
+            }
+        }
+
+        /**
+         *
+         */
+        @Nullable public synchronized GridTuple3<InetSocketAddress, Socket, Exception> next() {
+            try {
+                do {
+                    if (closed)
+                        return null;
+
+                    GridTuple3<InetSocketAddress, Socket, Exception> res = queue.poll();
+
+                    if (res != null)
+                        return res;
+
+                    if (connInProgress == 0)
+                        return null;
+
+                    wait();
+                }
+                while (true);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+        }
+
+        /**
+         *
+         */
+        public void close() {
+            synchronized (this) {
+                if (closed)
+                    return;
+
+                closed = true;
+
+                notifyAll();
+            }
+
+            executor.shutdown();
+
+            for (GridTuple3<InetSocketAddress, Socket, Exception> tuple : queue)
+                U.closeQuiet(tuple.get2());
         }
     }
 }
