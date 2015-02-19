@@ -164,7 +164,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             long expireTime = res.nearExpireTime(i);
 
             if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
-                expireTime = GridCacheMapEntry.toExpireTime(ttl);
+                expireTime = CU.toExpireTime(ttl);
 
             try {
                 processNearAtomicUpdateResponse(ver,
@@ -318,7 +318,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         long expireTime = req.nearExpireTime(i);
 
                         if (ttl != -1L && expireTime == -1L)
-                            expireTime = GridCacheMapEntry.toExpireTime(ttl);
+                            expireTime = CU.toExpireTime(ttl);
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
@@ -637,6 +637,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         return dht.removeAllAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        dht.localRemoveAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localRemoveAll(IgnitePredicate<Cache.Entry<K, V>> filter) {
+        return dht.localRemoveAll(filter);
     }
 
     /** {@inheritDoc} */

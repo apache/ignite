@@ -1227,6 +1227,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        cache.localRemoveAll(predicate());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean lock(K key, long timeout,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         return cache.lock(key, timeout, and(filter, false));
@@ -1320,6 +1325,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return expiryPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException {
+        cache.localLoadCache(p, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
+        return cache.localLoadCacheAsync(p, args);
     }
 
     /** {@inheritDoc} */

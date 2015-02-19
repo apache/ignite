@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.event;
+package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.EventType.*;
-
 /**
- * Special event for events lost situations.
+ * Internal projection interface.
  */
-public class VisorGridEventsLost extends VisorGridEvent {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface ClusterGroupEx extends ClusterGroup {
+    /**
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Subject ID.
+     * @return Internal projection.
+     */
+    public ClusterGroupEx forSubjectId(UUID subjId);
 
     /**
-     * Create event with given parameters.
-     *
-     * @param nid Node where events were lost.
+     * @param cacheName Cache name.
+     * @param distributionModes Cache distribution modes.
+     * @return Cluster group.
      */
-    public VisorGridEventsLost(UUID nid) {
-        super(EVT_VISOR_EVENTS_LOST, IgniteUuid.randomUuid(), "EVT_VISOR_EVENTS_LOST", nid, U.currentTimeMillis(),
-            "Some Visor events were lost and Visor may show inconsistent results. " +
-                "Configure your grid to disable not important events.",
-            "");
-    }
+    public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes);
 }

@@ -545,6 +545,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void localRemoveAll() throws IgniteCheckedException {
+        removeAll(keySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localRemoveAll(IgnitePredicate<Cache.Entry<K, V>> filter) {
+        return removeAllAsync(keySet(filter), null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAllConflict(Map<? extends K, GridCacheVersion> conflictMap)
         throws IgniteCheckedException {
         removeAllConflictAsync(conflictMap).get();

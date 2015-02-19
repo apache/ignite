@@ -85,7 +85,8 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
 
         /** {@inheritDoc} */
         @Override protected Void run(Collection<String> qryIds) {
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = ignite.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap =
+                ignite.cluster().nodeLocalMap();
 
             for (String qryId : qryIds)
                 locMap.remove(qryId);

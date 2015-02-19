@@ -360,7 +360,7 @@ class VisorCacheCommand {
                         ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
 
                         sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
-                            val nm = ignite.node(nid).metrics()
+                            val nm = ignite.cluster.node(nid).metrics()
 
                             ciT += (
                                 nodeId8Addr(nid),
@@ -462,7 +462,7 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = node.fold(ignite.forRemotes())(ignite.forNode(_))
+            val prj = node.fold(ignite.cluster.forRemotes())(ignite.cluster.forNode(_))
 
             val nids = prj.nodes().map(_.id())
 
@@ -482,7 +482,7 @@ class VisorCacheCommand {
      */
     private def config(node: ClusterNode): VisorGridConfiguration = {
         try
-            ignite.compute(ignite.forNode(node)).withNoFailover()
+            ignite.compute(ignite.cluster.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: IgniteException =>

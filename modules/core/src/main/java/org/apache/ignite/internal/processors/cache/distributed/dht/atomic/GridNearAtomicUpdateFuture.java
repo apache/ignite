@@ -85,13 +85,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Optional arguments for entry processor. */
     private Object[] invokeArgs;
 
-    /** DR put values. */
+    /** Conflict put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<GridCacheDrInfo<V>> drPutVals;
+    private Collection<GridCacheDrInfo<V>> conflictPutVals;
 
-    /** DR remove values. */
+    /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<GridCacheVersion> drRmvVals;
+    private Collection<GridCacheVersion> conflictRmvVals;
 
     /** Mappings. */
     @GridToStringInclude
@@ -174,8 +174,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param keys Keys to update.
      * @param vals Values or transform closure.
      * @param invokeArgs Optional arguments for entry processor.
-     * @param drPutVals DR put values (optional).
-     * @param drRmvVals DR remove values (optional).
+     * @param conflictPutVals Conflict put values (optional).
+     * @param conflictRmvVals Conflict remove values (optional).
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param cached Cached entry if keys size is 1.
@@ -192,8 +192,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         Collection<? extends K> keys,
         @Nullable Collection<?> vals,
         @Nullable Object[] invokeArgs,
-        @Nullable Collection<GridCacheDrInfo<V>> drPutVals,
-        @Nullable Collection<GridCacheVersion> drRmvVals,
+        @Nullable Collection<GridCacheDrInfo<V>> conflictPutVals,
+        @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -207,8 +207,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
-        assert drPutVals == null || drPutVals.size() == keys.size();
-        assert drRmvVals == null || drRmvVals.size() == keys.size();
+        assert conflictPutVals == null || conflictPutVals.size() == keys.size();
+        assert conflictRmvVals == null || conflictRmvVals.size() == keys.size();
         assert cached == null || keys.size() == 1;
         assert subjId != null;
 
@@ -219,8 +219,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.keys = keys;
         this.vals = vals;
         this.invokeArgs = invokeArgs;
-        this.drPutVals = drPutVals;
-        this.drRmvVals = drRmvVals;
+        this.conflictPutVals = conflictPutVals;
+        this.conflictRmvVals = conflictRmvVals;
         this.retval = retval;
         this.cached = cached;
         this.expiryPlc = expiryPlc;
@@ -530,19 +530,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 drExpireTime = -1;
                 drVer = null;
             }
-            else if (drPutVals != null) {
-                GridCacheDrInfo<V> drPutVal =  F.first(drPutVals);
+            else if (conflictPutVals != null) {
+                GridCacheDrInfo<V> drPutVal =  F.first(conflictPutVals);
 
                 val = drPutVal.value();
                 drTtl = drPutVal.ttl();
                 drExpireTime = drPutVal.expireTime();
                 drVer = drPutVal.version();
             }
-            else if (drRmvVals != null) {
+            else if (conflictRmvVals != null) {
                 val = null;
                 drTtl = -1;
                 drExpireTime = -1;
-                drVer = F.first(drRmvVals);
+                drVer = F.first(conflictRmvVals);
             }
             else {
                 val = null;
@@ -616,13 +616,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         Iterator<GridCacheDrInfo<V>> drPutValsIt = null;
 
-        if (drPutVals != null)
-            drPutValsIt = drPutVals.iterator();
+        if (conflictPutVals != null)
+            drPutValsIt = conflictPutVals.iterator();
 
         Iterator<GridCacheVersion> drRmvValsIt = null;
 
-        if (drRmvVals != null)
-            drRmvValsIt = drRmvVals.iterator();
+        if (conflictRmvVals != null)
+            drRmvValsIt = conflictRmvVals.iterator();
 
         Map<UUID, GridNearAtomicUpdateRequest<K, V>> pendingMappings = new HashMap<>(topNodes.size(), 1.0f);
 
@@ -661,7 +661,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                         throw err;
                     }
                 }
-                else if (drPutVals != null) {
+                else if (conflictPutVals != null) {
                     GridCacheDrInfo<V> drPutVal =  drPutValsIt.next();
 
                     val = drPutVal.value();
@@ -669,7 +669,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     drExpireTime = drPutVal.expireTime();
                     drVer = drPutVal.version();
                 }
-                else if (drRmvVals != null) {
+                else if (conflictRmvVals != null) {
                     val = null;
                     drTtl = -1;
                     drExpireTime = -1;

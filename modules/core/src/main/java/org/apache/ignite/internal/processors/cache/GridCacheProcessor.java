@@ -854,12 +854,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
                 mgr.start(cacheCtx);
 
+            cacheCtx.initConflictResolver();
+
             if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
                 GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
 
                 // Start DHT managers.
                 for (GridCacheManager mgr : dhtManagers(dhtCtx))
                     mgr.start(dhtCtx);
+
+                dhtCtx.initConflictResolver();
 
                 // Start DHT cache.
                 dhtCtx.cache().start();
