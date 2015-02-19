@@ -43,7 +43,7 @@ public class GridProperties {
      * @param path Path.
      * @param throwExc Flag indicating whether to throw an exception or not.
      */
-    private static void readProperties(String path, boolean throwExc) {
+    public static void readProperties(String path, boolean throwExc) {
         try (InputStream is = IgniteVersionUtils.class.getClassLoader().getResourceAsStream(path)) {
             if (is == null) {
                 if (throwExc)
