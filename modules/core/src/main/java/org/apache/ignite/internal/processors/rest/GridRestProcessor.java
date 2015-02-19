@@ -71,7 +71,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final LongAdder workersCnt = new LongAdder();
 
     /** SecurityContext map. */
-    private ConcurrentMap<SubjectKey, SecurityContext> sesMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -461,7 +461,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         UUID clientId = req.clientId();
-        SecurityContext secCtx = sesMap.get(new SubjectKey(REMOTE_CLIENT, clientId));
+        SecurityContext secCtx = sesMap.get(clientId);
 
         if (secCtx != null)
             return secCtx;
@@ -513,7 +513,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param sCtx Security context.
      */
     private void updateSession(GridRestRequest req, SecurityContext sCtx) throws IgniteCheckedException {
-        sesMap.put(new SubjectKey(REMOTE_CLIENT, req.clientId()), sCtx);
+        if (sCtx != null) {
+            UUID id = req.clientId();
+            sesMap.put(id, sCtx);
+        }
     }
 
     /**
@@ -674,47 +677,5 @@ public class GridRestProcessor extends GridProcessorAdapter {
         X.println(">>> REST processor memory stats [grid=" + ctx.gridName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
-    }
-
-    /**
-     * Subject key.
-     */
-    private static class SubjectKey {
-        /** */
-        private final GridSecuritySubjectType subjType;
-
-        /** */
-        private final UUID subjId;
-
-        /**
-         * @param subjType Subject type.
-         * @param subjId Subject ID.
-         */
-        private SubjectKey(GridSecuritySubjectType subjType, UUID subjId) {
-            this.subjType = subjType;
-            this.subjId = subjId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof SubjectKey))
-                return false;
-
-            SubjectKey that = (SubjectKey)o;
-
-            return F.eq(subjId, that.subjId) && subjType == that.subjType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = subjType.hashCode();
-
-            res = 31 * res + (subjId == null ? 0 : subjId.hashCode());
-
-            return res;
-        }
     }
 }
