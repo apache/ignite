@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -106,8 +105,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      * @param dhtCnt DHT count.
      * @param nearCnt Near count.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key.
-     * @param partLock {@code True} if partition lock.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
@@ -129,8 +126,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int dhtCnt,
         int nearCnt,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl
@@ -147,9 +142,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
             isInvalidate,
             timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt,
-            txSize,
-            grpLockKey,
-            partLock);
+            txSize);
 
         this.topVer = topVer;
 

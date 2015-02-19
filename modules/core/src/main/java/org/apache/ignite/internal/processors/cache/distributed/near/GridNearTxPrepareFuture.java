@@ -197,6 +197,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param e Error.
      */
     void onError(@Nullable UUID nodeId, @Nullable Iterable<GridDistributedTxMapping<K, V>> mappings, Throwable e) {
+        if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
+            if (tx.onePhaseCommit())
+                tx.markForBackupCheck();
+        }
+
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
@@ -436,27 +441,21 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private void prepare0() {
         assert tx.optimistic();
 
-        try {
-            prepare(
-                tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry<K, V>>emptyList(),
-                tx.writeEntries());
+        prepare(
+            tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry<K, V>>emptyList(),
+            tx.writeEntries());
 
-            markInitialized();
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
+        markInitialized();
     }
 
     /**
      * @param reads Read entries.
      * @param writes Write entries.
-     * @throws IgniteCheckedException If transaction is group-lock and some key was mapped to to the local node.
      */
     private void prepare(
         Iterable<IgniteTxEntry<K, V>> reads,
         Iterable<IgniteTxEntry<K, V>> writes
-    ) throws IgniteCheckedException {
+    ) {
         assert tx.optimistic();
 
         GridDiscoveryTopologySnapshot snapshot = tx.topologySnapshot();
@@ -593,8 +592,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 tx,
                 m.reads(),
                 m.writes(),
-                /*grp lock key*/null,
-                /*part lock*/false,
                 m.near(),
                 txMapping.transactionNodes(),
                 true,
@@ -683,8 +680,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx,
             tx.optimistic() && tx.serializable() ? m.reads() : null,
             m.writes(),
-            tx.groupLockKey(),
-            tx.partitionLock(),
             m.near(),
             txMapping.transactionNodes(),
             m.last(),
@@ -730,9 +725,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             });
         }
         else {
-            assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +
-                ", nodeId=" + n.id() + ']';
-
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
             }
@@ -755,7 +747,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         long topVer,
         GridDistributedTxMapping<K, V> cur,
         boolean waitLock
-    ) throws IgniteCheckedException {
+    ) {
         GridCacheContext<K, V> cacheCtx = entry.context();
 
         List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
@@ -772,10 +764,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
         }
 
-        if (tx.groupLock() && !primary.isLocal())
-            throw new IgniteCheckedException("Failed to prepare group lock transaction (local node is not primary for " +
-                " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
-
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
@@ -785,10 +773,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
-            if (waitLock && entry.explicitVersion() == null) {
-                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
-                    lockKeys.add(entry.txKey());
-            }
+            if (waitLock && entry.explicitVersion() == null)
+                lockKeys.add(entry.txKey());
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {

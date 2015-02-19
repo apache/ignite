@@ -4546,9 +4546,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 tCfg.getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
                 !ctx.hasFlag(SKIP_STORE),
-                0,
-                /** group lock keys */null,
-                /** partition lock */false
+                0
             );
 
             if (ctx.hasFlag(SYNC_COMMIT))
@@ -4621,9 +4619,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
                 !ctx.hasFlag(SKIP_STORE),
-                0,
-                null,
-                false);
+                0
+            );
 
             if (ctx.hasFlag(SYNC_COMMIT))
                 tx.syncCommit(true);

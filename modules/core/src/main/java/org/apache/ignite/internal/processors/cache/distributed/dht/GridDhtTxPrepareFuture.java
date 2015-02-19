@@ -412,8 +412,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        Iterable<IgniteTxEntry<K, V>> checkEntries = tx.groupLock() ?
-            Collections.singletonList(tx.groupLockEntry()) : writes;
+        Iterable<IgniteTxEntry<K, V>> checkEntries = writes;
 
         for (IgniteTxEntry<K, V> txEntry : checkEntries) {
             GridCacheContext<K, V> cacheCtx = txEntry.context();
@@ -429,10 +428,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 txEntry.cached(entry, txEntry.keyBytes());
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
-                    lockKeys.add(txEntry.txKey());
-            }
+            if (tx.optimistic() && txEntry.explicitVersion() == null)
+                lockKeys.add(txEntry.txKey());
 
             while (true) {
                 try {
@@ -560,8 +557,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @throws IgniteCheckedException If failed to send response.
      */
     private void sendPrepareResponse(GridNearTxPrepareResponse<K, V> res) throws IgniteCheckedException {
-        if (!tx.nearNodeId().equals(cctx.localNodeId()))
+        if (!tx.nearNodeId().equals(cctx.localNodeId())) {
+            Throwable err = this.err.get();
+
+            if (err != null && err instanceof IgniteFutureCancelledException)
+                return;
+
             cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+        }
         else {
             assert completeCb != null;
 
@@ -825,8 +828,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         tx,
                         dhtWrites,
                         nearWrites,
-                        tx.groupLockKey(),
-                        tx.partitionLock(),
                         txNodes,
                         tx.nearXidVersion(),
                         true,
@@ -845,9 +846,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             if (entry.explicitVersion() == null) {
                                 GridCacheMvccCandidate<K> added = cached.candidate(version());
 
-                                assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
+                                assert added != null : "Null candidate for non-group-lock entry " +
                                     "[added=" + added + ", entry=" + entry + ']';
-                                assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
                                     "[added=" + added + ", entry=" + entry + ']';
 
                                 if (added != null && added.ownerVersion() != null)
@@ -924,8 +925,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             tx,
                             null,
                             nearMapping.writes(),
-                            tx.groupLockKey(),
-                            tx.partitionLock(),
                             tx.transactionNodes(),
                             tx.nearXidVersion(),
                             true,
@@ -937,9 +936,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             try {
                                 GridCacheMvccCandidate<K> added = entry.cached().candidate(version());
 
-                                assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
+                                assert added != null : "Null candidate for non-group-lock entry " +
                                     "[added=" + added + ", entry=" + entry + ']';
-                                assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
                                     "[added=" + added + ", entry=" + entry + ']';
 
                                 if (added != null && added.ownerVersion() != null)

@@ -91,8 +91,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param timeout Timeout.
      * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxLocal(
@@ -111,8 +109,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
         int taskNameHash
@@ -129,8 +125,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             invalidate,
             storeEnabled,
             txSize,
-            grpLockKey,
-            partLock,
             subjId,
             taskNameHash);
 

@@ -84,8 +84,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param tx Transaction.
      * @param reads Read entries.
      * @param writes Write entries.
-     * @param grpLockKey Group lock key if preparing group-lock transaction.
-     * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
@@ -99,8 +97,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         IgniteInternalTx<K, V> tx,
         Collection<IgniteTxEntry<K, V>> reads,
         Collection<IgniteTxEntry<K, V>> writes,
-        IgniteTxKey grpLockKey,
-        boolean partLock,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
@@ -111,7 +107,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(tx, reads, writes, grpLockKey, partLock, txNodes, onePhaseCommit);
+        super(tx, reads, writes, txNodes, onePhaseCommit);
 
         assert futId != null;
 

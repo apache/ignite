@@ -297,13 +297,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.isInvalidate(),
                                         req.timeout(),
                                         req.txSize(),
-                                        req.groupLockKey(),
                                         req.subjectId(),
                                         req.taskNameHash()
                                     );
-
-                                    if (req.groupLock())
-                                        tx.groupLockKey(txKey);
 
                                     tx = ctx.tm().onCreated(tx);
 

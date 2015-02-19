@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
@@ -215,8 +216,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if ((initialized() || err != null)) {
-            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
+                finishOnePhase();
+
                 this.tx.tmCommit();
+            }
 
             Throwable th = this.err.get();
 
@@ -278,17 +282,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     void finish() {
         if (tx.onePhaseCommit()) {
-            // No need to send messages as transaction was already committed on remote node.
-            // Finish local mapping only as we need send commit message to backups.
-            for (GridDistributedTxMapping<K, V> m : mappings.values()) {
-                if (m.node().isLocal()) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
-
-                    // Add new future.
-                    if (fut != null)
-                        add(fut);
-                }
-            }
+            if (commit && tx.needCheckBackup())
+                checkBackup();
 
             markInitialized();
 
@@ -323,6 +318,77 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             markInitialized();
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkBackup() {
+        assert mappings.size() <= 1;
+
+        for (UUID nodeId : mappings.keySet()) {
+            Collection<UUID> backups = tx.transactionNodes().get(nodeId);
+
+            if (!F.isEmpty(backups)) {
+                assert backups.size() == 1;
+
+                UUID backup = F.first(backups);
+
+                MiniFuture mini = new MiniFuture(backup);
+
+                add(mini);
+
+                GridDhtTxFinishRequest<K, V> finishReq = new GridDhtTxFinishRequest<>(
+                    cctx.localNodeId(),
+                    futureId(),
+                    mini.futureId(),
+                    tx.topologyVersion(),
+                    tx.xidVersion(),
+                    tx.commitVersion(),
+                    tx.threadId(),
+                    tx.isolation(),
+                    true,
+                    false,
+                    tx.system(),
+                    false,
+                    true,
+                    true,
+                    tx.xidVersion(),
+                    null,
+                    null,
+                    null,
+                    0,
+                    null,
+                    0);
+
+                try {
+                    cctx.io().send(backup, finishReq, tx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    mini.onResult(e);
+                }
+                catch (IgniteCheckedException e) {
+                    mini.onResult(e);
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private void finishOnePhase() {
+        // No need to send messages as transaction was already committed on remote node.
+        // Finish local mapping only as we need send commit message to backups.
+        for (GridDistributedTxMapping<K, V> m : mappings.values()) {
+            if (m.node().isLocal()) {
+                IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+
+                // Add new future.
+                if (fut != null)
+                    add(fut);
+            }
         }
     }
 
@@ -423,6 +489,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         @GridToStringInclude
         private GridDistributedTxMapping<K, V> m;
 
+        /** Backup check flag. */
+        private UUID backupId;
+
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -437,6 +506,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             super(cctx.kernalContext());
 
             this.m = m;
+        }
+
+        /**
+         * @param backupId Backup ID to check.
+         */
+        MiniFuture(UUID backupId) {
+            super(cctx.kernalContext());
+
+            this.backupId = backupId;
         }
 
         /**
@@ -486,6 +564,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param res Result callback.
          */
         void onResult(GridNearTxFinishResponse<K, V> res) {
+            assert backupId == null;
+
+            if (res.error() != null)
+                onDone(res.error());
+            else
+                onDone(tx);
+        }
+
+        /**
+         * @param res Response.
+         */
+        void onResult(GridDhtTxFinishResponse<K, V> res) {
+            assert backupId != null;
+
             if (res.error() != null)
                 onDone(res.error());
             else

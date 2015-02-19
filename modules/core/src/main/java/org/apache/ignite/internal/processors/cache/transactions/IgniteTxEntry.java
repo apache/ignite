@@ -132,9 +132,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /** Flag if this node is a back up node. */
     private boolean locMapped;
 
-    /** Group lock entry flag. */
-    private boolean grpLock;
-
     /** Deployment enabled flag. */
     private boolean depEnabled;
 
@@ -262,22 +259,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @return {@code True} if this entry was added in group lock transaction and
-     *      this is not a group lock entry.
-     */
-    public boolean groupLockEntry() {
-        return grpLock;
-    }
-
-    /**
-     * @param grpLock {@code True} if this entry was added in group lock transaction and
-     *      this is not a group lock entry.
-     */
-    public void groupLockEntry(boolean grpLock) {
-        this.grpLock = grpLock;
-    }
-
-    /**
      * @param ctx Context.
      * @return Clean copy of this entry.
      */
@@ -298,7 +279,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
         cp.explicitVer = explicitVer;
-        cp.grpLock = grpLock;
         cp.depEnabled = depEnabled;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
@@ -855,7 +835,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         out.writeLong(conflictExpireTime);
 
         CU.writeVersion(out, explicitVer);
-        out.writeBoolean(grpLock);
         CU.writeVersion(out, conflictVer);
 
         out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
@@ -885,7 +864,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         conflictExpireTime = in.readLong();
 
         explicitVer = CU.readVersion(in);
-        grpLock = in.readBoolean();
         conflictVer = CU.readVersion(in);
 
         expiryPlc = (ExpiryPolicy)in.readObject();

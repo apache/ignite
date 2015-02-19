@@ -91,18 +91,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     @GridToStringExclude
     private byte[] dhtVersBytes;
 
-    /** Group lock key, if any. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    @GridToStringExclude
-    private byte[] grpLockKeyBytes;
-
-    /** Partition lock flag. */
-    private boolean partLock;
-
     /** Expected transaction size. */
     private int txSize;
 
@@ -130,8 +118,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param tx Cache transaction.
      * @param reads Read entries.
      * @param writes Write entries.
-     * @param grpLockKey Group lock key.
-     * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param txNodes Transaction nodes mapping.
      * @param onePhaseCommit One phase commit flag.
      */
@@ -139,8 +125,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         IgniteInternalTx<K, V> tx,
         @Nullable Collection<IgniteTxEntry<K, V>> reads,
         Collection<IgniteTxEntry<K, V>> writes,
-        IgniteTxKey grpLockKey,
-        boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         boolean onePhaseCommit
     ) {
@@ -157,8 +141,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         this.reads = reads;
         this.writes = writes;
-        this.grpLockKey = grpLockKey;
-        this.partLock = partLock;
         this.txNodes = txNodes;
         this.onePhaseCommit = onePhaseCommit;
     }
@@ -264,20 +246,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /**
-     * @return Group lock key if preparing group-lock transaction.
-     */
-    @Nullable public IgniteTxKey groupLockKey() {
-        return grpLockKey;
-    }
-
-    /**
-     * @return {@code True} if preparing group-lock transaction with partition lock.
-     */
-    public boolean partitionLock() {
-        return partLock;
-    }
-
-    /**
      * @return Expected transaction size.
      */
     public int txSize() {
@@ -314,9 +282,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 readsBytes.add(ctx.marshaller().marshal(e));
         }
 
-        if (grpLockKey != null && grpLockKeyBytes == null)
-            grpLockKeyBytes = ctx.marshaller().marshal(grpLockKey);
-
         if (dhtVers != null && dhtVersBytes == null)
             dhtVersBytes = ctx.marshaller().marshal(dhtVers);
 
@@ -345,9 +310,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             unmarshalTx(reads, false, ctx, ldr);
         }
-
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
 
         if (dhtVersBytes != null && dhtVers == null)
             dhtVers = ctx.marshaller().unmarshal(dhtVersBytes, ldr);
@@ -441,12 +403,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 writer.incrementState();
 
-            case 10:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
-                    return false;
-
-                writer.incrementState();
-
             case 11:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
@@ -461,12 +417,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             case 13:
                 if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
                 writer.incrementState();
@@ -552,14 +502,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 readState++;
 
-            case 10:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
             case 11:
                 invalidate = reader.readBoolean("invalidate");
 
@@ -582,14 +524,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             case 13:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 14:
-                partLock = reader.readBoolean("partLock");
 
                 if (!reader.isLastRead())
                     return false;

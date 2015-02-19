@@ -202,7 +202,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.isInvalidate(),
                                     req.timeout(),
                                     req.txSize(),
-                                    req.groupLockKey(),
                                     req.subjectId(),
                                     req.taskNameHash());
 
@@ -222,9 +221,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 null,
                                 req.accessTtl());
-
-                            if (req.groupLock())
-                                tx.groupLockKey(txKey);
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -796,8 +792,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.isInvalidate(),
                                     false,
                                     req.txSize(),
-                                    req.groupLockKey(),
-                                    req.partitionLock(),
                                     null,
                                     req.subjectId(),
                                     req.taskNameHash());

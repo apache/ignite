@@ -86,13 +86,11 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                                 tCfg.getDefaultTxTimeout(),
                                 /*invalidate*/false,
                                 /*store enabled*/true,
-                                /*tx size*/0,
-                                /*group lock keys*/null,
-                                /*partition lock*/false
+                                /*tx size*/0
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((IgniteInternalTx)tx, cctx);
+                        rsrc = new GridCacheXAResource(tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

@@ -93,7 +93,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      */
@@ -109,7 +108,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -124,7 +122,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             isolation,
             timeout,
             txSize,
-            grpLockKey,
             subjId,
             taskNameHash);
 
@@ -189,16 +186,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     /** {@inheritDoc} */
     @Override public void seal() {
         // No-op.
-    }
-
-    /**
-     * Adds group lock key to remote transaction.
-     *
-     * @param key Key.
-     */
-    public void groupLockKey(IgniteTxKey key) {
-        if (grpLockKey == null)
-            grpLockKey = key;
     }
 
     /** {@inheritDoc} */
@@ -343,7 +330,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             entry.op(e.op());
             entry.ttl(e.ttl());
             entry.explicitVersion(e.explicitVersion());
-            entry.groupLockEntry(e.groupLockEntry());
 
             // Conflict resolution stuff.
             entry.conflictVersion(e.conflictVersion());
@@ -431,17 +417,17 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
                 while (true) {
-                    GridCacheEntryEx<K, V> Entry = txEntry.cached();
+                    GridCacheEntryEx<K, V> entry = txEntry.cached();
 
-                    assert Entry != null : "Missing cached entry for transaction entry: " + txEntry;
+                    assert entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
                     try {
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!txEntry.groupLockEntry() && !Entry.lockedBy(ver)) {
+                        if (!entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
-                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
+                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + entry +
                                     ", tx=" + this + ']');
 
                             return;
@@ -607,10 +593,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     }
                                     // No-op.
                                     else {
-                                        assert !groupLock() || txEntry.groupLockEntry() || ownsLock(txEntry.cached()):
-                                            "Transaction does not own lock for group lock entry during  commit [tx=" +
-                                                this + ", txEntry=" + txEntry + ']';
-
                                         if (txEntry.ttl() != -1L)
                                             cached.updateTtl(null, txEntry.ttl());
 

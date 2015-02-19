@@ -85,6 +85,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** Info for entries accessed locally in optimistic transaction. */
     private Map<IgniteTxKey<K>, IgniteCacheExpiryPolicy> accessMap;
 
+    /** */
+    private boolean needCheckBackup;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -103,8 +106,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param invalidate Invalidate flag.
      * @param storeEnabled Store enabled flag.
      * @param txSize Transaction size.
-     * @param grpLockKey Group lock key if this is a group lock transaction.
-     * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      */
@@ -119,8 +120,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -136,8 +135,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             invalidate,
             storeEnabled,
             txSize,
-            grpLockKey,
-            partLock,
             subjId,
             taskNameHash);
     }
@@ -209,6 +206,20 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /**
+     * Marks transaction to check if commit on backup.
+     */
+    public void markForBackupCheck() {
+        needCheckBackup = true;
+    }
+
+    /**
+     * @return If need to check tx commit on backup.
+     */
+    public boolean needCheckBackup() {
+        return needCheckBackup;
+    }
+
+    /**
      * Checks if transaction is fully synchronous.
      *
      * @return {@code True} if transaction is fully synchronous.
@@ -265,9 +276,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry<K, V>> optimisticLockEntries() {
-        if (groupLock())
-            return super.optimisticLockEntries();
-
         return optimisticLockEntries;
     }
 
@@ -409,13 +417,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
-        super.addGroupTxMapping(keys);
-
-        addKeyMapping(cctx.localNode(), keys);
-    }
-
     /**
      * Adds key mapping to dht mapping.
      *
@@ -554,9 +555,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        Collection<IgniteTxEntry<K, V>> entries = groupLock() ?
-            Collections.singletonList(groupLockEntry()) :
-            F.concat(false, mapping.reads(), mapping.writes());
+        Collection<IgniteTxEntry<K, V>> entries = F.concat(false, mapping.reads(), mapping.writes());
 
         for (IgniteTxEntry<K, V> txEntry : entries) {
             while (true) {

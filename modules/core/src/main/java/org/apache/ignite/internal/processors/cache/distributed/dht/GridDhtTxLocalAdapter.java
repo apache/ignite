@@ -86,8 +86,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock If this is a group-lock transaction and the whole partition should be locked.
      */
     protected GridDhtTxLocalAdapter(
         GridCacheSharedContext<K, V> cctx,
@@ -101,13 +99,11 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(cctx, xidVer, implicit, implicitSingle, sys, concurrency, isolation, timeout, invalidate, storeEnabled,
-            txSize, grpLockKey, partLock, subjId, taskNameHash);
+            txSize, subjId, taskNameHash);
 
         assert cctx != null;
 
@@ -669,68 +665,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                 }
             },
             cctx.kernalContext());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
-        assert groupLock();
-
-        for (GridDistributedTxMapping<K, V> mapping : dhtMap.values())
-            mapping.entries(Collections.unmodifiableCollection(txMap.values()), true);
-
-        // Here we know that affinity key for all given keys is our group lock key.
-        // Just add entries to dht mapping.
-        // Add near readers. If near cache is disabled on all nodes, do nothing.
-        Collection<UUID> backupIds = dhtMap.keySet();
-
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> locNearMap = null;
-
-        for (IgniteTxKey<K> key : keys) {
-            IgniteTxEntry<K, V> txEntry = entry(key);
-
-            if (!txEntry.groupLockEntry() || txEntry.context().isNear())
-                continue;
-
-            assert txEntry.cached() instanceof GridDhtCacheEntry : "Invalid entry type: " + txEntry.cached();
-
-            while (true) {
-                try {
-                    GridDhtCacheEntry<K, V> entry = (GridDhtCacheEntry<K, V>)txEntry.cached();
-
-                    Collection<UUID> readers = entry.readers();
-
-                    if (!F.isEmpty(readers)) {
-                        Collection<ClusterNode> nearNodes = cctx.discovery().nodes(readers, F0.notEqualTo(nearNodeId()),
-                            F.notIn(backupIds));
-
-                        if (log.isDebugEnabled())
-                            log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" +
-                                entry + ']');
-
-                        for (ClusterNode n : nearNodes) {
-                            if (locNearMap == null)
-                                locNearMap = new HashMap<>();
-
-                            List<GridDhtCacheEntry<K, V>> entries = locNearMap.get(n);
-
-                            if (entries == null)
-                                locNearMap.put(n, entries = new LinkedList<>());
-
-                            entries.add(entry);
-                        }
-                    }
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // Retry.
-                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()), txEntry.keyBytes());
-                }
-            }
-        }
-
-        if (locNearMap != null)
-            addNearNodeEntryMapping(locNearMap);
     }
 
     /** {@inheritDoc} */

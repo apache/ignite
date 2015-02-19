@@ -1010,11 +1010,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             checkObsolete();
 
             if (cctx.kernalContext().config().isCacheSanityCheckEnabled()) {
-                if (tx != null && tx.groupLock())
-                    groupLockSanityCheck(tx);
-                else
-                    assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
-                        "Transaction does not own lock for update [entry=" + this + ", tx=" + tx + ']';
+                assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
+                    "Transaction does not own lock for update [entry=" + this + ", tx=" + tx + ']';
             }
 
             // Load and remove from swap if it is new.
@@ -1152,11 +1149,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         synchronized (this) {
             checkObsolete();
 
-            if (tx != null && tx.groupLock() && cctx.kernalContext().config().isCacheSanityCheckEnabled())
-                groupLockSanityCheck(tx);
-            else
+            if (cctx.kernalContext().config().isCacheSanityCheckEnabled()) {
                 assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
                     "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
+            }
 
             boolean startVer = isStartVersion();
 
@@ -1218,10 +1214,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (tx == null)
                 obsoleteVer = newVer;
             else {
-                // Only delete entry if the lock is not explicit.
-                if (tx.groupLock() || lockedBy(tx.xidVersion()))
-                    obsoleteVer = tx.xidVersion();
-                else if (log.isDebugEnabled())
+                if (log.isDebugEnabled())
                     log.debug("Obsolete version was not set because lock was explicit: " + this);
             }
 
@@ -2832,25 +2825,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             log.debug("Poked cache entry [newVal=" + val + ", oldVal=" + old + ", entry=" + this + ']');
 
         return old;
-    }
-
-    /**
-     * Checks that entries in group locks transactions are not locked during commit.
-     *
-     * @param tx Transaction to check.
-     * @throws GridCacheEntryRemovedException If entry is obsolete.
-     * @throws IgniteCheckedException If entry was externally locked.
-     */
-    private void groupLockSanityCheck(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert tx.groupLock();
-
-        IgniteTxEntry<K, V> txEntry = tx.entry(txKey());
-
-        if (txEntry.groupLockEntry()) {
-            if (lockedByAny())
-                throw new IgniteCheckedException("Failed to update cache entry (entry was externally locked while " +
-                    "accessing entry within group lock transaction) [entry=" + this + ", tx=" + tx + ']');
-        }
     }
 
     /**

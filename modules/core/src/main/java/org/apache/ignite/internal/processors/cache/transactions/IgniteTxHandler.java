@@ -204,7 +204,8 @@ public class IgniteTxHandler<K, V> {
                         if (tx != null)
                             tx.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof IgniteTxOptimisticCheckedException))
+                        if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
+                            !X.hasCause(e, IgniteFutureCancelledException.class))
                             U.error(log, "Failed to prepare DHT transaction: " + tx, e);
                     }
 
@@ -275,8 +276,6 @@ public class IgniteTxHandler<K, V> {
                 req.isInvalidate(),
                 false,
                 req.txSize(),
-                req.groupLockKey(),
-                req.partitionLock(),
                 req.transactionNodes(),
                 req.subjectId(),
                 req.taskNameHash()
@@ -334,7 +333,8 @@ public class IgniteTxHandler<K, V> {
                     catch (IgniteCheckedException e) {
                         tx0.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof IgniteTxOptimisticCheckedException))
+                        if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
+                            !X.hasCause(e, IgniteFutureCancelledException.class))
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                     }
                 }
@@ -544,8 +544,6 @@ public class IgniteTxHandler<K, V> {
                             req.isInvalidate(),
                             req.storeEnabled(),
                             req.txSize(),
-                            req.groupLockKey(),
-                            false,
                             null,
                             req.subjectId(),
                             req.taskNameHash()));
@@ -924,7 +922,6 @@ public class IgniteTxHandler<K, V> {
                     req.isInvalidate(),
                     req.timeout(),
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
-                    req.groupLockKey(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
                     req.subjectId(),
@@ -1044,7 +1041,6 @@ public class IgniteTxHandler<K, V> {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    req.groupLockKey(),
                     req.subjectId(),
                     req.taskNameHash()
                 );

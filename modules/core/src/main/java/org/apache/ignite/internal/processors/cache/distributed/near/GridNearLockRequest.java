@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -107,8 +106,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock If partition is locked.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
@@ -130,8 +127,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         int keyCnt,
         int txSize,
         boolean syncCommit,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl
@@ -149,9 +144,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             isInvalidate,
             timeout,
             keyCnt,
-            txSize,
-            grpLockKey,
-            partLock);
+            txSize);
 
         assert topVer > 0;
 

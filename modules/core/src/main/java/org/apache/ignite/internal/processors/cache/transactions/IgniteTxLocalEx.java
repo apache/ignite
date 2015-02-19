@@ -59,11 +59,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     public void userRollback() throws IgniteCheckedException;
 
     /**
-     * @return Group lock entry if this is a group-lock transaction.
-     */
-    @Nullable public IgniteTxEntry<K, V> groupLockEntry();
-
-    /**
      * @param cacheCtx Cache context.
      * @param keys Keys to get.
      * @param cached Cached entry if this method is called from entry wrapper.
@@ -138,20 +133,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheVersion> drMap);
-
-    /**
-     * Performs keys locking for affinity-based group lock transactions.
-     *
-     * @param cacheCtx Cache context.
-     * @param keys Keys to lock.
-     * @return Lock future.
-     */
-    public IgniteInternalFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
-
-    /**
-     * @return {@code True} if keys from the same partition are allowed to be enlisted in group-lock transaction.
-     */
-    public boolean partitionLock();
 
     /**
      * @return Return value for

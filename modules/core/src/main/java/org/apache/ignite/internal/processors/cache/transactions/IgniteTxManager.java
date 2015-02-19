@@ -346,8 +346,6 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param isolation Isolation.
      * @param timeout transaction timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
     public IgniteTxLocalAdapter<K, V> newTx(
@@ -359,9 +357,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
-        int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock) {
+        int txSize
+    ) {
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
@@ -377,8 +374,6 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             invalidate,
             storeEnabled,
             txSize,
-            grpLockKey,
-            partLock,
             subjId,
             taskNameHash);
 
@@ -1187,13 +1182,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             cctx.kernalContext().dataStructures().onTxCommitted(tx);
 
             // 4. Unlock write resources.
-            if (tx.groupLock())
-                unlockGroupLocks(tx);
-            else
-                unlockMultiple(tx, tx.writeEntries());
+            unlockMultiple(tx, tx.writeEntries());
 
             // 5. For pessimistic transaction, unlock read resources if required.
-            if (tx.pessimistic() && !tx.readCommitted() && !tx.groupLock())
+            if (tx.pessimistic() && !tx.readCommitted())
                 unlockMultiple(tx, tx.readEntries());
 
             // 6. Notify evictions.
@@ -1392,7 +1384,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param tx Transaction to notify evictions for.
      */
     private void notifyEvitions(IgniteInternalTx<K, V> tx) {
-        if (tx.internal() && !tx.groupLock())
+        if (tx.internal())
             return;
 
         for (IgniteTxEntry<K, V> txEntry : tx.allEntries())
@@ -1565,51 +1557,6 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         }
 
         return true;
-    }
-
-    /**
-     * Unlocks entries locked by group transaction.
-     *
-     * @param txx Transaction.
-     */
-    @SuppressWarnings("unchecked")
-    private void unlockGroupLocks(IgniteInternalTx txx) {
-        IgniteTxKey grpLockKey = txx.groupLockKey();
-
-        assert grpLockKey != null;
-
-        if (grpLockKey == null)
-            return;
-
-        IgniteTxEntry txEntry = txx.entry(grpLockKey);
-
-        assert txEntry != null || (txx.near() && !txx.local());
-
-        if (txEntry != null) {
-            GridCacheContext cacheCtx = txEntry.context();
-
-            // Group-locked entries must be locked.
-            while (true) {
-                try {
-                    GridCacheEntryEx<K, V> entry = txEntry.cached();
-
-                    assert entry != null;
-
-                    entry.txUnlock(txx);
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in TM unlockGroupLocks(..) method (will retry): " + txEntry);
-
-                    GridCacheAdapter cache = cacheCtx.cache();
-
-                    // Renew cache entry.
-                    txEntry.cached(cache.entryEx(txEntry.key()), txEntry.keyBytes());
-                }
-            }
-        }
     }
 
     /**

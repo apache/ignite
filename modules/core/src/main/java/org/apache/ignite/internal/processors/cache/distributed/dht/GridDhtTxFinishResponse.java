@@ -36,6 +36,9 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     /** Mini future ID. */
     private IgniteUuid miniId;
 
+    /** Error. */
+    private Throwable err;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -61,6 +64,13 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @return Error for check committed backup requests.
+     */
+    public Throwable error() {
+        return err;
     }
 
     /** {@inheritDoc} */

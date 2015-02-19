@@ -66,13 +66,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Expected txSize. */
     private int txSize;
 
-    /** Group lock key. */
-    @GridDirectTransient
-    private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    private byte[] grpLockKeyBytes;
-
     /** System flag. */
     private boolean sys;
 
@@ -95,7 +88,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -110,8 +102,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize,
-        @Nullable IgniteTxKey grpLockKey
+        int txSize
     ) {
         super(xidVer, 0);
         assert xidVer != null;
@@ -126,7 +117,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
         this.txSize = txSize;
-        this.grpLockKey = grpLockKey;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -210,41 +200,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         return commit ? syncCommit : syncRollback;
     }
 
-    /**
-     * @return {@code True} if group lock transaction.
-     */
-    public boolean groupLock() {
-        return grpLockKey != null;
-    }
-
-    /**
-     * @return Group lock key.
-     */
-    @Nullable public IgniteTxKey groupLockKey() {
-        return grpLockKey;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (grpLockKey != null && grpLockKeyBytes == null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(grpLockKey, ctx);
-
-            grpLockKeyBytes = CU.marshal(ctx, grpLockKey);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -280,12 +235,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
             case 11:
                 if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 writer.incrementState();
@@ -365,14 +314,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
             case 11:
                 futId = reader.readIgniteUuid("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 12:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;

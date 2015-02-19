@@ -94,7 +94,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         @Nullable UUID subjId,
         int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
-            rolledbackVers, txSize, null);
+            rolledbackVers, txSize);
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;

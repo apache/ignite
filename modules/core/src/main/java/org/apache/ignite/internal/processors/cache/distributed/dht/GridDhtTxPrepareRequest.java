@@ -102,8 +102,6 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param tx Transaction.
      * @param dhtWrites DHT writes.
      * @param nearWrites Near writes.
-     * @param grpLockKey Group lock key if preparing group-lock transaction.
-     * @param partLock {@code True} if group-lock transaction locks partition.
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
@@ -116,15 +114,13 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         GridDhtTxLocalAdapter<K, V> tx,
         Collection<IgniteTxEntry<K, V>> dhtWrites,
         Collection<IgniteTxEntry<K, V>> nearWrites,
-        IgniteTxKey grpLockKey,
-        boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
         boolean last,
         boolean onePhaseCommit,
         UUID subjId,
         int taskNameHash) {
-        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes, onePhaseCommit);
+        super(tx, null, dhtWrites, txNodes, onePhaseCommit);
 
         assert futId != null;
         assert miniId != null;

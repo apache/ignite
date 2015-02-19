@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -85,16 +84,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** Key count. */
     private int txSize;
 
-    /** Group lock key if this is a group-lock transaction. */
-    @GridDirectTransient
-    private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    private byte[] grpLockKeyBytes;
-
-    /** Partition lock flag. Only if group-lock transaction. */
-    private boolean partLock;
-
     /**
      * Empty constructor.
      */
@@ -115,9 +104,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      * @param timeout Lock timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if this is a group-lock transaction request and whole partition is
-     *      locked.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -132,9 +118,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         boolean isInvalidate,
         long timeout,
         int keyCnt,
-        int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock
+        int txSize
     ) {
         super(lockVer, keyCnt);
 
@@ -153,8 +137,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
-        this.grpLockKey = grpLockKey;
-        this.partLock = partLock;
 
         retVals = new boolean[keyCnt];
     }
@@ -294,27 +276,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /**
-     * @return {@code True} if lock request for group-lock transaction.
-     */
-    public boolean groupLock() {
-        return grpLockKey != null;
-    }
-
-    /**
-     * @return Group lock key.
-     */
-    @Nullable public IgniteTxKey groupLockKey() {
-        return grpLockKey;
-    }
-
-    /**
-     * @return {@code True} if partition is locked in group-lock transaction.
-     */
-    public boolean partitionLock() {
-        return partLock;
-    }
-
-    /**
      * @return Max lock wait time.
      */
     public long timeout() {
@@ -326,12 +287,8 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (grpLockKey != null && grpLockKeyBytes == null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(grpLockKey, ctx);
-
-            grpLockKeyBytes = CU.marshal(ctx, grpLockKey);
-        }
+        if (keyBytes == null && keys != null)
+            keyBytes = marshalCollection(keys, ctx);
     }
 
     /** {@inheritDoc} */
@@ -340,9 +297,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
         if (keys == null)
             keys = unmarshalCollection(keyBytes, ctx, ldr);
-
-        if (grpLockKey == null && grpLockKeyBytes != null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -362,12 +316,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         switch (writer.state()) {
             case 8:
                 if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 writer.incrementState();
@@ -414,12 +362,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 writer.incrementState();
 
-            case 17:
-                if (!writer.writeBoolean("partLock", partLock))
-                    return false;
-
-                writer.incrementState();
-
             case 18:
                 if (!writer.writeBooleanArray("retVals", retVals))
                     return false;
@@ -459,14 +401,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         switch (readState) {
             case 8:
                 futId = reader.readIgniteUuid("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 9:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -527,14 +461,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
             case 16:
                 nodeId = reader.readUuid("nodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 17:
-                partLock = reader.readBoolean("partLock");
 
                 if (!reader.isLastRead())
                     return false;

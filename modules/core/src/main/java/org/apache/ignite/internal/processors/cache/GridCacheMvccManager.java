@@ -274,7 +274,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * Cancels all client futures.
      */
     public void cancelClientFutures() {
-        IgniteException e = new IgniteException("Operation has been cancelled (grid is stopping).");
+        IgniteException e = new IgniteFutureCancelledException("Operation has been cancelled (grid is stopping).");
 
         for (Collection<GridCacheFuture<?>> futures : futs.values()) {
             for (GridCacheFuture<?> future : futures)

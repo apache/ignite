@@ -274,16 +274,6 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     public boolean empty();
 
     /**
-     * @return {@code True} if transaction group-locked.
-     */
-    public boolean groupLock();
-
-    /**
-     * @return Group lock key if {@link #groupLock()} is {@code true}.
-     */
-    @Nullable public IgniteTxKey groupLockKey();
-
-    /**
      * @return {@code True} if preparing flag was set with this call.
      */
     public boolean markPreparing();

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -53,6 +52,9 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
     /** Topology version. */
     private long topVer;
+
+    /** Check comitted flag. */
+    private boolean checkCommitted;
 
     /** Pending versions with order less than one for this message (needed for commit ordering). */
     @GridToStringInclude
@@ -95,7 +97,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param rolledbackVers Rolled back versions.
      * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      */
@@ -119,12 +120,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize, grpLockKey);
+            committedVers, rolledbackVers, txSize);
 
         assert miniId != null;
         assert nearNodeId != null;
