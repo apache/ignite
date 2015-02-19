@@ -3569,7 +3569,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(data);
+                        exchange.onExchange(node.id(), data);
 
                     msg.addDiscoveryData(exchange.collect(node.id()));
                 }
@@ -3641,7 +3641,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 // Notify outside of synchronized block.
                 if (dataList != null) {
                     for (Map<Integer, Object> discoData : dataList)
-                        exchange.onExchange(discoData);
+                        exchange.onExchange(node.id(), discoData);
                 }
             }
 

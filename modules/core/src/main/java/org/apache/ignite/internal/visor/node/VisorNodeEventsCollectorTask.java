@@ -54,7 +54,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
         for (ComputeJobResult r : results) {
             if (r.getException() == null)
-                allEvts.addAll((Collection<VisorGridEvent>) r.getData());
+                allEvts.addAll((Collection<VisorGridEvent>)r.getData());
         }
 
         return allEvts.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvts;
@@ -172,7 +172,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
      * Job for task returns events data.
      */
     private static class VisorEventsCollectJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
-            Collection<? extends VisorGridEvent>> {
+        Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
 

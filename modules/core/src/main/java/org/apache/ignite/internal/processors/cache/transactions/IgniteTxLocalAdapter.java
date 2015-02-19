@@ -2405,7 +2405,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param val Value.
      * @param ret Return value to update.
      */
-    private void addInvokeResult(IgniteTxEntry<K, V> txEntry, V val, GridCacheReturn ret) {
+    private void addInvokeResult(IgniteTxEntry<K, V> txEntry, V val, GridCacheReturn<?> ret) {
         try {
             Object res = null;
 

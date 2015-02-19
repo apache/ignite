@@ -166,6 +166,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      */
     private void startUp() throws Exception {
         startGrids(GRID_CNT);
+
+        // Await for stable topology.
+        awaitPartitionMapExchange();
     }
 
     /**
