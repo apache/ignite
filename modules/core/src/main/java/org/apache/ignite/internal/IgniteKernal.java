@@ -673,9 +673,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc);
 
-            cluster = new IgniteClusterImpl();
-
-            cluster.setKernalContext(ctx);
+            cluster = new IgniteClusterImpl(ctx);
 
             U.onGridStart();
 

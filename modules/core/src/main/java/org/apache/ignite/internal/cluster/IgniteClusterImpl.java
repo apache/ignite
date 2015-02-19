@@ -53,6 +53,24 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     @GridToStringExclude
     private ClusterNodeLocalMap nodeLoc;
 
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public IgniteClusterImpl() {
+        // No-op.
+    }
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public IgniteClusterImpl(GridKernalContext ctx) {
+        super(ctx, null, (IgnitePredicate<ClusterNode>)null);
+
+        cfg = ctx.config();
+
+        nodeLoc = new ClusterNodeLocalMapImpl(ctx);
+    }
+
     /** {@inheritDoc} */
     @Override public void setKernalContext(GridKernalContext ctx) {
         super.setKernalContext(ctx);
@@ -67,7 +85,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new ClusterGroupAdapter(this, ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(ctx, null, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             unguard();
