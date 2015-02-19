@@ -61,7 +61,6 @@ public class VisorQueryUtils {
     }
 
     /**
-     *
      * @param o Object.
      * @return String representation of value.
      */
@@ -69,11 +68,11 @@ public class VisorQueryUtils {
         if (o == null)
             return "null";
         if (o instanceof byte[])
-            return "size=" + ((byte[]) o).length;
+            return "size=" + ((byte[])o).length;
         if (o instanceof Byte[])
-            return "size=" + ((Byte[]) o).length;
+            return "size=" + ((Byte[])o).length;
         if (o instanceof Object[])
-            return "size=" + ((Object[]) o).length + ", values=[" + mkString((Object[]) o, 120) + "]";
+            return "size=" + ((Object[])o).length + ", values=[" + mkString((Object[])o, 120) + "]";
         return o.toString();
     }
 
@@ -89,7 +88,7 @@ public class VisorQueryUtils {
 
         Boolean first = true;
 
-        for (Object v: arr) {
+        for (Object v : arr) {
             if (first)
                 first = false;
             else
@@ -133,9 +132,9 @@ public class VisorQueryUtils {
             Object k = next.getKey();
             Object v = next.getValue();
 
-            rows.add(new Object[] { typeOf(k), valueOf(k), typeOf(v), valueOf(v) });
+            rows.add(new Object[] {typeOf(k), valueOf(k), typeOf(v), valueOf(v)});
 
-            cnt ++;
+            cnt++;
 
             next = fut.next();
         }
@@ -150,7 +149,7 @@ public class VisorQueryUtils {
      * @return {@code true} if it is one of known types.
      */
     private static Boolean isKnownType(Object obj) {
-        return obj instanceof String||
+        return obj instanceof String ||
             obj instanceof Boolean ||
             obj instanceof Byte ||
             obj instanceof Integer ||
@@ -194,7 +193,8 @@ public class VisorQueryUtils {
             }
 
             rows.add(row);
-            cnt ++;
+
+            cnt++;
 
             next = fut.next();
         }

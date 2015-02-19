@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import org.apache.ignite.*;
 
 /**
- * Internal projection interface.
+ *
  */
-public interface ClusterGroupEx extends ClusterGroup {
-    /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Subject ID.
-     * @return Internal projection.
-     */
-    public ClusterGroupEx forSubjectId(UUID subjId);
-
-    /**
-     * @param cacheName Cache name.
-     * @param distributionModes Cache distribution modes.
-     * @return Cluster group.
-     */
-    public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes);
+public interface IgniteClusterEx extends IgniteCluster, ClusterGroupEx {
+    // No-op.
 }

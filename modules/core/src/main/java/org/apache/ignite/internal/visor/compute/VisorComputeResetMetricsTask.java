@@ -51,7 +51,7 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(Void arg) {
-            ignite.resetMetrics();
+            ignite.cluster().resetMetrics();
 
             return null;
         }

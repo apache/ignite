@@ -90,6 +90,9 @@ public class VisorGridConfiguration implements Serializable {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
+    /** Query configuration */
+    private VisorQueryConfiguration qryCfg;
+
     /**
      * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
@@ -117,6 +120,7 @@ public class VisorGridConfiguration implements Serializable {
         systemProperties(getProperties());
         atomic(VisorAtomicConfiguration.from(c.getAtomicConfiguration()));
         transaction(VisorTransactionConfiguration.from(c.getTransactionConfiguration()));
+        queryConfiguration(VisorQueryConfiguration.from(c.getQueryConfiguration()));
 
         return this;
     }
@@ -376,5 +380,19 @@ public class VisorGridConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorGridConfiguration.class, this);
+    }
+
+    /**
+     * @return Query configuration.
+     */
+    public VisorQueryConfiguration queryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * @param qryCfg New query configuration.
+     */
+    public void queryConfiguration(VisorQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 }

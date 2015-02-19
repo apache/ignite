@@ -245,7 +245,7 @@ class VisorEventsCommand {
             }
             else {
                 val node = try
-                    ignite.node(UUID.fromString(id.get))
+                    ignite.cluster.node(UUID.fromString(id.get))
                 catch {
                     case _: IllegalArgumentException =>
                         scold("Invalid node 'id': " + id.get)
@@ -283,7 +283,7 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+                ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
                 case e: IgniteException =>

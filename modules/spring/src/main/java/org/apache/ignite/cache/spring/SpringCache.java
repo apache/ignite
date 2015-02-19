@@ -172,7 +172,7 @@ class SpringCache implements Cache, Serializable {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws IgniteCheckedException {
-            cache.removeAll();
+            cache.localRemoveAll();
         }
 
         /** {@inheritDoc} */

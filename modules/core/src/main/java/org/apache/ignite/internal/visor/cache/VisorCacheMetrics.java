@@ -394,7 +394,8 @@ public class VisorCacheMetrics implements Serializable {
         return txXidMapSize;
     }
 
-    /** Committed transaction queue size.
+    /**
+     * Committed transaction queue size.
      */
     public int txCommitQueueSize() {
         return txCommitQueueSize;

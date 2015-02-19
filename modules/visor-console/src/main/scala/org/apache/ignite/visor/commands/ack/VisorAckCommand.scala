@@ -105,9 +105,9 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                val nodeIds = ignite.nodes().map(_.id())
+                val nodeIds = ignite.cluster().nodes().map(_.id())
 
-                ignite.compute(ignite.forNodeIds(nodeIds))
+                ignite.compute(ignite.cluster().forNodeIds(nodeIds))
                     .withName("visor-ack")
                     .withNoFailover()
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))

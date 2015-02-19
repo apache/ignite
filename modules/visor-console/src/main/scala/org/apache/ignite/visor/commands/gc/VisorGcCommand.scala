@@ -129,7 +129,7 @@ class VisorGcCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = ignite.node(UUID.fromString(id.get))
+                    node = ignite.cluster.node(UUID.fromString(id.get))
 
                     if (node == null)
                         scold("'id' does not match any node: " + id.get).^^
@@ -143,7 +143,7 @@ class VisorGcCommand {
 
                 t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val nids = prj.nodes().map(_.id())
 

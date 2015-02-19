@@ -182,7 +182,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             map.put("key" + i, i);
 
         // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
-        Map<ClusterNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
+        Map<ClusterNode, Collection<String>> mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keys = mapped.get(grid(i).localNode());
@@ -195,7 +195,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         map.remove("key0");
 
-        mapped = grid(0).mapKeysToNodes(null, map.keySet());
+        mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             // Will actually delete entry from map.
@@ -538,7 +538,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutTx() throws Exception {
         if (txEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
-            
+
             try (Transaction tx = transactions().txStart()) {
                 assert cache.getAndPut("key1", 1) == null;
                 assert cache.getAndPut("key2", 2) == null;
@@ -554,7 +554,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assert cache.get("key1") != null;
                 assert cache.get("key2") != null;
                 assert cache.get("wrong") == null;
-                
+
                 tx.commit();
             }
 
@@ -1161,7 +1161,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             cache.put("key1", 1);
             cache.put("key2", 2);
-    
+
             // Check inside transaction.
             assert cache.get("key1") == 1;
             assert cache.get("key2") == 2;
@@ -1196,25 +1196,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             jcache().put("key2", 1);
-    
+
             cacheAsync.put("key1", 10);
-    
+
             IgniteFuture<?> fut1 = cacheAsync.future();
-    
+
             cacheAsync.put("key2", 11);
-    
+
             IgniteFuture<?> fut2 = cacheAsync.future();
-    
+
             IgniteFuture<Transaction> f = null;
-    
+
             if (tx != null) {
                 tx = (Transaction)tx.withAsync();
-    
+
                 tx.commit();
 
                 f = tx.future();
             }
-    
+
             fut1.get();
             fut2.get();
 
@@ -2977,7 +2977,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             String key = "1";
             int ttl = 500;
 
-            try (Transaction tx = grid(0).ignite().transactions().txStart()) {
+            try (Transaction tx = grid(0).transactions().txStart()) {
                 final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);

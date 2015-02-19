@@ -33,7 +33,7 @@ import static java.lang.reflect.Modifier.*;
 /**
 * Direct marshallable code generator.
 */
-public class CommunicationMessageCodeGenerator {
+public class MessageCodeGenerator {
     /** */
     private static final Comparator<Field> FIELD_CMP = new Comparator<Field>() {
         @Override public int compare(Field f1, Field f2) {
@@ -42,7 +42,7 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = MessageAdapter.class;
@@ -116,6 +116,9 @@ public class CommunicationMessageCodeGenerator {
     private final Map<Class<?>, Integer> fieldCnt = new HashMap<>();
 
     /** */
+    private final String srcDir;
+
+    /** */
     private List<Field> fields;
 
     /** */
@@ -123,40 +126,48 @@ public class CommunicationMessageCodeGenerator {
 
     /**
      * @param args Arguments.
+     * @throws Exception In case of error.
      */
-    public static void main(String[] args) {
-        CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
+    public static void main(String[] args) throws Exception {
+        String srcDir = DFLT_SRC_DIR;
 
-        try {
-            gen.generateAll(true);
+        if (args != null && args.length > 0)
+            srcDir = args[0];
 
-//            gen.generateAndWrite(GridDistributedLockRequest.class);
-//            gen.generateAndWrite(GridDistributedLockResponse.class);
-//            gen.generateAndWrite(GridNearLockRequest.class);
-//            gen.generateAndWrite(GridNearLockResponse.class);
-//            gen.generateAndWrite(GridDhtLockRequest.class);
-//            gen.generateAndWrite(GridDhtLockResponse.class);
+        MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
+
+        gen.generateAll(true);
+
+//        gen.generateAndWrite(GridDistributedLockRequest.class);
+//        gen.generateAndWrite(GridDistributedLockResponse.class);
+//        gen.generateAndWrite(GridNearLockRequest.class);
+//        gen.generateAndWrite(GridNearLockResponse.class);
+//        gen.generateAndWrite(GridDhtLockRequest.class);
+//        gen.generateAndWrite(GridDhtLockResponse.class);
 //
-//            gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
-//            gen.generateAndWrite(GridNearTxPrepareRequest.class);
-//            gen.generateAndWrite(GridNearTxPrepareResponse.class);
-//            gen.generateAndWrite(GridDhtTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDhtTxPrepareResponse.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
+//        gen.generateAndWrite(GridNearTxPrepareRequest.class);
+//        gen.generateAndWrite(GridNearTxPrepareResponse.class);
+//        gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDhtTxPrepareResponse.class);
 //
-//            gen.generateAndWrite(GridDistributedTxFinishRequest.class);
-//            gen.generateAndWrite(GridDistributedTxFinishResponse.class);
-//            gen.generateAndWrite(GridNearTxFinishRequest.class);
-//            gen.generateAndWrite(GridNearTxFinishResponse.class);
-//            gen.generateAndWrite(GridDhtTxFinishRequest.class);
-//            gen.generateAndWrite(GridDhtTxFinishResponse.class);
+//        gen.generateAndWrite(GridDistributedTxFinishRequest.class);
+//        gen.generateAndWrite(GridDistributedTxFinishResponse.class);
+//        gen.generateAndWrite(GridNearTxFinishRequest.class);
+//        gen.generateAndWrite(GridNearTxFinishResponse.class);
+//        gen.generateAndWrite(GridDhtTxFinishRequest.class);
+//        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 //
-//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
-//            gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
+//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
+    }
+
+    /**
+     * @param srcDir Source directory.
+     */
+    public MessageCodeGenerator(String srcDir) {
+        this.srcDir = srcDir;
     }
 
     /**
@@ -189,15 +200,15 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
+    public void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
 
-        File file = new File(SRC_DIR, cls.getName().replace('.', File.separatorChar) + ".java");
+        File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
 
         if (!file.exists() || !file.isFile()) {
-            System.out.println("    Source file not found: " + file.getPath());
+            System.out.println("Source file not found: " + file.getPath());
 
             return;
         }
@@ -272,7 +283,7 @@ public class CommunicationMessageCodeGenerator {
      * @param cls Class.
      * @throws Exception In case of error.
      */
-    public void generate(Class<? extends MessageAdapter> cls) throws Exception {
+    private void generate(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         write.clear();

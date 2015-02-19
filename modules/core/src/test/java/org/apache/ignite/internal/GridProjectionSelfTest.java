@@ -63,7 +63,7 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
-        return grid(0).forPredicate(F.nodeForNodeIds(ids));
+        return grid(0).cluster().forPredicate(F.nodeForNodeIds(ids));
     }
 
     /** {@inheritDoc} */
