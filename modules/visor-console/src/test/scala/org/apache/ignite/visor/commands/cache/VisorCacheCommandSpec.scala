@@ -20,6 +20,7 @@ package org.apache.ignite.visor.commands.cache
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheAtomicityMode._
 import org.apache.ignite.cache.CacheMode._
+import org.apache.ignite.cache.query.Query._
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration._
 import org.apache.ignite.spi.discovery.tcp._
@@ -100,19 +101,22 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     it should "run query and display information about caches" in {
         val g = Ignition.ignite("node-1")
 
-        val c = g.cache[Int, Foo]("replicated")
+        val c = g.jcache[Int, Foo]("replicated")
 
         c.put(0, Foo(20))
         c.put(1, Foo(100))
         c.put(2, Foo(101))
         c.put(3, Foo(150))
 
-        // Create two queries
-        val q1 = c.queries().createSqlQuery(classOf[Foo], "_key > ?")
-        c.queries().createSqlQuery(classOf[Foo], "_key = ?")
+        // Create and execute query that mast return 2 rows.
+        val q1 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(1))).getAll()
 
-        // Execute only one query
-        q1.execute(100.asInstanceOf[java.lang.Integer]).get
+        assert(q1.size() == 2)
+
+        // Create and execute query that mast return 0 rows.
+        val q2 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(100))).getAll()
+
+        assert(q2.size() == 0)
 
         visor cache "-a"
     }

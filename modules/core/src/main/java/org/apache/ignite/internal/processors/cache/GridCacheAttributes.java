@@ -103,9 +103,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize;
 
-    /** Name of SPI to use for indexing. */
-    private String indexingSpiName;
-
     /** Cache affinity class name. */
     private String affClsName;
 
@@ -166,7 +163,6 @@ public class GridCacheAttributes implements Externalizable {
         evictMaxOverflowRatio = cfg.getEvictMaxOverflowRatio();
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
-        indexingSpiName = cfg.getIndexingSpiName();
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
@@ -499,13 +495,6 @@ public class GridCacheAttributes implements Externalizable {
         return writeBehindBatchSize;
     }
 
-    /**
-     * @return Name of SPI to use for indexing.
-     */
-    public String indexingSpiName() {
-        return indexingSpiName;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum(out, atomicityMode);
@@ -515,7 +504,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeFloat(evictMaxOverflowRatio);
         out.writeBoolean(evictNearSync);
         out.writeBoolean(evictSync);
-        U.writeString(out, indexingSpiName);
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum(out, partDistro);
@@ -559,7 +547,6 @@ public class GridCacheAttributes implements Externalizable {
         evictMaxOverflowRatio = in.readFloat();
         evictNearSync = in.readBoolean();
         evictSync  = in.readBoolean();
-        indexingSpiName = U.readString(in);
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());

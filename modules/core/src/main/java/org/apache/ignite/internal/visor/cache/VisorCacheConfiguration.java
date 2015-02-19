@@ -92,9 +92,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Memory mode. */
     private CacheMemoryMode memoryMode;
 
-    /** Name of SPI to use for indexing. */
-    private String indexingSpiName;
-
     /** Cache interceptor. */
     private String interceptor;
 
@@ -166,7 +163,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
         cfg.maxConcurrentAsyncOperations(ccfg.getMaxConcurrentAsyncOperations());
         cfg.memoryMode(ccfg.getMemoryMode());
-        cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));
         cfg.affinityConfiguration(VisorCacheAffinityConfiguration.from(ccfg));
         cfg.preloadConfiguration(VisorCachePreloadConfiguration.from(ccfg));
@@ -450,20 +446,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void memoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
-    }
-
-    /**
-     * @return Name of SPI to use for indexing.
-     */
-    public String indexingSpiName() {
-        return indexingSpiName;
-    }
-
-    /**
-     * @param indexingSpiName New name of SPI to use for indexing.
-     */
-    public void indexingSpiName(String indexingSpiName) {
-        this.indexingSpiName = indexingSpiName;
     }
 
     /**
