@@ -577,25 +577,25 @@ public abstract class IgniteUtils {
 
         m.put(IgniteTxRollbackCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxRollbackException(e.getMessage(), e);
+                return new TransactionRollbackException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxHeuristicCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxHeuristicException(e.getMessage(), e);
+                return new TransactionHeuristicException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxTimeoutException(e.getMessage(), e);
+                return new TransactionTimeoutException(e.getMessage(), e);
             }
         });
 
         m.put(IgniteTxOptimisticCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteTxOptimisticException(e.getMessage(), e);
+                return new TransactionOptimisticException(e.getMessage(), e);
             }
         });
 
@@ -2106,8 +2106,6 @@ public abstract class IgniteUtils {
                                 Thread.sleep(10);
                             }
                             catch (InterruptedException ignored) {
-                                U.log(null, "Timer thread has been interrupted.");
-
                                 break;
                             }
                         }
@@ -8815,7 +8813,7 @@ public abstract class IgniteUtils {
         UNSAFE.putBoolean(arr, off++, verEx);
 
         if (verEx) {
-            GridCacheVersion drVer = ver.drVersion();
+            GridCacheVersion drVer = ver.conflictVersion();
 
             assert drVer != null;
 
@@ -9144,11 +9142,13 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer, MessageWriter)} method.
+     * @param writer Message writer.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf,
+        MessageWriter writer) throws IOException {
         assert msg != null;
         assert out != null;
         assert buf != null;
@@ -9158,7 +9158,7 @@ public abstract class IgniteUtils {
         int cnt = 0;
 
         while (!finished) {
-            finished = msg.writeTo(buf);
+            finished = msg.writeTo(buf, writer);
 
             out.write(buf.array(), 0, buf.position());
 
@@ -9168,5 +9168,17 @@ public abstract class IgniteUtils {
         }
 
         return cnt;
+    }
+
+    /**
+     * Throws exception with uniform error message if given parameter's assertion condition
+     * is {@code false}.
+     *
+     * @param cond Assertion condition to check.
+     * @param condDesc Description of failed condition.
+     */
+    public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
+        if (!cond)
+            throw new IgniteException("Parameter failed condition check: " + condDesc);
     }
 }

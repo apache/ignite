@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class TestCacheSession implements CacheStoreSession {
     /** */
-    private IgniteTx tx;
+    private Transaction tx;
 
     /** */
     private Map<Object, Object> props;
@@ -38,14 +38,14 @@ public class TestCacheSession implements CacheStoreSession {
      *
      * @param tx Transaction.
      */
-    public void newSession(@Nullable IgniteTx tx) {
+    public void newSession(@Nullable Transaction tx) {
         this.tx = tx;
 
         props = null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTx transaction() {
+    @Nullable @Override public Transaction transaction() {
         return tx;
     }
 

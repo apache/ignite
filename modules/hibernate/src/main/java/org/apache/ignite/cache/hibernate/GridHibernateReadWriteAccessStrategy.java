@@ -26,8 +26,8 @@ import org.hibernate.cache.spi.access.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Implementation of {@link AccessType#READ_WRITE} cache access strategy.
@@ -203,7 +203,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 
-            IgniteTx tx = cache.tx();
+            Transaction tx = cache.tx();
 
             assert tx != null;
 
@@ -228,7 +228,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null) {
                 txCtx.remove();
 
-                IgniteTx tx = cache.tx();
+                Transaction tx = cache.tx();
 
                 if (tx != null)
                     tx.rollback();

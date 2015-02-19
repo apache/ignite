@@ -44,7 +44,7 @@ public class HibernateL2CacheExampleNodeStartup {
     }
 
     /**
-     * Create Ignite configuration with IgniteFs and enabled IPC.
+     * Create Ignite configuration with IGFS and enabled IPC.
      *
      * @return Ignite configuration.
      * @throws IgniteException If configuration creation failed.

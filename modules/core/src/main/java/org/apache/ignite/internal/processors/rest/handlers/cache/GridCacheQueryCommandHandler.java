@@ -130,7 +130,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
+            return ctx.closure().callAsync(BALANCE, c, ctx.grid().cluster().forNodeId(destId).nodes());
         }
     }
 
@@ -144,7 +144,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         IgniteInternalFuture<Collection<Object>> fut = ctx.closure().callAsync(BROADCAST,
             Arrays.asList(c),
-            ctx.grid().forCacheNodes(cacheName).nodes());
+            ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
         return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {
@@ -269,7 +269,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            CacheQueries<Object,Object> queries = g.cache(req.cacheName()).queries();
+            CacheQueries<Object,Object> queries = ((IgniteKernal)g).cache(req.cacheName()).queries();
 
             CacheQuery<?> qry;
 
@@ -404,9 +404,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             if (clsName == null)
-                g.cache(cacheName).queries().rebuildAllIndexes();
+                ((IgniteKernal)g).cache(cacheName).queries().rebuildAllIndexes();
             else
-                g.cache(cacheName).queries().rebuildIndexes(clsName);
+                ((IgniteKernal)g).cache(cacheName).queries().rebuildIndexes(clsName);
 
             return null;
         }

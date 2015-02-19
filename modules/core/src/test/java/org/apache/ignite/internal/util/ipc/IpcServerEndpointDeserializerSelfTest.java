@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.testframework.*;
@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 /**
  * Tests for {@code IpcServerEndpointDeserializer}.
  */
-public class IpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbstractTest {
+public class IpcServerEndpointDeserializerSelfTest extends IgfsCommonAbstractTest {
     /** */
     private Map<String,String> shmemSrvEndpoint;
 

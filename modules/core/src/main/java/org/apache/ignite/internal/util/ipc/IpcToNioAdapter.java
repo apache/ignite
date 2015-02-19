@@ -152,9 +152,7 @@ public class IpcToNioAdapter<T> {
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(formatter.writer());
-
-            int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf);
+            int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf, formatter.writer());
 
             metricsLsnr.onBytesSent(cnt);
         }

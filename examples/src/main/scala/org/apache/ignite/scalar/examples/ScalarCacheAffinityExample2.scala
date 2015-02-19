@@ -47,7 +47,7 @@ object ScalarCacheAffinityExample2 {
     def main(args: Array[String]) {
         scalar(CONFIG) {
             // Clean up caches on all nodes before run.
-            cache$(NAME).get.clear(0)
+            cache$(NAME).get.clear()
 
             var keys = Seq.empty[String]
 
@@ -77,7 +77,7 @@ object ScalarCacheAffinityExample2 {
                                     ", cacheName=" + NAME + ']').^^
 
                             // Check cache without loading the value.
-                            mappedKeys.foreach(key => println(">>> Peeked at: " + cache.get.peek(key)))
+                            mappedKeys.foreach(key => println(">>> Peeked at: " + cache.get.localPeek(key)))
                         }
                     }, null)
                 }

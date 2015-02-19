@@ -299,9 +299,9 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         cache.localEvict(Collections.singleton(k2));
         cache.localEvict(Collections.singleton(k3));
 
-        assert !cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNull(cache.localPeek(k1, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+        assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+        assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
 
         int cnt = 0;
 
@@ -358,9 +358,9 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         cache.localEvict(Collections.singleton(k2));
         cache.localEvict(Collections.singleton(k3));
 
-        assert !cache.containsKey(k1);
-        assert !cache.containsKey(k2);
-        assert !cache.containsKey(k3);
+        assertNull(cache.localPeek(k1, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+        assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+        assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
 
         cache.localPromote(ImmutableSet.of(k2, k3));
 

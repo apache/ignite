@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -46,16 +43,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     private UUID nearNodeId;
 
     /** Transaction isolation. */
-    private IgniteTxIsolation isolation;
-
-    /** Near writes. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> nearWrites;
-
-    /** Serialized near writes. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearWritesBytes;
+    private TransactionIsolation isolation;
 
     /** Mini future ID. */
     private IgniteUuid miniId;
@@ -71,9 +59,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> pendingVers;
 
-    /** One phase commit flag for fast-commit path. */
-    private boolean onePhaseCommit;
-
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
 
@@ -82,12 +67,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
     /** Task name hash. */
     private int taskNameHash;
-
-    /** TTLs for optimistic transaction. */
-    private GridLongList ttls;
-
-    /** Near cache TTLs for optimistic transaction. */
-    private GridLongList nearTtls;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -116,10 +95,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param rolledbackVers Rolled back versions.
      * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
-     * @param writes Write entries.
-     * @param nearWrites Near cache writes.
-     * @param recoverWrites Recovery write entries.
-     * @param onePhaseCommit One phase commit flag.
      * @param grpLockKey Group lock key.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
@@ -132,7 +107,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         long threadId,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -144,16 +119,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writes,
-        Collection<IgniteTxEntry<K, V>> nearWrites,
-        Collection<IgniteTxEntry<K, V>> recoverWrites,
-        boolean onePhaseCommit,
         @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize, writes, recoverWrites, grpLockKey);
+            committedVers, rolledbackVers, txSize, grpLockKey);
 
         assert miniId != null;
         assert nearNodeId != null;
@@ -163,10 +134,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         this.topVer = topVer;
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
-        this.nearWrites = nearWrites;
         this.miniId = miniId;
         this.sysInvalidate = sysInvalidate;
-        this.onePhaseCommit = onePhaseCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
     }
@@ -174,13 +143,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** {@inheritDoc} */
     @Override public boolean allowForStartup() {
         return true;
-    }
-
-    /**
-     * @return Near writes.
-     */
-    public Collection<IgniteTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
     }
 
     /**
@@ -207,7 +169,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /**
      * @return Transaction isolation.
      */
-    public IgniteTxIsolation isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
@@ -223,13 +185,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      */
     public boolean isSystemInvalidate() {
         return sysInvalidate;
-    }
-
-    /**
-     * @return One phase commit flag.
-     */
-    public boolean onePhaseCommit() {
-        return onePhaseCommit;
     }
 
     /**
@@ -263,215 +218,79 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
-    /**
-     * @param idx Entry index.
-     * @param ttl TTL.
-     */
-    public void ttl(int idx, long ttl) {
-        if (ttl != -1L) {
-            if (ttls == null) {
-                ttls = new GridLongList();
-
-                for (int i = 0; i < idx - 1; i++)
-                    ttls.add(-1L);
-            }
-        }
-
-        if (ttls != null)
-            ttls.add(ttl);
-    }
-
-    /**
-     * @return TTLs for optimistic transaction.
-     */
-    public GridLongList ttls() {
-        return ttls;
-    }
-
-    /**
-     * @param idx Entry index.
-     * @param ttl TTL.
-     */
-    public void nearTtl(int idx, long ttl) {
-        if (ttl != -1L) {
-            if (nearTtls == null) {
-                nearTtls = new GridLongList();
-
-                for (int i = 0; i < idx - 1; i++)
-                    nearTtls.add(-1L);
-            }
-        }
-
-        if (nearTtls != null)
-            nearTtls.add(ttl);
-    }
-
-    /**
-     * @return TTLs for optimistic transaction.
-     */
-    public GridLongList nearTtls() {
-        return nearTtls;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (nearWrites != null) {
-            marshalTx(nearWrites, ctx);
-
-            nearWritesBytes = new ArrayList<>(nearWrites.size());
-
-            for (IgniteTxEntry<K, V> e : nearWrites)
-                nearWritesBytes.add(ctx.marshaller().marshal(e));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (nearWritesBytes != null) {
-            nearWrites = new ArrayList<>(nearWritesBytes.size());
-
-            for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(nearWrites, true, ctx, ldr);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtTxFinishRequest _clone = new GridDhtTxFinishRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxFinishRequest _clone = (GridDhtTxFinishRequest)_msg;
-
-        _clone.nearNodeId = nearNodeId;
-        _clone.isolation = isolation;
-        _clone.nearWrites = nearWrites;
-        _clone.nearWritesBytes = nearWritesBytes;
-        _clone.miniId = miniId;
-        _clone.sysInvalidate = sysInvalidate;
-        _clone.topVer = topVer;
-        _clone.pendingVers = pendingVers;
-        _clone.onePhaseCommit = onePhaseCommit;
-        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
-        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
-            case 21:
-                if (!writer.writeEnum("isolation", isolation))
+        switch (writer.state()) {
+            case 19:
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 22:
+            case 20:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 23:
+            case 21:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 24:
-                if (!writer.writeMessage("nearTtls", nearTtls))
+            case 22:
+                if (!writer.writeCollection("pendingVers", pendingVers, Type.MSG))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 25:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, byte[].class))
-                    return false;
-
-                state++;
-
-            case 26:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                state++;
-
-            case 27:
-                if (!writer.writeCollection("pendingVers", pendingVers, GridCacheVersion.class))
-                    return false;
-
-                state++;
-
-            case 28:
+            case 23:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 29:
+            case 24:
                 if (!writer.writeBoolean("sysInvalidate", sysInvalidate))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 30:
+            case 25:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 31:
+            case 26:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 32:
-                if (!writer.writeMessage("ttls", ttls))
-                    return false;
-
-                state++;
-
-            case 33:
+            case 27:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -479,117 +298,88 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
-            case 21:
-                isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+        switch (readState) {
+            case 19:
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
-            case 22:
+                readState++;
+
+            case 20:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 23:
+            case 21:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 24:
-                nearTtls = reader.readMessage("nearTtls");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 25:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", byte[].class);
+            case 22:
+                pendingVers = reader.readCollection("pendingVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 26:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 27:
-                pendingVers = reader.readCollection("pendingVers", GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 28:
+            case 23:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 29:
+            case 24:
                 sysInvalidate = reader.readBoolean("sysInvalidate");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 30:
+            case 25:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 31:
+            case 26:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 32:
-                ttls = reader.readMessage("ttls");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 33:
+            case 27:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

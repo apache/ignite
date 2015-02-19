@@ -100,7 +100,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx);
 
-            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null && qryCfg.getTypeResolver() != null)
@@ -842,7 +842,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
-                        throw new IgniteCheckedException("Getter with CacheQuerySqlField " +
+                        throw new IgniteCheckedException("Getter with QuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
                     ClassProperty prop = new ClassProperty(mtd, key);

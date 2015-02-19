@@ -54,7 +54,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
         private final String path;
 
         /** Log file offset. */
-        private final long offset;
+        private final long off;
 
         /** Block size. */
         private final int blockSz;
@@ -64,13 +64,13 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
 
         /**
          * @param path Log file path.
-         * @param offset Offset in file.
+         * @param off Offset in file.
          * @param blockSz Block size.
          * @param lastModified Log file last modified timestamp.
          */
-        public VisorFileBlockArg(String path, long offset, int blockSz, long lastModified) {
+        public VisorFileBlockArg(String path, long off, int blockSz, long lastModified) {
             this.path = path;
-            this.offset = offset;
+            this.off = off;
             this.blockSz = blockSz;
             this.lastModified = lastModified;
         }
@@ -105,7 +105,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
                 if (url == null)
                     return new IgniteBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);
 
-                VisorFileBlock block = readBlock(new File(url.toURI()), arg.offset, arg.blockSz, arg.lastModified);
+                VisorFileBlock block = readBlock(new File(url.toURI()), arg.off, arg.blockSz, arg.lastModified);
 
                 return new IgniteBiTuple<>(null, block);
             }

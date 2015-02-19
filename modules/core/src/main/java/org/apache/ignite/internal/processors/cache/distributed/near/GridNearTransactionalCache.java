@@ -39,7 +39,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Near cache for transactional cache.
@@ -103,7 +103,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
+        final boolean skipVals
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -116,7 +116,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, skipVals));
                 }
             });
         }
@@ -129,18 +129,17 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             keys,
             false,
             forcePrimary,
-            filter,
             subjId,
             taskName,
             deserializePortable,
-            prj != null ? prj.expiry() : null);
+            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals);
     }
 
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param filter Filter.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @return Future.
@@ -148,9 +147,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
@@ -159,11 +158,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             false,
             false,
             tx,
-            filter,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializePortable,
-            expiryPlc);
+            expiryPlc,
+            skipVals);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -266,7 +265,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
                 Collection<GridCacheMvccCandidate<K>> cands = req.candidatesByIndex(i);
-                GridCacheVersion drVer = req.drVersionByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -315,7 +313,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 }
 
                                 tx.addEntry(ctx, txKey, bytes, GridCacheOperation.NOOP, /*Value.*/null,
-                                    /*Value byts.*/null, drVer);
+                                    /*Value byts.*/null, /*dr version*/null);
                             }
 
                             // Add remote candidate before reordering.
@@ -416,7 +414,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {

@@ -21,6 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -70,7 +73,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
 
         IgniteCache<Integer, CacheValue> cache0 = grid(0).jcache(null);
 
-        cache0.loadCache(null, 0);
+        GridCache<Integer, CacheValue> cache0 = ((IgniteKernal)grid(0)).cache(null);
 
         checkCache(cache0);
         checkQuery(cache0);

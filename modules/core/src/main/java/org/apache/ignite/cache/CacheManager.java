@@ -297,12 +297,12 @@ public class CacheManager implements javax.cache.CacheManager {
         if (enabled) {
             registerCacheObject(mBeanSrv, ignite.jcache(cacheName).mxBean(), cacheName, CACHE_CONFIGURATION);
 
-            ignite.cache(cacheName).configuration().setManagementEnabled(true);
+            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(true);
         }
         else {
             unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
 
-            ignite.cache(cacheName).configuration().setManagementEnabled(false);
+            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(false);
         }
     }
 

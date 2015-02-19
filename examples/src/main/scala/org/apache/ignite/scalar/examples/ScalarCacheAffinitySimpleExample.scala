@@ -17,7 +17,7 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.GridCache
+import org.apache.ignite.IgniteCache
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
@@ -43,7 +43,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private val NAME = "partitioned"
 
     /** Type alias. */
-    type Cache = GridCache[Int, String]
+    type Cache = IgniteCache[Int, String]
 
     /*
      * Note that in case of `LOCAL` configuration,
@@ -51,9 +51,9 @@ object ScalarCacheAffinitySimpleExample extends App {
      */
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(NAME).get.clear(0)
+        cache$(NAME).get.clear()
 
-        val c = ignite$.cache[Int, String](NAME)
+        val c = ignite$.jcache[Int, String](NAME)
 
         populate(c)
         visit(c)
@@ -68,7 +68,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
             ignite$.compute().affinityRun(NAME, i,
-                () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
+                () => println("Co-located [key= " + i + ", value=" + c.localPeek(i) + ']'))
         )
     }
 

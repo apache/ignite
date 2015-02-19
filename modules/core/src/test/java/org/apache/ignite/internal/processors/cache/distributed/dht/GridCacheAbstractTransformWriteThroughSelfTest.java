@@ -35,8 +35,8 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests write-through.
@@ -244,7 +244,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
      * @param op Op.
      * @throws Exception If failed.
      */
-    protected void checkTransform(IgniteTxConcurrency concurrency, int nodeType, int op) throws Exception {
+    protected void checkTransform(TransactionConcurrency concurrency, int nodeType, int op) throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
         Collection<String> keys = keysForType(nodeType);
@@ -261,7 +261,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         info(">>> Starting transform transaction");
 
-        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, READ_COMMITTED)) {
+        try (Transaction tx = ignite(0).transactions().txStart(concurrency, READ_COMMITTED)) {
             if (op == OP_UPDATE) {
                 for (String key : keys)
                     cache.invoke(key, INCR_CLOS);

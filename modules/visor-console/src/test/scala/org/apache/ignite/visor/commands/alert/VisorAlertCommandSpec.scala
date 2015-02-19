@@ -48,7 +48,6 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
-        cfg.setLifeCycleEmailNotification(false)
         cfg.setLocalHost("127.0.0.1")
 
         val discoSpi: TcpDiscoverySpi = new TcpDiscoverySpi()

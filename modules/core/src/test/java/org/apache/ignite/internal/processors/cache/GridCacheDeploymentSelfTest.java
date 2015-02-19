@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -28,9 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -39,8 +36,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache + Deployment test.
@@ -406,46 +401,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             info("Added value to cache 0.");
 
             startGrid(1);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
-    public void _testDeploymentGroupLock() throws Exception {
-        ClassLoader ldr = getExternalClassLoader();
-
-        Class<?> keyCls = ldr.loadClass(TEST_KEY);
-
-        try {
-            depMode = SHARED;
-
-            Ignite g1 = startGrid(1);
-            startGrid(2);
-
-            Constructor<?> constructor = keyCls.getDeclaredConstructor(String.class);
-
-            Object affKey;
-
-            int i = 0;
-
-            do {
-                affKey = constructor.newInstance(String.valueOf(i));
-
-                i++;
-            }
-            while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
-
-            IgniteCache<Object, Object> cache = g1.jcache(null);
-
-            try (IgniteTx tx = g1.transactions().txStartAffinity(null, affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                cache.put(new CacheAffinityKey<>("key1", affKey), "val1");
-
-                tx.commit();
-            }
-
-            assertEquals("val1", cache.get(new CacheAffinityKey<>("key1", affKey)));
         }
         finally {
             stopAllGrids();

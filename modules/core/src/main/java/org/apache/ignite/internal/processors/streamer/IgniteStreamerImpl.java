@@ -118,9 +118,6 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     /** Streamer executor service. */
     private ExecutorService execSvc;
 
-    /** Will be set to true if executor service is created on start. */
-    private boolean dfltExecSvc;
-
     /** Failure listeners. */
     private Collection<StreamerFailureListener> failureLsnrs = new ConcurrentLinkedQueue<>();
 
@@ -246,28 +243,14 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 dfltWin = w;
         }
 
-        execSvc = c.getExecutorService();
+        execSvc = new IgniteThreadPoolExecutor(
+            ctx.gridName(),
+            c.getThreadPoolSize(),
+            c.getThreadPoolSize(),
+            0,
+            new LinkedBlockingQueue<Runnable>());
 
-        if (execSvc == null) {
-            execSvc = new IgniteThreadPoolExecutor(
-                ctx.gridName(),
-                Runtime.getRuntime().availableProcessors(),
-                Runtime.getRuntime().availableProcessors(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
-
-            execSvcCap = Runtime.getRuntime().availableProcessors();
-            dfltExecSvc = true;
-        }
-        else {
-            if (execSvc instanceof ThreadPoolExecutor) {
-                ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-                execSvcCap = exec.getMaximumPoolSize();
-            }
-            else
-                execSvcCap = -1;
-        }
+        execSvcCap = c.getThreadPoolSize();
 
         resetMetrics();
 
@@ -382,14 +365,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     public void stop(boolean cancel) {
         ctx.io().removeMessageListener(topic);
 
-        if (dfltExecSvc)
-            // There is no point to wait for tasks execution since it was already handled by flags.
-            execSvc.shutdownNow();
-        else {
-            // Cannot call shutdownNow here since there may be user tasks in thread pool which cannot be discarded.
-            if (c.isExecutorServiceShutdown())
-                execSvc.shutdown();
-        }
+        // There is no point to wait for tasks execution since it was already handled by flags.
+        execSvc.shutdownNow();
 
         U.stopLifecycleAware(log, lifecycleAwares());
     }

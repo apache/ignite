@@ -45,8 +45,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Multi node test for near cache.
@@ -166,7 +166,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         store.reset();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteTx tx = grid(i).transactions().tx();
+            Transaction tx = grid(i).transactions().tx();
 
             if (tx != null) {
                 error("Ending zombie transaction: " + tx);
@@ -251,7 +251,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = mapKeys(cnt);
 
-        for (ClusterNode n : grid(0).nodes()) {
+        for (ClusterNode n : grid(0).cluster().nodes()) {
             Set<Integer> primary = map.get(n.id()).get1();
             Set<Integer> backups = map.get(n.id()).get2();
 
@@ -376,7 +376,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> near = jcache(0);
 
         if (transactional()) {
-            try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
                 near.put(2, "2");
 
                 String s = near.getAndPut(3, "3");
@@ -509,7 +509,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> near = jcache(0);
 
         if (transactional()) {
-            try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
                 near.put(2, "2");
 
                 String s = near.getAndPut(3, "3");
@@ -668,7 +668,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         lock.lock();
 
         try {
-            long topVer = grid(0).topologyVersion();
+            long topVer = grid(0).cluster().topologyVersion();
 
             GridNearCacheEntry<Integer, String> nearEntry1 = nearEntry(0, key);
 
@@ -823,7 +823,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         if (transactional()) {
 
-            try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Simple transaction get.
                 assertEquals(val, cache.get(key));
 
@@ -868,7 +868,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(1).peekNearOnly(key));
 
         if (transactional()) {
-            try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Read.
                 assertEquals(val, cache.get(key));
 

@@ -164,7 +164,7 @@ class VisorVvmCommand {
             if (id8 != null && id != null)
                 scold("Only one of '-id8' or '-id' is allowed.").^^
             else if (id8 == null && id == null)
-                nodes = ignite.forRemotes().nodes().toSeq
+                nodes = ignite.cluster.forRemotes().nodes().toSeq
             else
                 if (id8 != null) {
                     val ns = nodeById8(id8)
@@ -178,7 +178,7 @@ class VisorVvmCommand {
                 }
                 else if (id != null)
                     try {
-                        val node = ignite.node(java.util.UUID.fromString(id))
+                        val node = ignite.cluster.node(java.util.UUID.fromString(id))
 
                         if (node == null)
                             scold("'id' does not match any node: " + id).^^
@@ -191,7 +191,7 @@ class VisorVvmCommand {
 
             var started = false
 
-            val neighbors = ignite.forHost(ignite.localNode).nodes()
+            val neighbors = ignite.cluster.forHost(ignite.localNode).nodes()
 
             if (U.isWindows)
                 vvmCmd = "cmd /c \"%s\"".format(vvmCmd)

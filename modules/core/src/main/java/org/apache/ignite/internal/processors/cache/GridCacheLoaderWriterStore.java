@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Store implementation wrapping {@link CacheLoader} and {@link CacheWriter}.
  */
-class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** */
     private final CacheLoader<K, V> ldr;
 

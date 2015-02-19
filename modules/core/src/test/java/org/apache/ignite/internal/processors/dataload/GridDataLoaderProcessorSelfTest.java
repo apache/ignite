@@ -19,12 +19,16 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.fifo.*;
+import org.apache.ignite.cache.GridCache;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -33,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -63,9 +68,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean useCache;
-
-    /** */
-    private boolean useGrpLock;
 
     /** */
     private TestStore store;
@@ -99,8 +101,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-
-            cc.setEvictionPolicy(new CacheFifoEvictionPolicy(10000));
 
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
@@ -141,28 +141,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedGroupLock() throws Exception {
-        mode = PARTITIONED;
-        useGrpLock = true;
-
-        checkDataLoader();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplicated() throws Exception {
         mode = REPLICATED;
-
-        checkDataLoader();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedGroupLock() throws Exception {
-        mode = REPLICATED;
-        useGrpLock = true;
 
         checkDataLoader();
     }
@@ -195,12 +175,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             useCache = true;
 
             Ignite g2 = startGrid(2);
-            Ignite g3 = startGrid(3);
+            startGrid(3);
 
             final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
-            ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -242,8 +221,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
 
-            rmvLdr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -276,6 +254,88 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             s3 = internalCache(3).primaryKeySet().size();
 
             assert s2 == 0 && s3 == 0 : "Incorrect entries count [s2=" + s2 + ", s3=" + s3 + ']';
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionedIsolated() throws Exception {
+        mode = PARTITIONED;
+
+        checkIsolatedDataLoader();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedIsolated() throws Exception {
+        mode = REPLICATED;
+
+        checkIsolatedDataLoader();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkIsolatedDataLoader() throws Exception {
+        try {
+            useCache = true;
+
+            Ignite g1 = startGrid(0);
+            startGrid(1);
+            startGrid(2);
+
+            awaitPartitionMapExchange();
+
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+
+            for (int i = 0; i < 100; i++)
+                cache.put(i, -1);
+
+            final int cnt = 40_000;
+            final int threads = 10;
+
+            try (final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null)) {
+                final AtomicInteger idxGen = new AtomicInteger();
+
+                IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        for (int i = 0; i < cnt; i++) {
+                            int idx = idxGen.getAndIncrement();
+
+                            ldr.addData(idx, idx);
+                        }
+
+                        return null;
+                    }
+                }, threads);
+
+                f1.get();
+            }
+
+            for (int g = 0; g < 3; g++) {
+                ClusterNode locNode = grid(g).localNode();
+
+                GridCacheAdapter<Integer, Integer> cache0 = ((IgniteKernal)grid(g)).internalCache(null);
+
+                if (cache0.isNear())
+                    cache0 = ((GridNearCacheAdapter<Integer, Integer>)cache0).dht();
+
+                CacheAffinity<Integer> aff = cache0.affinity();
+
+                for (int key = 0; key < cnt * threads; key++) {
+                    if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
+                        GridCacheEntryEx<Integer, Integer> entry = cache0.peekEx(key);
+
+                        assertNotNull("Missing entry for key: " + key, entry);
+                        assertEquals((Integer)(key < 100 ? -1 : key), entry.rawGetOrUnmarshal(false));
+                    }
+                }
+            }
         }
         finally {
             stopAllGrids();
@@ -327,28 +387,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedMultiThreadedGroupLock() throws Exception {
-        mode = REPLICATED;
-        useGrpLock = true;
-
-        checkLoaderMultithreaded(1, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPartitionedMultiThreaded() throws Exception {
         mode = PARTITIONED;
-
-        checkLoaderMultithreaded(1, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionedMultiThreadedGroupLock() throws Exception {
-        mode = PARTITIONED;
-        useGrpLock = true;
 
         checkLoaderMultithreaded(1, 3);
     }
@@ -379,8 +419,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             // Get and configure loader.
             final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
 
-            ldr.updater(useGrpLock ? GridDataLoadCacheUpdaters.<Integer, Integer>groupLocked() :
-                GridDataLoadCacheUpdaters.<Integer, Integer>individual());
+            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.
@@ -741,6 +780,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.perNodeBufferSize(10);
             ldr.autoFlushFrequency(3000);
+            ldr.allowOverwrite(true);
 
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
@@ -782,6 +822,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 storeMap.put(i, i);
 
             try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                ldr.allowOverwrite(true);
+
                 assertFalse(ldr.skipStore());
 
                 for (int i = 0; i < 1000; i++)
@@ -798,6 +840,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 assertEquals(i, storeMap.get(i));
 
             try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                ldr.allowOverwrite(true);
+
                 ldr.skipStore(true);
 
                 for (int i = 0; i < 1000; i++)
@@ -862,14 +906,14 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class TestStore extends CacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return storeMap.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<?, ?> entry) {
+        @Override public void write(Cache.Entry<?, ?> entry) {
             storeMap.put(entry.getKey(), entry.getValue());
         }
 

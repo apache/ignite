@@ -60,11 +60,11 @@ public final class MessagingExample {
             System.out.println();
             System.out.println(">>> Messaging example started.");
 
-            // Projection for remote nodes.
-            ClusterGroup rmtPrj = ignite.cluster().forRemotes();
+            // Group for remote nodes.
+            ClusterGroup rmts = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
-            int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
+            int msgCnt = rmts.nodes().size() * MESSAGES_NUM;
 
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
@@ -72,17 +72,17 @@ public final class MessagingExample {
             localListen(ignite.message(ignite.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all cluster nodes.
-            startListening(ignite.message(rmtPrj));
+            startListening(ignite.message(rmts));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmts).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmts).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -96,7 +96,7 @@ public final class MessagingExample {
     }
 
     /**
-     * Start listening to messages on all cluster nodes within passed in projection.
+     * Start listening to messages on remote cluster nodes.
      *
      * @param msg Ignite messaging.
      */

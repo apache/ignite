@@ -87,6 +87,11 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        aff.onKernalStop();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         aff = null;
     }

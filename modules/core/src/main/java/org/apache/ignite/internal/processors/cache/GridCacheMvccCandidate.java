@@ -93,10 +93,6 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /** Other lock version (near version vs dht version). */
     private transient GridCacheVersion otherVer;
 
-    /** Mapped node IDS. */
-    @GridToStringInclude
-    private transient volatile Collection<UUID> mappedNodeIds;
-
     /** Owned lock version by the moment this candidate was added. */
     @GridToStringInclude
     private transient volatile GridCacheVersion ownerVer;
@@ -282,20 +278,6 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
      */
     public void otherNodeId(UUID otherNodeId) {
         this.otherNodeId = otherNodeId;
-    }
-
-    /**
-     * @return Mapped node IDs.
-     */
-    public Collection<UUID> mappedNodeIds() {
-        return mappedNodeIds;
-    }
-
-    /**
-     * @param mappedNodeIds Mapped node IDs.
-     */
-    public void mappedNodeIds(Collection<UUID> mappedNodeIds) {
-        this.mappedNodeIds = mappedNodeIds;
     }
 
     /**

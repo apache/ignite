@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.node.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -110,9 +111,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Default config */
     private VisorCacheDefaultConfiguration dflt;
 
-    /** Dgc config */
-    private VisorCacheDgcConfiguration dgc;
-
     /** Store config */
     private VisorCacheStoreConfiguration store;
 
@@ -122,8 +120,32 @@ public class VisorCacheConfiguration implements Serializable {
     /** Collection of type metadata. */
     private Collection<VisorCacheTypeMetadata> typeMeta;
 
-    /** Check that cache have JDBC store. */
+    /** Whether cache has JDBC store. */
     private boolean jdbcStore;
+
+    /** Whether cache should operate in read-through mode. */
+    private boolean readThrough;
+
+    /** Whether cache should operate in write-through mode. */
+    private boolean writeThrough;
+
+    /** Whether statistics collection is enabled. */
+    private boolean statisticsEnabled;
+
+    /** Whether management is enabled. */
+    private boolean mgmtEnabled;
+
+    /** Class name of cache loader factory. */
+    private String ldrFactory;
+
+    /** Class name of cache writer factory. */
+    private String writerFactory;
+
+    /** Class name of expiry policy factory. */
+    private String expiryPlcFactory;
+
+    /** Query configuration. */
+    private VisorCacheQueryConfiguration qryCfg;
 
     /**
      * @param ignite Grid.
@@ -131,16 +153,6 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Data transfer object for cache configuration properties.
      */
     public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
-        Collection<CacheTypeMetadata> cacheMetadata = ccfg.getTypeMetadata();
-
-        if (cacheMetadata == null)
-            cacheMetadata = Collections.emptyList();
-
-        Collection<VisorCacheTypeMetadata> typeMeta = new ArrayList<>(cacheMetadata!= null ? cacheMetadata.size() : 0);
-
-        for (CacheTypeMetadata m: cacheMetadata)
-            typeMeta.add(VisorCacheTypeMetadata.from(m));
-
         GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(ccfg.getName()).context();
 
         boolean jdbcStore = cctx.store().configuredStore() instanceof CacheAbstractJdbcStore;
@@ -169,11 +181,21 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.evictConfiguration(VisorCacheEvictionConfiguration.from(ccfg));
         cfg.nearConfiguration(VisorCacheNearConfiguration.from(ccfg));
         cfg.defaultConfiguration(VisorCacheDefaultConfiguration.from(ccfg));
-        cfg.dgcConfiguration(VisorCacheDgcConfiguration.from(ccfg));
         cfg.storeConfiguration(VisorCacheStoreConfiguration.from(ccfg));
         cfg.writeBehind(VisorCacheWriteBehindConfiguration.from(ccfg));
+
         cfg.typeMeta(VisorCacheTypeMetadata.list(ccfg.getTypeMetadata()));
         cfg.jdbcStore(jdbcStore);
+
+        cfg.readThrough(ccfg.isReadThrough());
+        cfg.writeThrough(ccfg.isWriteThrough());
+        cfg.statisticsEnabled(ccfg.isStatisticsEnabled());
+        cfg.managementEnabled(ccfg.isManagementEnabled());
+        cfg.loaderFactory(compactClass(ccfg.getCacheLoaderFactory()));
+        cfg.writerFactory(compactClass(ccfg.getCacheWriterFactory()));
+        cfg.expiryPolicyFactory(compactClass(ccfg.getExpiryPolicyFactory()));
+
+        cfg.queryConfiguration(VisorCacheQueryConfiguration.from(ccfg.getQueryConfiguration()));
 
         return cfg;
     }
@@ -343,8 +365,8 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @param qryIdxEnabled New flag indicating whether Ignite should attempt to index value and/or key instances
-     * stored in cache.
+     * @param qryIdxEnabled New flag indicating whether Ignite should attempt to index value and/or key instances stored
+     * in cache.
      */
     public void queryIndexEnabled(boolean qryIdxEnabled) {
         this.qryIdxEnabled = qryIdxEnabled;
@@ -533,20 +555,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Dgc config
-     */
-    public VisorCacheDgcConfiguration dgcConfiguration() {
-        return dgc;
-    }
-
-    /**
-     * @param dgc New dgc config
-     */
-    public void dgcConfiguration(VisorCacheDgcConfiguration dgc) {
-        this.dgc = dgc;
-    }
-
-    /**
      * @return Store config
      */
     public VisorCacheStoreConfiguration storeConfiguration() {
@@ -574,11 +582,6 @@ public class VisorCacheConfiguration implements Serializable {
         this.writeBehind = writeBehind;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheConfiguration.class, this);
-    }
-
     /**
      * @param typeMeta New collection of type metadata.
      */
@@ -594,16 +597,133 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Check that cache have JDBC store.
+     * @return {@code true} if cache has JDBC store.
      */
     public boolean jdbcStore() {
         return jdbcStore;
     }
 
     /**
-     * @param jdbcStore Check that cache have JDBC store.
+     * @param jdbcStore {@code true} if cache has JDBC store.
      */
     public void jdbcStore(boolean jdbcStore) {
         this.jdbcStore = jdbcStore;
+    }
+
+    /**
+     * @return Whether cache should operate in read-through mode.
+     */
+    public boolean readThrough() {
+        return readThrough;
+    }
+
+    /**
+     * @param readThrough New whether cache should operate in read-through mode.
+     */
+    public void readThrough(boolean readThrough) {
+        this.readThrough = readThrough;
+    }
+
+    /**
+     * @return Whether cache should operate in write-through mode.
+     */
+    public boolean writeThrough() {
+        return writeThrough;
+    }
+
+    /**
+     * @param writeThrough New whether cache should operate in write-through mode.
+     */
+    public void writeThrough(boolean writeThrough) {
+        this.writeThrough = writeThrough;
+    }
+
+    /**
+     * @return {@code true} if cache statistics enabled.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled {@code true} if cache statistics enabled.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @return Whether management is enabled.
+     */
+    public boolean managementEnabled() {
+        return mgmtEnabled;
+    }
+
+    /**
+     * @param mgmtEnabled New whether management is enabled.
+     */
+    public void managementEnabled(boolean mgmtEnabled) {
+        this.mgmtEnabled = mgmtEnabled;
+    }
+
+    /**
+     * @return Class name of cache loader factory.
+     */
+    public String loaderFactory() {
+        return ldrFactory;
+    }
+
+    /**
+     * @param ldrFactory New class name of cache loader factory.
+     */
+    public void loaderFactory(String ldrFactory) {
+        this.ldrFactory = ldrFactory;
+    }
+
+    /**
+     * @return Class name of cache writer factory.
+     */
+    public String writerFactory() {
+        return writerFactory;
+    }
+
+    /**
+     * @param writerFactory New class name of cache writer factory.
+     */
+    public void writerFactory(String writerFactory) {
+        this.writerFactory = writerFactory;
+    }
+
+    /**
+     * @return Class name of expiry policy factory.
+     */
+    public String expiryPolicyFactory() {
+        return expiryPlcFactory;
+    }
+
+    /**
+     * @param expiryPlcFactory New class name of expiry policy factory.
+     */
+    public void expiryPolicyFactory(String expiryPlcFactory) {
+        this.expiryPlcFactory = expiryPlcFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheConfiguration.class, this);
+    }
+
+    /**
+     * @return Cache query configuration.
+     */
+    public VisorCacheQueryConfiguration queryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * @param qryCfg New cache query configuration.
+     */
+    public void queryConfiguration(VisorCacheQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 }

@@ -74,11 +74,23 @@ public class GridCacheUtils {
     /** Peek flags. */
     private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
 
-    /** */
+    /** TTL: minimum positive value. */
+    public static final long TTL_MINIMUM = 1L;
+
+    /** TTL: eternal. */
+    public static final long TTL_ETERNAL = 0L;
+
+    /** TTL: not changed. */
     public static final long TTL_NOT_CHANGED = -1L;
 
-    /** */
+    /** TTL: zero (immediate expiration). */
     public static final long TTL_ZERO = -2L;
+
+    /** Expire time: eternal. */
+    public static final long EXPIRE_TIME_ETERNAL = 0L;
+
+    /** Expire time: must be calculated based on TTL value. */
+    public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Per-thread generated UID store. */
     private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
@@ -144,13 +156,6 @@ public class GridCacheUtils {
 
         @Override public String toString() {
             return "Cache transaction write filter";
-        }
-    };
-
-    /** Transfer required predicate. */
-    private static final IgnitePredicate TRANSFER_REQUIRED_PREDICATE = new P1<IgniteTxEntry>() {
-        @Override public boolean apply(IgniteTxEntry e) {
-            return e.transferRequired();
         }
     };
 
@@ -838,14 +843,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Transfer required predicate.
-     */
-    @SuppressWarnings("unchecked")
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> transferRequired() {
-        return TRANSFER_REQUIRED_PREDICATE;
-    }
-
-    /**
      * Gets type filter for projections.
      *
      * @param keyType Key type.
@@ -1197,6 +1194,18 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param val Value.
+     * @param skip Skip value flag.
+     * @return Value.
+     */
+    public static Object skipValue(Object val, boolean skip) {
+        if (skip)
+            return val != null ? true : null;
+        else
+            return val;
+    }
+
+    /**
      * @param ctx Context.
      * @param prj Projection.
      * @param concurrency Concurrency.
@@ -1204,7 +1213,7 @@ public class GridCacheUtils {
      * @return New transaction.
      */
     public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
-        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+        TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
@@ -1581,16 +1590,16 @@ public class GridCacheUtils {
     /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
-     * @return {@code True} in this is GGFS data or meta cache.
+     * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isGgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
-                // GGFS config probably has not been validated yet => possible NPE, so we check for null.
-                if (ggfsCfg != null &&
-                    (F.eq(cacheName, ggfsCfg.getDataCacheName()) || F.eq(cacheName, ggfsCfg.getMetaCacheName())))
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null &&
+                    (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))
                     return true;
             }
         }
@@ -1605,15 +1614,15 @@ public class GridCacheUtils {
      * @return Expire time.
      */
     public static long toExpireTime(long ttl) {
-        assert ttl >= 0L : ttl;
+        assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0;
 
-        if (ttl == 0L)
-            return 0L;
-        else {
-            long expireTime = U.currentTimeMillis() + ttl;
+        long expireTime = ttl == CU.TTL_ETERNAL ? CU.EXPIRE_TIME_ETERNAL : U.currentTimeMillis() + ttl;
 
-            return expireTime > 0L ? expireTime : 0L;
-        }
+        // Account for overflow.
+        if (expireTime < 0)
+            expireTime = CU.EXPIRE_TIME_ETERNAL;
+
+        return expireTime;
     }
 
     /**
@@ -1625,8 +1634,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(CacheProjection<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
@@ -1644,10 +1653,10 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
+        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1690,7 +1699,7 @@ public class GridCacheUtils {
 
         if (duration.getDurationAmount() == 0) {
             if (duration.isEternal())
-                return 0;
+                return TTL_ETERNAL;
 
             assert duration.isZero();
 
@@ -1700,6 +1709,32 @@ public class GridCacheUtils {
         assert duration.getTimeUnit() != null : duration;
 
         return duration.getTimeUnit().toMillis(duration.getDurationAmount());
+    }
+
+    /**
+     * Get TTL for load operation.
+     *
+     * @param plc Expiry policy.
+     * @return TTL for load operation or {@link #TTL_ZERO} in case of immediate expiration.
+     */
+    public static long ttlForLoad(ExpiryPolicy plc) {
+        if (plc != null) {
+            long ttl = toTtl(plc.getExpiryForCreation());
+
+            if (ttl == TTL_NOT_CHANGED)
+                ttl = TTL_ETERNAL;
+
+            return ttl;
+        }
+        else
+            return TTL_ETERNAL;
+    }
+
+    /**
+     * @return Expire time denoting a point in the past.
+     */
+    public static long expireTimeInPast() {
+        return U.currentTimeMillis() - 1L;
     }
 
     /**

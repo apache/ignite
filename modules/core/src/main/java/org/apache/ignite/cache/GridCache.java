@@ -22,6 +22,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
@@ -73,23 +74,23 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @param syncs Transaction synchronizations to register.
      */
-    public void txSynchronize(@Nullable IgniteTxSynchronization syncs);
+    public void txSynchronize(@Nullable TransactionSynchronization syncs);
 
     /**
      * Removes transaction synchronizations.
      *
      * @param syncs Transactions synchronizations to remove.
-     * @see #txSynchronize(IgniteTxSynchronization)
+     * @see #txSynchronize(TransactionSynchronization)
      */
-    public void txUnsynchronize(@Nullable IgniteTxSynchronization syncs);
+    public void txUnsynchronize(@Nullable TransactionSynchronization syncs);
 
     /**
      * Gets registered transaction synchronizations.
      *
      * @return Registered transaction synchronizations.
-     * @see #txSynchronize(IgniteTxSynchronization)
+     * @see #txSynchronize(TransactionSynchronization)
      */
-    public Collection<IgniteTxSynchronization> txSynchronizations();
+    public Collection<TransactionSynchronization> txSynchronizations();
 
     /**
      * Gets affinity service to provide information about data partitioning
@@ -181,54 +182,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
-
-    /**
-     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
-     * to load state from the underlying persistent storage. The loaded values
-     * will then be given to the optionally passed in predicate, and, if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all loaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
-     * @throws IgniteCheckedException If loading failed.
-     */
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
-     * to reload state from the underlying persistent storage. The reloaded values
-     * will then be given to the optionally passed in predicate, and if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all reloaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
-     * @return Future to be completed whenever loading completes.
-     */
-    public IgniteInternalFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method

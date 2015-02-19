@@ -31,8 +31,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Simple test for preloading in ATOMIC cache.
@@ -89,7 +89,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkSimpleTxs(boolean nearEnabled, IgniteTxConcurrency concurrency) throws Exception {
+    private void checkSimpleTxs(boolean nearEnabled, TransactionConcurrency concurrency) throws Exception {
         try {
             this.nearEnabled = nearEnabled;
 
@@ -112,7 +112,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
                 info(">>>>>>>>>>>>>>>");
 
-                try (IgniteTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                try (Transaction tx = txs.txStart(concurrency, REPEATABLE_READ)) {
                     try {
                         // Lock if pessimistic, read if optimistic.
                         cache.get(key);

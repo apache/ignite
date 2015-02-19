@@ -34,8 +34,8 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test tx salvage.
@@ -144,7 +144,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageAfterTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         stopNodeAndSleep(SALVAGE_TIMEOUT + DELTA_AFTER);
@@ -163,7 +163,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageBeforeTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         List<Integer> nearSizes = new ArrayList<>(GRID_CNT - 1);
@@ -190,7 +190,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
-    private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
+    private void startTxAndPutKeys(final TransactionConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
         final Collection<Integer> keys = nearKeys(ignite);
@@ -200,7 +200,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                 IgniteCache<Object, Object> c = jcache(0);
 
                 try {
-                    IgniteTx tx = grid(0).transactions().txStart(mode, REPEATABLE_READ);
+                    Transaction tx = grid(0).transactions().txStart(mode, REPEATABLE_READ);
 
                     for (Integer key : keys)
                         c.put(key, "val" + key);

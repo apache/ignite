@@ -185,7 +185,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
                     IgniteCache<Object, Object> cache = ignite.jcache(null);
 
-                    try (IgniteTx tx = ignite.transactions().txStart()) {
+                    try (Transaction tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");
                         cache.put(2, "value");
                         cache.put(3, "value");

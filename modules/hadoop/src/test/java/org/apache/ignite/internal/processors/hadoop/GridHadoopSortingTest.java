@@ -47,9 +47,9 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
     }
 
     /**
-     * @return {@code True} if GGFS is enabled on Hadoop nodes.
+     * @return {@code True} if IGFS is enabled on Hadoop nodes.
      */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -89,7 +89,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         setupFileSystems(job.getConfiguration());
 
-        FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_INPUT));
+        FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_INPUT));
 
         X.printerrln("Data generation started.");
 
@@ -106,8 +106,8 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         job.getConfiguration().set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, JavaSerialization.class.getName() +
             "," + WritableSerialization.class.getName());
 
-        FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + PATH_INPUT));
-        FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
+        FileInputFormat.setInputPaths(job, new Path(igfsScheme() + PATH_INPUT));
+        FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
         job.setSortComparatorClass(JavaSerializationComparator.class);
 
@@ -130,9 +130,9 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         X.printerrln("Job complete.");
 
         // Check result.
-        Path outDir = new Path(ggfsScheme() + PATH_OUTPUT);
+        Path outDir = new Path(igfsScheme() + PATH_OUTPUT);
 
-        AbstractFileSystem fs = AbstractFileSystem.get(new URI(ggfsScheme()), job.getConfiguration());
+        AbstractFileSystem fs = AbstractFileSystem.get(new URI(igfsScheme()), job.getConfiguration());
 
         for (FileStatus file : fs.listStatus(outDir)) {
             X.printerrln("__ file: " + file);

@@ -32,10 +32,10 @@ public class TransactionConfiguration implements Serializable {
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 
     /** Default concurrency mode. */
-    public static final IgniteTxConcurrency DFLT_TX_CONCURRENCY = IgniteTxConcurrency.PESSIMISTIC;
+    public static final TransactionConcurrency DFLT_TX_CONCURRENCY = TransactionConcurrency.PESSIMISTIC;
 
     /** Default transaction isolation level. */
-    public static final IgniteTxIsolation DFLT_TX_ISOLATION = IgniteTxIsolation.REPEATABLE_READ;
+    public static final TransactionIsolation DFLT_TX_ISOLATION = TransactionIsolation.REPEATABLE_READ;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
@@ -47,10 +47,10 @@ public class TransactionConfiguration implements Serializable {
     private boolean txSerEnabled = DFLT_TX_SERIALIZABLE_ENABLED;
 
     /** Transaction isolation. */
-    private IgniteTxIsolation dfltIsolation = DFLT_TX_ISOLATION;
+    private TransactionIsolation dfltIsolation = DFLT_TX_ISOLATION;
 
     /** Cache concurrency. */
-    private IgniteTxConcurrency dfltConcurrency = DFLT_TX_CONCURRENCY;
+    private TransactionConcurrency dfltConcurrency = DFLT_TX_CONCURRENCY;
 
     /** Default transaction timeout. */
     private long dfltTxTimeout = DFLT_TRANSACTION_TIMEOUT;
@@ -81,7 +81,7 @@ public class TransactionConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag to enable/disable {@link IgniteTxIsolation#SERIALIZABLE} isolation
+     * Gets flag to enable/disable {@link TransactionIsolation#SERIALIZABLE} isolation
      * level for cache transactions. Serializable level does carry certain overhead and
      * if not used, should be disabled. Default value is {@code false}.
      *
@@ -105,9 +105,9 @@ public class TransactionConfiguration implements Serializable {
      * specified. Default value is defined by {@link #DFLT_TX_CONCURRENCY}.
      *
      * @return Default cache transaction concurrency.
-     * @see IgniteTx
+     * @see Transaction
      */
-    public IgniteTxConcurrency getDefaultTxConcurrency() {
+    public TransactionConcurrency getDefaultTxConcurrency() {
         return dfltConcurrency;
     }
 
@@ -116,7 +116,7 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param dfltConcurrency Default cache transaction concurrency.
      */
-    public void setDefaultTxConcurrency(IgniteTxConcurrency dfltConcurrency) {
+    public void setDefaultTxConcurrency(TransactionConcurrency dfltConcurrency) {
         this.dfltConcurrency = dfltConcurrency;
     }
 
@@ -125,9 +125,9 @@ public class TransactionConfiguration implements Serializable {
      * specified. Default value is defined by {@link #DFLT_TX_ISOLATION}.
      *
      * @return Default cache transaction isolation.
-     * @see IgniteTx
+     * @see Transaction
      */
-    public IgniteTxIsolation getDefaultTxIsolation() {
+    public TransactionIsolation getDefaultTxIsolation() {
         return dfltIsolation;
     }
 
@@ -136,7 +136,7 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param dfltIsolation Default cache transaction isolation.
      */
-    public void setDefaultTxIsolation(IgniteTxIsolation dfltIsolation) {
+    public void setDefaultTxIsolation(TransactionIsolation dfltIsolation) {
         this.dfltIsolation = dfltIsolation;
     }
 

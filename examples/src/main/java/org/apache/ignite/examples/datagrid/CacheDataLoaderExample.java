@@ -23,7 +23,7 @@ import org.apache.ignite.examples.*;
 /**
  * Demonstrates how cache can be populated with data utilizing {@link IgniteDataLoader} API.
  * {@link IgniteDataLoader} is a lot more efficient to use than standard
- * {@code CacheProjection.put(...)} operation as it properly buffers cache requests
+ * {@code put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
@@ -67,7 +67,6 @@ public class CacheDataLoaderExample {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);
-                ldr.isolated(true);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
                     ldr.addData(i, Integer.toString(i));

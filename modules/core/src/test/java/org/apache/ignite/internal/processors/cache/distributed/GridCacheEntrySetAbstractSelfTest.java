@@ -24,14 +24,13 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  *
@@ -92,7 +91,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void putAndCheckEntrySet(IgniteCache<Object, Object> cache) throws Exception {
-        try (IgniteTx tx = cache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 
             if (total == null)

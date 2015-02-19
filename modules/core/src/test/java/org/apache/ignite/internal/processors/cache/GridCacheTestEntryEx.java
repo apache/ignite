@@ -424,13 +424,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         return val;
     }
 
     /** @inheritDoc */
-    @Override public V innerReload(IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    @Override public V innerReload() {
         return val;
     }
 
@@ -479,10 +478,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         boolean checkVer,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
-        long drTtl,
-        long drExpireTime,
-        @Nullable GridCacheVersion drVer,
-        boolean drResolve,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean conflictResolve,
         boolean intercept,
         UUID subjId,
         String taskName) throws IgniteCheckedException,

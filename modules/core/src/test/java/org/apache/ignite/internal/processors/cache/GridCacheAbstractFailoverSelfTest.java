@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -34,8 +31,8 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Failover tests for cache.
@@ -209,8 +206,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testTopologyChange(@Nullable IgniteTxConcurrency concurrency,
-        @Nullable IgniteTxIsolation isolation) throws Exception {
+    private void testTopologyChange(@Nullable TransactionConcurrency concurrency,
+        @Nullable TransactionIsolation isolation) throws Exception {
         boolean tx = concurrency != null && isolation != null;
 
         if (tx)
@@ -243,8 +240,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testConstantTopologyChange(@Nullable final IgniteTxConcurrency concurrency,
-        @Nullable final IgniteTxIsolation isolation) throws Exception {
+    private void testConstantTopologyChange(@Nullable final TransactionConcurrency concurrency,
+        @Nullable final TransactionIsolation isolation) throws Exception {
         final boolean tx = concurrency != null && isolation != null;
 
         if (tx)
@@ -322,7 +319,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void put(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
-        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
@@ -367,7 +364,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void remove(Ignite g, IgniteCache<String, Integer> cache, final int cnt,
-        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 

@@ -48,7 +48,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsServerClientInteractionsUponClientKilling() throws Exception {
+    public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
         U.setWorkDirectory(null, U.getIgniteHome());
 
         // Run server endpoint.
@@ -92,7 +92,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsClientServerInteractionsUponServerKilling() throws Exception {
+    public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);
@@ -158,7 +158,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Launches GgfsSharedMemoryTestServer and GgfsSharedMemoryTestClient.
+     * Launches IgfsSharedMemoryTestServer and IgfsSharedMemoryTestClient.
      * After successful connection kills firstly server and secondly client.
      *
      * @return Collection of shared memory IDs created while client-server interactions.
@@ -188,7 +188,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Launches GgfsSharedMemoryTestServer and connects to it with client endpoint.
+     * Launches IgfsSharedMemoryTestServer and connects to it with client endpoint.
      * After couple of reads-writes kills the server and checks client throws correct exception.
      *
      * @return List of shared memory IDs created while client-server interactions.
@@ -322,9 +322,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Starts {@code GgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
+     * Starts {@code IgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
      *
-     * @return Start result of the {@code GgfsSharedMemoryTestClient}.
+     * @return Start result of the {@code IgfsSharedMemoryTestClient}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestClient() throws Exception {
@@ -339,14 +339,14 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
 
         /** Process. */
         GridJavaProcess proc = GridJavaProcess.exec(
-            GgfsSharedMemoryTestClient.class, null,
+            IgfsSharedMemoryTestClient.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String s) {
                     info("Client process prints: " + s);
 
-                    if (s.startsWith(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
-                        res.shmemIds(s.substring(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
+                    if (s.startsWith(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
+                        res.shmemIds(s.substring(IgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
 
                         readyLatch.countDown();
                     }
@@ -371,9 +371,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Starts {@code GgfsSharedMemoryTestServer}. The method waits while server being started.
+     * Starts {@code IgfsSharedMemoryTestServer}. The method waits while server being started.
      *
-     * @return Start result of the {@code GgfsSharedMemoryTestServer}.
+     * @return Start result of the {@code IgfsSharedMemoryTestServer}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestServer() throws Exception {
@@ -381,7 +381,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         final CountDownLatch isKilledLatch = new CountDownLatch(1);
 
         GridJavaProcess proc = GridJavaProcess.exec(
-            GgfsSharedMemoryTestServer.class, null,
+            IgfsSharedMemoryTestServer.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String str) {

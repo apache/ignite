@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
@@ -32,7 +35,7 @@ public class GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest exte
     IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> ignoreMessageClasses() {
-        return Collections.<Class<?>>singletonList(GridDistributedTxFinishRequest.class);
+        return F.asList((Class<?>)GridNearTxPrepareRequest.class, GridDhtTxPrepareRequest.class);
     }
 
     /** {@inheritDoc} */

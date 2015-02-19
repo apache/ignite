@@ -31,8 +31,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test ensuring that values are visible inside OPTIMISTIC transaction in co-located cache.
@@ -116,7 +116,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      */
     public void testOptimisticTransaction() throws Exception {
         for (IgniteCache<Integer, String> cache : caches) {
-            IgniteTx tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
+            Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.put(KEY, VAL);

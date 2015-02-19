@@ -22,7 +22,7 @@ import org.apache.commons.compress.archivers.tar.*;
 import org.apache.commons.compress.compressors.gzip.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.hadoop.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;
@@ -53,30 +53,30 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemSecondaryModeSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemClientSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemClientSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoggerStateSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoggerSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoggerStateSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemLoggerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemHandshakeSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopFileSystemHandshakeSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoop20FileSystemLoopbackPrimarySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsHadoopDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(IgniteFsEventsTestSuite.suiteNoarchOnly());
+        suite.addTest(IgfsEventsTestSuite.suiteNoarchOnly());
 
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopFileSystemsTest.class.getName())));
 

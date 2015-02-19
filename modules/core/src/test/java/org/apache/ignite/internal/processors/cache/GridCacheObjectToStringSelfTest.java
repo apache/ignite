@@ -33,8 +33,8 @@ import org.apache.ignite.transactions.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests that common cache objects' toString() methods do not lead to stack overflow.
@@ -167,7 +167,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
             assertFalse(cache.toString().isEmpty());
             assertFalse(cache.iterator().toString().isEmpty());
 
-            try (IgniteTx tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, cache.get(1));
 
                 cache.put(2, 22);

@@ -25,10 +25,10 @@ import javax.cache.processor.*;
 
 /**
  * Cache projection flags that specify projection behaviour. This flags can be explicitly passed into
- * the following methods on {@link org.apache.ignite.cache.CacheProjection}:
+ * the following methods on {@link CacheProjection}:
  * <ul>
- * <li>{@link org.apache.ignite.cache.CacheProjection#flagsOn(CacheFlag...)}</li>
- * <li>{@link org.apache.ignite.cache.CacheProjection#flagsOff(CacheFlag...)}</li>
+ * <li>{@link CacheProjection#flagsOn(CacheFlag...)}</li>
+ * <li>{@link CacheProjection#flagsOff(CacheFlag...)}</li>
  * </ul>
  * Also, some flags, like {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
  * creating new projections and passing entries to predicate filters.
@@ -78,7 +78,7 @@ public enum CacheFlag {
      * Instead of updating remote entries with new values, small invalidation
      * messages will be sent to set the values to {@code null}.
      *
-     * @see IgniteTx#isInvalidate()
+     * @see Transaction#isInvalidate()
      * @see org.apache.ignite.configuration.CacheConfiguration#isInvalidate()
      */
     INVALIDATE,

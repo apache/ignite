@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -153,14 +154,14 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             if (F.eq(g.name(), nearOnlyGridName)) {
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = g.cache(null);
+                    IgniteCache<Object, Object> cache = g.jcache(null);
 
                     String key = "key" + k;
 
                     if (cacheMode() == PARTITIONED)
-                        assertFalse(cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key));
+                        assertFalse(affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key));
 
-                    assertFalse(cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()));
+                    assertFalse(affinity(cache).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()));
                 }
             }
             else {
@@ -168,7 +169,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = g.cache(null);
+                    GridCache<Object, Object> cache = ((IgniteKernal)g).cache(null);
 
                     String key = "key" + k;
 

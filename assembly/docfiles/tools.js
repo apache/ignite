@@ -27,33 +27,3 @@ function toggleDisplay(id) {
         e.style.visibility = 'visible';
     }
 }
-
-/*
- * Produces forum search form.
- */
-function forumSearchForm(root) {
-    document.write(
-        "<form  method='POST' action='http://www.gridgainsystems.com/jiveforums/search.jspa' target='forum' style='margin: 1px; padding: 1px'>" +
-            "" +
-            "<input class='search_text' type='text' style='color: #ccc' onClick='this.value=\"\"; this.style.color=\"#333\"' name='q' value=' find...' size='20' maxlength='100'>" +
-            "&nbsp;" +
-            "<input title='Search Forum' class='search_button' name='button' type='submit' value='f o r u m'>" +
-        "</form>"
-    );
-}
-
-/*
- * Produces Wiki search form.
- */
-function wikiSearchForm(root) {
-    document.write(
-        "<form method='POST' action='http://www.gridgainsystems.com:8080/wiki/dosearchsite.action' target='wiki' style='margin: 1px; padding: 1px' name='search_form'>" +
-            "" +
-            "<input type='hidden' name='quickSearch' value='true'>" +
-            "<input type='hidden' name='searchQuery.spaceKey' value='conf_global'>" +
-            "<input class='search_text' type='text' style='color: #ccc' onClick='this.value=\"\"; this.style.color=\"#333\"' accessKey='s' value=' find...' name='searchQuery.queryString' size='20'>" +
-            "&nbsp;" +
-            "<input title='Search Wiki' class='search_button' name='button' type='submit' value='w i k i'>" +
-        "</form>"
-    );
-}

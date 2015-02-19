@@ -685,8 +685,12 @@ public final class GridCacheMvcc<K> {
                     break;
                 }
                 else {
-                    assert !c.ready() : "Cannot have more then one ready near-local candidate: " + c;
-                    assert !c.owner() : "Cannot have ready near-local candidate while exists near-local owner: " + c;
+                    if (c.owner())
+                        continue;
+
+                    assert !c.ready() :
+                        "Cannot have more then one ready near-local candidate [c=" + c + ", cand=" + cand +
+                            ", mvcc=" + this + ']';
 
                     it.remove();
 

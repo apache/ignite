@@ -59,8 +59,8 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration = {
-        val cfg = new CacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+        val cfg = new CacheConfiguration[Object, Object]
 
         cfg.setName(name)
         cfg.setCacheMode(CacheMode.PARTITIONED)

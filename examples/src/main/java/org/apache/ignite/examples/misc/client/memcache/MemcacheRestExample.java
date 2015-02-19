@@ -19,7 +19,6 @@ package org.apache.ignite.examples.misc.client.memcache;
 
 import net.spy.memcached.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 
 import java.io.*;
 import java.net.*;
@@ -50,7 +49,7 @@ public class MemcacheRestExample {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 
-            GridCache<String, Object> cache = ignite.cache(null);
+            IgniteCache<String, Object> cache = ignite.jcache(null);
 
             client = startMemcachedClient(host, port);
 

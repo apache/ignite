@@ -20,6 +20,7 @@ package org.apache.ignite.cache.hibernate;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -78,7 +79,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (GridCache<?, ?> cache : grid(0).caches())
+        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
             cache.clear();
     }
 

@@ -110,7 +110,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteTx tx = grid(i).transactions().tx();
+            Transaction tx = grid(i).transactions().tx();
 
             if (tx != null)
                 tx.close();
@@ -299,7 +299,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert primary != null;
 
-        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).nodes());
+        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).cluster().nodes());
 
         nodes.remove(primary);
 

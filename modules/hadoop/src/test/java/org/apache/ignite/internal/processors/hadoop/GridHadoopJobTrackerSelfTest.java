@@ -58,7 +58,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     private static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -114,7 +114,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             job.setReducerClass(TestReducer.class);
             job.setInputFormatClass(InFormat.class);
 
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT + "1"));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT + "1"));
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
@@ -161,7 +161,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             job.setCombinerClass(TestCombiner.class);
             job.setInputFormatClass(InFormat.class);
 
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT + "2"));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT + "2"));
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 

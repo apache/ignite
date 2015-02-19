@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -75,7 +76,7 @@ import static java.sql.Statement.*;
  * <p>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Max attempt write count. */
     protected static final int MAX_ATTEMPT_WRITE_COUNT = 2;
 
@@ -90,6 +91,14 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
     /** Empty column value. */
     protected static final Object[] EMPTY_COLUMN_VALUE = new Object[] { null };
+
+    /** Auto-injected store session. */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
+    /** Auto injected ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Auto-injected logger instance. */
     @LoggerResource
@@ -295,7 +304,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
     @Override public void txEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
-        IgniteTx tx = ses.transaction();
+        Transaction tx = ses.transaction();
 
         Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
 
@@ -468,7 +477,7 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().cache(cacheName).configuration()
+            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
                 .getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
@@ -1227,6 +1236,20 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
      */
     public void setParallelLoadCacheMinimumThreshold(int parallelLoadCacheMinThreshold) {
         this.parallelLoadCacheMinThreshold = parallelLoadCacheMinThreshold;
+    }
+
+    /**
+     * @return Ignite instance.
+     */
+    protected Ignite ignite() {
+        return ignite;
+    }
+
+    /**
+     * @return Store session.
+     */
+    protected CacheStoreSession session() {
+        return ses;
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.cache.spring;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.springframework.beans.factory.*;
@@ -221,7 +222,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         assert grid != null;
 
         try {
-            return new SpringCache(name, grid, grid.cache(name), null);
+            return new SpringCache(name, grid, ((IgniteKernal)grid).cache(name), null);
         }
         catch (IllegalArgumentException ignored) {
             return null;
@@ -232,7 +233,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     @Override public Collection<String> getCacheNames() {
         assert grid != null;
 
-        return F.viewReadOnly(grid.caches(), new IgniteClosure<GridCache<?,?>, String>() {
+        return F.viewReadOnly(((IgniteKernal)grid).caches(), new IgniteClosure<GridCache<?,?>, String>() {
             @Override public String apply(GridCache<?, ?> c) {
                 return c.name();
             }

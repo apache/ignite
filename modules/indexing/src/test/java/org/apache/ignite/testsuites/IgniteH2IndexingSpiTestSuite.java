@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 
@@ -49,7 +48,6 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
         // Tests moved to this suite since they require GridH2IndexingSpi.
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
         suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 

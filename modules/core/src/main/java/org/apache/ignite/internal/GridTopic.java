@@ -67,7 +67,7 @@ public enum GridTopic {
     TOPIC_REPLICATION,
 
     /** */
-    TOPIC_GGFS,
+    TOPIC_IGFS,
 
     /** */
     TOPIC_DATALOAD,

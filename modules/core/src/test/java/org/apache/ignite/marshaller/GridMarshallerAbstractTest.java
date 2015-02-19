@@ -18,18 +18,16 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.streamer.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -528,7 +526,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings("unchecked")
     public void testNodeLocalMarshalling() throws Exception {
-        ClusterNodeLocalMap<String, String> loc = grid().nodeLocalMap();
+        ClusterNodeLocalMap<String, String> loc = grid().cluster().nodeLocalMap();
 
         String key = "test-key";
         String val = "test-val";
@@ -652,7 +650,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteCompute compute = compute(grid().forNode(g1.cluster().localNode()));
+            IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
                 @Override
@@ -693,7 +691,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
+            IgniteEvents evts = events(grid().cluster().forNode(g1.cluster().localNode()));
 
             evts.localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event gridEvt) {
@@ -735,7 +733,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
+            IgniteMessaging messaging = message(grid().cluster().forNode(g1.cluster().localNode()));
 
             messaging.send(null, "test");
 
@@ -771,7 +769,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteServices services = grid().services(grid().forNode(g1.cluster().localNode()));
+            IgniteServices services = grid().services(grid().cluster().forNode(g1.cluster().localNode()));
 
             services.deployNodeSingleton("test", new DummyService());
 

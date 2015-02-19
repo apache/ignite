@@ -101,7 +101,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
         stopGrid(killGridName);
 
-        assertNull(grid.cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, false));
+        assertNull(((IgniteKernal)grid).cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, false));
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -122,8 +122,8 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
         fut1.get();
         fut2.get();
 
-        grid.cache(null).dataStructures().removeQueue(QUEUE_NAME1);
-        grid.cache(null).dataStructures().removeQueue(QUEUE_NAME2);
+        ((IgniteKernal)grid).cache(null).dataStructures().removeQueue(QUEUE_NAME1);
+        ((IgniteKernal)grid).cache(null).dataStructures().removeQueue(QUEUE_NAME2);
 
         assertTrue(GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() {
@@ -148,7 +148,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
         startGrid(killGridName);
 
         // Create queue again.
-        queue = grid.cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, true);
+        queue = ((IgniteKernal)grid).cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, true);
         */
 
         assertEquals(0, queue.size());

@@ -216,15 +216,6 @@ public interface MessageWriter {
     public boolean writeIgniteUuid(String name, IgniteUuid val);
 
     /**
-     * Writes {@code enum} value.
-     *
-     * @param name Field name.
-     * @param val {@code enum} value.
-     * @return Whether value was fully written.
-     */
-    public boolean writeEnum(String name, Enum<?> val);
-
-    /**
      * Writes nested message.
      *
      * @param name Field name.
@@ -238,29 +229,69 @@ public interface MessageWriter {
      *
      * @param name Field name.
      * @param arr Array of objects.
-     * @param itemCls Array component type.
+     * @param itemType Array component type.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls);
+    public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType);
 
     /**
      * Writes collection.
      *
      * @param name Field name.
      * @param col Collection.
-     * @param itemCls Collection item type.
+     * @param itemType Collection item type.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls);
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType);
 
     /**
      * Writes map.
      *
      * @param name Field name.
      * @param map Map.
-     * @param keyCls Map key type.
-     * @param valCls Map value type.
+     * @param keyType Map key type.
+     * @param valType Map value type.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls);
+    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
+        MessageAdapter.Type valType);
+
+    /**
+     * @return Whether type of current message is already written.
+     */
+    public boolean isTypeWritten();
+
+    /**
+     * Callback called when type of the message is written.
+     */
+    public void onTypeWritten();
+
+    /**
+     * Gets current message state.
+     *
+     * @return State.
+     */
+    public int state();
+
+    /**
+     * Increments state.
+     */
+    public void incrementState();
+
+    /**
+     * Callback called before inner message is written.
+     */
+    public void beforeInnerMessageWrite();
+
+    /**
+     * Callback called after inner message is written.
+     *
+     * @param finished Whether message was fully written.
+     */
+    public void afterInnerMessageWrite(boolean finished);
+
+    /**
+     * Resets this writer.
+     */
+    public void reset();
 }

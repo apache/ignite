@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -39,12 +40,16 @@ import static junit.framework.Assert.*;
 /**
  * Test store.
  */
-public final class GridCacheTestStore extends CacheStore<Integer, String> {
+public final class GridCacheTestStore implements CacheStore<Integer, String> {
+    /** */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Store. */
     private final Map<Integer, String> map;
 
     /** Transactions. */
-    private final Collection<IgniteTx> txs = new GridConcurrentHashSet<>();
+    private final Collection<Transaction> txs = new GridConcurrentHashSet<>();
 
     /** Last method called. */
     private String lastMtd;
@@ -112,7 +117,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /**
      * @return Transactions.
      */
-    public Collection<IgniteTx> transactions() {
+    public Collection<Transaction> transactions() {
         return txs;
     }
 
@@ -192,7 +197,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public String load(Integer key) {
-        checkTx(session());
+        checkTx(session(), true);
 
         lastMtd = "load";
 
@@ -222,7 +227,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public Map<Integer, String> loadAll(Iterable<? extends Integer> keys) {
-        checkTx(session());
+        checkTx(session(), true);
 
         lastMtd = "loadAll";
 
@@ -243,7 +248,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Integer, ? extends String> e)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "put";
 
@@ -257,7 +262,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends String>> entries)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "putAll";
 
@@ -271,7 +276,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "remove";
 
@@ -283,7 +288,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void deleteAll(Collection<?> keys)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "removeAll";
 
@@ -318,23 +323,31 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /**
      * @param ses Session.
+     * @param load {@code True} if {@link #loadAll} method is called.
      */
-    private void checkTx(@Nullable CacheStoreSession ses) {
-        IgniteTx tx = ses != null ? ses.transaction() : null;
+    private void checkTx(@Nullable CacheStoreSession ses, boolean load) {
+        Transaction tx = ses != null ? ses.transaction() : null;
 
         if (tx == null)
             return;
 
         txs.add(tx);
 
-        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof IgniteTxProxy);
+        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof TransactionProxy);
 
         IgniteInternalTx tx0 = GridTestUtils.getFieldValue(tx, "tx");
 
         if (!tx0.local())
             throw new IgniteException("Tx is not local: " + tx);
 
-        if (tx0.dht())
+        if (tx0.dht() && !load)
             throw new IgniteException("Tx is DHT: " + tx);
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }

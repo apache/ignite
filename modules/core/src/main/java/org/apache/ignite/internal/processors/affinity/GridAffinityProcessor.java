@@ -174,6 +174,29 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Map single key to primary and backup nodes.
+     *
+     * @param cacheName Cache name.
+     * @param key Key to map.
+     * @return Affinity nodes, primary first.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName, K key) throws IgniteCheckedException {
+        A.notNull(key, "key");
+
+        ClusterNode loc = ctx.discovery().localNode();
+
+        if (U.hasCache(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
+            return Collections.singletonList(loc);
+
+        long topVer = ctx.discovery().topologyVersion();
+
+        AffinityInfo affInfo = affinityCache(cacheName, topVer);
+
+        return primaryAndBackups(affInfo, key);
+    }
+
+    /**
      * Maps single key to a node on default cache.
      *
      * @param key Key to map.
@@ -213,7 +236,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Cache affinity.
      */
     public <K> CacheAffinityProxy<K> affinityProxy(String cacheName) {
-        return new CacheAffinityProxy(cacheName);
+        return new CacheAffinityProxy<>(cacheName);
     }
 
     /**
@@ -456,6 +479,17 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
 
         return nodes.iterator().next();
+    }
+
+    /**
+     * @param aff Affinity function.
+     * @param key Key to check.
+     * @return Primary and backup nodes.
+     */
+    private <K> List<ClusterNode> primaryAndBackups(AffinityInfo aff, K key) {
+        int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
+
+        return aff.assignment.get(part);
     }
 
     /** {@inheritDoc} */

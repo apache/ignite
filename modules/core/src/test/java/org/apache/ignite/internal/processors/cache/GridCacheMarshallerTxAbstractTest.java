@@ -27,8 +27,8 @@ import org.apache.ignite.transactions.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test transaction with wrong marshalling.
@@ -91,7 +91,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         String key2 = UUID.randomUUID().toString();
         GridCacheWrongValue1 wrongValue = new GridCacheWrongValue1();
 
-        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
             grid().jcache(null).put(key, value);
 

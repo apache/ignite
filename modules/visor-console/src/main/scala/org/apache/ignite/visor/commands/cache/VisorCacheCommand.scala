@@ -360,12 +360,12 @@ class VisorCacheCommand {
                         ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
 
                         sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
-                            val nm = ignite.node(nid).metrics()
+                            val nm = ignite.cluster.node(nid).metrics()
 
                             ciT += (
                                 nodeId8Addr(nid),
                                 nm.getTotalCpus,
-                                formatDouble(nm.getHeapMemoryUsed() / nm.getHeapMemoryMaximum() * 100.0d) + " %",
+                                formatDouble(nm.getHeapMemoryUsed / nm.getHeapMemoryMaximum * 100.0d) + " %",
 
                                 formatDouble(nm.getCurrentCpuLoad * 100.0) + " %",
                                 X.timeSpan2HMSM(nm.getUpTime),
@@ -462,12 +462,12 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = node.fold(ignite.forRemotes())(ignite.forNode(_))
+            val prj = node.fold(ignite.cluster.forRemotes())(ignite.cluster.forNode(_))
 
             val nids = prj.nodes().map(_.id())
 
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
+                new IgniteBiTuple(JavaBoolean.valueOf(name.isEmpty), name.orNull))).toList
         }
         catch {
             case e: IgniteException => Nil
@@ -482,7 +482,7 @@ class VisorCacheCommand {
      */
     private def config(node: ClusterNode): VisorGridConfiguration = {
         try
-            ignite.compute(ignite.forNode(node)).withNoFailover()
+            ignite.compute(ignite.cluster.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: IgniteException =>
@@ -775,7 +775,6 @@ object VisorCacheCommand {
         val preloadCfg = cfg.preloadConfiguration()
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
-        val dgcCfg = cfg.dgcConfiguration()
         val storeCfg = cfg.storeConfiguration()
         val writeBehind = cfg.writeBehind()
 
@@ -830,18 +829,11 @@ object VisorCacheCommand {
         cacheT += ("Near Eviction Synchronized", evictCfg.nearSynchronized())
         cacheT += ("Near Eviction Policy Max Size", nearCfg.nearEvictMaxSize())
 
-        cacheT += ("Default Isolation", defaultCfg.txIsolation())
-        cacheT += ("Default Concurrency", defaultCfg.txConcurrency())
-        cacheT += ("Default Transaction Timeout", defaultCfg.txTimeout())
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
         cacheT += ("Cache Interceptor", cfg.interceptor())
-
-        cacheT += ("DGC Frequency", dgcCfg.frequency())
-        cacheT += ("DGC Remove Locks Flag", dgcCfg.removedLocks())
-        cacheT += ("DGC Suspect Lock Timeout", dgcCfg.suspectLockTimeout())
 
         cacheT += ("Store Enabled", storeCfg.enabled())
         cacheT += ("Store", storeCfg.store())

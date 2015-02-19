@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test getting the same value twice within the same transaction.
@@ -219,7 +219,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      * @param put If {@code true}, then value will be pre-stored in cache.
      * @throws Exception If failed.
      */
-    private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
+    private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Integer, String> cache = ignite.jcache(null);
@@ -231,7 +231,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         if (put)
             cache.put(key, val = Integer.toString(key));
 
-        IgniteTx tx = ignite.transactions().txStart(concurrency, isolation, 0, 0);
+        Transaction tx = ignite.transactions().txStart(concurrency, isolation, 0, 0);
 
         try {
             if (isTestDebug()) {
@@ -266,7 +266,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug())
                 info("Committed transaction: " + tx);
         }
-        catch (IgniteTxOptimisticException e) {
+        catch (TransactionOptimisticException e) {
             if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                 error("Received invalid optimistic failure.", e);
 
@@ -301,7 +301,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             throw e;
         }
         finally {
-            IgniteTx t = ignite.transactions().tx();
+            Transaction t = ignite.transactions().tx();
 
             assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                 ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';

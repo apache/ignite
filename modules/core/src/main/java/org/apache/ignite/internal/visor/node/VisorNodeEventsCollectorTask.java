@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -33,6 +32,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task that runs on specified node and returns events data.
@@ -49,16 +49,15 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) {
-        Collection<VisorGridEvent> allEvents = new ArrayList<>();
+    @Override protected Iterable<? extends VisorGridEvent> reduce0(List<ComputeJobResult> results) {
+        Collection<VisorGridEvent> allEvts = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
             if (r.getException() == null)
-                allEvents.addAll((Collection<VisorGridEvent>) r.getData());
+                allEvts.addAll((Collection<VisorGridEvent>)r.getData());
         }
 
-        return allEvents.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvents;
+        return allEvts.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvts;
     }
 
     /**
@@ -82,23 +81,23 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         private final String taskName;
 
         /** Task or job events with session. */
-        private final IgniteUuid taskSessionId;
+        private final IgniteUuid taskSesId;
 
         /**
          * @param keyOrder Arguments for node local storage key.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
-         * @param taskSessionId Arguments for task session filter.
+         * @param taskSesId Arguments for task session filter.
          */
         public VisorNodeEventsCollectorTaskArg(@Nullable String keyOrder, @Nullable int[] typeArg,
             @Nullable Long timeArg,
-            @Nullable String taskName, @Nullable IgniteUuid taskSessionId) {
+            @Nullable String taskName, @Nullable IgniteUuid taskSesId) {
             this.keyOrder = keyOrder;
             this.typeArg = typeArg;
             this.timeArg = timeArg;
             this.taskName = taskName;
-            this.taskSessionId = taskSessionId;
+            this.taskSesId = taskSesId;
         }
 
         /**
@@ -112,14 +111,12 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         /**
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
-         * @param taskSessionId Arguments for task session filter.
+         * @param taskSesId Arguments for task session filter.
          */
         public static VisorNodeEventsCollectorTaskArg createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
-            @Nullable IgniteUuid taskSessionId) {
-            return new VisorNodeEventsCollectorTaskArg(null,
-                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
-                    EVTS_SECURE_SESSION),
-                timeArg, taskName, taskSessionId);
+            @Nullable IgniteUuid taskSesId) {
+            return new VisorNodeEventsCollectorTaskArg(null, concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION),
+                timeArg, taskName, taskSesId);
         }
 
         /**
@@ -162,7 +159,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @return Task or job events with session.
          */
         public IgniteUuid taskSessionId() {
-            return taskSessionId;
+            return taskSesId;
         }
 
         /** {@inheritDoc} */
@@ -175,7 +172,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
      * Job for task returns events data.
      */
     private static class VisorEventsCollectJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
-            Collection<? extends VisorGridEvent>> {
+        Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -213,25 +210,28 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * Filter events containing visor in it's name.
          *
          * @param e Event
+         * @param taskName Task name to filter of events.
          * @return {@code true} if not contains {@code visor} in task name.
          */
         private boolean filterByTaskName(Event e, String taskName) {
+            String compareTaskName = taskName.toLowerCase();
+
             if (e.getClass().equals(TaskEvent.class)) {
                 TaskEvent te = (TaskEvent)e;
 
-                return containsInTaskName(te.taskName(), te.taskClassName(), taskName);
+                return containsInTaskName(te.taskName(), te.taskClassName(), compareTaskName);
             }
 
             if (e.getClass().equals(JobEvent.class)) {
                 JobEvent je = (JobEvent)e;
 
-                return containsInTaskName(je.taskName(), je.taskName(), taskName);
+                return containsInTaskName(je.taskName(), je.taskName(), compareTaskName);
             }
 
             if (e.getClass().equals(DeploymentEvent.class)) {
                 DeploymentEvent de = (DeploymentEvent)e;
 
-                return de.alias().toLowerCase().contains(taskName);
+                return de.alias().toLowerCase().contains(compareTaskName);
             }
 
             return true;
@@ -243,17 +243,17 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterByTaskSessionId(Event e, IgniteUuid taskSessionId) {
+        private boolean filterByTaskSessionId(Event e, IgniteUuid taskSesId) {
             if (e.getClass().equals(TaskEvent.class)) {
                 TaskEvent te = (TaskEvent)e;
 
-                return te.taskSessionId().equals(taskSessionId);
+                return te.taskSessionId().equals(taskSesId);
             }
 
             if (e.getClass().equals(JobEvent.class)) {
                 JobEvent je = (JobEvent)e;
 
-                return je.taskSessionId().equals(taskSessionId);
+                return je.taskSessionId().equals(taskSesId);
             }
 
             return true;
@@ -263,7 +263,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final ClusterNodeLocalMap<String, Long> nl = ignite.nodeLocalMap();
+            final ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
@@ -319,24 +319,6 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
                     res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
                         node.id(), addr, node.isDaemon()));
-                }
-                else if (e instanceof AuthenticationEvent) {
-                    AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                        ae.subjectId(), ae.login()));
-                }
-                else if (e instanceof AuthorizationEvent) {
-                    AuthorizationEvent ae = (AuthorizationEvent)e;
-
-                    res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
-                        ae.subject()));
-                }
-                else if (e instanceof SecureSessionEvent) {
-                    SecureSessionEvent se = (SecureSessionEvent) e;
-
-                    res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
-                        se.subjectId()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));

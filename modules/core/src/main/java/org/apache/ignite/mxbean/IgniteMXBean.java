@@ -321,22 +321,6 @@ public interface IgniteMXBean {
     public String getLoadBalancingSpiFormatted();
 
     /**
-     * Gets a formatted instance of fully configured authentication SPI implementation.
-     *
-     * @return Grid authentication SPI implementation.
-     */
-    @MXBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
-    public String getAuthenticationSpiFormatted();
-
-    /**
-     * Gets a formatted instance of fully configured secure session SPI implementation.
-     *
-     * @return Grid secure session SPI implementation.
-     */
-    @MXBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
-    public String getSecureSessionSpiFormatted();
-
-    /**
      * Gets OS information.
      *
      * @return OS information.

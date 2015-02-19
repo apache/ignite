@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -115,8 +116,6 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
-        cache.loadCache(null, 0);
-
         assert cache.size() == PUT_CNT;
 
         Collection<Cache.Entry<Integer, ValueObject>> res =
@@ -159,7 +158,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
+        });
 
         assert cache.size() == PUT_CNT - 5;
 

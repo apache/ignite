@@ -44,8 +44,7 @@ import java.util.*;
  * </li>
  * <li>
  *      System will inject all annotated resources (including task session) into grid task instance.
- *      See <a href="http://www.gridgain.com/javadoc/org/gridgain/grid/resources/package-summary.html">org.gridgain.grid.resources</a>
- *      package for the list of injectable resources.
+ *      See {@link org.apache.ignite.resources} package for the list of injectable resources.
  * </li>
  * <li>
  *      System will apply {@link #map(List, Object) map(List, Object)}. This

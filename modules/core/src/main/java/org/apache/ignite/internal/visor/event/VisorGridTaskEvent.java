@@ -34,10 +34,10 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     private final String taskName;
 
     /** Name of task class that triggered the event. */
-    private final String taskClassName;
+    private final String taskClsName;
 
     /** Task session ID. */
-    private final IgniteUuid taskSessionId;
+    private final IgniteUuid taskSesId;
 
     /** Whether task was created for system needs. */
     private final boolean internal;
@@ -49,12 +49,12 @@ public class VisorGridTaskEvent extends VisorGridEvent {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      * @param taskName Name of the task that triggered the event.
-     * @param taskClassName Name of task class that triggered the event.
-     * @param taskSessionId Task session ID of the task that triggered the event.
+     * @param taskClsName Name of task class that triggered the event.
+     * @param taskSesId Task session ID of the task that triggered the event.
      * @param internal Whether task was created for system needs.
      */
     public VisorGridTaskEvent(
@@ -62,19 +62,19 @@ public class VisorGridTaskEvent extends VisorGridEvent {
         IgniteUuid id,
         String name,
         UUID nid,
-        long timestamp,
-        @Nullable String message,
+        long ts,
+        @Nullable String msg,
         String shortDisplay,
         String taskName,
-        String taskClassName,
-        IgniteUuid taskSessionId,
+        String taskClsName,
+        IgniteUuid taskSesId,
         boolean internal
     ) {
-        super(typeId, id, name, nid, timestamp, message, shortDisplay);
+        super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.taskName = taskName;
-        this.taskClassName = taskClassName;
-        this.taskSessionId = taskSessionId;
+        this.taskClsName = taskClsName;
+        this.taskSesId = taskSesId;
         this.internal = internal;
     }
 
@@ -89,14 +89,14 @@ public class VisorGridTaskEvent extends VisorGridEvent {
      * @return Name of task class that triggered the event.
      */
     public String taskClassName() {
-        return taskClassName;
+        return taskClsName;
     }
 
     /**
      * @return Task session ID.
      */
     public IgniteUuid taskSessionId() {
-        return taskSessionId;
+        return taskSesId;
     }
 
     /**

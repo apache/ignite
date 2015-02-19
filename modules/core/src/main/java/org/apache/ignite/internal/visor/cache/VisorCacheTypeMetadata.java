@@ -104,14 +104,14 @@ public class VisorCacheTypeMetadata implements Serializable {
 
         ArrayList<VisorCacheTypeFieldMetadata> fields = new ArrayList<>(m.getKeyFields().size());
 
-        for (CacheTypeFieldMetadata field: m.getKeyFields())
+        for (CacheTypeFieldMetadata field : m.getKeyFields())
             fields.add(VisorCacheTypeFieldMetadata.from(field));
 
         metadata.keyFields(fields);
 
         fields = new ArrayList<>(m.getValueFields().size());
 
-        for (CacheTypeFieldMetadata field: m.getValueFields())
+        for (CacheTypeFieldMetadata field : m.getValueFields())
             fields.add(VisorCacheTypeFieldMetadata.from(field));
 
         metadata.valFields(fields);
@@ -127,13 +127,14 @@ public class VisorCacheTypeMetadata implements Serializable {
 
     /**
      * Convert class object to string class name in the fields map.
+     *
      * @param base Map with class object.
      * @return Map with string class name.
      */
     private static Map<String, String> convertFieldsMap(Map<String, Class<?>> base) {
         Map<String, String> res = new LinkedHashMap<>(base.size());
 
-        for (Map.Entry<String, Class<?>> e: base.entrySet())
+        for (Map.Entry<String, Class<?>> e : base.entrySet())
             res.put(e.getKey(), U.compact(e.getValue().getName()));
 
         return res;
@@ -141,6 +142,7 @@ public class VisorCacheTypeMetadata implements Serializable {
 
     /**
      * Convert class object to string class name in the  groups map.
+     *
      * @param base Map with class object.
      * @return Map with string class name.
      */
@@ -148,11 +150,11 @@ public class VisorCacheTypeMetadata implements Serializable {
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> base) {
         Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> res = new LinkedHashMap<>(base.size());
 
-        for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> e: base.entrySet()) {
+        for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> e : base.entrySet()) {
             LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> intBase = e.getValue();
             LinkedHashMap<String, IgniteBiTuple<String, Boolean>> intRes = new LinkedHashMap<>(intBase.size());
 
-            for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> intE: intBase.entrySet()) {
+            for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> intE : intBase.entrySet()) {
                 IgniteBiTuple<Class<?>, Boolean> val = intE.getValue();
 
                 intRes.put(intE.getKey(), new IgniteBiTuple<>(U.compact(val.get1().getName()), val.get2()));

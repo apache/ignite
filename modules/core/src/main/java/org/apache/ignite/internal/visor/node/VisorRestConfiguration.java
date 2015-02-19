@@ -59,7 +59,7 @@ public class VisorRestConfiguration implements Serializable {
     private Integer tcpPort;
 
     /** Context factory for SSL. */
-    private String tcpSslContextFactory;
+    private String tcpSslCtxFactory;
 
     /**
      * @param c Grid configuration.
@@ -203,14 +203,14 @@ public class VisorRestConfiguration implements Serializable {
      * @return Context factory for SSL.
      */
     @Nullable public String tcpSslContextFactory() {
-        return tcpSslContextFactory;
+        return tcpSslCtxFactory;
     }
 
     /**
      * @param tcpSslCtxFactory New context factory for SSL.
      */
     public void tcpSslContextFactory(String tcpSslCtxFactory) {
-        tcpSslContextFactory = tcpSslCtxFactory;
+        this.tcpSslCtxFactory = tcpSslCtxFactory;
     }
 
     /** {@inheritDoc} */

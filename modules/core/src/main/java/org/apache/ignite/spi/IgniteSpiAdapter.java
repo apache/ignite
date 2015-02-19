@@ -28,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
@@ -135,13 +133,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         this.spiCtx = spiCtx;
 
-        // Always run consistency check for security SPIs.
-        final boolean secSpi = AuthenticationSpi.class.isAssignableFrom(getClass()) ||
-            SecureSessionSpi.class.isAssignableFrom(getClass());
-
-        final boolean check = secSpi || !Boolean.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
-
-        if (check) {
+        if (!Boolean.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
@@ -151,7 +143,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
                     if (node != null)
                         try {
-                            checkConfigurationConsistency(spiCtx, node, false, !secSpi);
+                            checkConfigurationConsistency(spiCtx, node, false);
                             checkConfigurationConsistency0(spiCtx, node, false);
                         }
                         catch (IgniteSpiException e) {
@@ -164,7 +156,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             final Collection<ClusterNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
 
             for (ClusterNode node : remotes) {
-                checkConfigurationConsistency(spiCtx, node, true, !secSpi);
+                checkConfigurationConsistency(spiCtx, node, true);
                 checkConfigurationConsistency0(spiCtx, node, true);
             }
         }
@@ -401,7 +393,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @throws IgniteSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private void checkConfigurationConsistency(IgniteSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
+    private void checkConfigurationConsistency(IgniteSpiContext spiCtx, ClusterNode node, boolean starting)
         throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
@@ -442,8 +434,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         boolean isSpiConsistent = false;
 
-        String tipStr = tip ? " (fix configuration or set " +
-            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)" : "";
+        String tipStr = " (fix configuration or set " + "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)";
 
         if (rmtCls == null) {
             if (!optional && starting)

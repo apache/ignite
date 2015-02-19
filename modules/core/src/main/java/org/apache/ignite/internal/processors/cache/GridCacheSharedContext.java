@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
@@ -40,6 +41,7 @@ import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 /**
  * Shared context.
  */
+@GridToStringExclude
 public class GridCacheSharedContext<K, V> {
     /** Kernal context. */
     private GridKernalContext kernalCtx;
@@ -69,7 +71,7 @@ public class GridCacheSharedContext<K, V> {
     private Map<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
-    private volatile IgniteTxMetricsAdapter txMetrics;
+    private volatile TransactionMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
     private IgniteInternalFuture<Object> preloadersStartFut;
@@ -96,7 +98,7 @@ public class GridCacheSharedContext<K, V> {
         this.exchMgr = add(exchMgr);
         this.ioMgr = add(ioMgr);
 
-        txMetrics = new IgniteTxMetricsAdapter();
+        txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new HashMap<>();
     }
@@ -224,7 +226,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Transactional metrics adapter.
      */
-    public IgniteTxMetricsAdapter txMetrics() {
+    public TransactionMetricsAdapter txMetrics() {
         return txMetrics;
     }
 
@@ -232,7 +234,7 @@ public class GridCacheSharedContext<K, V> {
      * Resets tx metrics.
      */
     public void resetTxMetrics() {
-        txMetrics = new IgniteTxMetricsAdapter();
+        txMetrics = new TransactionMetricsAdapter();
     }
 
     /**

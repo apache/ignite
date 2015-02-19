@@ -55,7 +55,7 @@ import static javax.cache.Cache.*;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 

@@ -82,12 +82,12 @@ object ScalarClosureExample extends App {
     }
 
     /**
-     * Same as previous greetings for all remote nodes but remote projection is created manually.
+     * Same as previous greetings for all remote nodes but remote cluster group is filtered manually.
      */
     def greetRemotesAgain() {
         val me = ignite$.cluster().localNode.id
 
-        // Just show that we can create any projections we like...
+        // Just show that we can create any groups we like...
         // Note that usage of Java-based closure via 'F' typedef.
         ignite$.cluster().forPredicate((n: ClusterNode) => n.id != me) match {
             case p if p.isEmpty => println("No remote nodes!")

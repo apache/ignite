@@ -17,15 +17,17 @@
 
 package org.apache.ignite.scalar.examples
 
+import org.apache.ignite.configuration.CacheConfiguration
+
 import java.util._
 
-import org.apache.ignite.Ignite
+import org.apache.ignite.{IgniteCache, Ignite}
 import org.apache.ignite.cache.CacheMode._
-import org.apache.ignite.cache.CacheProjection
 import org.apache.ignite.cache.affinity.CacheAffinityKey
-import org.apache.ignite.internal.processors.cache.CacheFlag
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
+
+import collection.JavaConversions._
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
@@ -64,39 +66,18 @@ object ScalarCacheQueryExample {
         // Using distributed queries for partitioned cache and local queries for replicated cache.
         // Since in replicated caches data is available on all nodes, including local one,
         // it is enough to just query the local node.
-        val prj = if (cache$(CACHE_NAME).get.configuration.getCacheMode == PARTITIONED) ignite.cluster() else ignite.cluster().forLocal()
+        val prj = if (cache.getConfiguration(classOf[CacheConfiguration[CacheAffinityKey[UUID], Person]]).getCacheMode == PARTITIONED)
+            ignite.cluster().forRemotes()
+        else
+            ignite.cluster().forLocal()
 
         // Example for SQL-based querying employees based on salary ranges.
         // Gets all persons with 'salary > 1000'.
-        print("People with salary more than 1000: ", cache.sql(prj, "salary > 1000").map(_._2))
+        print("People with salary more than 1000: ", cache.sql("salary > 1000").getAll.map(e => e.getValue))
 
         // Example for TEXT-based querying for a given string in people resumes.
         // Gets all persons with 'Bachelor' degree.
-        print("People with Bachelor degree: ", cache.text(prj, "Bachelor").map(_._2))
-
-        // Example for SQL-based querying with custom remote transformer to make sure
-        // that only required data without any overhead is returned to caller.
-        // Gets last names of all 'Ignite' employees.
-        print("Last names of all 'Ignite' employees: ",
-            cache.sqlTransform(
-                prj,
-                "from Person, Organization where Person.orgId = Organization.id " +
-                    "and Organization.name = 'Ignite'",
-                (p: Person) => p.lastName
-            ).map(_._2)
-        )
-
-        // Example for SQL-based querying with custom remote and local reducers
-        // to calculate average salary among all employees within a company.
-        // Gets average salary of persons with 'Master' degree.
-        print("Average salary of people with Master degree: ",
-            cache.textReduce(
-                prj,
-                "Master",
-                (e: Iterable[(CacheAffinityKey[UUID], Person)]) => (e.map(_._2.salary).sum, e.size),
-                (e: Iterable[(Double, Int)]) => e.map(_._1).sum / e.map(_._2).sum
-            )
-        )
+        print("People with Bachelor degree: ", cache.text("Bachelor").getAll.map(e => e.getValue))
     }
 
     /**
@@ -104,17 +85,14 @@ object ScalarCacheQueryExample {
      *
      * @return Cache to use.
      */
-    private def mkCache[K, V]: CacheProjection[K, V] = {
-        // Using distributed queries.
-        cache$[K, V](CACHE_NAME).get.flagsOn(CacheFlag.SYNC_COMMIT)
-    }
+    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](CACHE_NAME).get
 
     /**
      * Populates cache with test data.
      */
     private def initialize() {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear(0)
+        cache$(CACHE_NAME).get.clear()
 
         // Organization cache projection.
         val orgCache = mkCache[UUID, Organization]

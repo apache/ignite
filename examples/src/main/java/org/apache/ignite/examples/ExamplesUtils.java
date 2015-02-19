@@ -63,7 +63,7 @@ public class ExamplesUtils {
     /**
      * Checks minimum topology size for running a certain example.
      *
-     * @param prj Projection to check size for.
+     * @param prj Cluster to check size for.
      * @param size Minimum number of nodes required to run a certain example.
      * @return {@code True} if check passed, {@code false} otherwise.
      */

@@ -44,10 +44,10 @@ public class VisorGridEvent implements Serializable {
     private final UUID nid;
 
     /** Event timestamp. */
-    private final long timestamp;
+    private final long ts;
 
     /** Event message. */
-    private final String message;
+    private final String msg;
 
     /** Shortened version of {@code toString()} result. Suitable for humans to read. */
     private final String shortDisplay;
@@ -59,18 +59,18 @@ public class VisorGridEvent implements Serializable {
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
-     * @param timestamp Event timestamp.
-     * @param message Event message.
+     * @param ts Event timestamp.
+     * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      */
-    public VisorGridEvent(int typeId, IgniteUuid id, String name, UUID nid, long timestamp, @Nullable String message,
+    public VisorGridEvent(int typeId, IgniteUuid id, String name, UUID nid, long ts, @Nullable String msg,
         String shortDisplay) {
         this.typeId = typeId;
         this.id = id;
         this.name = name;
         this.nid = nid;
-        this.timestamp = timestamp;
-        this.message = message;
+        this.ts = ts;
+        this.msg = msg;
         this.shortDisplay = shortDisplay;
     }
 
@@ -106,14 +106,14 @@ public class VisorGridEvent implements Serializable {
      * @return Event timestamp.
      */
     public long timestamp() {
-        return timestamp;
+        return ts;
     }
 
     /**
      * @return Event message.
      */
     @Nullable public String message() {
-        return message;
+        return msg;
     }
 
     /**

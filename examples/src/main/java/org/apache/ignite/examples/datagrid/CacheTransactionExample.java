@@ -22,8 +22,8 @@ import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Demonstrates how to use cache transactions.
@@ -87,7 +87,7 @@ public class CacheTransactionExample {
         // Clone every object we get from cache, so we can freely update it.
         IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        try (IgniteTx tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct0 = cache.get(acctId);
 
             assert acct0 != null;

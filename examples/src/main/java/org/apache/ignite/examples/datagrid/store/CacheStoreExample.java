@@ -53,7 +53,7 @@ public class CacheStoreExample {
             // Clean up caches on all nodes before run.
             cache.clear();
 
-            try (IgniteTx tx = ignite.transactions().txStart()) {
+            try (Transaction tx = ignite.transactions().txStart()) {
                 Person val = cache.get(id);
 
                 System.out.println("Read value: " + val);

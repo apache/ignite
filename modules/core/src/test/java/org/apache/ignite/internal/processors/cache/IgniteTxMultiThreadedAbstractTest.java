@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -28,8 +26,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for local transactions.
@@ -46,8 +44,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkCommitMultithreaded(final IgniteTxConcurrency concurrency,
-        final IgniteTxIsolation isolation) throws Exception {
+    protected void checkCommitMultithreaded(final TransactionConcurrency concurrency,
+        final TransactionIsolation isolation) throws Exception {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 Thread t = Thread.currentThread();
@@ -73,8 +71,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkRollbackMultithreaded(final IgniteTxConcurrency concurrency,
-        final IgniteTxIsolation isolation) throws Exception {
+    protected void checkRollbackMultithreaded(final TransactionConcurrency concurrency,
+        final TransactionIsolation isolation) throws Exception {
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
@@ -229,7 +227,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                     for (int i = 0; i < ITERATIONS; i++) {
                         while (true) {
-                            try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                                 long val = cache.get(key);
 
                                 cache.put(key, val + 1);
@@ -240,7 +238,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                                 break;
                             }
-                            catch(IgniteTxOptimisticException e) {
+                            catch(TransactionOptimisticException e) {
                                 log.info("Got error, will retry: " + e);
                             }
                         }

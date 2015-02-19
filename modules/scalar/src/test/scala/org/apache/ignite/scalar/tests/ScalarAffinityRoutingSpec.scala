@@ -35,9 +35,9 @@ class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with Before
     "affinityRun$ method" should "run correctly" in scalar("examples/config/example-cache.xml") {
         val c = cache$[Int, Int](CACHE_NAME).get
 
-        c += (0 -> 0)
-        c += (1 -> 1)
-        c += (2 -> 2)
+//        c += (0 -> 0)
+//        c += (1 -> 1)
+//        c += (2 -> 2)
 
         val cnt = Ignition.ignite.atomicLong("affinityRun", 0, true)
 
@@ -51,9 +51,9 @@ class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with Before
     "affinityRunAsync$ method" should "run correctly" in scalar("examples/config/example-cache.xml") {
         val c = cache$[Int, Int](CACHE_NAME).get
 
-        c += (0 -> 0)
-        c += (1 -> 1)
-        c += (2 -> 2)
+//        c += (0 -> 0)
+//        c += (1 -> 1)
+//        c += (2 -> 2)
 
         val cnt = Ignition.ignite.atomicLong("affinityRunAsync", 0, true)
 

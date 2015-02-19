@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -113,7 +112,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public void putAllConflict(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
 
     /**
      * Store DR data asynchronously.
@@ -123,7 +122,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> putAllConflictAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -155,7 +154,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Removes DR data asynchronously.
@@ -165,7 +164,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -197,7 +196,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(IgniteTx, Object, Object)} method.
+     * via {@link CacheStore#put(Transaction, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -222,7 +221,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(IgniteTx, Object, Object)} method.
+     * via {@link CacheStore#put(Transaction, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -244,7 +243,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(IgniteTx, Object)} method.
+     * via {@link CacheStore#remove(Transaction, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -268,7 +267,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(IgniteTx, Object)} method.
+     * via {@link CacheStore#remove(Transaction, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -333,25 +332,25 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
 
     /**
-     * Checks whether this cache is GGFS data cache.
+     * Checks whether this cache is IGFS data cache.
      *
-     * @return {@code True} in case this cache is GGFS data cache.
+     * @return {@code True} in case this cache is IGFS data cache.
      */
-    public boolean isGgfsDataCache();
+    public boolean isIgfsDataCache();
 
     /**
-     * Get current amount of used GGFS space in bytes.
+     * Get current amount of used IGFS space in bytes.
      *
-     * @return Amount of used GGFS space in bytes.
+     * @return Amount of used IGFS space in bytes.
      */
-    public long ggfsDataSpaceUsed();
+    public long igfsDataSpaceUsed();
 
     /**
-     * Get maximum space available for GGFS.
+     * Get maximum space available for IGFS.
      *
-     * @return Amount of space available for GGFS in bytes.
+     * @return Amount of space available for IGFS in bytes.
      */
-    public long ggfsDataSpaceMax();
+    public long igfsDataSpaceMax();
 
     /**
      * Checks whether this cache is Mongo data cache.
@@ -454,4 +453,56 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
+
+    /**
+     * @return Context.
+     */
+    public GridCacheContext<K, V> context();
+
+    /**
+     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
+     * to load state from the underlying persistent storage. The loaded values
+     * will then be given to the optionally passed in predicate, and, if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all loaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
+     * @throws IgniteCheckedException If loading failed.
+     */
+    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException;
+
+    /**
+     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
+     * to reload state from the underlying persistent storage. The reloaded values
+     * will then be given to the optionally passed in predicate, and if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all reloaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
+     * @return Future to be completed whenever loading completes.
+     */
+    public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args);
 }

@@ -46,9 +46,9 @@ import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Managed transaction adapter.
@@ -113,11 +113,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Isolation. */
     @GridToStringInclude
-    protected IgniteTxIsolation isolation = READ_COMMITTED;
+    protected TransactionIsolation isolation = READ_COMMITTED;
 
     /** Concurrency. */
     @GridToStringInclude
-    protected IgniteTxConcurrency concurrency = PESSIMISTIC;
+    protected TransactionConcurrency concurrency = PESSIMISTIC;
 
     /** Transaction timeout. */
     @GridToStringInclude
@@ -162,16 +162,13 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     private Set<Integer> invalidParts = new GridLeanSet<>();
 
-    /** Recover writes. */
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
-
     /**
      * Transaction state. Note that state is not protected, as we want to
-     * always use {@link #state()} and {@link #state(IgniteTxState)}
+     * always use {@link #state()} and {@link #state(TransactionState)}
      * methods.
      */
     @GridToStringInclude
-    private volatile IgniteTxState state = ACTIVE;
+    private volatile TransactionState state = ACTIVE;
 
     /** Timed out flag. */
     private volatile boolean timedOut;
@@ -195,6 +192,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Lock condition. */
     private final Condition cond = lock.newCondition();
 
+    /** */
+    protected Map<UUID, Collection<UUID>> txNodes;
+
     /** Subject ID initiated this transaction. */
     protected UUID subjId;
 
@@ -209,7 +209,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** */
     @GridToStringExclude
-    private IgniteTxProxyImpl proxy;
+    private TransactionProxyImpl proxy;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -238,8 +238,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean implicitSingle,
         boolean loc,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -296,8 +296,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheVersion startVer,
         long threadId,
         boolean sys,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
@@ -367,8 +367,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry<K, V>> optimisticLockEntries() {
-        assert optimistic();
-
         if (!groupLock())
             return writeEntries();
         else {
@@ -393,20 +391,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 Collections.<IgniteTxEntry<K,V>>emptyList() :
                 Collections.singletonList(grpLockEntry);
         }
-    }
-
-    /**
-     * @param recoveryWrites Recover write entries.
-     */
-    public void recoveryWrites(Collection<IgniteTxEntry<K, V>> recoveryWrites) {
-        this.recoveryWrites = recoveryWrites;
-    }
-
-    /**
-     * @return Recover write entries.
-     */
-    @Override public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites;
     }
 
     /** {@inheritDoc} */
@@ -451,6 +435,28 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         return null;
+    }
+
+    /**
+     * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     */
+    @SuppressWarnings({"CatchGenericClass"})
+    protected void uncommit() {
+        for (IgniteTxEntry<K, V> e : writeMap().values()) {
+            try {
+                GridCacheEntryEx<K, V> Entry = e.cached();
+
+                if (e.op() != NOOP)
+                    Entry.invalidate(null, xidVer);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                break;
+            }
+        }
+
+        cctx.tm().uncommitTx(this);
     }
 
     /**
@@ -727,12 +733,12 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxIsolation isolation() {
+    @Override public TransactionIsolation isolation() {
         return isolation;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxConcurrency concurrency() {
+    @Override public TransactionConcurrency concurrency() {
         return concurrency;
     }
 
@@ -792,7 +798,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxState state() {
+    @Override public TransactionState state() {
         return state;
     }
 
@@ -842,7 +848,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      */
     @Override public void close() throws IgniteCheckedException {
-        IgniteTxState state = state();
+        TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
@@ -943,7 +949,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean state(IgniteTxState state) {
+    @Override public boolean state(TransactionState state) {
         return state(state, false);
     }
 
@@ -978,10 +984,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private boolean state(IgniteTxState state, boolean timedOut) {
+    private boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
-        IgniteTxState prev;
+        TransactionState prev;
 
         boolean notify = false;
 
@@ -1164,7 +1170,14 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return null;
+        return txNodes;
+    }
+
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -1207,7 +1220,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                         resolveTaskName(),
-                        CU.<K, V>empty(),
                         null);
 
                 boolean modified = false;
@@ -1216,7 +1228,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                     try {
-                        EntryProcessor processor = t.get1();
+                        EntryProcessor<K, V, ?> processor = t.get1();
 
                         processor.process(invokeEntry, t.get2());
 
@@ -1229,13 +1241,17 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     modified |= invokeEntry.modified();
                 }
 
+                if (modified) {
+                    val = (V)cacheCtx.<V>unwrapTemporary(val);
+
+                    if (cacheCtx.portableEnabled())
+                        val = (V)cacheCtx.marshalToPortable(val);
+                }
+
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                 if (op == NOOP) {
-                    ExpiryPolicy expiry = txEntry.expiry();
-
-                    if (expiry == null)
-                        expiry = cacheCtx.expiry();
+                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                     if (expiry != null) {
                         long ttl = CU.toTtl(expiry.getExpiryForAccess());
@@ -1247,7 +1263,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     }
                 }
 
-                return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
+                return F.t(op, val, null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;
@@ -1279,7 +1295,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param newVer New version.
      * @param old Old entry.
      * @return Tuple with adjusted operation type and conflict context.
-     * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
+     * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
@@ -1405,10 +1421,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         nodeId = U.readUuid(in);
 
-        isolation = IgniteTxIsolation.fromOrdinal(in.read());
-        concurrency = IgniteTxConcurrency.fromOrdinal(in.read());
+        isolation = TransactionIsolation.fromOrdinal(in.read());
+        concurrency = TransactionConcurrency.fromOrdinal(in.read());
 
-        state = IgniteTxState.fromOrdinal(in.read());
+        state = TransactionState.fromOrdinal(in.read());
     }
 
     /**
@@ -1434,9 +1450,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxProxy proxy() {
+    @Override public TransactionProxy proxy() {
         if (proxy == null)
-            proxy = new IgniteTxProxyImpl(this, cctx, false);
+            proxy = new TransactionProxyImpl(this, cctx, false);
 
         return proxy;
     }
@@ -1475,10 +1491,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         private final long startTime;
 
         /** Transaction isolation. */
-        private final IgniteTxIsolation isolation;
+        private final TransactionIsolation isolation;
 
         /** Concurrency. */
-        private final IgniteTxConcurrency concurrency;
+        private final TransactionConcurrency concurrency;
 
         /** Invalidate flag. */
         private final boolean invalidate;
@@ -1487,7 +1503,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         private final long timeout;
 
         /** State. */
-        private final IgniteTxState state;
+        private final TransactionState state;
 
         /** Rollback only flag. */
         private final boolean rollbackOnly;
@@ -1508,9 +1524,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
          * @param state Transaction state.
          * @param rollbackOnly Rollback-only flag.
          */
-        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, IgniteTxIsolation isolation,
-            IgniteTxConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
-            IgniteTxState state, boolean rollbackOnly) {
+        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, TransactionIsolation isolation,
+            TransactionConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
+            TransactionState state, boolean rollbackOnly) {
             this.xid = xid;
             this.nodeId = nodeId;
             this.threadId = threadId;
@@ -1545,12 +1561,12 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteTxIsolation isolation() {
+        @Override public TransactionIsolation isolation() {
             return isolation;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteTxConcurrency concurrency() {
+        @Override public TransactionConcurrency concurrency() {
             return concurrency;
         }
 
@@ -1570,7 +1586,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteTxState state() {
+        @Override public TransactionState state() {
             return state;
         }
 
@@ -1839,11 +1855,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> recoveryWrites() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
             return null;
         }
@@ -1920,7 +1931,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean state(IgniteTxState state) {
+        @Override public boolean state(TransactionState state) {
             return false;
         }
 
@@ -2030,7 +2041,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteTxProxy proxy() {
+        @Override public TransactionProxy proxy() {
             return null;
         }
 

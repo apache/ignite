@@ -40,8 +40,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test for TRANSFORM events recording.
@@ -91,10 +91,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private CacheAtomicityMode atomicityMode;
 
     /** TX concurrency. */
-    private IgniteTxConcurrency txConcurrency;
+    private TransactionConcurrency txConcurrency;
 
     /** TX isolation. */
-    private IgniteTxIsolation txIsolation;
+    private TransactionIsolation txIsolation;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -156,7 +156,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void initialize(CacheMode cacheMode, CacheAtomicityMode atomicityMode,
-        IgniteTxConcurrency txConcurrency, IgniteTxIsolation txIsolation) throws Exception {
+        TransactionConcurrency txConcurrency, TransactionIsolation txIsolation) throws Exception {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
         this.txConcurrency = txConcurrency;
@@ -476,8 +476,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void checkTx(CacheMode cacheMode, IgniteTxConcurrency txConcurrency,
-        IgniteTxIsolation txIsolation) throws Exception {
+    private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws Exception {
         initialize(cacheMode, TRANSACTIONAL, txConcurrency, txIsolation);
 
         System.out.println("BEFORE: " + evts.size());

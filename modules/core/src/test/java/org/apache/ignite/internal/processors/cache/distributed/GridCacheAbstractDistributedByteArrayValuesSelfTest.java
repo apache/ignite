@@ -27,8 +27,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 import static org.junit.Assert.*;
 
 /**
@@ -313,7 +313,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction0(IgniteCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransaction0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed0(caches, concurrency, key, val, null, null);
     }
@@ -329,10 +329,10 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
         for (IgniteCache<Integer, Object> cache : caches) {
-            IgniteTx tx = cache.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
+            Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
             try {
                 cache.put(key1, val1);

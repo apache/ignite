@@ -25,7 +25,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 
@@ -56,11 +56,11 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
-        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
+        IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
-        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "key1", 10000, "key2", 20000, "key3", 15000, "key4", 7000, "key5", 12000,
             "key6", 18000 );
@@ -68,7 +68,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         for (int i = 0; i < 2; i++) {
             boolean useNewAPI = i == 1;
 
-            ggfs.delete(new IgniteFsPath(PATH_OUTPUT), true);
+            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
             flags.put("serializationWasConfigured", false);
             flags.put("partitionerWasConfigured", false);
@@ -109,8 +109,8 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
             job.setNumReduceTasks(3);
 

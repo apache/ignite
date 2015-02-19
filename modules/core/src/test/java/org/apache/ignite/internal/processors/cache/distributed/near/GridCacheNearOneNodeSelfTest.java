@@ -34,8 +34,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Single node test for near cache.
@@ -155,7 +155,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> near = jcache();
         GridCacheAdapter<Integer, String> dht = dht();
 
-        try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
+        try (Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
             near.put(2, "2");
             near.put(3, "3");
 
@@ -289,7 +289,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -308,7 +308,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 

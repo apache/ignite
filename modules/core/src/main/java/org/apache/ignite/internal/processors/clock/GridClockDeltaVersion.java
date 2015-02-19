@@ -113,28 +113,28 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeLong("ver", ver))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -145,14 +145,14 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 ver = reader.readLong("ver");
@@ -160,7 +160,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
@@ -170,24 +170,6 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 83;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        GridClockDeltaVersion _clone = new GridClockDeltaVersion();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridClockDeltaVersion _clone = (GridClockDeltaVersion)_msg;
-
-        _clone.ver = ver;
-        _clone.topVer = topVer;
     }
 
     /** {@inheritDoc} */

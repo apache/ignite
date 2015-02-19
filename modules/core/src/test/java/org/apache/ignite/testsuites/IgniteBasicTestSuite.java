@@ -55,7 +55,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         if (U.isLinux() || U.isMacOs())
             suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
 
-        suite.addTestSuite(GridTopologyBuildVersionSelfTest.class);
         suite.addTestSuite(GridReleaseTypeSelfTest.class);
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorConsistentHashSelfTest.class);

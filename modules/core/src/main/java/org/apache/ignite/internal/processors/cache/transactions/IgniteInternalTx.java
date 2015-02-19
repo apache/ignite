@@ -87,14 +87,14 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return Isolation level.
      */
-    public IgniteTxIsolation isolation();
+    public TransactionIsolation isolation();
 
     /**
      * Cache transaction concurrency mode.
      *
      * @return Concurrency mode.
      */
-    public IgniteTxConcurrency concurrency();
+    public TransactionConcurrency concurrency();
 
     /**
      * Flag indicating whether transaction was started automatically by the
@@ -124,7 +124,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return Current transaction state.
      */
-    public IgniteTxState state();
+    public TransactionState state();
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
@@ -471,13 +471,6 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap();
 
     /**
-     * Gets pessimistic recovery writes, i.e. values that have never been sent to remote nodes with lock requests.
-     *
-     * @return Collection of recovery writes.
-     */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites();
-
-    /**
      * Gets a list of entries that needs to be locked on the next step of prepare stage of
      * optimistic transaction.
      *
@@ -579,7 +572,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param state Transaction state.
      * @return {@code True} if transition was valid, {@code false} otherwise.
      */
-    public boolean state(IgniteTxState state);
+    public boolean state(TransactionState state);
 
     /**
      * @param invalidate Invalidate flag.
@@ -708,5 +701,5 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     /**
      * @return Public API proxy.
      */
-    public IgniteTxProxy proxy();
+    public TransactionProxy proxy();
 }

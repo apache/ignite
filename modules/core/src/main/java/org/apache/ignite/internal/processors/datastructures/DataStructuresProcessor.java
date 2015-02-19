@@ -38,11 +38,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Manager of data structures.
@@ -690,6 +691,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             if (ctx.cache().publicCache(cfg.getCacheName()) == null)
                 throw new IgniteCheckedException("Cache for collection is not configured: " + cfg.getCacheName());
+
+            checkSupportsQueue(ctx.cache().internalCache(cfg.getCacheName()).context());
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
@@ -1191,6 +1194,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If {@link IgniteQueue} can with given cache.
+     */
+    private void checkSupportsQueue(GridCacheContext cctx) throws IgniteCheckedException {
+        if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
+            throw new IgniteCheckedException("IgniteQueue can not be used with ATOMIC cache with CLOCK write order mode" +
+                " (change write order mode to PRIMARY in configuration)");
+    }
+
+    /**
      *
      */
     static enum DataStructureType {
@@ -1261,7 +1274,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
-        /*
+        /**
          * @param cacheName Collection cache name.
          * @param collocated Collocated flag.
          */

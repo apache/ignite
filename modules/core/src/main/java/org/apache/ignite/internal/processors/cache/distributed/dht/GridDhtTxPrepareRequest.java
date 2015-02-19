@@ -107,6 +107,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
+     * @param onePhaseCommit One phase commit flag.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -120,9 +121,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
         boolean last,
+        boolean onePhaseCommit,
         UUID subjId,
         int taskNameHash) {
-        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes);
+        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes, onePhaseCommit);
 
         assert futId != null;
         assert miniId != null;
@@ -312,124 +314,91 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtTxPrepareRequest _clone = new GridDhtTxPrepareRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtTxPrepareRequest _clone = (GridDhtTxPrepareRequest)_msg;
-
-        _clone.nearNodeId = nearNodeId;
-        _clone.futId = futId;
-        _clone.miniId = miniId;
-        _clone.topVer = topVer;
-        _clone.invalidateNearEntries = invalidateNearEntries;
-        _clone.nearWrites = nearWrites;
-        _clone.nearWritesBytes = nearWritesBytes;
-        _clone.owned = owned;
-        _clone.ownedBytes = ownedBytes;
-        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
-        _clone.last = last;
-        _clone.subjId = subjId;
-        _clone.taskNameHash = taskNameHash;
-        _clone.preloadKeys = preloadKeys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
-            case 22:
+        switch (writer.state()) {
+            case 23:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 23:
+            case 24:
                 if (!writer.writeBitSet("invalidateNearEntries", invalidateNearEntries))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 24:
+            case 25:
                 if (!writer.writeBoolean("last", last))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 25:
+            case 26:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 26:
+            case 27:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
-                state++;
-
-            case 27:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, byte[].class))
-                    return false;
-
-                state++;
+                writer.incrementState();
 
             case 28:
+                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 29:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 29:
+            case 30:
                 if (!writer.writeByteArray("ownedBytes", ownedBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 30:
+            case 31:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 31:
+            case 32:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 32:
+            case 33:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 33:
+            case 34:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -437,109 +406,108 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
-            case 22:
+        switch (readState) {
+            case 23:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 23:
+            case 24:
                 invalidateNearEntries = reader.readBitSet("invalidateNearEntries");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 24:
+            case 25:
                 last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 25:
+            case 26:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 26:
+            case 27:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 27:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", byte[].class);
+            case 28:
+                nearWritesBytes = reader.readCollection("nearWritesBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 28:
+            case 29:
                 nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 29:
+            case 30:
                 ownedBytes = reader.readByteArray("ownedBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 30:
+            case 31:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 31:
+            case 32:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 32:
+            case 33:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 33:
+            case 34:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

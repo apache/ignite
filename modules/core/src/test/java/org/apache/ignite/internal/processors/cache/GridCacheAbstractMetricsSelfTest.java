@@ -59,7 +59,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @return Expected number of inner reads.
      */
     protected int expectedReadsPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /**
@@ -69,7 +69,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @return Expected number of misses.
      */
     protected int expectedMissesPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -641,6 +641,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.getAndPut(key, key); // +1 read, +1 miss.
 
+        assertEquals("Expected 2 reads", 2, cache.metrics().getCacheGets());
+
         cache.get(key);
 
         assertEquals("Expected 1 write", 1, cache.metrics().getCachePuts());
@@ -727,7 +729,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         if (inTx) {
             // Rollback transaction for the first time.
-            IgniteTx tx = grid(0).transactions().txStart();
+            Transaction tx = grid(0).transactions().txStart();
 
             try {
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
@@ -743,7 +745,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
-        IgniteTx tx = inTx ? grid(0).transactions().txStart() : null;
+        Transaction tx = inTx ? grid(0).transactions().txStart() : null;
 
         try {
             grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
@@ -868,7 +870,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
-            @Override public boolean applyx() throws IgniteCheckedException {
+            @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)
                         return false;

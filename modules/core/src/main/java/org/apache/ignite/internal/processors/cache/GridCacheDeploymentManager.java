@@ -205,35 +205,32 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Undeploys given class loader.
      *
      * @param ldr Class loader to undeploy.
+     * @param ctx Grid cache context.
      */
-    public void onUndeploy(final ClassLoader ldr) {
+    public void onUndeploy(final ClassLoader ldr, final GridCacheContext<K, V> ctx) {
         assert ldr != null;
 
         if (log.isDebugEnabled())
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
         synchronized (undeploys) {
-            for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                List<CA> queue = undeploys.get(cacheCtx.name());
+            List<CA> queue = undeploys.get(ctx.name());
 
-                if (queue == null)
-                    undeploys.put(cacheCtx.name(), queue = new ArrayList<>());
+            if (queue == null)
+                undeploys.put(ctx.name(), queue = new ArrayList<>());
 
-                queue.add(new CA() {
-                    @Override
-                    public void apply() {
-                        onUndeploy0(ldr, cacheCtx);
-                    }
-                });
-            }
+            queue.add(new CA() {
+                @Override
+                public void apply() {
+                    onUndeploy0(ldr, ctx);
+                }
+            });
         }
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            // Unwind immediately for local and replicate caches.
-            // We go through preloader for proper synchronization.
-            if (cacheCtx.isLocal())
-                cacheCtx.preloader().unwindUndeploys();
-        }
+        // Unwind immediately for local and replicate caches.
+        // We go through preloader for proper synchronization.
+        if (ctx.isLocal())
+            ctx.preloader().unwindUndeploys();
     }
 
     /**

@@ -66,9 +66,9 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoader.Update
                     new GridCacheDrInfo<>(entry.value(), entry.version()) : null;
 
                 if (val == null)
-                    cache.removeAllDr(Collections.singletonMap(key, entry.version()));
+                    cache.removeAllConflict(Collections.singletonMap(key, entry.version()));
                 else
-                    cache.putAllDr(Collections.singletonMap(key, val));
+                    cache.putAllConflict(Collections.singletonMap(key, val));
             }
 
             if (log.isDebugEnabled())

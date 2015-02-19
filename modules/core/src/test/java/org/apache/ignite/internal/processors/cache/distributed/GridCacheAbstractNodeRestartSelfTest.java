@@ -34,8 +34,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test node restart.
@@ -220,7 +220,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @return Transaction concurrency to use in tests.
      */
-    protected IgniteTxConcurrency txConcurrency() {
+    protected TransactionConcurrency txConcurrency() {
         return PESSIMISTIC;
     }
 
@@ -504,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (IgniteTxRollbackException | ClusterTopologyException |CacheException ignored) {
+                                catch (TransactionRollbackException | ClusterTopologyException |CacheException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -632,7 +632,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 int c = 0;
 
                                 try {
-                                    try (IgniteTx tx = ignite.transactions().txStart(txConcurrency(), REPEATABLE_READ)) {
+                                    try (Transaction tx = ignite.transactions().txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
                                         if (c % logFreq == 0)
@@ -789,7 +789,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = 0;
 
-                                try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
                                     if (c % logFreq == 0)

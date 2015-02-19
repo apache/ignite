@@ -93,16 +93,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Creates new continuous query.
-     * <p>
-     * For more information refer to {@link org.apache.ignite.cache.query.CacheContinuousQuery} documentation.
-     *
-     * @return Created continuous query.
-     * @see org.apache.ignite.cache.query.CacheContinuousQuery
-     */
-    public CacheContinuousQuery<K, V> createContinuousQuery();
-
-    /**
      * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
      * may hold references to objects that have already been removed from cache. Although
      * not affecting query results, these objects may consume extra memory. Rebuilding

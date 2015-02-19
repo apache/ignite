@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
@@ -125,7 +126,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
         Collection<String> evts = firstStore.events();
 
-        try (IgniteTx tx = grid.transactions().txStart()) {
+        try (Transaction tx = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheB = grid.jcache("cacheB");
 
@@ -166,7 +167,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testIncompatibleCaches1() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (IgniteTx ignored = grid.transactions().txStart()) {
+        try (Transaction ignored = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheC = grid.jcache("cacheC");
 
@@ -187,7 +188,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testIncompatibleCaches2() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (IgniteTx ignored = grid.transactions().txStart()) {
+        try (Transaction ignored = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
             IgniteCache<Object, Object> cacheC = grid.jcache("cacheD");
 
@@ -229,9 +230,13 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends CacheStore<Object, Object> {
+    private static class TestStore implements CacheStore<Object, Object> {
         /** */
         private Queue<String> evts = new ConcurrentLinkedDeque<>();
+
+        /** Auto-injected store session. */
+        @CacheStoreSessionResource
+        private CacheStoreSession ses;
 
         /**
          *
@@ -294,6 +299,13 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             String cacheName = session().cacheName();
 
             evts.add("deleteAll " + cacheName + " " + keys.size());
+        }
+
+        /**
+         * @return Store session.
+         */
+        private CacheStoreSession session() {
+            return ses;
         }
     }
 }

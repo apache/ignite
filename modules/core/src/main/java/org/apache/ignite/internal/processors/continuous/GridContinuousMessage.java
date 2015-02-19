@@ -131,62 +131,40 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridContinuousMessage _clone = new GridContinuousMessage();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridContinuousMessage _clone = (GridContinuousMessage)_msg;
-
-        _clone.type = type;
-        _clone.routineId = routineId;
-        _clone.data = data;
-        _clone.dataBytes = dataBytes;
-        _clone.futId = futId;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("dataBytes", dataBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeUuid("routineId", routineId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
-                if (!writer.writeEnum("type", type))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -194,18 +172,17 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 dataBytes = reader.readByteArray("dataBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 futId = reader.readIgniteUuid("futId");
@@ -213,7 +190,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 routineId = reader.readUuid("routineId");
@@ -221,15 +198,19 @@ public class GridContinuousMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
-                type = reader.readEnum("type", GridContinuousMessageType.class);
+                byte typeOrd;
+
+                typeOrd = reader.readByte("type");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                type = GridContinuousMessageType.fromOrdinal(typeOrd);
+
+                readState++;
 
         }
 

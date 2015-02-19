@@ -102,7 +102,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        IgniteTxIsolation isolation,
+        TransactionIsolation isolation,
         boolean invalidate,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {

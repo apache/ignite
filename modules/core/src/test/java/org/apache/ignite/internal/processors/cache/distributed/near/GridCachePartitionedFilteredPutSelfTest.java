@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -113,7 +112,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private void doPutAndRollback() throws Exception {
         IgniteCache<Object, Object> c = jcache();
 
-        try (IgniteTx tx = grid().transactions().txStart()) {
+        try (Transaction tx = grid().transactions().txStart()) {
             c.put(1, 1);
 
             tx.rollback();

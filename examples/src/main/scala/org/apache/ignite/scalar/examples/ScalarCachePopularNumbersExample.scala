@@ -25,6 +25,7 @@ import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
 import scala.util.Random
+import collection.JavaConversions._
 
 /**
  * Real time popular number counter.
@@ -53,7 +54,7 @@ object ScalarCachePopularNumbersExample extends App {
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear(0)
+        cache$(CACHE_NAME).get.clear()
 
         println()
         println(">>> Cache popular numbers example started.")
@@ -75,7 +76,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.cache(CACHE_NAME).clear(), null)
+                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.jcache(CACHE_NAME).clear(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()
@@ -106,9 +107,11 @@ object ScalarCachePopularNumbersExample extends App {
      * @param cnt Number of most popular numbers to return.
      */
     def query(cnt: Int) {
-        cache$[Int, Long](CACHE_NAME).get.
-            sqlFields(clause = "select _key, _val from Long order by _val desc limit " + cnt).
-            sortBy(_(1).asInstanceOf[Long]).reverse.take(cnt).foreach(println)
+        val results = cache$[Int, Long](CACHE_NAME).get
+            .sqlFields(clause = "select _key, _val from Long order by _val desc limit " + cnt)
+            .getAll
+
+        results.foreach(res => println(res.get(0) + "=" + res.get(1)))
 
         println("------------------")
     }

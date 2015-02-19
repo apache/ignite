@@ -156,69 +156,46 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDeploymentRequest _clone = new GridDeploymentRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridDeploymentRequest _clone = (GridDeploymentRequest)_msg;
-
-        _clone.resTopic = resTopic;
-        _clone.resTopicBytes = resTopicBytes;
-        _clone.rsrcName = rsrcName;
-        _clone.ldrId = ldrId;
-        _clone.isUndeploy = isUndeploy;
-        _clone.nodeIds = nodeIds;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeBoolean("isUndeploy", isUndeploy))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeIgniteUuid("ldrId", ldrId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, UUID.class))
+                if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeString("rsrcName", rsrcName))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -226,18 +203,17 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 isUndeploy = reader.readBoolean("isUndeploy");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 ldrId = reader.readIgniteUuid("ldrId");
@@ -245,15 +221,15 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", UUID.class);
+                nodeIds = reader.readCollection("nodeIds", Type.UUID);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -261,7 +237,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 rsrcName = reader.readString("rsrcName");
@@ -269,7 +245,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

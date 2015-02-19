@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
@@ -849,7 +849,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
                 catch (IgniteException e) {
                     if (X.hasCause(e, GridInternalException.class) ||
-                        X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
+                        X.hasCause(e, IgfsOutOfSpaceException.class)) {
                         // Print internal exceptions only if debug is enabled.
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to obtain remote job result policy for result from " +

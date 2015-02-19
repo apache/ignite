@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Abstract test for private cache interface.
@@ -64,7 +64,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
 
             GridCache<String, Integer> cache = cache();
 
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
 
                 for (int i = 0; i < 1000; i++) {

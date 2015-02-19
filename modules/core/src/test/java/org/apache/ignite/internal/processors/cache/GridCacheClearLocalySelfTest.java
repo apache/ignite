@@ -297,7 +297,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void fillCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        try (IgniteTx tx = cache.txStart()) {
+        try (Transaction tx = cache.txStart()) {
             for (int i = 0; i < keysCnt; i++)
                 cache.put(i, i);
 

@@ -81,9 +81,39 @@
 
     <developers>
         <developer>
-            <id>gridgain</id>
-            <name>GridGain</name>
-            <email>mvncentral@gridgain.com</email>
+            <id>dsetrakyan</id>
+            <name>Dmitriy Setrakyan</name>
+            <email>dsetrakyan at apache dot org</email>
+        </developer>
+        <developer>
+            <id>agoncharuk</id>
+            <name>Alexey Goncharuk</name>
+            <email>agoncharuk at apache dot org</email>
+        </developer>
+        <developer>
+            <id>vkulichenko</id>
+            <name>Valentin Kulichenko</name>
+            <email>vkulichenko at apache dot org</email>
+        </developer>
+        <developer>
+            <id>svladykin</id>
+            <name>Sergi Vladykin</name>
+            <email>sergi dot vladykin at gmail dot com</email>
+        </developer>
+        <developer>
+            <id>yzhdanov</id>
+            <name>Yakov Zhdanov</name>
+            <email>yzhdanov at apache dot org</email>
+        </developer>
+        <developer>
+            <id>sboikov</id>
+            <name>Semyon Boikov</name>
+            <email>sboikov at gridgain dot com</email>
+        </developer>
+        <developer>
+            <id>vozerov</id>
+            <name>Vladimir Ozerov</name>
+            <email>vozerov at gridgain dot com</email>
         </developer>
     </developers>
 
@@ -94,7 +124,6 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
-        <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
@@ -105,7 +134,6 @@
         <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
-        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
@@ -393,21 +421,6 @@
                 <version>2.4</version>
                 <inherited>false</inherited>
                 <executions>
-                    <execution>
-                        <id>core-jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/core-jar.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>ignite-core-${ignite.version}</finalName>
-                        </configuration>
-                    </execution>
-
                     <execution>
                         <id>dependencies</id>
                         <phase>prepare-package</phase>
@@ -708,7 +721,7 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -716,11 +729,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -744,7 +757,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2:org.apache.ignite.spi.indexing.noop</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -855,7 +868,7 @@
                                 <goals>
                                     <goal>aggregate</goal>
                                 </goals>
-                                <phase>prepare-package</phase>
+                                <phase>process-test-classes</phase>
                                 <configuration>
                                     <taglets>
                                         <taglet>
@@ -903,7 +916,7 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
@@ -911,11 +924,11 @@
                                         </group>
                                         <group>
                                             <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.ignitefs</packages>
+                                            <packages>org.apache.ignite.igfs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -939,7 +952,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2:org.apache.ignite.spi.indexing.noop</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -975,7 +988,7 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
@@ -991,7 +1004,7 @@
                                         </group>
                                         <group>
                                             <title>Visor Plugins</title>
-                                            <packages>org.gridgain.visor.plugin</packages>
+                                            <packages>org.apache.ignite.visor.plugin</packages>
                                         </group>
                                         <group>
                                             <title>Spring Caching</title>
@@ -1083,13 +1096,6 @@
                                             </fileset>
                                         </copy>
 
-                                        <copy todir="${basedir}/target/javadoc/client">
-                                            <fileset dir="assembly/docfiles">
-                                                <include name="img/**"/>
-                                                <include name="*.js"/>
-                                            </fileset>
-                                        </copy>
-
                                         <taskdef name="doctask"
                                                  classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
@@ -1099,55 +1105,6 @@
                                             <exclude name="allclasses-frame.html"/>
                                             <exclude name="**/class-use/*"/>
                                         </doctask>
-
-                                        <doctask css="dotted" dir="target/javadoc/client">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
-                                        </doctask>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>optimized-classnames-generation</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>process-resources</phase>
-                                <configuration>
-                                    <target>
-                                        <java
-                                                classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
-                                                fork="true"
-                                                failonerror="true"
-                                                maxmemory="1g">
-                                            <classpath>
-                                                <path location="${project.basedir}/modules/core/target/classes"/>
-                                                <path location="${project.basedir}/modules/aop/target/classes"/>
-                                                <path location="${project.basedir}/modules/aws/target/classes"/>
-                                                <path location="${project.basedir}/modules/email/target/classes"/>
-                                                <path location="${project.basedir}/modules/hadoop/target/classes"/>
-                                                <path location="${project.basedir}/modules/hibernate/target/classes"/>
-                                                <path location="${project.basedir}/modules/indexing/target/classes"/>
-                                                <path location="${project.basedir}/modules/jcl/target/classes"/>
-                                                <path location="${project.basedir}/modules/jta/target/classes"/>
-                                                <path location="${project.basedir}/modules/log4j/target/classes"/>
-                                                <path location="${project.basedir}/modules/rest-http/target/classes"/>
-                                                <path location="${project.basedir}/modules/schedule/target/classes"/>
-                                                <path location="${project.basedir}/modules/slf4j/target/classes"/>
-                                                <path location="${project.basedir}/modules/spring/target/classes"/>
-                                                <path location="${project.basedir}/modules/ssh/target/classes"/>
-                                                <path location="${project.basedir}/modules/urideploy/target/classes"/>
-                                                <path location="${project.basedir}/modules/web/target/classes"/>
-                                                <path location="${project.basedir}/modules/scalar/target/classes"/>
-                                                <path location="${project.basedir}/modules/visor-console/target/classes"/>
-                                                <path refid="maven.plugin.classpath"/>
-                                            </classpath>
-                                            <arg value="${project.basedir}/modules/core/target/classes"/>
-                                            <jvmarg value="-XX:MaxPermSize=1g"/>
-                                        </java>
                                     </target>
                                 </configuration>
                             </execution>
@@ -1353,6 +1310,70 @@
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                     <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>opt-clns-prop</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${ignite.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>optimized-classnames-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <java
+                                                classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
+                                                fork="true"
+                                                failonerror="true"
+                                                maxmemory="1g">
+                                            <classpath>
+                                                <path location="${project.basedir}/modules/core/target/classes"/>
+                                                <path location="${project.basedir}/modules/aop/target/classes"/>
+                                                <path location="${project.basedir}/modules/aws/target/classes"/>
+                                                <path location="${project.basedir}/modules/email/target/classes"/>
+                                                <path location="${project.basedir}/modules/hadoop/target/classes"/>
+                                                <path location="${project.basedir}/modules/hibernate/target/classes"/>
+                                                <path location="${project.basedir}/modules/indexing/target/classes"/>
+                                                <path location="${project.basedir}/modules/jcl/target/classes"/>
+                                                <path location="${project.basedir}/modules/jta/target/classes"/>
+                                                <path location="${project.basedir}/modules/log4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/rest-http/target/classes"/>
+                                                <path location="${project.basedir}/modules/schedule/target/classes"/>
+                                                <path location="${project.basedir}/modules/slf4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/spring/target/classes"/>
+                                                <path location="${project.basedir}/modules/ssh/target/classes"/>
+                                                <path location="${project.basedir}/modules/urideploy/target/classes"/>
+                                                <path location="${project.basedir}/modules/web/target/classes"/>
+                                                <path location="${project.basedir}/modules/scalar/target/classes"/>
+                                                <path location="${project.basedir}/modules/visor-console/target/classes"/>
+                                                <path refid="maven.plugin.classpath"/>
+                                            </classpath>
+                                            <arg value="${project.basedir}/modules/core/src/main/java"/>
+                                            <jvmarg value="-XX:MaxPermSize=1g"/>
+                                        </java>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>

@@ -24,7 +24,7 @@ import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
  * Test node restart.
@@ -53,7 +53,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteTxConcurrency txConcurrency() {
+    @Override protected TransactionConcurrency txConcurrency() {
         return OPTIMISTIC;
     }
 

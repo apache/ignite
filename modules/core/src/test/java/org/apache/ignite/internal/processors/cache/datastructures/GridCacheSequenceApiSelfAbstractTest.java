@@ -31,8 +31,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Cache sequence basic tests.
@@ -243,7 +243,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      * @throws Exception If failed.
      */
     public void testGetAndAddInTx() throws Exception {
-        try (IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
                 for (IgniteAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);

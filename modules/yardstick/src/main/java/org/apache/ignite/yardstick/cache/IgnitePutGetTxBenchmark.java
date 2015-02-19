@@ -31,7 +31,7 @@ public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark {
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(0, args.range() / 2);
 
-        try (IgniteTx tx = ignite().transactions().txStart()) {
+        try (Transaction tx = ignite().transactions().txStart()) {
             Object val = cache.get(key);
 
             if (val != null)

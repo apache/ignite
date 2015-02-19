@@ -187,7 +187,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      */
     private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
         if (offheap)
-            return g.cache(cacheName).offHeapEntriesCount();
+            return ((IgniteKernal)g).cache(cacheName).offHeapEntriesCount();
 
         return g.context().swap().swapSize(swapSpaceName(cacheName, g));
     }

@@ -1016,7 +1016,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     }
 
     /** */
-    private static class TestStore extends CacheStore<Object,Object> {
+    private static class TestStore implements CacheStore<Object,Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return null;

@@ -19,6 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.lang.*;
@@ -29,7 +31,7 @@ import java.util.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
+public interface IgniteEx extends Ignite {
     /**
      * Gets utility cache.
      *
@@ -110,24 +112,12 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     public boolean isRestartEnabled();
 
     /**
-     * Whether or not SMTP is configured.
+     * Get IGFS instance returning null if it doesn't exist.
      *
-     * @return {@code True} if SMTP is configured - {@code false} otherwise.
+     * @param name IGFS name.
+     * @return IGFS.
      */
-    public boolean isSmtpEnabled();
-
-    /**
-     * Schedule sending of given email to all configured admin emails.
-     */
-    IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
-
-    /**
-     * Get GGFS instance returning null if it doesn't exist.
-     *
-     * @param name GGFS name.
-     * @return GGFS.
-     */
-    @Nullable public IgniteFs ggfsx(@Nullable String name);
+    @Nullable public IgniteFs igfsx(@Nullable String name);
 
     /**
      * Get Hadoop facade.
@@ -136,10 +126,20 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      */
     public GridHadoop hadoop();
 
+    /** {@inheritDoc} */
+    @Override IgniteClusterEx cluster();
+
     /**
      * Get latest version in string form.
      *
      * @return Latest version.
      */
     @Nullable public String latestVersion();
+
+    /**
+     * Gets local grid node.
+     *
+     * @return Local grid node.
+     */
+    public ClusterNode localNode();
 }

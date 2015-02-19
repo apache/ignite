@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
  */
 public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return true;
     }
 
@@ -87,8 +87,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 
@@ -123,8 +123,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 
@@ -147,9 +147,9 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
      * @throws Exception If failed.
      */
     private void prepareTestFile(String filePath) throws Exception {
-        IgniteFs ggfs = grid(0).fileSystem(ggfsName);
+        IgniteFs igfs = grid(0).fileSystem(igfsName);
 
-        try (IgniteFsOutputStream out = ggfs.create(new IgniteFsPath(filePath), true)) {
+        try (IgfsOutputStream out = igfs.create(new IgfsPath(filePath), true)) {
             PrintWriter wr = new PrintWriter(new OutputStreamWriter(out));
 
             for (int i = 0; i < 1000; i++)

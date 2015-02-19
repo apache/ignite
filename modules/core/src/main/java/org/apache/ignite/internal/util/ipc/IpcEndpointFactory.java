@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Ggfs endpoint factory for inter-process communication.
+ * Igfs endpoint factory for inter-process communication.
  */
 public class IpcEndpointFactory {
     /**

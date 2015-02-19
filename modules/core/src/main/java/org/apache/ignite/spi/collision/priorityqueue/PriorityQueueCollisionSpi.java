@@ -162,11 +162,9 @@ import java.util.*;
 public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     PriorityQueueCollisionSpiMBean {
     /**
-     * Default number of parallel jobs allowed (value is {@code 95} which is
-     * slightly less same as default value of threads in the execution thread pool
-     * to allow some extra threads for system processing).
+     * Default number of parallel jobs allowed (set to number of cores times 2).
      */
-    public static final int DFLT_PARALLEL_JOBS_NUM = 95;
+    public static final int DFLT_PARALLEL_JOBS_NUM = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * Default waiting jobs number. If number of waiting jobs exceed this number,

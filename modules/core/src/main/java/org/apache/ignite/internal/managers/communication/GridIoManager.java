@@ -900,6 +900,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert msg != null;
         assert plc != null;
 
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
 
@@ -908,16 +910,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (commLsnr == null)
                 throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
 
-            GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
-
             if (ordered)
                 processOrderedMessage(locNodeId, ioMsg, plc, null);
             else
                 processRegularMessage0(ioMsg, locNodeId);
         }
         else {
-            GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg.clone(), ordered, timeout, skipOnTimeout);
-
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));
 

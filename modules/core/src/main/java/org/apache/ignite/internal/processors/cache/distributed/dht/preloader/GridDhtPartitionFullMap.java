@@ -75,7 +75,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
             GridDhtPartitionMap part = e.getValue();
 
             if (onlyActive)
-                put(e.getKey(), new GridDhtPartitionMap(part.nodeId(), part.updateSequence(), part, true));
+                put(e.getKey(), new GridDhtPartitionMap(part.nodeId(), part.updateSequence(), part.map(), true));
             else
                 put(e.getKey(), part);
         }

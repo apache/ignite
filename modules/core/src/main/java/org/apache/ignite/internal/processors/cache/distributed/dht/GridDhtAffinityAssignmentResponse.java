@@ -88,29 +88,9 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         return 29;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtAffinityAssignmentResponse _clone = new GridDhtAffinityAssignmentResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAffinityAssignmentResponse _clone = (GridDhtAffinityAssignmentResponse)_msg;
-
-        _clone.topVer = topVer;
-        _clone.affAssignment = affAssignment;
-        _clone.affAssignmentBytes = affAssignmentBytes;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
+    /**
+     * @param ctx Context.
+     */
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -127,31 +107,31 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
                 if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 4:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -165,14 +145,14 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
                 affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 4:
                 topVer = reader.readLong("topVer");
@@ -180,7 +160,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

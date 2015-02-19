@@ -37,7 +37,7 @@ public class VisorStreamerMetrics implements Serializable {
     private int waiting;
 
     /** Stages execution capacity. */
-    private int capacity;
+    private int cap;
 
     /** Pipeline minimum execution time. */
     private long pipelineMinExecTm;
@@ -151,14 +151,14 @@ public class VisorStreamerMetrics implements Serializable {
      * @return Stages execution capacity.
      */
     public int capacity() {
-        return capacity;
+        return cap;
     }
 
     /**
      * @param cap New stages execution capacity.
      */
     public void capacity(int cap) {
-        capacity = cap;
+        this.cap = cap;
     }
 
     /**

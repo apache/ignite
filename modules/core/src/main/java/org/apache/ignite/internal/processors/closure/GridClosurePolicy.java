@@ -33,8 +33,8 @@ public enum GridClosurePolicy {
     /** System execution pool. */
     SYSTEM_POOL,
 
-    /** GGFS pool. */
-    GGFS_POOL;
+    /** IGFS pool. */
+    IGFS_POOL;
 
     /** Enum values. */
     private static final GridClosurePolicy[] VALS = values();

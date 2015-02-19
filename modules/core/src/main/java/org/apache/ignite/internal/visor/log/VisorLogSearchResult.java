@@ -46,10 +46,10 @@ public class VisorLogSearchResult implements Serializable {
     private final String[] lines;
 
     /** Line number in the file, 1 based. */
-    private final int lineNumber;
+    private final int lineNum;
 
     /** Lines count in the file. */
-    private final int lineCount;
+    private final int lineCnt;
 
     /** File content encoding. */
     private final String encoding;
@@ -62,8 +62,8 @@ public class VisorLogSearchResult implements Serializable {
      * @param fileSize File size.
      * @param lastModified Timestamp of last modification of the file.
      * @param lines Lines of text including found line and several lines before and after.
-     * @param lineNumber Line number in the file, 1 based.
-     * @param lineCount Lines count in the file.
+     * @param lineNum Line number in the file, 1 based.
+     * @param lineCnt Lines count in the file.
      * @param encoding File content encoding.
      */
     public VisorLogSearchResult(
@@ -72,8 +72,8 @@ public class VisorLogSearchResult implements Serializable {
         long fileSize,
         long lastModified,
         String[] lines,
-        int lineNumber,
-        int lineCount,
+        int lineNum,
+        int lineCnt,
         String encoding
     ) {
         this.nid = nid;
@@ -81,8 +81,8 @@ public class VisorLogSearchResult implements Serializable {
         this.fileSize = fileSize;
         this.lastModified = lastModified;
         this.lines = lines;
-        this.lineNumber = lineNumber;
-        this.lineCount = lineCount;
+        this.lineNum = lineNum;
+        this.lineCnt = lineCnt;
         this.encoding = encoding;
     }
 
@@ -125,14 +125,14 @@ public class VisorLogSearchResult implements Serializable {
      * @return Line number in the file, 1 based.
      */
     public int lineNumber() {
-        return lineNumber;
+        return lineNum;
     }
 
     /**
      * @return Lines count in the file.
      */
     public int lineCount() {
-        return lineCount;
+        return lineCnt;
     }
 
     /**

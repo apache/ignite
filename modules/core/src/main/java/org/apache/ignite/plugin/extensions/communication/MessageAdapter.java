@@ -23,42 +23,31 @@ import java.nio.*;
 /**
  * Base class for all communication messages.
  */
-public abstract class MessageAdapter implements Serializable, Cloneable {
-    /** Message writer. */
-    protected MessageWriter writer;
-
+public abstract class MessageAdapter implements Serializable {
     /** Message reader. */
     protected MessageReader reader;
 
-    /** Whether message type is already written. */
-    protected boolean typeWritten;
-
-    /** Current write/read state. */
-    protected int state;
-
-    /**
-     * @param writer Message writer.
-     */
-    public final void setWriter(MessageWriter writer) {
-        if (this.writer == null)
-            this.writer = writer;
-    }
+    /** Current read state. */
+    protected int readState;
 
     /**
      * @param reader Message reader.
      */
     public final void setReader(MessageReader reader) {
-        if (this.reader == null)
-            this.reader = reader;
+        assert this.reader == null;
+        assert reader != null;
+
+        this.reader = reader;
     }
 
     /**
      * Writes this message to provided byte buffer.
      *
      * @param buf Byte buffer.
+     * @param writer Writer.
      * @return Whether message was fully written.
      */
-    public abstract boolean writeTo(ByteBuffer buf);
+    public abstract boolean writeTo(ByteBuffer buf, MessageWriter writer);
 
     /**
      * Reads this message from provided byte buffer.
@@ -75,17 +64,6 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      */
     public abstract byte directType();
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
-    @Override public abstract MessageAdapter clone();
-
-    /**
-     * Clones all fields of the provided message to this message.
-     *
-     * @param msg Message to clone from.
-     */
-    protected abstract void clone0(MessageAdapter msg);
-
     /**
      * Defines whether recovery for this message should be skipped.
      *
@@ -93,5 +71,73 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      */
     public boolean skipRecovery() {
         return false;
+    }
+
+    /**
+     * Enum representing possible types of collection items.
+     */
+    public enum Type {
+        /** Byte. */
+        BYTE,
+
+        /** Short. */
+        SHORT,
+
+        /** Integer. */
+        INT,
+
+        /** Long. */
+        LONG,
+
+        /** Float. */
+        FLOAT,
+
+        /** Double. */
+        DOUBLE,
+
+        /** Character. */
+        CHAR,
+
+        /** Boolean. */
+        BOOLEAN,
+
+        /** Byte array. */
+        BYTE_ARR,
+
+        /** Short array. */
+        SHORT_ARR,
+
+        /** Integer array. */
+        INT_ARR,
+
+        /** Long array. */
+        LONG_ARR,
+
+        /** Float array. */
+        FLOAT_ARR,
+
+        /** Double array. */
+        DOUBLE_ARR,
+
+        /** Character array. */
+        CHAR_ARR,
+
+        /** Boolean array. */
+        BOOLEAN_ARR,
+
+        /** String. */
+        STRING,
+
+        /** Bit set. */
+        BIT_SET,
+
+        /** UUID. */
+        UUID,
+
+        /** Ignite UUID. */
+        IGNITE_UUID,
+
+        /** Message. */
+        MSG
     }
 }

@@ -505,28 +505,28 @@ public class GridLongList extends MessageAdapter implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeLongArray("arr", arr))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeInt("idx", idx))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -537,14 +537,14 @@ public class GridLongList extends MessageAdapter implements Externalizable {
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 arr = reader.readLongArray("arr");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 idx = reader.readInt("idx");
@@ -552,7 +552,7 @@ public class GridLongList extends MessageAdapter implements Externalizable {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 
@@ -562,23 +562,5 @@ public class GridLongList extends MessageAdapter implements Externalizable {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 85;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public MessageAdapter clone() {
-        GridLongList _clone = new GridLongList();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridLongList _clone = (GridLongList)_msg;
-
-        _clone.arr = arr;
-        _clone.idx = idx;
     }
 }

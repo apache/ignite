@@ -33,7 +33,6 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
-                <exclude>org.apache.ignite:jdk8-backport</exclude>
                 <exclude>org.apache.ignite:ignite-core</exclude>
                 <exclude>org.apache.ignite:ignite-clients</exclude>
                 <exclude>org.apache.ignite:ignite-spring</exclude>

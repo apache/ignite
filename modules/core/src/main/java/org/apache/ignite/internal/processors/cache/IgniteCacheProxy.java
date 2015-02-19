@@ -84,10 +84,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param prj Projection.
      * @param async Async support flag.
      */
-    public IgniteCacheProxy(GridCacheContext<K, V> ctx,
+    public IgniteCacheProxy(
+        GridCacheContext<K, V> ctx,
         GridCacheProjectionEx<K, V> delegate,
         @Nullable GridCacheProjectionImpl<K, V> prj,
-        boolean async) {
+        boolean async
+    ) {
         super(async);
 
         assert ctx != null;
@@ -199,9 +201,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync())
-                    setFuture(delegate.<K,V>cache().loadCacheAsync(p, 0, args));
+                    setFuture(delegate.localLoadCacheAsync(p, args));
                 else
-                    delegate.<K, V>cache().loadCache(p, 0, args);
+                    delegate.localLoadCache(p, args);
             }
             finally {
                 gate.leave(prev);
@@ -329,6 +331,64 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private ClusterGroup projection(boolean local) {
         return local || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().forLocal() : null;
+    }
+
+    /**
+     * Executes continuous query.
+     *
+     * @param qry Query.
+     * @param loc Local flag.
+     * @return Initial iteration cursor.
+     */
+    private QueryCursor<Entry<K,V>> queryContinuous(ContinuousQuery<K, V> qry, boolean loc) {
+        if (qry.getInitialPredicate() instanceof ContinuousQuery)
+            throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
+                "continuous query. Use SCAN or SQL query for initial iteration.");
+
+        if (qry.getLocalListener() == null)
+            throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+
+        try {
+            final UUID routineId = ctx.continuousQueries().executeQuery(
+                qry.getLocalListener(),
+                qry.getRemoteFilter(),
+                qry.getBufferSize(),
+                qry.getTimeInterval(),
+                qry.isAutoUnsubscribe(),
+                loc ? ctx.grid().cluster().forLocal() : null);
+
+            final QueryCursor<Cache.Entry<K, V>> cur;
+
+            if (qry.getInitialPredicate() != null)
+                cur = loc ? localQuery(qry.getInitialPredicate()) : query(qry.getInitialPredicate());
+            else
+                cur = null;
+
+            return new QueryCursor<Cache.Entry<K, V>>() {
+                @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
+                }
+
+                @Override public List<Cache.Entry<K, V>> getAll() {
+                    return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
+                }
+
+                @Override public void close() {
+                    if (cur != null)
+                        cur.close();
+
+                    try {
+                        ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -671,6 +731,24 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
             else
                 return delegate.containsKey(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsKeys(Set<? extends K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync()) {
+                setFuture(delegate.containsKeysAsync(keys));
+
+                return false;
+            }
+            else
+                return delegate.containsKeys(keys);
         }
         finally {
             gate.leave(prev);
@@ -1125,7 +1203,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            ctx.continuousQueries().registerCacheEntryListener(lsnrCfg, true);
+            ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -1136,11 +1214,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            ctx.continuousQueries().deregisterCacheEntryListener(lsnrCfg);
+            ctx.continuousQueries().cancelJCacheQuery(lsnrCfg);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -1155,7 +1233,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ctx.cache().igniteIterator(this);
+            return ctx.cache().igniteIterator();
         }
         finally {
             gate.leave(prev);
@@ -1310,5 +1388,43 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
+    }
+
+    /**
+     * Closeable iterator.
+     */
+    private static abstract class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
+        /** */
+        private X cur;
+
+        private CacheQueryFuture<X> fut;
+
+        /**
+         * @param fut Future.
+         */
+        protected ClIter(CacheQueryFuture<X> fut) {
+            this.fut = fut;
+        }
+
+        @Override protected Y onNext() throws IgniteCheckedException {
+            if (!onHasNext())
+                throw new NoSuchElementException();
+
+            X e = cur;
+
+            cur = null;
+
+            return convert(e);
+        }
+
+        protected abstract Y convert(X x);
+
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            return cur != null || (cur = fut.next()) != null;
+        }
+
+        @Override protected void onClose() throws IgniteCheckedException {
+            fut.cancel();
+        }
     }
 }

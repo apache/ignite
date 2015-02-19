@@ -36,7 +36,7 @@ import java.util.*;
  */
 public class IgniteQueueExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
+    private static final String CACHE_NAME = "partitioned_primary";
 
     /** Number of retries */
     private static final int RETRIES = 20;
@@ -121,7 +121,7 @@ public class IgniteQueueExample {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        ignite.compute().run(new QueueClosure(queueName, true));
+        ignite.compute().broadcast(new QueueClosure(queueName, true));
 
         System.out.println("Queue size after writing [expected=" + ignite.cluster().nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');

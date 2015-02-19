@@ -29,6 +29,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -45,8 +46,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 
 /**
@@ -168,7 +169,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before near get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -220,7 +221,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before item primary get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -272,7 +273,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -298,7 +299,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             while (true) {
                 CacheQuery<Map.Entry<String, Integer>> qry =
-                    ignite.<String, Integer>cache(null).queries().createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
+                    ((IgniteKernal)ignite).<String, Integer>cache(null).queries()
+                        .createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 
                 if (DEBUG)
                     ignite.log().info("Before executing query [retry=" + retry + ", locId=" + locId +
@@ -362,7 +364,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 ignite.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + ignite.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -632,7 +634,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -673,7 +675,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -724,7 +726,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
 
             // Store counter.
             cache.put(RMVD_CNTR_KEY, 0);

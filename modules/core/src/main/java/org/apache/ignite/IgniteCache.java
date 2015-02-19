@@ -35,11 +35,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#jcache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
- * This API extends {@link org.apache.ignite.cache.CacheProjection} API which contains vast majority of cache functionality
- * and documentation. In addition to {@link org.apache.ignite.cache.CacheProjection} functionality this API provides:
+ * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
+ * and documentation. In addition to {@link CacheProjection} functionality this API provides:
  * <ul>
  * <li>
  *  Various {@code 'loadCache(..)'} methods to load cache either synchronously or asynchronously.
@@ -337,6 +337,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
+    @IgniteAsyncSupported
+    public boolean containsKeys(Set<? extends K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public void put(K key, V val);
@@ -396,8 +399,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args);
+        EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
      * Gets snapshot metrics (statistics) for this cache.

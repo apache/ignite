@@ -25,15 +25,9 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Test get and transform for store with replicated cache.
  */
-public class GridCacheReplicatedGetAndTransformStoreSelfTest
-    extends GridCacheGetAndTransformStoreAbstractTest {
+public class GridCacheReplicatedGetAndTransformStoreSelfTest extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
-    }
-
-    // todo: remove it when GG-8864 is fixed.
-    @Override public void testGetAndTransform() throws Exception {
-        // No-op.
     }
 }

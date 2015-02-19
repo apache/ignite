@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.lang.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -42,7 +45,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     }
 
     /**
-     * @throws IgniteCheckedException If test failed.
+     * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
         IgniteCache<Integer, String> cache = ignite.jcache(null);

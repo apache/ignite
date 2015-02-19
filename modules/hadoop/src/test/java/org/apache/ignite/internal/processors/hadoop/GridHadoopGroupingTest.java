@@ -45,7 +45,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    protected boolean ggfsEnabled() {
+    protected boolean igfsEnabled() {
         return false;
     }
 

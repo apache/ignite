@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -59,10 +58,10 @@ abstract class GridCacheAbstractLoadTest {
     protected final int operationsPerTx;
 
     /** Transaction isolation level. */
-    protected final IgniteTxIsolation isolation;
+    protected final TransactionIsolation isolation;
 
     /** Transaction concurrency control. */
-    protected final IgniteTxConcurrency concurrency;
+    protected final TransactionConcurrency concurrency;
 
     /** Threads count. */
     protected final int threads;
@@ -111,8 +110,8 @@ abstract class GridCacheAbstractLoadTest {
 
         tx = Boolean.valueOf(props.getProperty("transactions"));
         operationsPerTx = Integer.valueOf(props.getProperty("operations.per.tx"));
-        isolation = IgniteTxIsolation.valueOf(props.getProperty("isolation"));
-        concurrency = IgniteTxConcurrency.valueOf(props.getProperty("concurrency"));
+        isolation = TransactionIsolation.valueOf(props.getProperty("isolation"));
+        concurrency = TransactionConcurrency.valueOf(props.getProperty("concurrency"));
         threads = Integer.valueOf(props.getProperty("threads"));
         writeRatio = Double.valueOf(props.getProperty("write.ratio"));
         testDuration = Long.valueOf(props.getProperty("duration"));
@@ -142,7 +141,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while (!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = ignite.transactions().txStart()) {
+                            try (Transaction tx = ignite.transactions().txStart()) {
                                 writeClos.apply(cache);
 
                                 tx.commit();
@@ -164,7 +163,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while(!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = ignite.transactions().txStart()) {
+                            try (Transaction tx = ignite.transactions().txStart()) {
                                 readClos.apply(cache);
 
                                 tx.commit();

@@ -24,7 +24,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.event.*;
@@ -44,8 +44,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
+import static org.apache.ignite.configuration.IgfsConfiguration.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
@@ -83,24 +83,18 @@ public class VisorTaskUtils {
     };
 
     /** Only non task event types that Visor should collect. */
-    private static final int[] VISOR_NON_TASK_EVTS = {
+    public static final int[] VISOR_NON_TASK_EVTS = {
         EVT_CLASS_DEPLOY_FAILED,
-        EVT_TASK_DEPLOY_FAILED,
-
-        EVT_AUTHORIZATION_FAILED,
-        EVT_AUTHENTICATION_FAILED,
-
-        EVT_SECURE_SESSION_VALIDATION_FAILED
+        EVT_TASK_DEPLOY_FAILED
     };
 
     /** Only non task event types that Visor should collect. */
-    private static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
+    public static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
 
-    /**
-     * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
-     */
+    /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
     public static final int MAX_FOLDER_DEPTH = 4;
 
+    /** Comparator for log files by last modified date. */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.lastModified(), f1.lastModified());
@@ -138,16 +132,16 @@ public class VisorTaskUtils {
      * @param arrays Arrays.
      * @return Summary array.
      */
-    public static int[] concat(int[] ... arrays) {
+    public static int[] concat(int[]... arrays) {
         assert arrays != null;
         assert arrays.length > 1;
 
-        int length = 0;
+        int len = 0;
 
         for (int[] a : arrays)
-            length += a.length;
+            len += a.length;
 
-        int[] r = Arrays.copyOf(arrays[0], length);
+        int[] r = Arrays.copyOf(arrays[0], len);
 
         for (int i = 1, shift = 0; i < arrays.length; i++) {
             shift += arrays[i - 1].length;
@@ -180,9 +174,8 @@ public class VisorTaskUtils {
 
             int i = 0;
 
-            for (Object elm : col) {
+            for (Object elm : col)
                 res[i++] = compactObject(elm);
-            }
 
             return res;
         }
@@ -255,7 +248,7 @@ public class VisorTaskUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        for (Object s: arr)
+        for (Object s : arr)
             sb.append(s).append(sep);
 
         if (sb.length() > 0)
@@ -305,7 +298,7 @@ public class VisorTaskUtils {
 
         V res = map.get(key);
 
-        return res != null? res : ifNull;
+        return res != null ? res : ifNull;
     }
 
     /**
@@ -328,25 +321,45 @@ public class VisorTaskUtils {
         return true;
     }
 
-    /** */
-    private static final Comparator<Event> EVENTS_ORDER_COMPARATOR = new Comparator<Event>() {
+    /** Events comparator by event local order. */
+    private static final Comparator<Event> EVTS_ORDER_COMPARATOR = new Comparator<Event>() {
         @Override public int compare(Event o1, Event o2) {
             return Long.compare(o1.localOrder(), o2.localOrder());
         }
     };
+
+    /** Mapper from grid event to Visor data transfer object. */
+    private static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
      * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
-     * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
+     * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
+        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS,
+            EVT_MAPPER);
+    }
+
+    /**
+     * Grabs local events and detects if events was lost since last poll.
+     *
+     * @param ignite Target grid.
+     * @param evtOrderKey Unique key to take last order key from node local map.
+     * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
+     * @param evtTypes Event types to collect.
+     * @param evtMapper Closure to map grid events to Visor data transfer objects.
+     * @return Collections of node events
+     */
+    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
+        final int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
+        assert evtTypes != null && evtTypes.length > 0;
 
         ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
@@ -368,8 +381,7 @@ public class VisorTaskUtils {
                     lastFound.set(true);
 
                 // Retains events by lastOrder, period and type.
-                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan &&
-                    (all ? F.contains(VISOR_ALL_EVTS, e.type()) : F.contains(VISOR_NON_TASK_EVTS, e.type()));
+                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan && F.contains(evtTypes, e.type());
             }
         };
 
@@ -377,7 +389,7 @@ public class VisorTaskUtils {
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
-            Event maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
+            Event maxEvt = Collections.max(evts, EVTS_ORDER_COMPARATOR);
 
             nl.put(evtOrderKey, maxEvt.localOrder());
         }
@@ -394,49 +406,10 @@ public class VisorTaskUtils {
             res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
 
         for (Event e : evts) {
-            int tid = e.type();
-            IgniteUuid id = e.id();
-            String name = e.name();
-            UUID nid = e.node().id();
-            long t = e.timestamp();
-            String msg = e.message();
-            String shortDisplay = e.shortDisplay();
+            VisorGridEvent visorEvt = evtMapper.apply(e);
 
-            if (e instanceof TaskEvent) {
-                TaskEvent te = (TaskEvent)e;
-
-                res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
-                    te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
-            }
-            else if (e instanceof JobEvent) {
-                JobEvent je = (JobEvent)e;
-
-                res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
-                    je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
-            }
-            else if (e instanceof DeploymentEvent) {
-                DeploymentEvent de = (DeploymentEvent)e;
-
-                res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
-            }
-            else if (e instanceof AuthorizationEvent) {
-                AuthorizationEvent ae = (AuthorizationEvent)e;
-
-                res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
-                    ae.subject()));
-            }
-            else if (e instanceof AuthenticationEvent) {
-                AuthenticationEvent ae = (AuthenticationEvent)e;
-
-                res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
-                    ae.subjectId(), ae.login()));
-            }
-            else if (e instanceof SecureSessionEvent) {
-                SecureSessionEvent se = (SecureSessionEvent)e;
-
-                res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
-                    se.subjectId()));
-            }
+            if (visorEvt != null)
+                res.add(visorEvt);
         }
 
         return res;
@@ -471,6 +444,11 @@ public class VisorTaskUtils {
         return F.asList(new VisorLogFile(file));
     }
 
+    /**
+     * @param fld Folder with files to match.
+     * @param ptrn Pattern to match against file name.
+     * @return Collection of matched files.
+     */
     public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
         List<VisorLogFile> files = fileTree(fld, MAX_FOLDER_DEPTH,
             new FileFilter() {
@@ -486,7 +464,7 @@ public class VisorTaskUtils {
     }
 
     /** Text files mime types. */
-    private static final String[] TEXT_MIME_TYPE = new String[]{ "text/plain", "application/xml", "text/html", "x-sh" };
+    private static final String[] TEXT_MIME_TYPE = new String[] {"text/plain", "application/xml", "text/html", "x-sh"};
 
     /**
      * Check is text file.
@@ -508,6 +486,13 @@ public class VisorTaskUtils {
         return false;
     }
 
+    /**
+     * Decode file charset.
+     *
+     * @param f File to process.
+     * @return File charset.
+     * @throws IOException
+     */
     public static Charset decode(File f) throws IOException {
         SortedMap<String, Charset> charsets = Charset.availableCharsets();
 
@@ -522,11 +507,11 @@ public class VisorTaskUtils {
         orderedCharsets.addAll(charsets.values());
 
         try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-            FileChannel channel = raf.getChannel();
+            FileChannel ch = raf.getChannel();
 
             ByteBuffer buf = ByteBuffer.allocate(4096);
 
-            channel.read(buf);
+            ch.read(buf);
 
             buf.flip();
 
@@ -539,7 +524,9 @@ public class VisorTaskUtils {
                     decoder.decode(buf);
 
                     return charset;
-                } catch (CharacterCodingException ignored) { }
+                }
+                catch (CharacterCodingException ignored) {
+                }
             }
         }
 
@@ -597,43 +584,42 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Resolve GGFS profiler logs directory.
+     * Resolve IGFS profiler logs directory.
      *
-     * @param ggfs GGFS instance to resolve logs dir for.
+     * @param igfs IGFS instance to resolve logs dir for.
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
+    public static Path resolveIgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
         String logsDir;
 
-        if (ggfs instanceof GridGgfsEx)
-            logsDir = ((GridGgfsEx)ggfs).clientLogDirectory();
-        else if (ggfs == null)
-            throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
+        if (igfs instanceof IgfsEx)
+            logsDir = ((IgfsEx)igfs).clientLogDirectory();
+        else if (igfs == null)
+            throw new IgniteCheckedException("Failed to get profiler log folder (IGFS instance not found)");
         else
-            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected IGFS instance type)");
 
-        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
+        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_IGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }
 
-
     /**
      * Extract max size from eviction policy if available.
      *
-     * @param policy Eviction policy.
+     * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy policy) {
-        if (policy instanceof CacheLruEvictionPolicyMBean)
-            return ((CacheLruEvictionPolicyMBean)policy).getMaxSize();
+    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy plc) {
+        if (plc instanceof CacheLruEvictionPolicyMBean)
+            return ((CacheLruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (policy instanceof CacheRandomEvictionPolicyMBean)
-            return ((CacheRandomEvictionPolicyMBean)policy).getMaxSize();
+        if (plc instanceof CacheRandomEvictionPolicyMBean)
+            return ((CacheRandomEvictionPolicyMBean)plc).getMaxSize();
 
-        if (policy instanceof CacheFifoEvictionPolicyMBean)
-            return ((CacheFifoEvictionPolicyMBean)policy).getMaxSize();
+        if (plc instanceof CacheFifoEvictionPolicyMBean)
+            return ((CacheFifoEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }
@@ -678,7 +664,6 @@ public class VisorTaskUtils {
     }
 
     /**
-     *
      * @param log Logger.
      * @param time Time.
      * @param msg Message.
@@ -746,7 +731,6 @@ public class VisorTaskUtils {
         return end;
     }
 
-
     /**
      * Checks if address can be reached using one argument InetAddress.isReachable() version or ping command if failed.
      *
@@ -761,11 +745,11 @@ public class VisorTaskUtils {
 
             String cmd = String.format("ping -%s 1 %s", U.isWindows() ? "n" : "c", addr.getHostAddress());
 
-            Process myProcess = Runtime.getRuntime().exec(cmd);
+            Process myProc = Runtime.getRuntime().exec(cmd);
 
-            myProcess.waitFor();
+            myProc.waitFor();
 
-            return myProcess.exitValue() == 0;
+            return myProc.exitValue() == 0;
         }
         catch (IOException ignore) {
             return false;

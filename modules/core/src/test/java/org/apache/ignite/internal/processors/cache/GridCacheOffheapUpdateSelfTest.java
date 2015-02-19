@@ -24,8 +24,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Check for specific support issue.
@@ -66,13 +66,13 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> locCache = grid(1).jcache(null);
 
-            try (IgniteTx tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putIfAbsent(key, 0);
 
                 tx.commit();
             }
 
-            try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(0, rmtCache.get(key));
 
                 rmtCache.put(key, 1);
@@ -80,7 +80,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, rmtCache.get(key));
 
                 rmtCache.put(key, 2);
@@ -124,11 +124,11 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             assertEquals(10, cache.get(key));
 
-            try (IgniteTx ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 assertEquals(10, cache.get(key));
             }
 
-            try (IgniteTx ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 assertEquals(10, cache.get(key));
             }
         }

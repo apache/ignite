@@ -184,12 +184,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxCommittedVersionsSize() {
-        return cctx.tm().committedVersionsSize();
+        return cctx.tm().completedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxRolledbackVersionsSize() {
-        return cctx.tm().rolledbackVersionsSize();
+        return cctx.tm().completedVersionsSize();
     }
 
     /** {@inheritDoc} */
@@ -219,12 +219,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommittedVersionsSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().committedVersionsSize() : -1;
+        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().completedVersionsSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().rolledbackVersionsSize() : -1;
+        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().completedVersionsSize() : -1;
     }
 
     /** {@inheritDoc} */

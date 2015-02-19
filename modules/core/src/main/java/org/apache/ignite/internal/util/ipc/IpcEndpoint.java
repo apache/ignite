@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 import java.io.*;
 
 /**
- * GGFS IPC endpoint used for point-to-point communication.
+ * IGFS IPC endpoint used for point-to-point communication.
  */
 public interface IpcEndpoint extends Closeable {
     /**

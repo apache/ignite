@@ -46,15 +46,15 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** Transaction concurrency. */
     @GridToStringInclude
-    private IgniteTxConcurrency concurrency;
+    private TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
     @GridToStringInclude
-    private IgniteTxIsolation isolation;
+    private TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
     @GridToStringInclude
-    private GridCacheVersion commitVer;
+    private GridCacheVersion writeVer;
 
     /** Transaction timeout. */
     @GridToStringInclude
@@ -113,6 +113,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** */
     private byte[] txNodesBytes;
 
+    /** One phase commit flag. */
+    private boolean onePhaseCommit;
+
     /** System flag. */
     private boolean sys;
 
@@ -130,6 +133,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param grpLockKey Group lock key.
      * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param txNodes Transaction nodes mapping.
+     * @param onePhaseCommit One phase commit flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx<K, V> tx,
@@ -137,11 +141,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         Collection<IgniteTxEntry<K, V>> writes,
         IgniteTxKey grpLockKey,
         boolean partLock,
-        Map<UUID, Collection<UUID>> txNodes
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean onePhaseCommit
     ) {
         super(tx.xidVersion(), 0);
 
-        commitVer = null;
+        writeVer = tx.writeVersion();
         threadId = tx.threadId();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
@@ -155,6 +160,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
         this.txNodes = txNodes;
+        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -201,7 +207,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Commit version.
      */
-    public GridCacheVersion commitVersion() { return commitVer; }
+    public GridCacheVersion writeVersion() { return writeVer; }
 
     /**
      * @return Invalidate flag.
@@ -218,14 +224,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Concurrency.
      */
-    public IgniteTxConcurrency concurrency() {
+    public TransactionConcurrency concurrency() {
         return concurrency;
     }
 
     /**
      * @return Isolation level.
      */
-    public IgniteTxIsolation isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
@@ -276,6 +282,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public int txSize() {
         return txSize;
+    }
+
+    /**
+     * @return One phase commit flag.
+     */
+    public boolean onePhaseCommit() {
+        return onePhaseCommit;
     }
 
     /** {@inheritDoc}
@@ -402,142 +415,109 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
-        "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public MessageAdapter clone() {
-        GridDistributedTxPrepareRequest _clone = new GridDistributedTxPrepareRequest();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDistributedTxPrepareRequest _clone = (GridDistributedTxPrepareRequest)_msg;
-
-        _clone.threadId = threadId;
-        _clone.concurrency = concurrency;
-        _clone.isolation = isolation;
-        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
-        _clone.timeout = timeout;
-        _clone.invalidate = invalidate;
-        _clone.reads = reads;
-        _clone.readsBytes = readsBytes;
-        _clone.writes = writes;
-        _clone.writesBytes = writesBytes;
-        _clone.dhtVers = dhtVers;
-        _clone.dhtVersBytes = dhtVersBytes;
-        _clone.grpLockKey = grpLockKey;
-        _clone.grpLockKeyBytes = grpLockKeyBytes;
-        _clone.partLock = partLock;
-        _clone.txSize = txSize;
-        _clone.txNodes = txNodes;
-        _clone.txNodesBytes = txNodesBytes;
-        _clone.sys = sys;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 8:
-                if (!writer.writeMessage("commitVer", commitVer))
+                if (!writer.writeByte("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 9:
-                if (!writer.writeEnum("concurrency", concurrency))
-                    return false;
-
-                state++;
-
-            case 10:
                 if (!writer.writeByteArray("dhtVersBytes", dhtVersBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
-                state++;
+                writer.incrementState();
 
-            case 13:
-                if (!writer.writeEnum("isolation", isolation))
+            case 12:
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
-                state++;
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
+                    return false;
+
+                writer.incrementState();
 
             case 14:
                 if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("readsBytes", readsBytes, byte[].class))
+                if (!writer.writeCollection("readsBytes", readsBytes, Type.BYTE_ARR))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 19:
                 if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 20:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection("writesBytes", writesBytes, byte[].class))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
-                state++;
+                writer.incrementState();
+
+            case 22:
+                if (!writer.writeCollection("writesBytes", writesBytes, Type.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
 
         }
 
@@ -545,61 +525,68 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 8:
-                commitVer = reader.readMessage("commitVer");
+                byte concurrencyOrd;
+
+                concurrencyOrd = reader.readByte("concurrency");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                concurrency = TransactionConcurrency.fromOrdinal(concurrencyOrd);
+
+                readState++;
 
             case 9:
-                concurrency = reader.readEnum("concurrency", IgniteTxConcurrency.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                state++;
-
-            case 10:
                 dhtVersBytes = reader.readByteArray("dhtVersBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 11:
+            case 10:
                 grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 12:
+            case 11:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
-            case 13:
-                isolation = reader.readEnum("isolation", IgniteTxIsolation.class);
+            case 12:
+                byte isolationOrd;
+
+                isolationOrd = reader.readByte("isolation");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
+
+                readState++;
+
+            case 13:
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
             case 14:
                 partLock = reader.readBoolean("partLock");
@@ -607,15 +594,15 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 15:
-                readsBytes = reader.readCollection("readsBytes", byte[].class);
+                readsBytes = reader.readCollection("readsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 16:
                 sys = reader.readBoolean("sys");
@@ -623,7 +610,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 17:
                 threadId = reader.readLong("threadId");
@@ -631,7 +618,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 18:
                 timeout = reader.readLong("timeout");
@@ -639,7 +626,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 19:
                 txNodesBytes = reader.readByteArray("txNodesBytes");
@@ -647,7 +634,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 20:
                 txSize = reader.readInt("txSize");
@@ -655,15 +642,23 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 21:
-                writesBytes = reader.readCollection("writesBytes", byte[].class);
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
+
+            case 22:
+                writesBytes = reader.readCollection("writesBytes", Type.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                readState++;
 
         }
 

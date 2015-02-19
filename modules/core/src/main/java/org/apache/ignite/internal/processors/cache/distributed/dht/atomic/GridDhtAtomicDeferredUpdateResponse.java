@@ -73,45 +73,25 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridDhtAtomicDeferredUpdateResponse _clone = new GridDhtAtomicDeferredUpdateResponse();
-
-        clone0(_clone);
-
-        return _clone;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        super.clone0(_msg);
-
-        GridDhtAtomicDeferredUpdateResponse _clone = (GridDhtAtomicDeferredUpdateResponse)_msg;
-
-        _clone.futVers = futVers;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("all")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!super.writeTo(buf))
+        if (!super.writeTo(buf, writer))
             return false;
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, GridCacheVersion.class))
+                if (!writer.writeCollection("futVers", futVers, Type.MSG))
                     return false;
 
-                state++;
+                writer.incrementState();
 
         }
 
@@ -119,21 +99,20 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (state) {
+        switch (readState) {
             case 3:
-                futVers = reader.readCollection("futVers", GridCacheVersion.class);
+                futVers = reader.readCollection("futVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
         }
 

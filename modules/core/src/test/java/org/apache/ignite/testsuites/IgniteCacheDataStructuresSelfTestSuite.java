@@ -35,7 +35,8 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
-        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
+        // TODO: IGNITE-264
+        // suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));

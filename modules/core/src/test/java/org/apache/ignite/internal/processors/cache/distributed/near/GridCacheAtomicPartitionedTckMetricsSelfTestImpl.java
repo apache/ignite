@@ -123,7 +123,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         assertEquals(hitCount, cache.metrics().getCacheHits());
         assertEquals(putCount, cache.metrics().getCachePuts());
 
-        assertFalse(cache.containsKey(1));
+        assertNull(cache.localPeek(1));
 
         cache.put(1, 10);
         ++putCount;
@@ -132,7 +132,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         assertEquals(hitCount, cache.metrics().getCacheHits());
         assertEquals(putCount, cache.metrics().getCachePuts());
 
-        assertTrue(cache.containsKey(1));
+        assertNotNull(cache.localPeek(1));
 
         result = cache.replace(1, 10, 20);
 
@@ -174,6 +174,8 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         assertEquals(putCount, cache.metrics().getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
+
+        cache.containsKey(123);
 
         assertFalse(result);
         assertEquals(hitCount, cache.metrics().getCacheHits());

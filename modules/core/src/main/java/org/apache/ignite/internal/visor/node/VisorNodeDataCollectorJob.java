@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
-import org.apache.ignite.internal.visor.ggfs.*;
+import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
 import org.apache.ignite.streamer.*;
 
@@ -55,8 +55,26 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         super(arg, debug);
     }
 
-    /** Collect events. */
-    private void events(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
+    /**
+     * Collect events.
+     *
+     * @param res Job result.
+     * @param evtOrderKey Unique key to take last order key from node local map.
+     * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
+     * @param all If {@code true} then collect all events otherwise collect only non task events.
+     */
+    protected void events0(VisorNodeDataCollectorJobResult res, String evtOrderKey, String evtThrottleCntrKey,
+        final boolean all) {
+        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all));
+    }
+
+    /**
+     * Collect events.
+     *
+     * @param res Job result.
+     * @param arg Task argument.
+     */
+    protected void events(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
         try {
             // Visor events explicitly enabled in configuration.
             if (checkExplicitTaskMonitoring(ignite))
@@ -66,7 +84,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 res.taskMonitoringEnabled(arg.taskMonitoringEnabled());
 
                 if (arg.taskMonitoringEnabled()) {
-                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.nodeLocalMap();
+                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 
@@ -86,23 +104,27 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
 
-            res.events().addAll(collectEvents(ignite, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(),
-                arg.taskMonitoringEnabled()));
+            events0(res, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(), arg.taskMonitoringEnabled());
         }
         catch (Throwable eventsEx) {
             res.eventsEx(eventsEx);
         }
     }
 
-    /** Collect caches. */
-    private void caches(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
+    /**
+     * Collect caches.
+     *
+     * @param res Job result.
+     * @param arg Task argument.
+     */
+    protected void caches(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
         try {
             IgniteConfiguration cfg = ignite.configuration();
 
             for (GridCache cache : ignite.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName))) {
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
@@ -120,39 +142,47 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
     }
 
-    /** Collect GGFS. */
-    private void ggfs(VisorNodeDataCollectorJobResult res) {
+    /**
+     * Collect IGFSs.
+     *
+     * @param res Job result.
+     */
+    protected void igfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)ignite).context().ggfs();
+            IgfsProcessorAdapter igfsProc = ((IgniteKernal)ignite).context().igfs();
 
-            for (IgniteFs ggfs : ggfsProc.ggfss()) {
+            for (IgniteFs igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                    Collection<IpcServerEndpoint> endPoints = igfsProc.endpoints(igfs.name());
 
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
-                                res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), ignite.name(),
+                                res.igfsEndpoints().add(new VisorIgfsEndpoint(igfs.name(), ignite.name(),
                                     ep.getHost(), ep.getPort()));
                     }
 
-                    res.ggfss().add(VisorGgfs.from(ggfs));
+                    res.igfss().add(VisorIgfs.from(igfs));
                 }
                 finally {
                     if (debug)
-                        log(ignite.log(), "Collected GGFS: " + ggfs.name(), getClass(), start0);
+                        log(ignite.log(), "Collected IGFS: " + igfs.name(), getClass(), start0);
                 }
             }
         }
-        catch (Throwable ggfssEx) {
-            res.ggfssEx(ggfssEx);
+        catch (Throwable igfssEx) {
+            res.igfssEx(igfssEx);
         }
     }
 
-    /** Collect streamers. */
-    private void streamers(VisorNodeDataCollectorJobResult res) {
+    /**
+     * Collect streamers.
+     *
+     * @param res Job result.
+     */
+    protected void streamers(VisorNodeDataCollectorJobResult res) {
         try {
             StreamerConfiguration[] cfgs = ignite.configuration().getStreamerConfiguration();
 
@@ -191,7 +221,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         VisorNodeDataCollectorTaskArg arg) {
         res.gridName(ignite.name());
 
-        res.topologyVersion(ignite.topologyVersion());
+        res.topologyVersion(ignite.cluster().topologyVersion());
 
         long start0 = U.currentTimeMillis();
 
@@ -205,10 +235,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected caches", getClass(), start0);
 
-        ggfs(res);
+        igfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected ggfs", getClass(), start0);
+            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
 
         streamers(res);
 

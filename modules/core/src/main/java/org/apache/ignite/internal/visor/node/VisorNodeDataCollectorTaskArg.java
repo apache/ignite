@@ -39,8 +39,11 @@ public class VisorNodeDataCollectorTaskArg implements Serializable {
     private int sample;
 
     /** If {@code true} then collect information about system caches. */
-    private boolean systemCaches;
+    private boolean sysCaches;
 
+    /**
+     * Default constructor.
+     */
     public VisorNodeDataCollectorTaskArg() {
         // No-op.
     }
@@ -52,20 +55,20 @@ public class VisorNodeDataCollectorTaskArg implements Serializable {
      * @param evtOrderKey Event order key, unique for Visor instance.
      * @param evtThrottleCntrKey Event throttle counter key, unique for Visor instance.
      * @param sample How many entries use in sampling.
-     * @param systemCaches If {@code true} then collect information about system caches.
+     * @param sysCaches If {@code true} then collect information about system caches.
      */
     public VisorNodeDataCollectorTaskArg(
         boolean taskMonitoringEnabled,
         String evtOrderKey,
         String evtThrottleCntrKey,
         int sample,
-        boolean systemCaches
+        boolean sysCaches
     ) {
         this.taskMonitoringEnabled = taskMonitoringEnabled;
         this.evtOrderKey = evtOrderKey;
         this.evtThrottleCntrKey = evtThrottleCntrKey;
         this.sample = sample;
-        this.systemCaches = systemCaches;
+        this.sysCaches = sysCaches;
     }
 
     /**
@@ -128,13 +131,13 @@ public class VisorNodeDataCollectorTaskArg implements Serializable {
      * @return {@code true} if Visor should collect metrics for system caches.
      */
     public boolean systemCaches() {
-        return systemCaches;
+        return sysCaches;
     }
 
     /**
-     * @param systemCaches {@code true} if Visor should collect metrics for system caches.
+     * @param sysCaches {@code true} if Visor should collect metrics for system caches.
      */
-    public void systemCaches(boolean systemCaches) {
-        this.systemCaches = systemCaches;
+    public void systemCaches(boolean sysCaches) {
+        this.sysCaches = sysCaches;
     }
 }

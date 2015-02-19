@@ -187,33 +187,6 @@ public interface Ignite extends AutoCloseable {
     public IgniteScheduler scheduler();
 
     /**
-     * Gets the cache instance for the given name, if one does not
-     * exist {@link IllegalArgumentException} will be thrown.
-     * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}
-     * will be thrown.
-     *
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @param name Cache name.
-     * @return Cache instance for given name.
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
-     */
-    public <K, V> GridCache<K, V> cache(@Nullable String name);
-
-    /**
-     * Gets all configured caches.
-     * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
-     *
-     * @see IgniteFsConfiguration
-     * @see IgniteFsConfiguration#getDataCacheName()
-     * @see IgniteFsConfiguration#getMetaCacheName()
-     * @return All configured caches.
-     */
-    public Collection<GridCache<?, ?>> caches();
-
-    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *
@@ -240,15 +213,15 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - Ignite In-Memory File System, if one is not
+     * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
-     * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
+     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
      * documentation on Hadoop integration shipped with Ignite.
      *
-     * @param name GGFS name.
-     * @return GGFS instance.
+     * @param name IGFS name.
+     * @return IGFS instance.
      */
     public IgniteFs fileSystem(String name);
 

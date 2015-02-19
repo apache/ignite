@@ -72,7 +72,7 @@ import scala.language.implicitConversions
  *         Node ID8.
  *         Either '-id' or '-id8' can be specified.
  *         If called without the arguments - starts in interactive mode.
- *     -e=<ch,de,di,jo,ta,ca,cp,sw,au>
+ *     -e=<ch,de,di,jo,ta,ca,cp,sw>
  *         Comma separated list of event types that should be queried:
  *            ch Checkpoint events.
  *            de Deployment events.
@@ -83,9 +83,6 @@ import scala.language.implicitConversions
  *            ca Cache events.
  *            cp Cache pre-loader events.
  *            sw Swapspace events.
- *            au Authentication events.
-              az Authorization events.
-              se Security session events.
  *     -t=<num>s|m|h|d
  *         Defines time frame for querying events:
  *            =<num>s Queries events fired during last <num> seconds.
@@ -165,9 +162,6 @@ class VisorEventsCommand {
                 case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
                 case "sw" => arr ++= EVTS_SWAPSPACE.toList
                 case "di" => arr ++= EVTS_DISCOVERY.toList
-                case "au" => arr ++= EVTS_AUTHENTICATION.toList
-                case "az" => arr ++= EVTS_AUTHORIZATION.toList
-                case "se" => arr ++= EVTS_SECURE_SESSION.toList
                 case t => throw new IllegalArgumentException("Unknown event type: " + t)
             }
 
@@ -192,9 +186,6 @@ class VisorEventsCommand {
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t if EVTS_CACHE_PRELOAD.contains(t) => "cp"
-            case t if EVTS_AUTHENTICATION.contains(t) => "au"
-            case t if EVTS_AUTHORIZATION.contains(t) => "az"
-            case t if EVTS_SECURE_SESSION.contains(t) => "se"
         }
     }
 
@@ -254,7 +245,7 @@ class VisorEventsCommand {
             }
             else {
                 val node = try
-                    ignite.node(UUID.fromString(id.get))
+                    ignite.cluster.node(UUID.fromString(id.get))
                 catch {
                     case _: IllegalArgumentException =>
                         scold("Invalid node 'id': " + id.get)
@@ -292,7 +283,7 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+                ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
                 case e: IgniteException =>
@@ -446,7 +437,7 @@ object VisorEventsCommand {
         ),
         spec = List(
             "events",
-            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw,au>}",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -461,7 +452,7 @@ object VisorEventsCommand {
                     "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
                 "If called without the arguments - starts in interactive mode."
             ),
-            "-e=<ch,de,di,jo,ta,ca,cp,sw,au>" -> List(
+            "-e=<ch,de,di,jo,ta,ca,cp,sw>" -> List(
                 "Comma separated list of event types that should be queried:",
                 "   ch Checkpoint events.",
                 "   de Deployment events.",
@@ -470,10 +461,7 @@ object VisorEventsCommand {
                 "   ta Task execution events.",
                 "   ca Cache events.",
                 "   cp Cache pre-loader events.",
-                "   sw Swapspace events.",
-                "   au Authentication events.",
-                "   az Authorization events.",
-                "   se Security session events."
+                "   sw Swapspace events."
             ),
             "-t=<num>s|m|h|d" -> List(
                 "Defines time frame for quering events:",

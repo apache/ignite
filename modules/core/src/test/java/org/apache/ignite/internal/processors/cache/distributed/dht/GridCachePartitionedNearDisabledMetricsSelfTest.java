@@ -88,7 +88,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
             g.jcache(null).removeAll();
 
             // TODO: getting of removed key will produce inner write and 4 inner read operations.
-            //g.cache(null).remove(0);
+            //((IgniteKernal)g).cache(null).remove(0);
 
             assert g.jcache(null).localSize() == 0;
 

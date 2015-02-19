@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
 public enum CacheAtomicityMode {
     /**
      * Specified fully {@code ACID}-compliant transactional cache behavior. See
-     * {@link IgniteTx} for more information about transactions.
+     * {@link Transaction} for more information about transactions.
      * <p>
      * This mode is currently the default cache atomicity mode. However, cache
      * atomicity mode will be changed to {@link #ATOMIC} starting from version {@code 5.2},

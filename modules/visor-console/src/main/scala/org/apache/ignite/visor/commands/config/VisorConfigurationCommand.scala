@@ -189,7 +189,7 @@ class VisorConfigurationCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = ignite.node(java.util.UUID.fromString(id.get))
+                    node = ignite.cluster.node(java.util.UUID.fromString(id.get))
 
                     if (node == null) {
                         scold("'id' does not match any node: " + id.get)
@@ -207,7 +207,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                ignite.compute(ignite.forNode(node))
+                ignite.compute(ignite.cluster.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
@@ -274,8 +274,6 @@ class VisorConfigurationCommand {
             spisT += ("Communication", spiClass(cfg.spis().communicationSpi()))
             spisT += ("Event storage", spiClass(cfg.spis().eventStorageSpi()))
             spisT += ("Collision", spiClass(cfg.spis().collisionSpi()))
-            spisT += ("Authentication", spiClass(cfg.spis().authenticationSpi()))
-            spisT += ("Secure session", spiClass(cfg.spis().secureSessionSpi()))
             spisT += ("Deployment", spiClass(cfg.spis().deploymentSpi()))
             spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
             spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
@@ -294,26 +292,11 @@ class VisorConfigurationCommand {
 
             p2pT.render()
 
-            println("\nEmail:")
-
-            val emailT = VisorTextTable()
-
-            emailT += ("SMTP host", safe(cfg.email().smtpHost(), DFLT))
-            emailT += ("SMTP port", safe(cfg.email().smtpPort(), DFLT))
-            emailT += ("SMTP username", safe(cfg.email().smtpUsername(), DFLT))
-            emailT += ("Admin emails", safe(cfg.email().adminEmails(), DFLT))
-            emailT += ("From email", safe(cfg.email().smtpFromEmail(), DFLT))
-            emailT += ("SMTP SSL enabled", bool2Str(cfg.email().smtpSsl()))
-            emailT += ("SMTP STARTTLS enabled", bool2Str(cfg.email().smtpStartTls()))
-
-            emailT.render()
-
             println("\nLifecycle:")
 
             val lifecycleT = VisorTextTable()
 
             lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
-            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().emailNotification()))
 
             lifecycleT.render()
 
@@ -323,10 +306,12 @@ class VisorConfigurationCommand {
 
             val execCfg = cfg.executeService()
 
-            execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
+            execSvcT += ("Public thread pool size", safe(execCfg.publicThreadPoolSize(), DFLT))
+            execSvcT += ("System thread pool size", safe(execCfg.systemThreadPoolSize(), DFLT))
+            execSvcT += ("Management thread pool size", safe(execCfg.managementThreadPoolSize(), DFLT))
+            execSvcT += ("IGFS thread pool size", safe(execCfg.igfsThreadPoolSize(), DFLT))
+            execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.peerClassLoadingThreadPoolSize(), DFLT))
+            execSvcT += ("REST thread pool size", safe(execCfg.restThreadPoolSize(), DFLT))
 
             execSvcT.render()
 

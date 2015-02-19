@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
@@ -381,20 +381,17 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
                     @Override public Map<Integer, Object> collect(UUID nodeId) {
-                        return new HashMap<Integer, Object>();
+                        return new HashMap<>();
                     }
 
-                    @Override public void onExchange(Map<Integer, Object> data) {
+                    @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                         // No-op.
                     }
                 });
 
                 spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
                     @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
-                            GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                        subj.permissions(new GridAllowAllPermissionSet());
+                        GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
 
                         return new GridSecurityContext(subj);
                     }

@@ -48,8 +48,8 @@ public class VisorStreamerConfiguration implements Serializable {
     /** Maximum number of concurrent events to be processed. */
     private int maxConcurrentSessions;
 
-    /** Flag indicating whether streamer executor service should be shut down on Ignite stop. */
-    private boolean executorServiceShutdown;
+    /** Streamer thread pool size. */
+    private int poolSize;
 
     /**
      * @param scfg Streamer configuration.
@@ -63,7 +63,7 @@ public class VisorStreamerConfiguration implements Serializable {
         cfg.atLeastOnce(scfg.isAtLeastOnce());
         cfg.maximumFailoverAttempts(scfg.getMaximumFailoverAttempts());
         cfg.maximumConcurrentSessions(scfg.getMaximumConcurrentSessions());
-        cfg.executorServiceShutdown(scfg.isExecutorServiceShutdown());
+        cfg.threadPoolSize(scfg.getThreadPoolSize());
 
         return cfg;
     }
@@ -157,18 +157,17 @@ public class VisorStreamerConfiguration implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether streamer executor service should be shut down on Ignite stop.
+     * @return Streamer thread pool size.
      */
-    public boolean executorServiceShutdown() {
-        return executorServiceShutdown;
+    public int threadPoolSize() {
+        return poolSize;
     }
 
     /**
-     * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shutdown
-     *      on Ignite stop.
+     * @param poolSize New streamer thread pool size.
      */
-    public void executorServiceShutdown(boolean executorSrvcShutdown) {
-        executorServiceShutdown = executorSrvcShutdown;
+    public void threadPoolSize(int poolSize) {
+        this.poolSize = poolSize;
     }
 
     /** {@inheritDoc} */

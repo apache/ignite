@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Adapter for {@link org.apache.ignite.cache.query.QueryMetrics}.
+ * Adapter for {@link QueryMetrics}.
  */
 public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizable {
     /** */

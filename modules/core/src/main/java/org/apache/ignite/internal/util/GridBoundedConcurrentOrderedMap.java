@@ -189,10 +189,10 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
                     if (lsnr != null)
                         lsnr.apply(key, val);
                 }
-                catch (NoSuchElementException e1) {
-                    e1.printStackTrace(); // Should never happen.
+                catch (NoSuchElementException ignored) {
+                    cnt.incrementAndGet();
 
-                    assert false : "Internal error in grid bounded ordered set.";
+                    return;
                 }
             }
         }
@@ -226,7 +226,12 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
      * @return {@inheritDoc}
      */
     @Override public V remove(Object o) {
-        throw new UnsupportedOperationException("Remove is not supported on concurrent bounded map.");
+        V old = super.remove(o);
+
+        if (old != null)
+            cnt.decrementAndGet();
+
+        return old;
     }
 
     /**
@@ -237,6 +242,11 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
      * @return {@inheritDoc}
      */
     @Override public boolean remove(Object key, Object val) {
-        throw new UnsupportedOperationException("Remove is not supported on concurrent bounded map.");
+        boolean rmvd = super.remove(key, val);
+
+        if (rmvd)
+            cnt.decrementAndGet();
+
+        return rmvd;
     }
 }

@@ -17,10 +17,7 @@
 
 package org.apache.ignite.scalar
 
-import javax.cache.Cache
-
-import org.apache.ignite.Ignite
-import org.apache.ignite.cache._
+import org.apache.ignite.{IgniteCache, Ignite}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.internal.util.lang._
@@ -30,7 +27,6 @@ import org.apache.ignite.scalar.pimps._
 import org.jetbrains.annotations._
 
 import java.util.TimerTask
-import java.util.concurrent._
 
 import scala.collection._
 import scala.util.control.Breaks._
@@ -115,13 +111,13 @@ trait ScalarConversions {
     def toScalaSeq[A](@Nullable i: java.lang.Iterable[A]): Seq[A] =
         toScalaSeq(i, (e: A) => e)
 
-    /**
-     * Helper converter from Java collection to Scala sequence.
-     *
-     * @param c Java collection to convert.
-     */
-    def toScalaSeq[A](@Nullable c: java.util.Collection[A]): Seq[A] =
-        toScalaSeq(c, (e: A) => e)
+//    /**
+//     * Helper converter from Java collection to Scala sequence.
+//     *
+//     * @param c Java collection to convert.
+//     */
+//    def toScalaSeq[A](@Nullable c: java.util.Collection[A]): Seq[A] =
+//        toScalaSeq(c, (e: A) => e)
 
     /**
      * Helper converter from Java entry collection to Scala iterable of pair.
@@ -266,15 +262,14 @@ trait ScalarConversions {
             Option(t._3)
     }
 
-    /**
-     * Implicit converter from cache KV-pair predicate to cache entry predicate. Note that predicate
-     * will use peek()
-     *
-     * @param p Cache KV-pair predicate to convert.
-     */
-    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: Cache.Entry[K, V]) => Boolean =
-        (e: Cache.Entry[K, V]) =>
-            p(e.getKey, e.getValue)
+//    /**
+//     * Implicit converter from cache KV-pair predicate to cache entry predicate. Note that predicate
+//     * will use peek()
+//     *
+//     * @param p Cache KV-pair predicate to convert.
+//     */
+//    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: Cache.Entry[K, V]) => Boolean =
+//        (e: Cache.Entry[K, V]) => p(e.getKey, e.getValue)
 
     /**
      * Implicit converter from vararg of one-argument Scala functions to Java `GridPredicate`s.
@@ -400,16 +395,8 @@ trait ScalarConversions {
      *
      * @param impl Grid cache to convert.
      */
-    implicit def toScalarCache[K, V](impl: GridCache[K, V]): ScalarCachePimp[K, V] =
+    implicit def toScalarCache[K, V](impl: IgniteCache[K, V]): ScalarCachePimp[K, V] =
         ScalarCachePimp[K, V](impl)
-
-    /**
-     * Implicit converter from `CacheProjection` to `ScalarCacheProjectionPimp` "pimp".
-     *
-     * @param impl Grid cache projection to convert.
-     */
-    implicit def toScalarCacheProjection[K, V](impl: CacheProjection[K, V]): ScalarCacheProjectionPimp[K, V] =
-        ScalarCacheProjectionPimp[K, V](impl)
 
     /**
      * Implicit converter from Scala function to `ComputeJob`.

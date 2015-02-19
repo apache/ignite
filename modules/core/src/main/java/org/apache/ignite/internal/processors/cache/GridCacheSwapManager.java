@@ -724,7 +724,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Collection of swap entries.
      * @throws IgniteCheckedException If failed,
      */
-    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys) throws IgniteCheckedException {
+    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys)
+        throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return Collections.emptyList();
 
@@ -732,16 +733,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         final GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
-        Collection<K> keysList = new ArrayList<>(keys);
+        Collection<SwapKey> unprocessedKeys = null;
         final Collection<GridCacheBatchSwapEntry<K, V>> res = new ArrayList<>(keys.size());
 
         // First try removing from offheap.
         if (offheapEnabled) {
-            Iterator<K> iter = keysList.iterator();
-
-            while (iter.hasNext()) {
-                K key = iter.next();
-
+            for (K key : keys) {
                 int part = cctx.affinity().partition(key);
 
                 byte[] keyBytes = CU.marshal(cctx.shared(), key);
@@ -751,57 +748,62 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (entryBytes != null) {
                     GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
 
-                    if (entry == null)
+                    if (entry != null) {
+                        // Always fire this event, since preloading depends on it.
+                        onOffHeaped(part, key, keyBytes, entry);
+
+                        if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
+                            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
+                                EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
+
+                        if (qryMgr != null)
+                            qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
+
+                        GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
+                            keyBytes,
+                            part,
+                            entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
+                            entry.valueIsByteArray(),
+                            entry.version(), entry.ttl(),
+                            entry.expireTime(),
+                            entry.keyClassLoaderId(),
+                            entry.valueClassLoaderId());
+
+                        unswapped.value(entry.value());
+
+                        res.add(unswapped);
+
                         continue;
+                    }
+                }
 
-                    iter.remove();
+                if (swapEnabled) {
+                    if (unprocessedKeys == null)
+                        unprocessedKeys = new ArrayList<>(keys.size());
 
-                    // Always fire this event, since preloading depends on it.
-                    onOffHeaped(part, key, keyBytes, entry);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
-                        cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
-                            EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
-
-                    if (qryMgr != null)
-                        qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
-
-                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
-                        keyBytes,
-                        part,
-                        entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
-                        entry.valueIsByteArray(),
-                        entry.version(), entry.ttl(),
-                        entry.expireTime(),
-                        entry.keyClassLoaderId(),
-                        entry.valueClassLoaderId());
-
-                    unswapped.value(entry.value());
-
-                    res.add(unswapped);
+                    unprocessedKeys.add(
+                        new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
                 }
             }
 
-            if (!swapEnabled || keysList.isEmpty())
+            if (unprocessedKeys == null)
                 return res;
         }
+        else {
+            unprocessedKeys = new ArrayList<>(keys.size());
+
+            for (K key : keys)
+                unprocessedKeys.add(new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
+        }
+
+        assert swapEnabled;
+        assert unprocessedKeys != null;
 
         // Swap is enabled.
         final GridTuple<IgniteCheckedException> err = F.t1();
 
-        Collection<SwapKey> converted = new ArrayList<>(F.viewReadOnly(keysList, new C1<K, SwapKey>() {
-            @Override public SwapKey apply(K key) {
-                try {
-                    return new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }));
-
         swapMgr.removeAll(spaceName,
-            converted,
+            unprocessedKeys,
             new IgniteBiInClosure<SwapKey, byte[]>() {
                 @Override public void apply(SwapKey swapKey, byte[] rmv) {
                     if (rmv != null) {

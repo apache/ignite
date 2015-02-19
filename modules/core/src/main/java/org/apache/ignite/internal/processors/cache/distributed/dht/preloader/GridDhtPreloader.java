@@ -120,7 +120,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         top = cctx.dht().topology();
 
-        startFut = new GridFutureAdapter<>(cctx.kernalContext());
+        startFut = new GridFutureAdapter<>(cctx.kernalContext(), false);
     }
 
     /** {@inheritDoc} */

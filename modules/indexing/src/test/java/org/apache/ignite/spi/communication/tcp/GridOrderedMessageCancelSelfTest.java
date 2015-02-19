@@ -96,7 +96,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     public void testQuery() throws Exception {
         CacheQueryFuture<Map.Entry<Object, Object>> fut =
-            grid(0).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
+            ((IgniteKernal)grid(0)).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
 
         testMessageSet(fut);
     }
@@ -105,7 +105,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTask() throws Exception {
-        ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).forRemotes()), Task.class, null);
+        ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).cluster().forRemotes()), Task.class, null);
 
         testMessageSet(fut);
     }
@@ -114,7 +114,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTaskException() throws Exception {
-        ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).forRemotes()), FailTask.class, null);
+        ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).cluster().forRemotes()), FailTask.class, null);
 
         testMessageSet(fut);
     }

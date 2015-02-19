@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
@@ -30,17 +29,8 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default transaction isolation. */
-    private IgniteTxIsolation txIsolation;
-
-    /** Default transaction concurrency. */
-    private IgniteTxConcurrency txConcurrency;
-
     /** TTL value. */
     private long ttl;
-
-    /** Default transaction concurrency. */
-    private long txTimeout;
 
     /** Default transaction timeout. */
     private long txLockTimeout;
@@ -53,46 +43,13 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      * @return Data transfer object for default cache configuration properties.
      */
     public static VisorCacheDefaultConfiguration from(CacheConfiguration ccfg) {
-        // TODO GG-9141 Update Visor.
-
         VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();
 
-//        cfg.txIsolation(ccfg.getDefaultTxIsolation());
-//        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
         cfg.timeToLive(ccfg.getDefaultTimeToLive());
-//        cfg.txTimeout(ccfg.getDefaultTxTimeout());
         cfg.txLockTimeout(ccfg.getDefaultLockTimeout());
         cfg.queryTimeout(ccfg.getDefaultQueryTimeout());
 
         return cfg;
-    }
-
-    /**
-     * @return Default transaction isolation.
-     */
-    public IgniteTxIsolation txIsolation() {
-        return txIsolation;
-    }
-
-    /**
-     * @param txIsolation New default transaction isolation.
-     */
-    public void txIsolation(IgniteTxIsolation txIsolation) {
-        this.txIsolation = txIsolation;
-    }
-
-    /**
-     * @return Default transaction concurrency.
-     */
-    public IgniteTxConcurrency txConcurrency() {
-        return txConcurrency;
-    }
-
-    /**
-     * @param txConcurrency New default transaction concurrency.
-     */
-    public void txConcurrency(IgniteTxConcurrency txConcurrency) {
-        this.txConcurrency = txConcurrency;
     }
 
     /**
@@ -107,20 +64,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      */
     public void timeToLive(long ttl) {
         this.ttl = ttl;
-    }
-
-    /**
-     * @return Default transaction concurrency.
-     */
-    public long txTimeout() {
-        return txTimeout;
-    }
-
-    /**
-     * @param txTimeout New default transaction concurrency.
-     */
-    public void txTimeout(long txTimeout) {
-        this.txTimeout = txTimeout;
     }
 
     /**

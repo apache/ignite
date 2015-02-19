@@ -94,79 +94,57 @@ public class GridTestMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public MessageAdapter clone() {
-        GridTestMessage msg = new GridTestMessage();
-
-        clone0(msg);
-
-        return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clone0(MessageAdapter _msg) {
-        GridTestMessage _clone = (GridTestMessage)_msg;
-
-        _clone.srcNodeId = srcNodeId;
-        _clone.msgId = msgId;
-        _clone.resId = resId;
-        _clone.payload = payload;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean writeTo(ByteBuffer buf) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!typeWritten) {
+        if (!writer.isTypeWritten()) {
             if (!writer.writeByte(null, directType()))
                 return false;
 
-            typeWritten = true;
+            writer.onTypeWritten();
         }
 
-        switch (state) {
+        switch (writer.state()) {
             case 0:
                 if (!writer.writeUuid(null, srcNodeId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 1:
                 if (!writer.writeLong(null, msgId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 2:
                 if (!writer.writeLong(null, resId))
                     return false;
 
-                state++;
+                writer.incrementState();
 
             case 3:
                 if (!writer.writeByteArray(null, payload))
                     return false;
 
-                state++;
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
         reader.setBuffer(buf);
 
-        switch (state) {
+        switch (readState) {
             case 0:
                 srcNodeId = reader.readUuid(null);
 
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 1:
                 msgId = reader.readLong(null);
@@ -174,7 +152,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 2:
                 resId = reader.readLong(null);
@@ -182,7 +160,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
 
             case 3:
                 payload = reader.readByteArray(null);
@@ -190,7 +168,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                state++;
+                readState++;
         }
 
         return true;

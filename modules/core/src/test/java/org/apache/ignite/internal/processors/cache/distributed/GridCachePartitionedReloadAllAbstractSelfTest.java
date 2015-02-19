@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -129,7 +130,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
         caches = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
-            caches.add(startGrid(i).<Integer, String>cache(null));
+            caches.add(((IgniteKernal)startGrid(i)).<Integer, String>cache(null));
 
         awaitPartitionMapExchange();
     }
@@ -155,14 +156,15 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
             @Override public void loadCache(IgniteBiInClosure<Integer, String> c,
                 Object... args) {
-                X.println("Loading all on: " + caches.indexOf(g.<Integer, String>cache(null)));
+                X.println("Loading all on: " + caches.indexOf(((IgniteKernal)g).<Integer, String>cache(null)));
 
                 for (Map.Entry<Integer, String> e : map.entrySet())
                     c.apply(e.getKey(), e.getValue());
             }
 
             @Override public String load(Integer key) {
-                X.println("Loading on: " + caches.indexOf(g.<Integer, String>cache(null)) + " key=" + key);
+                X.println("Loading on: " + caches.indexOf(((IgniteKernal)g)
+                    .<Integer, String>cache(null)) + " key=" + key);
 
                 return map.get(key);
             }

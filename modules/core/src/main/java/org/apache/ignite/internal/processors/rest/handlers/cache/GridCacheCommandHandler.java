@@ -44,8 +44,8 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Command handler for API requests.
@@ -347,7 +347,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((CacheProjection<Object, Object>)prj, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
@@ -385,7 +385,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
@@ -560,7 +560,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(

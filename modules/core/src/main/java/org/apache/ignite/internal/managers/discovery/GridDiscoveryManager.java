@@ -24,9 +24,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
+import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -326,7 +326,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(Map<Integer, Object> data) {
+            @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                 for (Map.Entry<Integer, Object> e : data.entrySet()) {
                     GridComponent comp = null;
 
@@ -339,7 +339,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     if (comp != null)
-                        comp.onDiscoveryDataReceived(e.getValue());
+                        comp.onDiscoveryDataReceived(nodeId, e.getValue());
                     else
                         U.warn(log, "Received discovery data for unknown component: " + e.getKey());
                 }
@@ -498,10 +498,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
                 nm.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
                 nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
+                nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
                 nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
                 nm.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());
                 nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
                 nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
+                nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
                 nm.setUpTime(metrics.getUptime());
                 nm.setStartTime(metrics.getStartTime());
                 nm.setNodeStartTime(startTime);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.transactions.*;
@@ -36,9 +37,9 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws UnsupportedOperationException If cache is {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
+    public Transaction txStartSystem(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -50,8 +51,8 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @return New transaction.
      */
     public IgniteInternalTx txStartEx(GridCacheContext ctx,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         int txSize);
 
@@ -61,39 +62,5 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public IgniteInternalTx txStartEx(GridCacheContext ctx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
-
-    /**
-     * @param ctx Cache context.
-     * @param partId Partition.
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout Timeout.
-     * @param txSize Number of entries participating in transaction (may be approximate).
-     * @return New transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalTx txStartPartitionEx(GridCacheContext ctx,
-        int partId,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
-        long timeout,
-        int txSize) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Cache context.
-     * @param affinityKey Affinity key.
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout Timeout.
-     * @param txSize Number of entries participating in transaction (may be approximate).
-     * @return New transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalTx txStartAffinity(GridCacheContext ctx,
-        Object affinityKey,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
-        long timeout,
-        int txSize) throws IgniteCheckedException;
+    public IgniteInternalTx txStartEx(GridCacheContext ctx, TransactionConcurrency concurrency, TransactionIsolation isolation);
 }

@@ -40,8 +40,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for colocated cache.
@@ -429,7 +429,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 g0.jcache(null).put(i, i);
 
             for (int i = 0; i < 100; i++) {
-                try (IgniteTx tx = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Integer val = (Integer) g0.jcache(null).get(i);
 
                     assertEquals((Integer) i, val);
@@ -447,12 +447,12 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkSinglePut(boolean explicitTx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    private void checkSinglePut(boolean explicitTx, TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         startGrid();
 
         try {
-            IgniteTx tx = explicitTx ? grid().transactions().txStart(concurrency, isolation) : null;
+            Transaction tx = explicitTx ? grid().transactions().txStart(concurrency, isolation) : null;
 
             try {
                 IgniteCache<Object, Object> cache = jcache();
@@ -483,11 +483,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkReentry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
+    private void checkReentry(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         startGrid();
 
         try {
-            IgniteTx tx = grid().transactions().txStart(concurrency, isolation);
+            Transaction tx = grid().transactions().txStart(concurrency, isolation);
 
             try {
                 IgniteCache<Object, Object> cache = jcache();
@@ -528,8 +528,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkDistributedPut(boolean explicitTx, boolean separate, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    private void checkDistributedPut(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
 
         startGridsMultiThreaded(3);
@@ -545,7 +545,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k0, "val" + k0, k1, "val" + k1, k2, "val" + k2);
 
-            IgniteTx tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
+            Transaction tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
@@ -618,8 +618,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkNonLocalPuts(boolean explicitTx, boolean separate, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
+    private void checkNonLocalPuts(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
 
         startGridsMultiThreaded(3);
@@ -634,7 +634,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k1, "val" + k1, k2, "val" + k2);
 
-            IgniteTx tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
+            Transaction tx = explicitTx ? g0.transactions().txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
@@ -747,7 +747,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         clearStores(3);
 
-        try (IgniteTx tx = g0.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = g0.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             g0.jcache(null).putAll(map);
 
             tx.commit();
@@ -799,7 +799,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkRollback(boolean separate, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    private void checkRollback(boolean separate, TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         storeEnabled = false;
 
@@ -820,7 +820,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k0, "value" + k0, k1, "value" + k1, k2, "value" + k2);
 
-            IgniteTx tx = g0.transactions().txStart(concurrency, isolation);
+            Transaction tx = g0.transactions().txStart(concurrency, isolation);
 
             try {
                 if (separate) {

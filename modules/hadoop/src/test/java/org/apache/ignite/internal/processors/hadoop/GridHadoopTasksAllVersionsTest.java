@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import com.google.common.base.*;
 import org.apache.hadoop.io.*;
 import org.apache.ignite.*;
-import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 
@@ -57,29 +57,29 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      */
     @SuppressWarnings("ConstantConditions")
     public void testMapTask() throws Exception {
-        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
+        IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
-        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
+        URI inFileUri = URI.create(igfsScheme() + inFile.toString());
 
-        try (PrintWriter pw = new PrintWriter(ggfs.create(inFile, true))) {
+        try (PrintWriter pw = new PrintWriter(igfs.create(inFile, true))) {
             pw.println("hello0 world0");
             pw.println("world1 hello1");
         }
 
-        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, ggfs.info(inFile).length() - 1);
+        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, igfs.info(inFile).length() - 1);
 
-        try (PrintWriter pw = new PrintWriter(ggfs.append(inFile, false))) {
+        try (PrintWriter pw = new PrintWriter(igfs.append(inFile, false))) {
             pw.println("hello2 world2");
             pw.println("world3 hello3");
         }
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, fileBlock1.length(),
-                ggfs.info(inFile).length() - fileBlock1.length());
+                igfs.info(inFile).length() - fileBlock1.length());
 
-        GridHadoopV2Job gridJob = getHadoopJob(ggfsScheme() + inFile.toString(), ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(igfsScheme() + inFile.toString(), igfsScheme() + PATH_OUTPUT);
 
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock1);
 
@@ -136,7 +136,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        GridHadoopV2Job gridJob = getHadoopJob(ggfsScheme() + PATH_INPUT, ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(igfsScheme() + PATH_INPUT, igfsScheme() + PATH_OUTPUT);
 
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
@@ -210,25 +210,25 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      */
     @SuppressWarnings("ConstantConditions")
     public void testAllTasks() throws Exception {
-        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
+        IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-        ggfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
-        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgfsPath inFile = new IgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
+        URI inFileUri = URI.create(igfsScheme() + inFile.toString());
 
         generateTestFile(inFile.toString(), "red", 100, "blue", 200, "green", 150, "yellow", 70);
 
         //Split file into two blocks
-        long fileLen = ggfs.info(inFile).length();
+        long fileLen = igfs.info(inFile).length();
 
         Long l = fileLen / 2;
 
         GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, l);
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, l, fileLen - l);
 
-        GridHadoopV2Job gridJob = getHadoopJob(inFileUri.toString(), ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(inFileUri.toString(), igfsScheme() + PATH_OUTPUT);
 
         GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 

@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -226,7 +227,15 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestStore extends CacheStore<Object, Object> {
+    private class TestStore implements CacheStore<Object, Object> {
+        /** Auto-injected store session. */
+        @CacheStoreSessionResource
+        private CacheStoreSession ses;
+
+        /** */
+        @IgniteInstanceResource
+        protected Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
             log.info("Load cache [tx=" + session().transaction() + ']');
@@ -293,10 +302,17 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         }
 
         /**
+         * @return Store session.
+         */
+        private CacheStoreSession session() {
+            return ses;
+        }
+
+        /**
          * @param mtd Called stored method.
          */
         private void checkSession(String mtd) {
-            assertNotNull(ignite());
+            assertNotNull(ignite);
 
             assertFalse(expData.isEmpty());
 

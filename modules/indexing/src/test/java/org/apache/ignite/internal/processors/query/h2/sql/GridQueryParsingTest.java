@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -99,7 +101,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         ignite = startGrid();
 
-        GridCache cache = ignite.cache(null);
+        GridCache cache = ((IgniteKernal)ignite).cache(null);
 
         cache.putx("testAddr", new Address());
         cache.putx("testPerson", new Person());

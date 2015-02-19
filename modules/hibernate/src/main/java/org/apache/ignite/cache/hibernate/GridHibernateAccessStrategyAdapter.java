@@ -19,6 +19,8 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -27,7 +29,6 @@ import org.hibernate.cache.spi.access.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.concurrent.*;
 
 /**
  * Common interface used to implement Hibernate L2 cache access strategies ({@link RegionAccessStrategy},
@@ -342,7 +343,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ignite.cache(cacheName);
+            GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
 
             assert cache != null;
 

@@ -117,6 +117,8 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setReceivedMessagesCount(44);
         metrics.setReceivedBytesCount(45);
         metrics.setOutboundMessagesQueueSize(46);
+        metrics.setNonHeapMemoryTotal(47);
+        metrics.setHeapMemoryTotal(48);
 
         return metrics;
     }
@@ -165,6 +167,8 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
             obj.getSentBytesCount() == obj1.getSentBytesCount() &&
             obj.getReceivedMessagesCount() == obj1.getReceivedMessagesCount() &&
             obj.getReceivedBytesCount() == obj1.getReceivedBytesCount() &&
-            obj.getOutboundMessagesQueueSize() == obj1.getOutboundMessagesQueueSize();
+            obj.getOutboundMessagesQueueSize() == obj1.getOutboundMessagesQueueSize() &&
+            obj.getNonHeapMemoryTotal() == obj1.getNonHeapMemoryTotal() &&
+            obj.getHeapMemoryTotal() == obj1.getHeapMemoryTotal();
     }
 }

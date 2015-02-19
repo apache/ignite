@@ -41,12 +41,16 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     @CacheNameResource
     private String cacheName;
 
+    /** */
+    @CacheStoreSessionResource
+    private CacheStoreSession ses;
+
     /** Dummy database. */
     private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -55,7 +59,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends Person> entry) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         Long key = entry.getKey();
         Person val = entry.getValue();
@@ -67,7 +71,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) {
-        IgniteTx tx = transaction();
+        Transaction tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -102,9 +106,16 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * @return Current transaction.
      */
-    @Nullable private IgniteTx transaction() {
+    @Nullable private Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;
+    }
+
+    /**
+     * @return Store session.
+     */
+    private CacheStoreSession session() {
+        return ses;
     }
 }

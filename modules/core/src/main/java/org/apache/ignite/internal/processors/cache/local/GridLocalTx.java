@@ -30,7 +30,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Local cache transaction.
@@ -62,8 +62,8 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
         GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
-        IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         long timeout,
         int txSize,
         @Nullable UUID subjId,
@@ -83,7 +83,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void prepare() throws IgniteCheckedException {
         if (!state(PREPARING)) {
-            IgniteTxState state = state();
+            TransactionState state = state();
 
             // If other thread is doing "prepare", then no-op.
             if (state == PREPARING || state == PREPARED || state == COMMITTING || state == COMMITTED)

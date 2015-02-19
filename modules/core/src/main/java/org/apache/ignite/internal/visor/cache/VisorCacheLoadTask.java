@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Task to loads caches.
@@ -57,32 +57,33 @@ public class VisorCacheLoadTask extends
 
         /** {@inheritDoc} */
         @Override protected Map<String, Integer> run(GridTuple3<Set<String>, Long, Object[]> arg) {
-            try {
-                Set<String> cacheNames = arg.get1();
-                Long ttl = arg.get2();
-                Object[] loaderArgs = arg.get3();
+            Set<String> cacheNames = arg.get1();
+            Long ttl = arg.get2();
+            Object[] ldrArgs = arg.get3();
 
-                Map<String, Integer> res = new HashMap<>();
+            assert cacheNames != null && !cacheNames.isEmpty();
+            assert ttl != null;
 
-                for (GridCache c: ignite.cachesx()) {
-                    String cacheName = c.name();
+            Map<String, Integer> res = U.newHashMap(cacheNames.size());
 
-                    if (cacheNames.contains(cacheName)) {
-                        c.loadCache(new P2<Object, Object>() {
-                            @Override public boolean apply(Object o, Object o2) {
-                                return true;
-                            }
-                        }, ttl, loaderArgs);
+            ExpiryPolicy plc = null;
 
-                        res.put(cacheName, c.size()); // Put new key size for successfully loaded cache.
-                    }
+            for (String cacheName : cacheNames) {
+                IgniteCache cache = ignite.jcache(cacheName);
+
+                if (ttl > 0) {
+                    if (plc == null)
+                        plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+
+                    cache = cache.withExpiryPolicy(plc);
                 }
 
-                return res;
+                cache.loadCache(null, ldrArgs);
+
+                res.put(cacheName, cache.size());
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+
+            return res;
         }
 
         /** {@inheritDoc} */

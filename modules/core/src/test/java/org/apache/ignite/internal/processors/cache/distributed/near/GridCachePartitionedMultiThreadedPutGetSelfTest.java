@@ -34,8 +34,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Multithreaded partition cache put get test.
@@ -171,7 +171,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
-    private void doTest(final IgniteTxConcurrency concurrency, final IgniteTxIsolation isolation)
+    private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
@@ -183,7 +183,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
+                    try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
                         c.put(kv, kv);

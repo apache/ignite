@@ -66,7 +66,7 @@ import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Cache processor.
@@ -167,7 +167,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        ctx.ggfsHelper().preProcessCacheConfiguration(cfg);
+        ctx.igfsHelper().preProcessCacheConfiguration(cfg);
 
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
@@ -405,7 +405,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.ggfsHelper().validateCacheConfiguration(cc);
+        ctx.igfsHelper().validateCacheConfiguration(cc);
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
@@ -440,10 +440,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+        boolean igfsCache = CU.isIgfsCache(c, cc.getName());
         boolean utilityCache = CU.isUtilityCache(cc.getName());
 
-        if (!ggfsCache && !utilityCache && !cc.isQueryIndexEnabled())
+        if (!igfsCache && !utilityCache && !cc.isQueryIndexEnabled())
             U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
@@ -559,12 +559,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        IgniteFsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+        IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
 
-        if (ggfsCfgs != null) {
-            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
-                sysCaches.add(ggfsCfg.getMetaCacheName());
-                sysCaches.add(ggfsCfg.getDataCacheName());
+        if (igfsCfgs != null) {
+            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+                sysCaches.add(igfsCfg.getMetaCacheName());
+                sysCaches.add(igfsCfg.getDataCacheName());
             }
         }
 
@@ -587,7 +587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
 
         for (int i = 0; i < cfgs.length; i++) {
-            CacheConfiguration cfg = new CacheConfiguration(cfgs[i]);
+            CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
             // Initialize defaults.
             initialize(cfg);
@@ -625,7 +625,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg));
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
-            GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
+            CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
@@ -761,7 +761,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * 2. GridCacheIoManager
                  * 3. GridCacheDeploymentManager
                  * 4. GridCacheQueryManager (note, that we start it for DHT cache though).
-                 * 5. GridCacheContinuousQueryManager (note, that we start it for DHT cache though).
+                 * 5. CacheContinuousQueryManager (note, that we start it for DHT cache though).
                  * 6. GridCacheDgcManager
                  * 7. GridCacheTtlManager.
                  * ===============================================
@@ -854,12 +854,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
                 mgr.start(cacheCtx);
 
+            cacheCtx.initConflictResolver();
+
             if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
                 GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
 
                 // Start DHT managers.
                 for (GridCacheManager mgr : dhtManagers(dhtCtx))
                     mgr.start(dhtCtx);
+
+                dhtCtx.initConflictResolver();
 
                 // Start DHT cache.
                 dhtCtx.cache().start();
@@ -1584,8 +1588,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache.
      */
-    public <K, V> GridCache<K, V> utilityCache() {
-        return cache(CU.UTILITY_CACHE_NAME);
+    public <K, V> GridCacheAdapter<K, V> utilityCache() {
+        return internalCache(CU.UTILITY_CACHE_NAME);
     }
 
     /**
@@ -1683,6 +1687,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             log.debug("Getting internal cache adapter: " + name);
 
         return (GridCacheAdapter<K, V>)caches.get(name);
+    }
+
+    /**
+     * Cancel all user operations.
+     */
+    public void cancelUserOperations() {
+        for (GridCacheAdapter<?, ?> cache : caches.values())
+            cache.ctx.mvcc().cancelClientFutures();
     }
 
     /**

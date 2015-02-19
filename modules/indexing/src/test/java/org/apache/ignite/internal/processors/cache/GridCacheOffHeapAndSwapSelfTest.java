@@ -174,7 +174,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
+        ((IgniteKernal)grid(0)).cache(null).clear();
     }
 
     /** Resets event counters. */
@@ -192,7 +192,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private GridCache<Long, Long> populate() throws Exception {
-        GridCache<Long, Long> cache = grid(0).cache(null);
+        GridCache<Long, Long> cache = ((IgniteKernal)grid(0)).cache(null);
 
         assertEquals(0, cache.size());
         assertEquals(0, cache.offHeapEntriesCount());
@@ -408,7 +408,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link org.apache.ignite.cache.CacheProjection#promote(Object)} behavior on offheaped entries.
+     * Tests {@link CacheProjection#promote(Object)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */

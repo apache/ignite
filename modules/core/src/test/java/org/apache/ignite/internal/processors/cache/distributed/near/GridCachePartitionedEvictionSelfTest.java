@@ -35,8 +35,8 @@ import javax.cache.expiry.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Tests for partitioned cache automatic eviction.
@@ -157,7 +157,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param concurrency Tx concurrency.
      * @param isolation Tx isolation.
      */
-    private void doTestEviction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
+    private void doTestEviction(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         assert concurrency != null;
         assert isolation != null;
@@ -181,7 +181,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
             IgniteTransactions txs = G.ignite(node.id()).transactions();
 
-            try (IgniteTx tx = txs.txStart(concurrency, isolation)) {
+            try (Transaction tx = txs.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
                 c.withExpiryPolicy(plc).put(key, 1);

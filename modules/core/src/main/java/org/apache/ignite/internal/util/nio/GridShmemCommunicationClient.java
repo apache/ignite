@@ -116,9 +116,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(formatter.writer());
-
-            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
+            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer());
 
             metricsLsnr.onBytesSent(cnt);
         }

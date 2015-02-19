@@ -58,8 +58,6 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
 
         originatingTxId = tx.nearXidVersion();
         originatingNodeId = tx.eventNodeId();
-
-        recoveryWrites = tx.recoveryWrites();
     }
 
     /**
