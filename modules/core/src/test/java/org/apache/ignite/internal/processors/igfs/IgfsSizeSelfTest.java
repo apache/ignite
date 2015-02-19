@@ -693,7 +693,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private UUID primary(IgfsBlockKey key) {
         IgniteEx grid = grid(0);
 
-        for (ClusterNode node : grid.nodes()) {
+        for (ClusterNode node : grid.cluster().nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
                 return node.id();
         }
@@ -712,7 +712,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         Collection<UUID> ids = new HashSet<>();
 
-        for (ClusterNode node : grid.nodes()) {
+        for (ClusterNode node : grid.cluster().nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }

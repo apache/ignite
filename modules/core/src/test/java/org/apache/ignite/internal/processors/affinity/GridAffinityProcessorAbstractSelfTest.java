@@ -114,8 +114,8 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         final IgniteKernal grid1 = (IgniteKernal)grid(rnd.nextInt(NODES_CNT)); // With cache.
         IgniteKernal grid2 = (IgniteKernal)grid(NODES_CNT + rnd.nextInt(NODES_CNT)); // Without cache.
 
-        assertEquals(NODES_CNT * 2, grid1.nodes().size());
-        assertEquals(NODES_CNT * 2, grid2.nodes().size());
+        assertEquals(NODES_CNT * 2, grid1.cluster().nodes().size());
+        assertEquals(NODES_CNT * 2, grid2.cluster().nodes().size());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -187,7 +187,8 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
         long diff = System.currentTimeMillis() - start;
 
-        info(">>> Map " + keysSize + " keys to " + grid.nodes().size() + " nodes " + iterations + " times in " + diff + "ms.");
+        info(">>> Map " + keysSize + " keys to " + grid.cluster().nodes().size() +
+            " nodes " + iterations + " times in " + diff + "ms.");
 
         assertTrue(diff < 25000);
     }

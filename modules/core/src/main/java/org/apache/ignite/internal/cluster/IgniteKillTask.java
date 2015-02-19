@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
  * Special kill task that never fails over jobs.
  */
 @GridInternal
-class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
+class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
 
         for (ClusterNode n : subgrid)
             if (!daemon(n))
-                jobs.put(new GridKillJob(), n);
+                jobs.put(new IgniteKillJob(), n);
 
         return jobs;
     }
@@ -76,7 +76,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
     /**
      * Kill job.
      */
-    private class GridKillJob extends ComputeJobAdapter {
+    private class IgniteKillJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

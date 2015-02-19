@@ -139,8 +139,8 @@ class VisorCacheScanCommand {
         }
 
         val cachePrj = node match {
-            case Some(n) => ignite.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.forCacheNodes(cacheName)
+            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
+            case _ => ignite.cluster.forCacheNodes(cacheName)
         }
 
         if (cachePrj.nodes().isEmpty) {

@@ -164,7 +164,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         this.hash = hash;
         this.cctx = cctx;
 
-        ttlAndExpireTimeExtras(ttl, toExpireTime(ttl));
+        ttlAndExpireTimeExtras(ttl, CU.toExpireTime(ttl));
 
         if (cctx.portableEnabled())
             val = (V)cctx.kernalContext().portable().detachPortable(val);
@@ -854,7 +854,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     V prevVal = rawGetOrUnmarshalUnlocked(false);
 
-                    long expTime = toExpireTime(ttl);
+                    long expTime = CU.toExpireTime(ttl);
 
                     if (loadedFromStore)
                         // Update indexes before actual write to entry.
@@ -928,7 +928,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     V old = rawGetOrUnmarshalUnlocked(false);
 
-                    long expTime = toExpireTime(ttl);
+                    long expTime = CU.toExpireTime(ttl);
 
                     // Detach value before index update.
                     if (cctx.portableEnabled())
@@ -1058,7 +1058,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     expireTime = expireTimeExtras();
                 }
                 else
-                    expireTime = toExpireTime(ttl);
+                    expireTime = CU.toExpireTime(ttl);
             }
 
             assert ttl >= 0 : ttl;
@@ -1327,15 +1327,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
                 old = readThrough(null, key, false, subjId, taskName);
 
-                long ttl = 0;
-                long expireTime = 0;
+                long ttl = CU.TTL_ETERNAL;
+                long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
                 if (expiryPlc != null && old != null) {
                     ttl = CU.toTtl(expiryPlc.getExpiryForCreation());
 
                     if (ttl == CU.TTL_ZERO) {
-                        ttl = 1;
-                        expireTime = U.currentTimeMillis() - 1;
+                        ttl = CU.TTL_MINIMUM;
+                        expireTime = CU.expireTimeInPast();
                     }
                     else if (ttl == CU.TTL_NOT_CHANGED)
                         ttl = 0;
@@ -1454,7 +1454,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         expireTime = expireTimeExtras();
                     }
                     else
-                        expireTime = toExpireTime(ttl);
+                        expireTime = CU.toExpireTime(ttl);
                 }
                 else {
                     ttl = ttlExtras();
@@ -1932,7 +1932,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         }
                         else {
                             ttl0 = newTtl;
-                            newExpireTime = toExpireTime(ttl0);
+                            newExpireTime = CU.toExpireTime(ttl0);
                         }
                     }
                 }
@@ -2544,11 +2544,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long expireTime;
 
         if (ttl == CU.TTL_ZERO) {
-            ttl = 1;
-            expireTime = U.currentTimeMillis() - 1;
+            ttl = CU.TTL_MINIMUM;
+            expireTime = CU.expireTimeInPast();
         }
         else
-            expireTime = toExpireTime(ttl);
+            expireTime = CU.toExpireTime(ttl);
 
         long oldExpireTime = expireTimeExtras();
 
@@ -2573,20 +2573,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     protected boolean isOffHeapValuesOnly() {
         return cctx.config().getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES;
-    }
-
-    /**
-     * @param ttl Time to live.
-     * @return Expiration time.
-     */
-    public static long toExpireTime(long ttl) {
-        long expireTime = ttl == 0 ? 0 : U.currentTimeMillis() + ttl;
-
-        // Account for overflow.
-        if (expireTime < 0)
-            expireTime = 0;
-
-        return expireTime;
     }
 
     /**
@@ -3085,7 +3071,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Override public synchronized V rawPut(V val, long ttl) {
         V old = this.val;
 
-        update(val, null, toExpireTime(ttl), ttl, nextVersion());
+        update(val, null, CU.toExpireTime(ttl), ttl, nextVersion());
 
         return old;
     }
@@ -3109,7 +3095,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             checkObsolete();
 
             if (isNew() || (!preload && deletedUnlocked())) {
-                long expTime = expireTime < 0 ? toExpireTime(ttl) : expireTime;
+                long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
                 if (cctx.portableEnabled())
                     val = (V)cctx.kernalContext().portable().detachPortable(val);
@@ -3203,7 +3189,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 long ttl = ttlExtras();
 
-                long expTime = toExpireTime(ttl);
+                long expTime = CU.toExpireTime(ttl);
 
                 // Detach value before index update.
                 if (cctx.portableEnabled())
@@ -3533,7 +3519,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             updateTtl(ttl);
 
             /*
-            TODO IGNITE-41.
+            TODO IGNITE-305.
             try {
                 if (var == null || ver.equals(version()))
                     updateTtl(ttl);

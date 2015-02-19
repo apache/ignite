@@ -1712,6 +1712,32 @@ public class GridCacheUtils {
     }
 
     /**
+     * Get TTL for load operation.
+     *
+     * @param plc Expiry policy.
+     * @return TTL for load operation or {@link #TTL_ZERO} in case of immediate expiration.
+     */
+    public static long ttlForLoad(ExpiryPolicy plc) {
+        if (plc != null) {
+            long ttl = toTtl(plc.getExpiryForCreation());
+
+            if (ttl == TTL_NOT_CHANGED)
+                ttl = TTL_ETERNAL;
+
+            return ttl;
+        }
+        else
+            return TTL_ETERNAL;
+    }
+
+    /**
+     * @return Expire time denoting a point in the past.
+     */
+    public static long expireTimeInPast() {
+        return U.currentTimeMillis() - 1L;
+    }
+
+    /**
      * Reads array from input stream.
      *
      * @param in Input stream.

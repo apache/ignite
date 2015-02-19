@@ -203,7 +203,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
         int part = aff.partition(mapper.affinityKey(queueName));
 
-        Collection<ClusterNode> nodes = grid(0).nodes();
+        Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
         Collection<ClusterNode> aff0 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
         Collection<ClusterNode> aff1 = nodes(aff, part, nodes);

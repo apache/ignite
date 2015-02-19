@@ -129,8 +129,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
-        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
+        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).cluster().nodes()));
+        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).cluster().nodes()));
 
         assertNotNull(n1);
         assertNotNull(n2);
@@ -202,8 +202,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).nodes()));
-        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).nodes()));
+        ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).cluster().nodes()));
+        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).cluster().nodes()));
 
         assertNotNull(n1);
         assertNotNull(n2);
@@ -375,7 +375,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         startGrids();
 
-        Collection<ClusterNode> nodes = new ArrayList<>(aff.nodes(aff.partition(1), grid(0).nodes()));
+        Collection<ClusterNode> nodes = new ArrayList<>(aff.nodes(aff.partition(1), grid(0).cluster().nodes()));
 
         ClusterNode primary = F.first(nodes);
 
@@ -425,12 +425,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         int key1 = 3;
         String val1 = Integer.toString(key1);
 
-        assertEquals(grid(0).localNode(), F.first(aff.nodes(aff.partition(key1), grid(0).nodes())));
+        assertEquals(grid(0).localNode(), F.first(aff.nodes(aff.partition(key1), grid(0).cluster().nodes())));
 
         int key2 = 1;
         String val2 = Integer.toString(key2);
 
-        assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).nodes())));
+        assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).cluster().nodes())));
 
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -507,12 +507,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         int key1 = 3;
         String val1 = Integer.toString(key1);
 
-        assertEquals(grid(0).localNode(), F.first(aff.nodes(aff.partition(key1), grid(0).nodes())));
+        assertEquals(grid(0).localNode(), F.first(aff.nodes(aff.partition(key1), grid(0).cluster().nodes())));
 
         int key2 = 1;
         String val2 = Integer.toString(key2);
 
-        assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).nodes())));
+        assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).cluster().nodes())));
 
         IgniteCache<Integer, String> cache = jcache(0);
 
