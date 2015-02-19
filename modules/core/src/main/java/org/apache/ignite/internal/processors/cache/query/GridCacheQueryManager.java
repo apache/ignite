@@ -1299,7 +1299,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (log.isDebugEnabled())
                         log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
                             incBackups + "priNode=" + U.id8(CU.primaryNode(cctx, key).id()) +
-                            ", node=" + U.id8(cctx.grid().localNode().id()) + ']');
+                            ", node=" + U.id8(cctx.localNode().id()) + ']');
 
                     if (val == null) {
                         if (log.isDebugEnabled())

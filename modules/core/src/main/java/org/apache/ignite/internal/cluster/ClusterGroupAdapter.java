@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -78,6 +79,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
+     * @param subjId Subject ID.
      * @param parent Parent of this projection.
      * @param ctx Grid kernal context.
      * @param p Predicate.
@@ -101,6 +103,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /**
      * @param parent Parent of this projection.
      * @param ctx Grid kernal context.
+     * @param subjId Subject ID.
      * @param ids Node IDs.
      */
     protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
@@ -122,6 +125,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
+     * @param subjId Subject ID.
      * @param parent Parent of this projection.
      * @param ctx Grid kernal context.
      * @param p Predicate.
@@ -165,27 +169,18 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * <tt>ctx.gateway().lightCheck()</tt>
-     */
-    protected void lightCheck() {
-        assert ctx != null;
-
-        ctx.gateway().lightCheck();
-    }
-
-    /**
      * Sets kernal context.
      *
      * @param ctx Kernal context to set.
      */
-    protected void setKernalContext(GridKernalContext ctx) {
+    public void setKernalContext(GridKernalContext ctx) {
         assert ctx != null;
         assert this.ctx == null;
 
         this.ctx = ctx;
 
         if (parent == null)
-            parent = ctx.grid();
+            parent = ctx.grid().cluster();
 
         gridName = ctx.gridName();
     }
@@ -668,8 +663,10 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         try {
             IgniteKernal g = IgnitionEx.gridx(gridName);
 
-            return ids != null ? new ClusterGroupAdapter(g, g.context(), subjId, ids) :
-                p != null ? new ClusterGroupAdapter(g, g.context(), subjId, p) : g;
+            ClusterGroup grp = g.cluster();
+
+            return ids != null ? new ClusterGroupAdapter(grp, g.context(), subjId, ids) :
+                p != null ? new ClusterGroupAdapter(grp, g.context(), subjId, p) : g;
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

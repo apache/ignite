@@ -250,6 +250,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check equal maps.
+     *
+     * @param map1 Map1.
+     * @param map2 Map2.
      */
     private static void checkEqualMaps(Map<ClusterNode, Collection> map1, Map<ClusterNode, Collection> map2) {
         assertEquals(map1.size(), map2.size());
@@ -263,6 +266,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check equal maps.
+     *
+     * @param map1 Map1.
+     * @param map2 Map2.
      */
     private static void checkEqualPartitionMaps(Map<Integer, ClusterNode> map1, Map<Integer, ClusterNode> map2) {
         assertEquals(map1.size(), map2.size());
@@ -278,6 +284,6 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      * @return Cluster nodes.
      */
     private Collection<ClusterNode> nodes() {
-        return grid(0).nodes();
+        return grid(0).cluster().nodes();
     }
 }

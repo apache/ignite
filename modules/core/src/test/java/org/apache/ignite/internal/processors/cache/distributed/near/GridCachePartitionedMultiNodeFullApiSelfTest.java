@@ -57,7 +57,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @return Affinity nodes for this cache.
      */
     public Collection<ClusterNode> affinityNodes() {
-        return grid(0).nodes();
+        return grid(0).cluster().nodes();
     }
 
     /**

@@ -24,16 +24,15 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.planner.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 
@@ -925,6 +924,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
         /** {@inheritDoc} */
+        @Override public IgniteClusterEx cluster() {
+            return (IgniteClusterEx)super.cluster();
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteFs igfsx(String name) {
             assert F.eq("igfs", name);
 
@@ -989,226 +993,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroupEx forSubjectId(UUID subjId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public ClusterNode localNode() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forLocal() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean pingNode(UUID nodeId) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long topologyVersion() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Collection<ClusterNode> topology(long topVer) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-            @Nullable Collection<? extends K> keys) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-            boolean restart, int timeout, int maxConn) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
-            Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-            int maxConn) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopNodes() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopNodes(Collection<UUID> ids) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void restartNodes() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void restartNodes(Collection<UUID> ids) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resetMetrics() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Ignite ignite() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forNode(ClusterNode node, ClusterNode... nodes) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forOthers(ClusterGroup prj) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forNodeIds(Collection<UUID> ids) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forNodeId(UUID id, UUID... ids) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forAttribute(String name, @Nullable String val) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forCacheNodes(String cacheName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forDataNodes(String cacheName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forClientNodes(String cacheName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forRemotes() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forHost(ClusterNode node) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forDaemons() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forRandom() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forOldest() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forYoungest() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> nodes() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public ClusterNode node(UUID nid) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public ClusterNode node() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePredicate<ClusterNode> predicate() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterMetrics metrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteCluster withAsync() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes) {
             return null;
         }
 

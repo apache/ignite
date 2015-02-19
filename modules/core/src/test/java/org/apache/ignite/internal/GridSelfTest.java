@@ -50,7 +50,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
-        return grid(0);
+        return grid(0).cluster();
     }
 
     /** {@inheritDoc} */
@@ -60,7 +60,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> remoteNodeIds() {
-        return F.nodeIds(grid(0).forRemotes().nodes());
+        return F.nodeIds(grid(0).cluster().forRemotes().nodes());
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
     public void testAsyncListen() throws Exception {
         final String msg = "HELLO!";
 
-        Ignite g = (Ignite)projection();
+        Ignite g = grid(0);
 
         final UUID locNodeId = g.cluster().localNode().id();
 
@@ -128,8 +128,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
 
         g.message().localListen(null, new P2<UUID, String>() {
-            @Override
-            public boolean apply(UUID nodeId, String msg) {
+            @Override public boolean apply(UUID nodeId, String msg) {
                 if (!locNodeId.equals(nodeId))
                     cnt.incrementAndGet();
 
@@ -153,7 +152,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         ClusterNode node2 = grid(2).localNode();
         ClusterNode node3 = grid(3).localNode();
 
-        ClusterGroup p1 = grid(0).forOthers(node0);
+        ClusterGroup p1 = grid(0).cluster().forOthers(node0);
 
         assertEquals(3, p1.nodes().size());
 
@@ -161,6 +160,6 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         assertEquals(1, p1.forOthers(node1, node2).nodes().size());
 
-        assertEquals(1, grid(0).forOthers(node1, node2, node3).nodes().size());
+        assertEquals(1, grid(0).cluster().forOthers(node1, node2, node3).nodes().size());
     }
 }

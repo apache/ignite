@@ -75,7 +75,7 @@ public class VisorComputeToggleMonitoringTask extends
             if (checkExplicitTaskMonitoring(ignite))
                 return true;
             else {
-                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.nodeLocalMap();
+                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                 VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 

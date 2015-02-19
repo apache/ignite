@@ -172,7 +172,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     private Collection<ClusterNode> keyNodes(Object key) {
         CacheConsistentHashAffinityFunction aff = affinity(0);
 
-        return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
+        return aff.nodes(aff.partition(key), grid(0).cluster().nodes(), 1);
     }
 
     /**
