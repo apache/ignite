@@ -30,7 +30,7 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**  Subject type. */
+    /** Subject type. */
     private final GridSecuritySubjectType subjType;
 
     /** Subject ID. */

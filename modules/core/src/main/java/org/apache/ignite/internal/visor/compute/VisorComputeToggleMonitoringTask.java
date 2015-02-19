@@ -43,7 +43,7 @@ public class VisorComputeToggleMonitoringTask extends
     @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) {
         Collection<Boolean> toggles = new HashSet<>();
 
-        for (ComputeJobResult res: results)
+        for (ComputeJobResult res : results)
             toggles.add(res.<Boolean>getData());
 
         // If all nodes return same result.

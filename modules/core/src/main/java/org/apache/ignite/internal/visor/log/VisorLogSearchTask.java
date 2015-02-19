@@ -58,7 +58,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
     /** {@inheritDoc} */
     @Nullable @Override protected IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
-            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) {
+        Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) {
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
         Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
@@ -66,7 +66,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
         for (ComputeJobResult result : results) {
             if (result.getException() != null)
                 exRes.add(new IgniteBiTuple<Exception, UUID>(result.getException(), result.getNode().id()));
-            else if(result.getData() != null) {
+            else if (result.getData() != null) {
                 Collection<VisorLogSearchResult> data = result.getData();
 
                 searchRes.addAll(data);
@@ -117,9 +117,9 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
     }
 
     /**
-     *  Job to perform search on node.
+     * Job to perform search on node.
      */
-    private static class VisorLogSearchJob extends VisorJob<VisorLogSearchArg,  Collection<VisorLogSearchResult>> {
+    private static class VisorLogSearchJob extends VisorJob<VisorLogSearchArg, Collection<VisorLogSearchResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -192,7 +192,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
                             searched.add(new GridTuple3<>(buf, line, 0));
 
-                            foundCnt ++;
+                            foundCnt++;
                         }
                     }
 
@@ -209,7 +209,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
+        @Override protected Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
             URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
@@ -254,11 +254,13 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
                             }
                         }
                     }
-                    catch (IOException ignored) {}
+                    catch (IOException ignored) {
+                    }
                 }
 
                 return results.isEmpty() ? null : results;
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException(e);
             }
         }

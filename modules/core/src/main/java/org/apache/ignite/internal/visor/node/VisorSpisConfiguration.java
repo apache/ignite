@@ -131,7 +131,7 @@ public class VisorSpisConfiguration implements Serializable {
         for (int i = 0; i < spis.length; i++)
             res[i] = collectSpiInfo(spis[i]);
 
-        return (IgniteBiTuple<String, Map<String, Object>>[]) res;
+        return (IgniteBiTuple<String, Map<String, Object>>[])res;
     }
 
     /**

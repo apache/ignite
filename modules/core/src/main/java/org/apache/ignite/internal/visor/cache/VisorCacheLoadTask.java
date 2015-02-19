@@ -68,7 +68,7 @@ public class VisorCacheLoadTask extends
 
             ExpiryPolicy plc = null;
 
-            for (String cacheName: cacheNames) {
+            for (String cacheName : cacheNames) {
                 IgniteCache cache = ignite.jcache(cacheName);
 
                 if (ttl > 0) {
@@ -77,7 +77,7 @@ public class VisorCacheLoadTask extends
 
                     cache = cache.withExpiryPolicy(plc);
                 }
-                
+
                 cache.loadCache(null, ldrArgs);
 
                 res.put(cacheName, cache.size());
