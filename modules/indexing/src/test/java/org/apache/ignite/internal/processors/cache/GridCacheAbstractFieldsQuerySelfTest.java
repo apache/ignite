@@ -680,7 +680,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     public void testQueryIntegersWithJoin() throws Exception {
         CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)((IgniteKernal)grid(0)).cache(null).queries()).createSqlFieldsQuery(
             "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true)
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -773,7 +773,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         for (int i = 0; i < 200; i++)
             assert cache.putx(i, i);
 
-        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0));
+        CacheQuery<List<?>> qry =
+            cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0).cluster());
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -907,7 +908,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
         CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
             "Integer")
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         q.pageSize(10);
         q.keepAll(false);

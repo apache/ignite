@@ -103,7 +103,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
 
         compute(g.cluster().forNode(rmt)).run(new CA() {
             @Override public void apply() {
-                message(grid().forNode(loc)).localListen(new IgniteBiPredicate<UUID, String>() {
+                message(grid().cluster().forNode(loc)).localListen(new IgniteBiPredicate<UUID, String>() {
                     @Override public boolean apply(UUID uuid, String s) {
                         System.out.println("Received test message [nodeId: " + uuid + ", s=" + s + ']');
 

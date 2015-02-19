@@ -619,7 +619,7 @@ class VisorTasksCommand {
     private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(prj.nodes.map(_.id()), VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null)))
@@ -827,7 +827,7 @@ class VisorTasksCommand {
             assert(taskName != null)
 
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null)))
@@ -1004,7 +1004,7 @@ class VisorTasksCommand {
             }
 
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid)))
@@ -1122,7 +1122,7 @@ class VisorTasksCommand {
     private def nodes(f: Long) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
@@ -1234,7 +1234,7 @@ class VisorTasksCommand {
     private def hosts(f: Long) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
@@ -1251,7 +1251,7 @@ class VisorTasksCommand {
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        val host = ignite.node(id).addresses.headOption
+                        val host = ignite.cluster.node(id).addresses.headOption
 
                         if (host.isDefined) {
                             var eSet = hMap.getOrElse(host.get, Set.empty[VisorExecution])

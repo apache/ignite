@@ -84,7 +84,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 res.taskMonitoringEnabled(arg.taskMonitoringEnabled());
 
                 if (arg.taskMonitoringEnabled()) {
-                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.nodeLocalMap();
+                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 
@@ -221,7 +221,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         VisorNodeDataCollectorTaskArg arg) {
         res.gridName(ignite.name());
 
-        res.topologyVersion(ignite.topologyVersion());
+        res.topologyVersion(ignite.cluster().topologyVersion());
 
         long start0 = U.currentTimeMillis();
 

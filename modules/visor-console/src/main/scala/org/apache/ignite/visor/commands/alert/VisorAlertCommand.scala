@@ -262,11 +262,12 @@ class VisorAlertCommand {
 
                         n match {
                             // Grid-wide metrics (not node specific).
-                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(ignite.nodes()).size)
+                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.metrics().getTotalCpus)
+                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.nodes().size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf,
+                                U.neighborhood(ignite.cluster.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
-                                () => (ignite.metrics().getAverageCpuLoad * 100).toLong)
+                                () => (ignite.cluster.metrics().getAverageCpuLoad * 100).toLong)
 
                             // Per-node current metrics.
                             case "aj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentActiveJobs)
@@ -344,7 +345,7 @@ class VisorAlertCommand {
                 override def apply(evt: Event): Boolean = {
                     val discoEvt = evt.asInstanceOf[DiscoveryEvent]
 
-                    val node = ignite.node(discoEvt.eventNode().id())
+                    val node = ignite.cluster.node(discoEvt.eventNode().id())
 
                     if (node != null)
                         alerts foreach (t => {

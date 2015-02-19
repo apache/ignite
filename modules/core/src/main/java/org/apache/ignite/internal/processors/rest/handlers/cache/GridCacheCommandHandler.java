@@ -347,7 +347,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((CacheProjection<Object, Object>)prj, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
@@ -385,7 +385,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
