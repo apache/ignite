@@ -1534,7 +1534,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 U.quiet(false,
                     "   __________  ________________ ",
                     "  /  _/ ___/ |/ /  _/_  __/ __/ ",
-                    " _/ // (_ /    // /  / / / _/   ",
+                    " _/ // (7 7    // /  / / / _/   ",
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
@@ -1554,7 +1554,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 log.info(NL + NL +
                     ">>>    __________  ________________  " + NL +
                     ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                    ">>>  _/ // (_ /    // /  / / / _/    " + NL +
+                    ">>>  _/ // (7 7    // /  / / / _/    " + NL +
                     ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                     ">>> " + NL +
                     ">>> " + ver + NL +
