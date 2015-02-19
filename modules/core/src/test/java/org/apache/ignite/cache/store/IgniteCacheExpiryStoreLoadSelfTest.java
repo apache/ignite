@@ -109,7 +109,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
         Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
 
-        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(0, cache.size());
     }
 
     /**
@@ -150,7 +150,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
         Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
 
-        assertEquals(0, cache.localSize(CachePeekMode.PRIMARY));
+        assertEquals(0, cache.localSize());
     }
 
     /**
@@ -176,7 +176,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
         Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
 
-        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(0, cache.size());
     }
 
     /**
