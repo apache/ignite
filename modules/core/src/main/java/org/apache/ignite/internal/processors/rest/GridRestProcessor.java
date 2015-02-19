@@ -461,7 +461,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         UUID clientId = req.clientId();
-        SecurityContext secCtx = sesMap.get(clientId);
+        SecurityContext secCtx = clientId == null ? null : sesMap.get(clientId);
 
         if (secCtx != null)
             return secCtx;
