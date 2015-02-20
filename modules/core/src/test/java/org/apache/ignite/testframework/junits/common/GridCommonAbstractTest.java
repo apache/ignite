@@ -105,10 +105,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param idx Grid index.
+     * @param cacheName Cache name.
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).cache(cacheName);
     }
 
     /**
@@ -253,6 +254,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
+     * @throws Exception If failed.
      */
     protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
         final AtomicReference<Exception> ex = new AtomicReference<>();
@@ -281,6 +283,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param key Keys.
      * @param replaceExistingValues Replace existing values.
+     * @throws Exception If failed.
      */
     protected static <K> void load(Cache<K, ?> cache, K key, boolean replaceExistingValues) throws Exception {
         loadAll(cache, Collections.singleton(key), replaceExistingValues);
@@ -421,7 +424,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Local node.
      */
     public static ClusterNode localNode(IgniteCache<?, ?> cache) {
-        return cache.unwrap(Ignite.class).cluster().node();
+        return cache.unwrap(Ignite.class).cluster().localNode();
     }
 
     /**
@@ -450,7 +453,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
     }
 
     /**
@@ -532,7 +535,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
     }
 
     /**

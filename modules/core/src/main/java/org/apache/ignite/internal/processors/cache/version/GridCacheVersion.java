@@ -149,9 +149,9 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
     }
 
     /**
-     * @return DR version.
+     * @return Conflict version.
      */
-    @Nullable public GridCacheVersion drVersion() {
+    @Nullable public GridCacheVersion conflictVersion() {
         return this; // Use current version.
     }
 

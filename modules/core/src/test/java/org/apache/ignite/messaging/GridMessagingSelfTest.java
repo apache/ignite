@@ -740,8 +740,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
         ignite2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
-            @Override
-            public boolean apply(UUID nodeId, Object msg) {
+            @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 

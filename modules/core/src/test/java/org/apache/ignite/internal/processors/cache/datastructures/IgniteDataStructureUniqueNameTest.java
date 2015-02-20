@@ -28,13 +28,18 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
  */
 public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractTest {
+    /** */
+    private static final String ATOMIC_CLOCK_CACHE_NAME = "atomicClockCache";
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -61,7 +66,43 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         cfg.setAtomicConfiguration(atomicCfg);
 
+        CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
+
+        assert ccfgs.length == 1 : ccfgs.length;
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setName(ATOMIC_CLOCK_CACHE_NAME);
+        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setAtomicWriteOrderMode(CLOCK);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        cfg.setCacheConfiguration(ccfgs[0], ccfg);
+
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueueAtomicClockCache() throws Exception {
+        final String queueName = "testQueueAtomicClockCache";
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                CollectionConfiguration colCfg = new CollectionConfiguration();
+
+                colCfg.setCacheName(ATOMIC_CLOCK_CACHE_NAME);
+
+                ignite(0).queue(queueName, 0, colCfg);
+
+                return null;
+            }
+        }, IgniteException.class, "IgniteQueue can not be used with ATOMIC cache with CLOCK write order mode " +
+            "(change write order mode to PRIMARY in configuration)");
+
+        assertNull(ignite(0).queue(queueName, 0, null));
     }
 
     /**

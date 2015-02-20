@@ -54,7 +54,7 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
 
         /** {@inheritDoc} */
         @Override protected Void run(Set<String> igfsNames) {
-            for (String igfsName: igfsNames)
+            for (String igfsName : igfsNames)
                 try {
                     ignite.fileSystem(igfsName).resetMetrics();
                 }

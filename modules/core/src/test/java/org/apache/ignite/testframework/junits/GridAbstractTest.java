@@ -581,9 +581,9 @@ public abstract class GridAbstractTest extends TestCase {
             boolean topOk = true;
 
             for (int i = 0; i < cnt; i++) {
-                if (cnt != grid(i).nodes().size()) {
+                if (cnt != grid(i).cluster().nodes().size()) {
                     U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
-                        "[name=" + grid(i).name() + ", size=" + grid(i).nodes().size() + ']');
+                        "[name=" + grid(i).name() + ", size=" + grid(i).cluster().nodes().size() + ']');
 
                     topOk = false;
 
@@ -1412,10 +1412,8 @@ public abstract class GridAbstractTest extends TestCase {
                 int cnt = 0;
 
                 for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                            cnt++;
-                    }
+                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                        cnt++;
 
                 numOfTests = cnt;
             }

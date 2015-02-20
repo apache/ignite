@@ -381,10 +381,10 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
                     @Override public Map<Integer, Object> collect(UUID nodeId) {
-                        return new HashMap<Integer, Object>();
+                        return new HashMap<>();
                     }
 
-                    @Override public void onExchange(Map<Integer, Object> data) {
+                    @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                         // No-op.
                     }
                 });

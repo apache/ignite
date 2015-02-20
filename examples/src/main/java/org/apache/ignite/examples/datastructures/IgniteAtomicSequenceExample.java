@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.lang.*;
 
-import java.util.*;
-
 /**
  * Demonstrates a simple usage of distributed atomic sequence.
  * <p>
@@ -47,27 +45,14 @@ public final class IgniteAtomicSequenceExample {
             System.out.println();
             System.out.println(">>> Cache atomic sequence example started.");
 
-            // Make name of sequence.
-            final String seqName = UUID.randomUUID().toString();
-
-            // Initialize atomic sequence.
-            IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
-
-            // First value of atomic sequence on this node.
-            long firstVal = seq.get();
-
-            System.out.println("Sequence initial value: " + firstVal);
-
             // Try increment atomic sequence on all cluster nodes. Note that this node is also part of the cluster.
-            ignite.compute().broadcast(new SequenceClosure(seqName));
+            ignite.compute().broadcast(new SequenceClosure("example-sequence"));
 
-            System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
-                seq.get() + ']');
+            System.out.println();
+            System.out.println("Finished atomic sequence example...");
+            System.out.println("Check all nodes for output (this node is also part of the cluster).");
+            System.out.println();
         }
-
-        System.out.println();
-        System.out.println("Finished atomic sequence example...");
-        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**
@@ -86,11 +71,21 @@ public final class IgniteAtomicSequenceExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            // Create sequence. Only one concurrent call will succeed in creation.
+            // Rest of the callers will get already created instance.
             IgniteAtomicSequence seq = Ignition.ignite().atomicSequence(seqName, 0, true);
+
+            // First value of atomic sequence on this node.
+            long firstVal = seq.get();
+
+            System.out.println("Sequence initial value on local node: " + firstVal);
 
             for (int i = 0; i < RETRIES; i++)
                 System.out.println("Sequence [currentValue=" + seq.get() + ", afterIncrement=" +
                     seq.incrementAndGet() + ']');
+
+            System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
+                seq.get() + ']');
         }
     }
 }

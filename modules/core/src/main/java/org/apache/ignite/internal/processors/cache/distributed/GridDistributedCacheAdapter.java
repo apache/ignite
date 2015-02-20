@@ -143,7 +143,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 topVer = ctx.affinity().affinityTopologyVersion();
 
                 // Send job to all data nodes.
-                Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
                     ctx.closures().callAsyncNoFailover(BROADCAST,
@@ -174,7 +174,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param topVer Topology version.
      */
     private void removeAllAsync(final GridFutureAdapter<Void> opFut, final long topVer) {
-        Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+        Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,

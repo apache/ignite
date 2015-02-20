@@ -423,10 +423,10 @@ public interface GridCacheEntryEx<K, V> {
      *      greater than passed in.
      * @param filter Optional filter to check.
      * @param drType DR type.
-     * @param drTtl DR TTL (if any).
-     * @param drExpireTime DR expire time (if any).
-     * @param drVer DR version (if any).
-     * @param drResolve If {@code true} then performs DR conflicts resolution.
+     * @param conflictTtl Conflict TTL (if any).
+     * @param conflictExpireTime Conflict expire time (if any).
+     * @param conflictVer DR version (if any).
+     * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
@@ -455,10 +455,10 @@ public interface GridCacheEntryEx<K, V> {
         boolean checkVer,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
-        long drTtl,
-        long drExpireTime,
-        @Nullable GridCacheVersion drVer,
-        boolean drResolve,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName

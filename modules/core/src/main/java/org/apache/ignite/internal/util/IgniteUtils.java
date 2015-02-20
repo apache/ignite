@@ -8813,7 +8813,7 @@ public abstract class IgniteUtils {
         UNSAFE.putBoolean(arr, off++, verEx);
 
         if (verEx) {
-            GridCacheVersion drVer = ver.drVersion();
+            GridCacheVersion drVer = ver.conflictVersion();
 
             assert drVer != null;
 

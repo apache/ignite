@@ -104,7 +104,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     // Always refresh topology so client see most up-to-date view.
                     ctx.discovery().alive(id);
 
-                    node = ctx.grid().node(id);
+                    node = ctx.grid().cluster().node(id);
 
                     if (ip != null && node != null && !containsIp(node.addresses(), ip))
                         node = null;

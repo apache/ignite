@@ -65,7 +65,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         assertEquals(4, cache0.size());
 
         CacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
-            "salary < 2000").projection(grid(0).forLocal());
+            "salary < 2000").projection(grid(0).cluster().forLocal());
 
         // Include backup entries.
         qry.includeBackups(true);
@@ -143,7 +143,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         assertEquals(4, cache0.size());
 
-        assert grid(0).nodes().size() == gridCount();
+        assert grid(0).cluster().nodes().size() == gridCount();
 
         CacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
             "salary < 2000");
