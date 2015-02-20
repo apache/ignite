@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cluster;
 
-import org.jetbrains.annotations.*;
-
 import java.util.concurrent.*;
 
 /**
@@ -35,26 +33,4 @@ import java.util.concurrent.*;
  * You can get an instance of {@code GridNodeLocalMap} by calling {@link org.apache.ignite.IgniteCluster#nodeLocalMap()} method.
  */
 public interface ClusterNodeLocalMap<K, V> extends ConcurrentMap<K, V> {
-    /**
-     * Gets the value with given key. If that value does not exist, calls given closure
-     * to get the default value, puts it into the map and returns it. If closure is {@code null}
-     * return {@code null}.
-     *
-     * @param key Key to get the value for.
-     * @param dflt Default value producing closure.
-     * @return Value for the key or the value produced by the closure if key
-     *      does not exist in the map. Return {@code null} if key is not found and
-     *      closure is {@code null}.
-     */
-    public V addIfAbsent(K key, @Nullable Callable<V> dflt);
-
-    /**
-     * Unlike its sibling method {@link #putIfAbsent(Object, Object)} this method returns
-     * current mapping from the map.
-     *
-     * @param key Key.
-     * @param val Value to put if one does not exist.
-     * @return Current mapping for a given key.
-     */
-    public V addIfAbsent(K key, V val);
 }
