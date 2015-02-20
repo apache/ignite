@@ -17,6 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.nio.*;
 
@@ -145,6 +147,19 @@ public abstract class MessageAdapter implements Serializable {
         IGNITE_UUID,
 
         /** Message. */
-        MSG
+        MSG;
+
+        /** Enum values. */
+        private static final Type[] VALS = values();
+
+        /**
+         * Efficiently gets enumerated value from its ordinal.
+         *
+         * @param ord Ordinal value.
+         * @return Enumerated value.
+         */
+        @Nullable public static Type fromOrdinal(int ord) {
+            return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+        }
     }
 }

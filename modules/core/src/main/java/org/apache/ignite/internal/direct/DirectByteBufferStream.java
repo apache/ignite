@@ -955,7 +955,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = (Object[])Array.newInstance(itemCls, readSize);
+                objArr = itemCls != null ? (Object[])Array.newInstance(itemCls, readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
