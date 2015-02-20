@@ -777,6 +777,7 @@ object VisorCacheCommand {
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
         val writeBehind = cfg.writeBehind()
+        val queryCfg = cfg.queryConfiguration()
 
         val cacheT = VisorTextTable()
 
@@ -786,6 +787,8 @@ object VisorCacheCommand {
         cacheT += ("Atomicity Mode", cfg.atomicityMode)
         cacheT += ("Atomic Sequence Reserve Size", cfg.atomicSequenceReserveSize)
         cacheT += ("Atomic Write Ordering Mode", cfg.atomicWriteOrderMode)
+        cacheT += ("Statistic Enabled", cfg.statisticsEnabled())
+        cacheT += ("Management Enabled", cfg.managementEnabled())
 
         cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
@@ -793,6 +796,7 @@ object VisorCacheCommand {
         cacheT += ("Write Synchronization Mode", cfg.writeSynchronizationMode)
         cacheT += ("Swap Enabled", cfg.swapEnabled())
         cacheT += ("Invalidate", cfg.invalidate())
+        cacheT += ("Read Through", cfg.readThrough())
         cacheT += ("Start Size", cfg.startSize())
 
         cacheT += ("Transaction Manager Lookup", cfg.transactionManagerLookupClassName())
@@ -833,12 +837,14 @@ object VisorCacheCommand {
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
+        cacheT += ("Metadata type count", cfg.typeMeta().size())
         cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
         cacheT += ("Cache Interceptor", cfg.interceptor())
 
         cacheT += ("Store Enabled", storeCfg.enabled())
         cacheT += ("Store", storeCfg.store())
         cacheT += ("Store Values In Bytes", storeCfg.valueBytes())
+        cacheT += ("Configured JDBC Store", cfg.jdbcStore())
 
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
 
@@ -850,6 +856,20 @@ object VisorCacheCommand {
 
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
+
+        cacheT += ("Loader Factory Class Name", cfg.loaderFactory())
+        cacheT += ("Writer Factory Class Name", cfg.writerFactory())
+        cacheT += ("Expiry Policy Factory Class Name", cfg.expiryPolicyFactory())
+
+        if (queryCfg != null) {
+            cacheT +=("Query Type Resolver Class Name", queryCfg.typeResolver())
+            cacheT +=("Indexing Primitive Key", queryCfg.indexPrimitiveKey())
+            cacheT +=("Indexing Primitive Value", queryCfg.indexPrimitiveValue())
+            cacheT +=("Fixed Typing", queryCfg.indexFixedTyping())
+            cacheT +=("Escaped Names", queryCfg.escapeAll())
+        }
+        else
+            cacheT += ("Query configuration", queryCfg)
 
         println(title)
 

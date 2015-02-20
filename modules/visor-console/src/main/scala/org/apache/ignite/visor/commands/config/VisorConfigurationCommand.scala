@@ -241,7 +241,6 @@ class VisorConfigurationCommand {
             cmnT += ("Quiet mode", bool2Str(cfg.basic().quiet()))
             cmnT += ("Success filename", safe(cfg.basic().successFile(), DFLT))
             cmnT += ("Update notification", bool2Str(cfg.basic().updateNotifier()))
-            cmnT += ("Security credentials", safe(cfg.basic().securityCredentialsProvider(), DFLT))
             cmnT += ("Include properties", safe(cfg.includeProperties(), DFLT))
 
             cmnT.render()
@@ -279,6 +278,7 @@ class VisorConfigurationCommand {
             spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
             spisT += ("Load balancings", spisClass(cfg.spis().loadBalancingSpis()))
             spisT += ("Swap spaces", spiClass(cfg.spis().swapSpaceSpi()))
+            spisT += ("Indexing", spisClass(cfg.spis().indexingSpis()))
 
             spisT.render()
 
