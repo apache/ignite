@@ -1780,9 +1780,9 @@ public class GridCacheUtils {
 
     /**
      * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
+     * @return CacheException runtime exception, never null.
      */
-    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
+    @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
