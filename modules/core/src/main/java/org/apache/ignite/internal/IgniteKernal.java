@@ -1569,6 +1569,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /**
+     * Plugin information.
+     */
     private String pluginInfo() {
         Collection<PluginProvider> plugins = ctx.plugins().allProviders();
 
@@ -1584,6 +1587,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return info;
     }
 
+    /**
+     * Print plugin information.
+     */
     private void ackPluginsInfo() {
         if (log.isQuiet())
             U.quiet(false, pluginInfo().split(NL + ">>> "));

@@ -1875,7 +1875,7 @@ public class IgniteConfiguration {
      * @return Plugin configurations.
      */
     public Collection<? extends PluginConfiguration> getPluginConfigurations() {
-        return pluginCfgs == null ? Collections.<PluginConfiguration>emptyList() : pluginCfgs;
+        return pluginCfgs;
     }
 
     /**
