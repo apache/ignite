@@ -708,6 +708,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
+            ackPluginsInfo();
+
             // Off-heap processor has no dependencies.
             startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
 
@@ -1534,18 +1536,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
             if (log.isQuiet()) {
-                List<String> info = new ArrayList<>();
-                info.add("   __________  ________________ ");
-                info.add("  /  _/ ___/ |/ /  _/_  __/ __/ ");
-                info.add(" _/ // (7 7    // /  / / / _/   ");
-                info.add("/___/\\___/_/|_/___/ /_/ /___/  ");
-                info.add(" ");
-                info.add(COPYRIGHT);
-                info.addAll(Arrays.asList(pluginInfo().split(NL + ">>> ")));
-                info.add("");
-                info.add("Quiet mode.");
-
-                U.quiet(false, info.toArray(new String[info.size()]));
+                U.quiet(false,
+                    "   __________  ________________ ",
+                    "  /  _/ ___/ |/ /  _/_  __/ __/ ",
+                    " _/ // (7 7    // /  / / / _/   ",
+                    "/___/\\___/_/|_/___/ /_/ /___/  ",
+                    " ",
+                    ver,
+                    COPYRIGHT,
+                    "",
+                    "Quiet mode.");
 
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
@@ -1555,34 +1555,41 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "");
             }
 
-            String info = NL + NL +
-                ">>>    __________  ________________  " + NL +
-                ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                ">>>  _/ // (7 7    // /  / / / _/    " + NL +
-                ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                ">>> " + NL +
-                ">>> " + ver + NL +
-                ">>> " + COPYRIGHT + NL +
-                ">>> " + pluginInfo();
-
-            if (log.isInfoEnabled())
-                log.info(info);
+            if (log.isInfoEnabled()) {
+                log.info(NL + NL +
+                        ">>>    __________  ________________  " + NL +
+                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                        ">>> " + NL +
+                        ">>> " + ver + NL +
+                        ">>> " + COPYRIGHT + NL
+                );
+            }
         }
     }
 
     private String pluginInfo() {
-        Collection<? extends PluginConfiguration> pluginsCfg = cfg.getPluginConfigurations();
+        Collection<PluginProvider> plugins = ctx.plugins().allProviders();
 
-        if (pluginsCfg.size() == 0)
-            return PLUGIN_INFO + "none";
+        if (plugins.size() == 0)
+            return NL + ">>>    " + PLUGIN_INFO + "none";
 
-        String info = PLUGIN_INFO + NL;
+        String info = NL + ">>>    " + PLUGIN_INFO + NL;
 
-        for (PluginConfiguration cfg : pluginsCfg)
-            info += ">>>    " + cfg.name() + " " + cfg.version() + NL +
-                ">>>    " + cfg.copyright();
+        for (PluginProvider plugin : plugins)
+            info += ">>>    " + plugin.name() + " " + plugin.version() + NL +
+                ">>>    " + plugin.copyright();
 
         return info;
+    }
+
+    private void ackPluginsInfo() {
+        if (log.isQuiet())
+            U.quiet(false, pluginInfo().split(NL + ">>> "));
+
+        if (log.isInfoEnabled())
+            log.info(">>> " + pluginInfo());
     }
 
     /**
