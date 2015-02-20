@@ -643,6 +643,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
             }
         }
 
+        if (ctx.portableEnabled())
+            val = (V)ctx.marshalToPortable(val);
+
         return val;
     }
 

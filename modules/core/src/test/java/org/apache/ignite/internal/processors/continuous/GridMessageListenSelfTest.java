@@ -138,7 +138,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
-        listen(grid(0), null, true);
+        listen(grid(0).cluster(), null, true);
 
         send();
 
@@ -157,7 +157,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNonNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
-        listen(grid(0), null, true);
+        listen(grid(0).cluster(), null, true);
 
         send();
 
@@ -176,7 +176,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testStopListen() throws Exception {
         latch = new CountDownLatch(GRID_CNT);
 
-        listen(grid(0), null, false);
+        listen(grid(0).cluster(), null, false);
 
         send();
 
@@ -201,7 +201,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT - 1));
 
-        listen(grid(0).forRemotes(), null, true);
+        listen(grid(0).cluster().forRemotes(), null, true);
 
         send();
 
@@ -220,7 +220,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNodeJoin() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        listen(grid(0), null, true);
+        listen(grid(0).cluster(), null, true);
 
         try {
             Ignite g = startGrid("anotherGrid");
@@ -252,7 +252,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNodeJoinWithProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
-        listen(grid(0).forAttribute(INC_ATTR, null), null, true);
+        listen(grid(0).cluster().forAttribute(INC_ATTR, null), null, true);
 
         try {
             include = true;
@@ -334,7 +334,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        grid(0).message().remoteListen(null, new Actor(grid(0)));
+        grid(0).message().remoteListen(null, new Actor(grid(0).cluster()));
 
         try {
             Ignite g = startGrid("anotherGrid");

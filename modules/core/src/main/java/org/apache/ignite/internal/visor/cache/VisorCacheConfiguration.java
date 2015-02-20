@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.node.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -146,22 +147,15 @@ public class VisorCacheConfiguration implements Serializable {
     /** Class name of expiry policy factory. */
     private String expiryPlcFactory;
 
+    /** Query configuration. */
+    private VisorCacheQueryConfiguration qryCfg;
+
     /**
      * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
     public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
-        Collection<CacheTypeMetadata> cacheMetadata = ccfg.getTypeMetadata();
-
-        if (cacheMetadata == null)
-            cacheMetadata = Collections.emptyList();
-
-        Collection<VisorCacheTypeMetadata> typeMeta = new ArrayList<>(cacheMetadata!= null ? cacheMetadata.size() : 0);
-
-        for (CacheTypeMetadata m: cacheMetadata)
-            typeMeta.add(VisorCacheTypeMetadata.from(m));
-
         GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(ccfg.getName()).context();
 
         boolean jdbcStore = cctx.store().configuredStore() instanceof CacheAbstractJdbcStore;
@@ -204,6 +198,8 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.loaderFactory(compactClass(ccfg.getCacheLoaderFactory()));
         cfg.writerFactory(compactClass(ccfg.getCacheWriterFactory()));
         cfg.expiryPolicyFactory(compactClass(ccfg.getExpiryPolicyFactory()));
+
+        cfg.queryConfiguration(VisorCacheQueryConfiguration.from(ccfg.getQueryConfiguration()));
 
         return cfg;
     }
@@ -373,8 +369,8 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @param qryIdxEnabled New flag indicating whether Ignite should attempt to index value and/or key instances
-     * stored in cache.
+     * @param qryIdxEnabled New flag indicating whether Ignite should attempt to index value and/or key instances stored
+     * in cache.
      */
     public void queryIndexEnabled(boolean qryIdxEnabled) {
         this.qryIdxEnabled = qryIdxEnabled;
@@ -619,7 +615,7 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return  {@code true} if cache has JDBC store.
+     * @return {@code true} if cache has JDBC store.
      */
     public boolean jdbcStore() {
         return jdbcStore;
@@ -661,14 +657,14 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return  {@code true} if cache statistics enabled.
+     * @return {@code true} if cache statistics enabled.
      */
     public boolean statisticsEnabled() {
         return statisticsEnabled;
     }
 
     /**
-     * @param statisticsEnabled  {@code true} if cache statistics enabled.
+     * @param statisticsEnabled {@code true} if cache statistics enabled.
      */
     public void statisticsEnabled(boolean statisticsEnabled) {
         this.statisticsEnabled = statisticsEnabled;
@@ -733,5 +729,19 @@ public class VisorCacheConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorCacheConfiguration.class, this);
+    }
+
+    /**
+     * @return Cache query configuration.
+     */
+    public VisorCacheQueryConfiguration queryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * @param qryCfg New cache query configuration.
+     */
+    public void queryConfiguration(VisorCacheQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 }

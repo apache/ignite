@@ -59,12 +59,12 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
             try {
                 Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-                for(GridCache c : ignite.cachesx()) {
+                for (GridCache c : ignite.cachesx()) {
                     if (cacheNames.contains(c.name()))
                         futs.add(c.forceRepartition());
                 }
 
-                for (IgniteInternalFuture f: futs)
+                for (IgniteInternalFuture f : futs)
                     f.get();
 
                 return null;

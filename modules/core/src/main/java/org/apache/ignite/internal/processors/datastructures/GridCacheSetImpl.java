@@ -118,7 +118,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-            qry.projection(ctx.grid().forNodes(nodes));
+            qry.projection(ctx.grid().cluster().forNodes(nodes));
 
             Iterable<Integer> col = (Iterable<Integer>)qry.execute(new SumReducer()).get();
 
@@ -349,7 +349,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-            qry.projection(ctx.grid().forNodes(nodes));
+            qry.projection(ctx.grid().cluster().forNodes(nodes));
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 

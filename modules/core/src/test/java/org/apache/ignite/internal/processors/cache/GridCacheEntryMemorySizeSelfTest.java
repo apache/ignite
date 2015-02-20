@@ -188,7 +188,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -242,7 +242,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 

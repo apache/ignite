@@ -162,7 +162,7 @@ class VisorKillCommand {
                 }
                 else if (id.isDefined)
                     try {
-                        node = ignite.node(java.util.UUID.fromString(id.get))
+                        node = ignite.cluster.node(java.util.UUID.fromString(id.get))
 
                         if (node == null)
                             scold("'id' does not match any node : " + args).^^
@@ -185,7 +185,7 @@ class VisorKillCommand {
                 val op = if (restart) "restart" else "kill"
 
                 try
-                    killOrRestart(if (node == null) ignite.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
+                    killOrRestart(if (node == null) ignite.cluster.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
                     case _: IgniteException => scold("Failed to " + op + " due to system error.").^^
                 }
@@ -219,7 +219,7 @@ class VisorKillCommand {
 
         val op = if (restart) "restart" else "kill"
 
-        if (nodes.size() == ignite.nodes().size())
+        if (nodes.size == ignite.cluster.nodes().size())
             ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" =>  ask("You are about to " + op + " ALL nodes. " +
                     "Are you 100% sure? (y/n) [n]: ", "n") match {
@@ -230,7 +230,7 @@ class VisorKillCommand {
                 case "n" | "N" => break()
                 case x => nl(); warn("Invalid answer: " + x); break()
             }
-        else if (nodes.size() > 1)
+        else if (nodes.size > 1)
             ask("Are you sure you want to " + op + " several nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" => ()
                 case "n" | "N" => break()
@@ -244,9 +244,9 @@ class VisorKillCommand {
             }
 
         if (restart)
-            ignite.restartNodes(nodes)
+            ignite.cluster.restartNodes(nodes)
         else
-            ignite.stopNodes(nodes)
+            ignite.cluster.stopNodes(nodes)
     }
 
     /**

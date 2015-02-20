@@ -129,7 +129,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
-                    if (grid(i).nodes().size() != gridCount())
+                    if (grid(i).cluster().nodes().size() != gridCount())
                         return false;
                 }
 
@@ -138,7 +138,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }, 3000);
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(gridCount(), grid(i).nodes().size());
+            assertEquals(gridCount(), grid(i).cluster().nodes().size());
 
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
@@ -416,7 +416,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -483,14 +483,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.setBufferSize(5);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            ClusterNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).cluster().forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
 
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -569,14 +569,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.setTimeInterval(3000);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            ClusterNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).cluster().forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
 
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 

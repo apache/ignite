@@ -1854,7 +1854,7 @@ public class IgnitionEx {
                     Class<?> log4jCls;
 
                     try {
-                        log4jCls = Class.forName("org.apache.ignite.logger.log4j.IgniteLog4jLogger");
+                        log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
                     }
                     catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                         log4jCls = null;
@@ -1909,7 +1909,7 @@ public class IgnitionEx {
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 if (log4jInitErr != null)
-                    U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "
+                    U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
                         + log4jInitErr.getCause());
 
                 return cfgLog;

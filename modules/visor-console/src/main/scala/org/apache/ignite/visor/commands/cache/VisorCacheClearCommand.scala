@@ -101,7 +101,7 @@ class VisorCacheClearCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.forNode(node.get) else ignite.forCacheNodes(cacheName)
+        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -118,7 +118,7 @@ class VisorCacheClearCommand {
         t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
         prj.nodes().headOption.foreach(node => {
-            val res = ignite.compute(ignite.forNode(node))
+            val res = ignite.compute(ignite.cluster.forNode(node))
                 .withName("visor-cclear-task")
                 .withNoFailover()
                 .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheName))
