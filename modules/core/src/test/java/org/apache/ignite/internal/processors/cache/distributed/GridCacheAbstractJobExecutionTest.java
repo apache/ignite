@@ -79,10 +79,12 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        CacheProjection<String, int[]> cache = ((IgniteKernal)grid(0)).cache(null).flagsOn(SYNC_COMMIT).
-            projection(String.class, int[].class);
+        for (int i = 0; i < GRID_CNT; i++) {
+            CacheProjection<String, int[]> cache = ((IgniteKernal)grid(i)).cache(null).flagsOn(SYNC_COMMIT).
+                projection(String.class, int[].class);
 
-        cache.removeAll();
+            cache.localRemoveAll();
+        }
 
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);

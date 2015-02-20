@@ -1338,7 +1338,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         expireTime = CU.expireTimeInPast();
                     }
                     else if (ttl == CU.TTL_NOT_CHANGED)
-                        ttl = 0;
+                        ttl = CU.TTL_ETERNAL;
                     else
                         expireTime = CU.toExpireTime(ttl);
                 }
@@ -1441,8 +1441,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             boolean hadVal = hasValueUnlocked();
 
-            long ttl = 0;
-            long expireTime = 0;
+            long ttl = CU.TTL_ETERNAL;
+            long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
             if (op == GridCacheOperation.UPDATE) {
                 if (expiryPlc != null) {
@@ -1450,15 +1450,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     if (ttl == CU.TTL_NOT_CHANGED) {
                         ttl = ttlExtras();
-
                         expireTime = expireTimeExtras();
                     }
-                    else
+                    else if (ttl != CU.TTL_ZERO)
                         expireTime = CU.toExpireTime(ttl);
                 }
                 else {
                     ttl = ttlExtras();
-
                     expireTime = expireTimeExtras();
                 }
             }
@@ -1479,6 +1477,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
                 updateIndex(updated, null, expireTime, ver, old);
+
+                assert ttl != CU.TTL_ZERO;
 
                 update(updated, null, expireTime, ttl, ver);
 
