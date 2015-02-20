@@ -1320,10 +1320,6 @@ public class IgnitionEx {
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
-            /*
-             * Set up all defaults and perform all checks.
-             */
-
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
