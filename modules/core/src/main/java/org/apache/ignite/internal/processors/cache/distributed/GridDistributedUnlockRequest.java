@@ -122,7 +122,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)9))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -171,7 +171,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 9;
     }
 
     /** {@inheritDoc} */

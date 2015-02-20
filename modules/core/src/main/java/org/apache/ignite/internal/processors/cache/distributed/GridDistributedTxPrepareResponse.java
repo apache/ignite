@@ -156,7 +156,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)10))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -219,7 +219,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 10;
     }
 
     /** {@inheritDoc} */

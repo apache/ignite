@@ -214,7 +214,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)15))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -319,6 +319,6 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 15;
     }
 }

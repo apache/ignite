@@ -110,7 +110,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)3))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -187,6 +187,6 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 3;
     }
 }

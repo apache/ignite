@@ -80,7 +80,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)4))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -129,6 +129,6 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 4;
     }
 }

@@ -119,6 +119,9 @@ public class MessageCodeGenerator {
     private final String srcDir;
 
     /** */
+    private int totalFieldCnt;
+
+    /** */
     private List<Field> fields;
 
     /** */
@@ -225,6 +228,7 @@ public class MessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
+            boolean fieldCntFound = false;
 
             while ((line = rdr.readLine()) != null) {
                 if (!skip) {
@@ -244,6 +248,13 @@ public class MessageCodeGenerator {
 
                         readFound = true;
                     }
+                    else if (line.contains("public byte fieldsCount()")) {
+                        src.add(TAB + TAB + "return " + totalFieldCnt + ";");
+
+                        skip = true;
+
+                        fieldCntFound = true;
+                    }
                 }
                 else if (line.startsWith(TAB + "}")) {
                     src.add(line);
@@ -257,6 +268,9 @@ public class MessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
+
+            if (!fieldCntFound)
+                System.out.println("    fieldCount method doesn't exist.");
         }
         finally {
             if (rdr != null)
@@ -304,12 +318,14 @@ public class MessageCodeGenerator {
 
         int state = startState(cls);
 
+        totalFieldCnt = state + fields.size();
+
         indent = 2;
 
         boolean hasSuper = cls.getSuperclass() != BASE_CLS;
 
-        start(write, hasSuper ? "writeTo" : null, true, state + fields.size());
-        start(read, hasSuper ? "readFrom" : null, false, 0);
+        start(write, hasSuper ? "writeTo" : null, true);
+        start(read, hasSuper ? "readFrom" : null, false);
 
         indent++;
 
@@ -358,9 +374,8 @@ public class MessageCodeGenerator {
      * @param code Code lines.
      * @param superMtd Super class method name.
      * @param write Whether write code is generated.
-     * @param fieldCnt Fields count.
      */
-    private void start(Collection<String> code, @Nullable String superMtd, boolean write, int fieldCnt) {
+    private void start(Collection<String> code, @Nullable String superMtd, boolean write) {
         assert code != null;
 
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
@@ -391,7 +406,7 @@ public class MessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeHeader", "directType()", "(byte)" + fieldCnt);
+            returnFalseIfFailed(code, "writer.writeHeader", "directType()", "fieldsCount()");
 
             code.add(EMPTY);
             code.add(builder().a("writer.onHeaderWritten();").toString());

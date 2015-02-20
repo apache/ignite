@@ -59,7 +59,7 @@ public class GridStreamerCancelRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)1))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -105,6 +105,6 @@ public class GridStreamerCancelRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 1;
     }
 }

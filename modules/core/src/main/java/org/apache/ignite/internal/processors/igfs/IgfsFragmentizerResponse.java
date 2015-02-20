@@ -62,7 +62,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)1))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -111,6 +111,6 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 1;
     }
 }

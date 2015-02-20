@@ -209,7 +209,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)9))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -328,7 +328,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 9;
     }
 
     /** {@inheritDoc} */

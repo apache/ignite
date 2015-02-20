@@ -209,7 +209,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)7))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -339,7 +339,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 7;
     }
 
     /** {@inheritDoc} */

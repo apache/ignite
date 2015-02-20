@@ -154,7 +154,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)7))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -288,6 +288,6 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 7;
     }
 }

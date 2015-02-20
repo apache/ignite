@@ -121,7 +121,7 @@ public class GridTaskResultResponse extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)4))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -209,6 +209,6 @@ public class GridTaskResultResponse extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 4;
     }
 }

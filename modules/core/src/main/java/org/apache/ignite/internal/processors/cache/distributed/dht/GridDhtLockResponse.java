@@ -206,7 +206,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)15))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -297,7 +297,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 15;
     }
 
     /** {@inheritDoc} */

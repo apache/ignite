@@ -162,7 +162,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)4))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -250,7 +250,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 4;
     }
 
     /** {@inheritDoc} */

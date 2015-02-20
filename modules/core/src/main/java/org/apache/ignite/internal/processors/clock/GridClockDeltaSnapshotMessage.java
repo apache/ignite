@@ -76,7 +76,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)2))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -136,7 +136,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 2;
     }
 
     /** {@inheritDoc} */

@@ -284,7 +284,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)11))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -361,7 +361,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 11;
     }
 
     /** {@inheritDoc} */

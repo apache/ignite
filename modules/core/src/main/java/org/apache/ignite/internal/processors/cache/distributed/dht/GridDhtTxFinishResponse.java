@@ -76,7 +76,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)6))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -125,6 +125,6 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 6;
     }
 }

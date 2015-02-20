@@ -53,7 +53,7 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)0))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -74,6 +74,6 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 0;
     }
 }

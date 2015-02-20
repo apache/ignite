@@ -416,7 +416,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)21))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -746,7 +746,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 21;
     }
 
     /** {@inheritDoc} */

@@ -121,7 +121,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)8))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -198,7 +198,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 8;
     }
 
     /** {@inheritDoc} */

@@ -207,7 +207,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), (byte)10))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -340,7 +340,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0; // TODO: implement.
+        return 10;
     }
 
     /** {@inheritDoc} */
