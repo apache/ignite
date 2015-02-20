@@ -1579,8 +1579,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         String info = PLUGIN_INFO + NL;
 
         for (PluginConfiguration cfg : pluginsCfg)
-            info += ">>> " + cfg.name() + " " + cfg.version() + NL +
-                ">>> " + cfg.copyright();
+            info += ">>>    " + cfg.name() + " " + cfg.version() + NL +
+                ">>>    " + cfg.copyright();
 
         return info;
     }
