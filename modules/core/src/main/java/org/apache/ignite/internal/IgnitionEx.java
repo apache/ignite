@@ -1488,7 +1488,95 @@ public class IgnitionEx {
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
-            copySpis(cfg, myCfg, startCtx.single());
+            /*
+             * Initialize default SPI implementations.
+             */
+            CommunicationSpi commSpi = cfg.getCommunicationSpi();
+            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
+            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
+            CollisionSpi colSpi = cfg.getCollisionSpi();
+            DeploymentSpi deploySpi = cfg.getDeploymentSpi();
+            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
+            FailoverSpi[] failSpi = cfg.getFailoverSpi();
+            LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
+            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
+            IndexingSpi indexingSpi = cfg.getIndexingSpi();
+
+            if (commSpi == null)
+                commSpi = new TcpCommunicationSpi();
+
+            if (discoSpi == null)
+                discoSpi = new TcpDiscoverySpi();
+
+            if (discoSpi instanceof TcpDiscoverySpi) {
+                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
+
+                if (tcpDisco.getIpFinder() == null)
+                    tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
+            }
+
+            if (evtSpi == null)
+                evtSpi = new MemoryEventStorageSpi();
+
+            if (colSpi == null)
+                colSpi = new NoopCollisionSpi();
+
+            if (deploySpi == null)
+                deploySpi = new LocalDeploymentSpi();
+
+            if (cpSpi == null)
+                cpSpi = new CheckpointSpi[] {new NoopCheckpointSpi()};
+
+            if (failSpi == null)
+                failSpi = new FailoverSpi[] {new AlwaysFailoverSpi()};
+
+            if (loadBalancingSpi == null)
+                loadBalancingSpi = new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()};
+
+            if (swapspaceSpi == null) {
+                boolean needSwap = false;
+
+                CacheConfiguration[] caches = cfg.getCacheConfiguration();
+
+                if (caches != null) {
+                    for (CacheConfiguration c : caches) {
+                        if (c.isSwapEnabled()) {
+                            needSwap = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                swapspaceSpi = needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi();
+            }
+
+            if (indexingSpi == null)
+                indexingSpi = new NoopIndexingSpi();
+
+            myCfg.setCommunicationSpi(commSpi);
+            myCfg.setDiscoverySpi(discoSpi);
+            myCfg.setCheckpointSpi(cpSpi);
+            myCfg.setEventStorageSpi(evtSpi);
+            myCfg.setDeploymentSpi(deploySpi);
+            myCfg.setFailoverSpi(failSpi);
+            myCfg.setCollisionSpi(colSpi);
+            myCfg.setLoadBalancingSpi(loadBalancingSpi);
+            myCfg.setSwapSpaceSpi(swapspaceSpi);
+            myCfg.setIndexingSpi(indexingSpi);
+
+            // Ensure that SPIs support multiple grid instances, if required.
+            if (!startCtx.single()) {
+                ensureMultiInstanceSupport(deploySpi);
+                ensureMultiInstanceSupport(commSpi);
+                ensureMultiInstanceSupport(discoSpi);
+                ensureMultiInstanceSupport(cpSpi);
+                ensureMultiInstanceSupport(evtSpi);
+                ensureMultiInstanceSupport(colSpi);
+                ensureMultiInstanceSupport(failSpi);
+                ensureMultiInstanceSupport(loadBalancingSpi);
+                ensureMultiInstanceSupport(swapspaceSpi);
+            }
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
@@ -1496,12 +1584,12 @@ public class IgnitionEx {
 
             final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
 
-            final boolean clientDisco = myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
+            final boolean clientDisco = discoSpi instanceof TcpClientDiscoverySpi;
 
             CacheConfiguration[] copies;
 
             if (cacheCfgs != null && cacheCfgs.length > 0) {
-                if (!U.discoOrdered(myCfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
+                if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
                         "like GridTcpDiscoverySpi)");
@@ -1706,99 +1794,6 @@ public class IgnitionEx {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
                         "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
-            }
-        }
-
-        private void copySpis(IgniteConfiguration cfg, IgniteConfiguration myCfg, boolean singleGrid)
-            throws IgniteCheckedException {
-            /*
-             * Initialize default SPI implementations.
-             */
-            CommunicationSpi commSpi = cfg.getCommunicationSpi();
-            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
-            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
-            CollisionSpi colSpi = cfg.getCollisionSpi();
-            DeploymentSpi deploySpi = cfg.getDeploymentSpi();
-            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
-            FailoverSpi[] failSpi = cfg.getFailoverSpi();
-            LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
-            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            IndexingSpi indexingSpi = cfg.getIndexingSpi();
-
-            if (commSpi == null)
-                commSpi = new TcpCommunicationSpi();
-
-            if (discoSpi == null)
-                discoSpi = new TcpDiscoverySpi();
-
-            if (discoSpi instanceof TcpDiscoverySpi) {
-                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
-
-                if (tcpDisco.getIpFinder() == null)
-                    tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
-            }
-
-            if (evtSpi == null)
-                evtSpi = new MemoryEventStorageSpi();
-
-            if (colSpi == null)
-                colSpi = new NoopCollisionSpi();
-
-            if (deploySpi == null)
-                deploySpi = new LocalDeploymentSpi();
-
-            if (cpSpi == null)
-                cpSpi = new CheckpointSpi[] {new NoopCheckpointSpi()};
-
-            if (failSpi == null)
-                failSpi = new FailoverSpi[] {new AlwaysFailoverSpi()};
-
-            if (loadBalancingSpi == null)
-                loadBalancingSpi = new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()};
-
-            if (swapspaceSpi == null) {
-                boolean needSwap = false;
-
-                CacheConfiguration[] caches = cfg.getCacheConfiguration();
-
-                if (caches != null) {
-                    for (CacheConfiguration c : caches) {
-                        if (c.isSwapEnabled()) {
-                            needSwap = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                swapspaceSpi = needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi();
-            }
-
-            if (indexingSpi == null)
-                indexingSpi = new NoopIndexingSpi();
-
-            myCfg.setCommunicationSpi(commSpi);
-            myCfg.setDiscoverySpi(discoSpi);
-            myCfg.setCheckpointSpi(cpSpi);
-            myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setDeploymentSpi(deploySpi);
-            myCfg.setFailoverSpi(failSpi);
-            myCfg.setCollisionSpi(colSpi);
-            myCfg.setLoadBalancingSpi(loadBalancingSpi);
-            myCfg.setSwapSpaceSpi(swapspaceSpi);
-            myCfg.setIndexingSpi(indexingSpi);
-
-            // Ensure that SPIs support multiple grid instances, if required.
-            if (!singleGrid) {
-                ensureMultiInstanceSupport(deploySpi);
-                ensureMultiInstanceSupport(commSpi);
-                ensureMultiInstanceSupport(discoSpi);
-                ensureMultiInstanceSupport(cpSpi);
-                ensureMultiInstanceSupport(evtSpi);
-                ensureMultiInstanceSupport(colSpi);
-                ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(loadBalancingSpi);
-                ensureMultiInstanceSupport(swapspaceSpi);
             }
         }
 
