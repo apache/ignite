@@ -1328,6 +1328,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException {
+        cache.localLoadCache(p, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
+        return cache.localLoadCacheAsync(p, args);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         return new GridCacheProjectionImpl<>(
             this,
