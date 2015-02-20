@@ -1013,7 +1013,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
        return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
     }
 
-    /** */
+    /**
+     *
+     */
     private class JobMapper {
         /** */
         private final Map<ComputeJob, ClusterNode> map;
