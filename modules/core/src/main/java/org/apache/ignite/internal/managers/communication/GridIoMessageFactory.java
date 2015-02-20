@@ -68,13 +68,19 @@ public class GridIoMessageFactory implements MessageFactory {
 
         switch (type) {
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.NodeIdMessage();
+                msg = new TcpCommunicationSpi.NodeIdMessage();
+
+                break;
 
             case TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+                msg = new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+
+                break;
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
-                return new TcpCommunicationSpi.HandshakeMessage();
+                msg = new TcpCommunicationSpi.HandshakeMessage();
+
+                break;
 
             case 0:
                 msg = new GridJobCancelRequest();

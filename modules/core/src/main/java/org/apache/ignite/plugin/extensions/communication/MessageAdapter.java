@@ -65,6 +65,13 @@ public abstract class MessageAdapter implements Serializable {
     public abstract byte directType();
 
     /**
+     * Gets fields count.
+     *
+     * @return Fields count.
+     */
+    public abstract byte fieldsCount();
+
+    /**
      * Defines whether recovery for this message should be skipped.
      *
      * @return Whether recovery for this message should be skipped.
