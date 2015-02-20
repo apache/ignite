@@ -1302,12 +1302,7 @@ public class IgnitionEx {
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
-            IgniteConfiguration cfg = startCtx.config();
-
-            if (cfg == null)
-                cfg = new IgniteConfiguration();
-
-            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
+            IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
 
             String ggHome = cfg.getIgniteHome();
 
@@ -1328,6 +1323,8 @@ public class IgnitionEx {
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
+
+            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
             myCfg.setGridName(cfg.getGridName());
 
@@ -1405,16 +1402,6 @@ public class IgnitionEx {
 
             String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
 
-            CommunicationSpi commSpi = cfg.getCommunicationSpi();
-            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
-            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
-            CollisionSpi colSpi = cfg.getCollisionSpi();
-            DeploymentSpi deploySpi = cfg.getDeploymentSpi();
-            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
-            FailoverSpi[] failSpi = cfg.getFailoverSpi();
-            LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
-            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            IndexingSpi indexingSpi = cfg.getIndexingSpi();
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub-" + cfg.getGridName(),
@@ -1547,9 +1534,35 @@ public class IgnitionEx {
 
             myCfg.setPeerClassLoadingLocalClassPathExclude(p2pExclude);
 
+            // REST configuration.
+            myCfg.setConnectorConfiguration(clientCfg);
+
+            // Validate segmentation configuration.
+            GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
+
+            // 1. Warn on potential configuration problem: grid is not configured to wait
+            // for correct segment after segmentation happens.
+            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
+                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
+                    "on start?) [segPlc=" + segPlc + ", wait=false]");
+            }
+
+
+
             /*
              * Initialize default SPI implementations.
              */
+            CommunicationSpi commSpi = cfg.getCommunicationSpi();
+            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
+            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
+            CollisionSpi colSpi = cfg.getCollisionSpi();
+            DeploymentSpi deploySpi = cfg.getDeploymentSpi();
+            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
+            FailoverSpi[] failSpi = cfg.getFailoverSpi();
+            LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
+            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
+            IndexingSpi indexingSpi = cfg.getIndexingSpi();
+
 
             if (commSpi == null)
                 commSpi = new TcpCommunicationSpi();
@@ -1613,19 +1626,6 @@ public class IgnitionEx {
             myCfg.setLoadBalancingSpi(loadBalancingSpi);
             myCfg.setSwapSpaceSpi(swapspaceSpi);
             myCfg.setIndexingSpi(indexingSpi);
-
-            // REST configuration.
-            myCfg.setConnectorConfiguration(clientCfg);
-
-            // Validate segmentation configuration.
-            GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
-
-            // 1. Warn on potential configuration problem: grid is not configured to wait
-            // for correct segment after segmentation happens.
-            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
-                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
-                    "on start?) [segPlc=" + segPlc + ", wait=false]");
-            }
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
