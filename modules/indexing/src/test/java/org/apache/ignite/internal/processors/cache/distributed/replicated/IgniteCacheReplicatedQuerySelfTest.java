@@ -22,8 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -180,7 +178,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     public void testLocalQuery() throws Exception {
         cache1.clear();
 
-        IgniteTx tx = ignite1.transactions().txStart();
+        Transaction tx = ignite1.transactions().txStart();
 
         try {
             cache1.put(new CacheKey(1), new CacheValue("1"));
@@ -222,7 +220,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         ignite2.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
         ignite3.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
 
-        IgniteTx tx = ignite1.transactions().txStart();
+        Transaction tx = ignite1.transactions().txStart();
 
         try {
             for (int i = 1; i <= keyCnt; i++)

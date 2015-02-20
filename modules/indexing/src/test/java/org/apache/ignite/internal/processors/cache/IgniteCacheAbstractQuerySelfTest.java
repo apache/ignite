@@ -176,7 +176,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentKeyTypes() throws Exception {
-        GridCache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(null);
 
         cache.putx("key", "value");
 
@@ -191,7 +191,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(null);
 
         cache.putx("key", "value");
 
@@ -476,7 +476,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            GridCache<Integer, ObjectValue> c = g.cache(null);
+            GridCache<Integer, ObjectValue> c = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
@@ -604,8 +604,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testRemoveIndex() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
-        GridCache<Integer, ObjectValue> cache1 = ignite.cache("c1");
+        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).cache(null);
+        GridCache<Integer, ObjectValue> cache1 = ((IgniteKernal)ignite).cache("c1");
 
         ObjectValue val = new ObjectValue("test full text", 0);
 

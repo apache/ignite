@@ -27,7 +27,7 @@ public class IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest extends IgniteC
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(false);
+        c.setPeerClassLoadingEnabled(true);
 
         return c;
     }

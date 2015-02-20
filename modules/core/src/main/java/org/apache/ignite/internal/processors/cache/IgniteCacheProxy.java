@@ -330,7 +330,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Local node cluster group.
      */
     private ClusterGroup projection(boolean local) {
-        return local || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().forLocal() : null;
+        return local || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().cluster().forLocal() : null;
     }
 
     /**

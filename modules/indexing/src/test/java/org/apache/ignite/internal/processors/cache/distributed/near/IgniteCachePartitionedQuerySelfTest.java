@@ -102,7 +102,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         assertEquals(4, cache0.localSize());
 
-        assert grid(0).nodes().size() == gridCount();
+        assert grid(0).cluster().nodes().size() == gridCount();
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
             cache0.query(sql(Person.class, "salary < 2000"));

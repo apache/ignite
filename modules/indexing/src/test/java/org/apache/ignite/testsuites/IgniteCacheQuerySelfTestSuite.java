@@ -65,7 +65,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTestNewApi.class);
-        suite.addTestSuite(GridCacheSqlQueryMultiThreadedSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
