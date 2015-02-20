@@ -384,9 +384,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws IgniteCheckedException {
+    @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args) throws IgniteCheckedException {
         if (ctx.store().isLocalStore()) {
-            super.loadCache(p, ttl, args);
+            super.localLoadCache(p, args);
 
             return;
         }

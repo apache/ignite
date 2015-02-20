@@ -225,11 +225,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, @Nullable Object[] args) throws IgniteCheckedException {
+    @Override public void localLoadCache(IgniteBiPredicate<K, V> p, @Nullable Object[] args) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            cache.loadCache(p, ttl, args);
+            cache.localLoadCache(p, args);
         }
         finally {
             gate.leave(prev);
@@ -237,11 +237,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, @Nullable Object[] args) {
+    @Override public IgniteInternalFuture<?> localLoadCacheAsync(IgniteBiPredicate<K, V> p, @Nullable Object[] args) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return cache.loadCacheAsync(p, ttl, args);
+            return cache.localLoadCacheAsync(p, args);
         }
         finally {
             gate.leave(prev);

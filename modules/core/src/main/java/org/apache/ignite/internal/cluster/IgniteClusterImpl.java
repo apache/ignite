@@ -72,15 +72,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void setKernalContext(GridKernalContext ctx) {
-        super.setKernalContext(ctx);
-
-        cfg = ctx.config();
-
-        nodeLoc = new ClusterNodeLocalMapImpl(ctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forLocal() {
         guard();
 
