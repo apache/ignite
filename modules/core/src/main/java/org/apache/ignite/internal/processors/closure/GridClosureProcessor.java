@@ -1021,6 +1021,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private boolean hadLocNode;
 
+        /** */
+        private byte[] closureBytes;
+
+        /** */
+        private IgniteClosure<?, ?> closure;
+
         /**
          * @param expJobCnt Expected Jobs count.
          */
@@ -1033,15 +1039,29 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param node Node.
          * @throws IgniteCheckedException In case of error.
          */
-        public void map(ComputeJob job, ClusterNode node) throws IgniteCheckedException {
-            assert job != null;
-            assert node != null;
-
+        public void map(@NotNull ComputeJob job, @NotNull ClusterNode node) throws IgniteCheckedException {
             if (ctx.localNodeId().equals(node.id())) {
                 if (hadLocNode) {
                     Marshaller marsh = ctx.config().getMarshaller();
 
-                    job = marsh.unmarshal(marsh.marshal(job), null);
+                    if (job instanceof C1) {
+                        C1 c = (C1)job;
+
+                        if (closureBytes == null) {
+                            closure = c.job;
+
+                            closureBytes = marsh.marshal(c.job);
+                        }
+
+                        if (c.job == closure)
+                            c.job = marsh.unmarshal(closureBytes, null);
+                        else
+                            c.job = marsh.unmarshal(marsh.marshal(c.job), null);
+
+                        c.arg = marsh.unmarshal(marsh.marshal(c.arg), null);
+                    }
+                    else
+                        job = marsh.unmarshal(marsh.marshal(job), null);
                 }
                 else
                     hadLocNode = true;
@@ -1050,6 +1070,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             map.put(job, node);
         }
 
+        /**
+         *
+         */
         public Map<ComputeJob, ClusterNode> map() {
             return map;
         }
