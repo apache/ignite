@@ -41,7 +41,7 @@ import java.util.*;
  * Tests Hibernate L2 cache with TRANSACTIONAL access mode (Hibernate and Cache are configured
  * to used the same TransactionManager).
  */
-public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2CacheSelfTest {
+public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfTest {
     /** */
     private static Jotm jotm;
 
