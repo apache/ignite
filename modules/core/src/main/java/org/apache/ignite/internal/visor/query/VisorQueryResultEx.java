@@ -34,7 +34,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     /** Query ID to store in node local. */
     private final String qryId;
 
-    /** Query columns descriptors.  */
+    /** Query columns descriptors. */
     private final VisorQueryField[] colNames;
 
     /**

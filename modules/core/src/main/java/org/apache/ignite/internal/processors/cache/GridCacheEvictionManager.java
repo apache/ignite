@@ -920,18 +920,23 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         GridCacheAdapter<K, V> cache = cctx.cache();
 
-        Map<K, GridCacheEntryEx<K, V>> cached = U.newHashMap(keys.size());
+        Map<K, GridCacheEntryEx<K, V>> cached = U.newLinkedHashMap(keys.size());
 
         // Get all participating entries to avoid deadlock.
-        for (K k : keys)
-            cached.put(k, cache.peekEx(k));
+        for (K k : keys) {
+            if (cctx.portableEnabled())
+                k = (K)cctx.marshalToPortable(k);
+
+            GridCacheEntryEx<K, V> e = cache.peekEx(k);
+
+            if (e != null)
+                cached.put(k, e);
+        }
 
         try {
-            for (K key : keys) {
-                GridCacheEntryEx<K, V> entry = cached.get(key);
-
+            for (GridCacheEntryEx<K, V> entry : cached.values()) {
                 // Do not evict internal entries.
-                if (entry == null || entry.key() instanceof GridCacheInternal)
+                if (entry.key() instanceof GridCacheInternal)
                     continue;
 
                 // Lock entry.
@@ -953,7 +958,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             }
 
             // Batch write to swap.
-            if (swapped != null)
+            if (!swapped.isEmpty())
                 cctx.swap().writeAll(swapped);
         }
         finally {

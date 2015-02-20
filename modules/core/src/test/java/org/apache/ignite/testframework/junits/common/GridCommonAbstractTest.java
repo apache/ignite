@@ -254,6 +254,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
+     * @throws Exception If failed.
      */
     protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
         final AtomicReference<Exception> ex = new AtomicReference<>();
@@ -282,6 +283,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param key Keys.
      * @param replaceExistingValues Replace existing values.
+     * @throws Exception If failed.
      */
     protected static <K> void load(Cache<K, ?> cache, K key, boolean replaceExistingValues) throws Exception {
         loadAll(cache, Collections.singleton(key), replaceExistingValues);

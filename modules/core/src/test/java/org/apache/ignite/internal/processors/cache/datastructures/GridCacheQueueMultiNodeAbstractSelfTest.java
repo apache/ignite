@@ -472,10 +472,10 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             assertEquals(GRID_CNT * RETRIES, queue.size());
 
-            Collection<ClusterNode> nodes = grid(0).nodes();
+            Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
             for (ClusterNode node : nodes) {
-                Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
+                Collection<Integer> queueElements = compute(grid(0).cluster().forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
                     @IgniteInstanceResource
                     private Ignite grid;
 

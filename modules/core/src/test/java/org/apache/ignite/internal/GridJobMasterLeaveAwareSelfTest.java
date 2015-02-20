@@ -170,7 +170,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -195,7 +195,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -224,7 +224,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -509,7 +509,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).forPredicate(excludeLastPredicate()));
+        IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()));
 
         jobLatch.await();
 

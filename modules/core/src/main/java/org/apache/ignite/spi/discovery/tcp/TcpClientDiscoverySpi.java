@@ -892,7 +892,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         if (dataList != null) {
                             for (Map<Integer, Object> discoData : dataList)
-                                exchange.onExchange(discoData);
+                                exchange.onExchange(newNodeId, discoData);
                         }
 
                         locNode.setAttributes(node.attributes());
@@ -915,7 +915,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(data);
+                        exchange.onExchange(newNodeId, data);
                 }
             }
         }

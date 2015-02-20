@@ -65,13 +65,13 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                 IgniteBiTuple<Collection<String>, Collection<String>> addrs =
                     IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
 
-                assert(addrs.get1() != null);
-                assert(addrs.get2() != null);
+                assert (addrs.get1() != null);
+                assert (addrs.get2() != null);
 
                 Iterator<String> ipIt = addrs.get1().iterator();
                 Iterator<String> hostIt = addrs.get2().iterator();
 
-                while(ipIt.hasNext() && hostIt.hasNext()) {
+                while (ipIt.hasNext() && hostIt.hasNext()) {
                     String ip = ipIt.next();
 
                     String hostName = hostIt.next();

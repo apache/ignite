@@ -504,10 +504,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
 
                 if (v != null && !reload) {
-                    if (cctx.portableEnabled())
-                        v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
+                    K key0 = key;
 
-                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key, v)));
+                    if (cctx.portableEnabled()) {
+                        v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
+                        key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+                    }
+
+                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key0, v)));
                 }
                 else {
                     if (primary == null)
@@ -637,11 +641,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     }
 
                     V val = info.value();
+                    K key = info.key();
 
-                    if (cctx.portableEnabled())
+                    if (cctx.portableEnabled()) {
                         val = (V)cctx.unwrapPortableIfNeeded(val, !deserializePortable);
+                        key = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+                    }
 
-                    map.put(info.key(), val);
+                    map.put(key, val);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())

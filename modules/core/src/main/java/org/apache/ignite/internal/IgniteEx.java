@@ -19,6 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.lang.*;
@@ -29,7 +31,7 @@ import java.util.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
+public interface IgniteEx extends Ignite {
     /**
      * Gets utility cache.
      *
@@ -124,10 +126,20 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      */
     public GridHadoop hadoop();
 
+    /** {@inheritDoc} */
+    @Override IgniteClusterEx cluster();
+
     /**
      * Get latest version in string form.
      *
      * @return Latest version.
      */
     @Nullable public String latestVersion();
+
+    /**
+     * Gets local grid node.
+     *
+     * @return Local grid node.
+     */
+    public ClusterNode localNode();
 }

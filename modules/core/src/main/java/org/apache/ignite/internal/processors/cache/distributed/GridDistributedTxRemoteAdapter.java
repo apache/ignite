@@ -345,7 +345,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             entry.explicitVersion(e.explicitVersion());
             entry.groupLockEntry(e.groupLockEntry());
 
-            // DR stuff.
+            // Conflict resolution stuff.
             entry.conflictVersion(e.conflictVersion());
             entry.conflictExpireTime(e.conflictExpireTime());
         }
@@ -509,17 +509,16 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     if (txEntry.ttl() == CU.TTL_ZERO)
                                         op = DELETE;
 
-
                                     boolean drNeedResolve = cacheCtx.conflictNeedResolve();
 
-                                        if (drNeedResolve) {
-                                            IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
-                                                drRes = conflictResolve(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.conflictExpireTime(), explicitVer, cached);
+                                    if (drNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
+                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes,
+                                            txEntry.ttl(), txEntry.conflictExpireTime(), explicitVer, cached);
 
                                         assert drRes != null;
 
-                                            GridCacheVersionConflictContext<K, V> drCtx = drRes.get2();
+                                        GridCacheVersionConflictContext<K, V> drCtx = drRes.get2();
 
                                         if (drCtx.isUseOld())
                                             op = NOOP;
@@ -529,7 +528,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
                                                 txEntry.conflictExpireTime(drCtx.expireTime());
                                             else
-                                                txEntry.conflictExpireTime(-1L);
+                                                txEntry.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
                                         }
                                         else if (drCtx.isMerge()) {
                                             op = drRes.get1();
@@ -538,7 +537,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             explicitVer = writeVersion();
 
                                             txEntry.ttl(drCtx.ttl());
-                                            txEntry.conflictExpireTime(-1L);
+                                            txEntry.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
                                         }
                                     }
                                     else
