@@ -38,4 +38,9 @@ public interface PluginConfiguration {
      * @return Plugin version.
      */
     public String version();
+
+    /**
+     * @return Copyright.
+     */
+    public String copyright();
 }
