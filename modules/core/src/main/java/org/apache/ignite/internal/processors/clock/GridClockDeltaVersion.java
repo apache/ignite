@@ -176,6 +176,11 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridClockDeltaVersion.class, this);
     }

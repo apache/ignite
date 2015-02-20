@@ -531,6 +531,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearLockRequest.class, this, "filter", Arrays.toString(filter),
             "super", super.toString());

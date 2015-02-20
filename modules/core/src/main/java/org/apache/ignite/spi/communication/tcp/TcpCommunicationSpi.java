@@ -3079,6 +3079,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(HandshakeMessage.class, this);
         }
@@ -3141,6 +3146,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return RECOVERY_LAST_ID_MSG_TYPE;
+        }
+
+        @Override public byte fieldsCount() {
+            return 0; // TODO: implement.
         }
 
         /** {@inheritDoc} */
@@ -3214,6 +3223,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return NODE_ID_MSG_TYPE;
+        }
+
+        @Override public byte fieldsCount() {
+            return 0; // TODO: implement.
         }
 
         /** {@inheritDoc} */

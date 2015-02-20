@@ -441,6 +441,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxFinishRequest.class, this,
             "super", super.toString());

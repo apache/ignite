@@ -433,6 +433,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         return 49;
     }
 
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearGetRequest.class, this);

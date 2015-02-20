@@ -80,6 +80,11 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionsSingleRequest.class, this, super.toString());
     }

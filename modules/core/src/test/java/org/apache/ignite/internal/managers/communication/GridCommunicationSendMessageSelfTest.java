@@ -159,5 +159,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public byte directType() {
             return DIRECT_TYPE;
         }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
     }
 }

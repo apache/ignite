@@ -187,6 +187,11 @@ public class GridJobCancelRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJobCancelRequest.class, this);
     }

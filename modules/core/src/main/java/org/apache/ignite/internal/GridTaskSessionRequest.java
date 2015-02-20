@@ -175,6 +175,11 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskSessionRequest.class, this);
     }

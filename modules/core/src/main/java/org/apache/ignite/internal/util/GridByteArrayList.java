@@ -470,6 +470,11 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridByteArrayList.class, this);
     }

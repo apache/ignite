@@ -393,4 +393,9 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     @Override public byte directType() {
         return 32;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

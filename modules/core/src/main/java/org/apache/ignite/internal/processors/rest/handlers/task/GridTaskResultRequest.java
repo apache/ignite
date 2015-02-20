@@ -160,4 +160,9 @@ public class GridTaskResultRequest extends MessageAdapter {
     @Override public byte directType() {
         return 76;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

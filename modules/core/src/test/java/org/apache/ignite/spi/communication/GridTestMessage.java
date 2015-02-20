@@ -98,7 +98,7 @@ public class GridTestMessage extends MessageAdapter {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeByte(null, directType()))
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
             writer.onHeaderWritten();
@@ -177,6 +177,11 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return DIRECT_TYPE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 4;
     }
 
     /** {@inheritDoc} */

@@ -136,4 +136,9 @@ public class GridStreamerResponse extends MessageAdapter {
     @Override public byte directType() {
         return 81;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

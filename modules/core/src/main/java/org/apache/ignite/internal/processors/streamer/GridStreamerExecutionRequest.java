@@ -285,4 +285,9 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     @Override public byte directType() {
         return 80;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

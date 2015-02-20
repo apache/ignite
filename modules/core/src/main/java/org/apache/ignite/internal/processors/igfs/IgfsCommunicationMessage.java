@@ -71,4 +71,9 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
 
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

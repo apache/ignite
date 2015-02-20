@@ -296,6 +296,11 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtLockResponse.class, this, super.toString());
     }

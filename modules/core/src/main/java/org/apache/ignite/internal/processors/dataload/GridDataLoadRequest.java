@@ -442,4 +442,9 @@ public class GridDataLoadRequest extends MessageAdapter {
     @Override public byte directType() {
         return 62;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

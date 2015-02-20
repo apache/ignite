@@ -247,6 +247,11 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, clsLdrId);
         U.writeEnum(out, depMode);

@@ -108,4 +108,9 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
     @Override public byte directType() {
         return 70;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

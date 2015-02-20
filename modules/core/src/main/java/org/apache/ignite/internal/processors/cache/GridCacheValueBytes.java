@@ -183,6 +183,11 @@ public class GridCacheValueBytes extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheValueBytes.class, this, "len", bytes != null ? bytes.length : -1);
     }

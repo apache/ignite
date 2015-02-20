@@ -158,4 +158,9 @@ public class GridDataLoadResponse extends MessageAdapter {
     @Override public byte directType() {
         return 63;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

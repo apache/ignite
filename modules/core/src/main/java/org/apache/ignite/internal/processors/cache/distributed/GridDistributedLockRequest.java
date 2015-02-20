@@ -587,6 +587,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedLockRequest.class, this, "keysCnt", retVals.length,
             "super", super.toString());

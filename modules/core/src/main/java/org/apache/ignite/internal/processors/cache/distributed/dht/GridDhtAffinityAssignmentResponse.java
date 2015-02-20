@@ -88,6 +88,11 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         return 29;
     }
 
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
     /**
      * @param ctx Context.
      */

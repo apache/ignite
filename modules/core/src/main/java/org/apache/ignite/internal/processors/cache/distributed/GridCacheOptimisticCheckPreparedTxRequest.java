@@ -221,6 +221,11 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheOptimisticCheckPreparedTxRequest.class, this, "super", super.toString());
     }

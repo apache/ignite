@@ -846,6 +846,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearAtomicUpdateRequest.class, this, "filter", Arrays.toString(filter),
             "parent", super.toString());

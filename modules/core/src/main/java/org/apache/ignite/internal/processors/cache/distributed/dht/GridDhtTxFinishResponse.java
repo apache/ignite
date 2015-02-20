@@ -122,4 +122,9 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     @Override public byte directType() {
         return 33;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

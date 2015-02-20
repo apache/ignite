@@ -184,4 +184,9 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
     @Override public byte directType() {
         return 64;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

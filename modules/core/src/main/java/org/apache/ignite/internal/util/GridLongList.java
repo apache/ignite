@@ -566,4 +566,9 @@ public class GridLongList extends MessageAdapter implements Externalizable {
     @Override public byte directType() {
         return 85;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }

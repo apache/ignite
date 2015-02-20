@@ -168,6 +168,11 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheOptimisticCheckPreparedTxResponse.class, this, "super", super.toString());
     }

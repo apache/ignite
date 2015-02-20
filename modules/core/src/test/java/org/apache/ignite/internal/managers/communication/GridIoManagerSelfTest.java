@@ -233,5 +233,10 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         @Override public byte directType() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
     }
 }

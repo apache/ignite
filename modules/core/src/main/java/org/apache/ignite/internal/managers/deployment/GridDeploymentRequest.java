@@ -261,6 +261,11 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDeploymentRequest.class, this);
     }

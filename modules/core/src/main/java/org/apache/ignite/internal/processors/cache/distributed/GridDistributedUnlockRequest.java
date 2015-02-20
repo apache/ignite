@@ -170,6 +170,11 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedUnlockRequest.class, this, "keyBytesSize",
             keyBytes == null ? 0 : keyBytes.size(), "super", super.toString());

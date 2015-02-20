@@ -182,11 +182,6 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 20;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -304,6 +299,16 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 20;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
     }
 
     /** {@inheritDoc} */

@@ -102,4 +102,9 @@ public class GridStreamerCancelRequest extends MessageAdapter {
     @Override public byte directType() {
         return 79;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0; // TODO: implement.
+    }
 }
