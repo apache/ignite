@@ -28,4 +28,14 @@ public interface PluginConfiguration {
      * @return Plugin provider class.
      */
     public Class<? extends PluginProvider> providerClass();
+
+    /**
+     * @return Plugin name.
+     */
+    public String name();
+
+    /**
+     * @return Plugin version.
+     */
+    public String version();
 }

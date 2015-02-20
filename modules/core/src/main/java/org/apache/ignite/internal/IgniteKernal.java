@@ -454,8 +454,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override public String apply(Map.Entry<String,?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -608,7 +609,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
         // Ack various information.
-        ackAsciiLogo(false);
+        ackAsciiLogo();
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -771,8 +772,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
-
-            ackAsciiLogo(true);
 
             gw.writeLock();
 
@@ -1524,10 +1523,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     *
-     * @param pluginInfo Whether print plugin information or not.
-      */
-    private void ackAsciiLogo(boolean pluginInfo) {
+     */
+    private void ackAsciiLogo() {
         assert log != null;
 
         String fileName = log.fileName();
@@ -1546,7 +1543,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     " ",
                     ver,
                     COPYRIGHT,
-                    pluginInfo ? pluginInfo() : "",
+                    pluginInfo(),
                     "",
                     "Quiet mode.");
 
@@ -1565,10 +1562,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                 ">>> " + NL +
                 ">>> " + ver + NL +
-                ">>> " + COPYRIGHT + NL;
-
-            if (pluginInfo)
-                info += ">>> " + pluginInfo();
+                ">>> " + COPYRIGHT + NL +
+                ">>> " + pluginInfo();
 
             if (log.isInfoEnabled())
                 log.info(info);
@@ -1576,15 +1571,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     private String pluginInfo() {
-        Collection<PluginProvider> pluginProviders = ctx.plugins().allProviders();
+        Collection<? extends PluginConfiguration> pluginsCfg = cfg.getPluginConfigurations();
 
-        if (pluginProviders.size() == 0)
+        if (pluginsCfg.size() == 0)
             return PLUGIN_INFO + "none";
 
         String info = PLUGIN_INFO + NL;
 
-        for (PluginProvider provider : pluginProviders)
-            info += provider.plugin().name() + " " + provider.plugin().version() + NL;
+        for (PluginConfiguration cfg : pluginsCfg)
+            info += cfg.name() + " " + cfg.version() + NL;
 
         return info;
     }
