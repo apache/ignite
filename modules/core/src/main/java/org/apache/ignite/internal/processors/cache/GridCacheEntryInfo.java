@@ -29,14 +29,14 @@ import java.io.*;
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo<K, V> implements Externalizable {
+public class GridCacheEntryInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache key. */
     @GridToStringInclude
     @GridDirectTransient
-    private K key;
+    private KeyCacheObject key;
 
     /** Cache ID. */
     private int cacheId;
@@ -49,7 +49,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
 
     /** Cache value. */
     @GridDirectTransient
-    private V val;
+    private CacheObject val;
 
     /** Value bytes. */
     private byte[] valBytes;
@@ -89,57 +89,29 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     /**
      * @param key Entry key.
      */
-    public void key(K key) {
+    public void key(KeyCacheObject key) {
         this.key = key;
     }
 
     /**
      * @return Entry key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes() {
-        return keyBytes;
-    }
-
-    /**
-     * @param keyBytes Key bytes.
-     */
-    public void keyBytes(byte[] keyBytes) {
-        this.keyBytes = keyBytes;
     }
 
     /**
      * @return Entry value.
      */
-    public V value() {
+    public CacheObject value() {
         return val;
     }
 
     /**
      * @param val Entry value.
      */
-    public void value(V val) {
+    public void value(CacheObject val) {
         this.val = val;
-    }
-
-    /**
-     * @return Value bytes.
-     */
-    public byte[] valueBytes() {
-        return valBytes;
-    }
-
-    /**
-     * @param valBytes Value bytes.
-     */
-    public void valueBytes(byte[] valBytes) {
-        this.valBytes = valBytes;
     }
 
     /**
@@ -217,7 +189,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshalValue(GridCacheContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val == null && valBytes != null)
             val = ctx.marshaller().unmarshal(valBytes, ldr);
     }
@@ -226,7 +198,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @param ctx Cache context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    public void marshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         boolean depEnabled = ctx.gridDeploy().enabled();
 
         boolean valIsByteArr = val != null && val instanceof byte[];

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -139,4 +140,16 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return {@code true} if field is set.
      */
     public boolean hasField(Object obj, String fieldName);
+
+    /**
+     * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(@Nullable Object obj);
+
+    /**
+     * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public KeyCacheObject toCacheKeyObject(@Nullable Object obj);
 }

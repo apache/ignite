@@ -17,23 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.jetbrains.annotations.*;
-
 /**
- * Factory for cache entries.
+ *
  */
-public interface GridCacheMapEntryFactory {
+public interface KeyCacheObject extends CacheObject {
     /**
-     * @param ctx Cache registry.
-     * @param topVer Topology version.
-     * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param ttl Time to live.
-     * @param hdrId Header id.
-     * @return New cache entry.
+     * @return Key hash code.
      */
-    public GridCacheMapEntry create(GridCacheContext ctx, long topVer, KeyCacheObject key, int hash, CacheObject val,
-        @Nullable GridCacheMapEntry next, long ttl, int hdrId);
+    public int hashCode();
+
+    public boolean internal();
 }

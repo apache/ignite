@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 /**
  * Extras where attributes and TTL are set.
  */
-public class GridCacheAttributesTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
     private GridLeanMap<String, Object> attrData;
 
@@ -58,24 +58,24 @@ public class GridCacheAttributesTtlEntryExtras<K> extends GridCacheEntryExtrasAd
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<String, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 
             return this;
         }
         else
-            return new GridCacheTtlEntryExtras<>(ttl, expireTime);
+            return new GridCacheTtlEntryExtras(ttl, expireTime);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
-        return mvcc != null ? new GridCacheAttributesMvccTtlEntryExtras<>(attrData, mvcc, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
+        return mvcc != null ? new GridCacheAttributesMvccTtlEntryExtras(attrData, mvcc, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
-        return obsoleteVer != null ? new GridCacheAttributesObsoleteTtlEntryExtras<K>(attrData, obsoleteVer, ttl,
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+        return obsoleteVer != null ? new GridCacheAttributesObsoleteTtlEntryExtras(attrData, obsoleteVer, ttl,
             expireTime) : this;
     }
 
@@ -90,7 +90,7 @@ public class GridCacheAttributesTtlEntryExtras<K> extends GridCacheEntryExtrasAd
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
         if (ttl != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;

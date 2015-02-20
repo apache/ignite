@@ -45,18 +45,18 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Transaction created by system implicitly on remote nodes.
  */
-public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
-    implements IgniteTxRemoteEx<K, V> {
+public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
+    implements IgniteTxRemoteEx {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Read set. */
     @GridToStringInclude
-    protected Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap;
+    protected Map<IgniteTxKey, IgniteTxEntry> readMap;
 
     /** Write map. */
     @GridToStringInclude
-    protected Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> writeMap;
+    protected Map<IgniteTxKey, IgniteTxEntry> writeMap;
 
     /** Remote thread ID. */
     @GridToStringInclude
@@ -98,7 +98,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param taskNameHash Task name hash code.
      */
     public GridDistributedTxRemoteAdapter(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext<?, ?> ctx,
         UUID nodeId,
         long rmtThreadId,
         GridCacheVersion xidVer,
@@ -165,7 +165,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removed(IgniteTxKey<K> key) {
+    @Override public boolean removed(IgniteTxKey key) {
         IgniteTxEntry e = writeMap.get(key);
 
         return e != null && e.op() == DELETE;
@@ -177,12 +177,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> writeMap() {
+    @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
         return writeMap;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap() {
+    @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
         return readMap;
     }
 
@@ -202,16 +202,20 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple<V> peek(GridCacheContext<K, V> cacheCtx, boolean failFast, K key,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException {
+    @Override public GridTuple<CacheObject> peek(GridCacheContext<?, ?> cacheCtx,
+        boolean failFast,
+        KeyCacheObject key,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter)
+        throws GridCacheFilterFailedException
+    {
         assert false : "Method peek can only be called on user transaction: " + this;
 
         throw new IllegalStateException("Method peek can only be called on user transaction: " + this);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry<K, V> entry(IgniteTxKey<K> key) {
-        IgniteTxEntry<K, V> e = writeMap == null ? null : writeMap.get(key);
+    @Override public IgniteTxEntry entry(IgniteTxKey key) {
+        IgniteTxEntry e = writeMap == null ? null : writeMap.get(key);
 
         if (e == null)
             e = readMap == null ? null : readMap.get(key);
@@ -224,7 +228,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      *
      * @param key key to be removed.
      */
-    public void clearEntry(IgniteTxKey<K> key) {
+    public void clearEntry(IgniteTxKey key) {
         readMap.remove(key);
         writeMap.remove(key);
     }
@@ -237,12 +241,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     @Override public void doneRemote(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers, Collection<GridCacheVersion> pendingVers) {
         if (readMap != null && !readMap.isEmpty()) {
-            for (IgniteTxEntry<K, V> txEntry : readMap.values())
+            for (IgniteTxEntry txEntry : readMap.values())
                 doneRemote(txEntry, baseVer, committedVers, rolledbackVers, pendingVers);
         }
 
         if (writeMap != null && !writeMap.isEmpty()) {
-            for (IgniteTxEntry<K, V> txEntry : writeMap.values())
+            for (IgniteTxEntry txEntry : writeMap.values())
                 doneRemote(txEntry, baseVer, committedVers, rolledbackVers, pendingVers);
         }
     }
@@ -256,11 +260,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param rolledbackVers Rolled back versions relative to base version.
      * @param pendingVers Pending versions.
      */
-    private void doneRemote(IgniteTxEntry<K, V> txEntry, GridCacheVersion baseVer,
+    private void doneRemote(IgniteTxEntry txEntry, GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers) {
         while (true) {
-            GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
+            GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
 
             try {
                 // Handle explicit locks.

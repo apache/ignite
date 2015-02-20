@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridNearAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -74,7 +74,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** Keys to update. */
     @GridDirectTransient
     @GridToStringInclude
-    private List<K> keys;
+    private List<KeyCacheObject> keys;
 
     /** Key bytes. */
     @GridDirectCollection(byte[].class)
@@ -117,7 +117,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<Object, Object>>[] filter;
 
     /** Filter bytes. */
     private byte[][] filterBytes;
@@ -173,7 +173,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean forceTransformBackups,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -283,7 +283,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Filter.
      */
-    @Nullable public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
+    @Nullable public IgnitePredicate<Cache.Entry<Object, Object>>[] filter() {
         return filter;
     }
 
@@ -295,7 +295,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @param conflictVer Conflict version (optional).
      * @param primary If given key is primary on this mapping.
      */
-    public void addUpdateEntry(K key,
+    public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
@@ -349,7 +349,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Keys for this update request.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -379,10 +379,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @return Value.
      */
     @SuppressWarnings("unchecked")
-    public V value(int idx) {
+    public CacheObject value(int idx) {
         assert op == UPDATE : op;
 
-        return (V)vals.get(idx);
+        return (CacheObject)vals.get(idx);
     }
 
     /**
@@ -390,10 +390,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @return Entry processor.
      */
     @SuppressWarnings("unchecked")
-    public EntryProcessor<K, V, ?> entryProcessor(int idx) {
+    public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert op == TRANSFORM : op;
 
-        return (EntryProcessor<K, V, ?>)vals.get(idx);
+        return (EntryProcessor<Object, Object, Object>)vals.get(idx);
     }
 
     /**
@@ -505,7 +505,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         keyBytes = marshalCollection(keys, ctx);
@@ -518,7 +518,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         keys = unmarshalCollection(keyBytes, ctx, ldr);

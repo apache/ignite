@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Get request.
  */
-public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
+public class GridNearGetRequest extends GridCacheMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -51,7 +51,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private LinkedHashMap<K, Boolean> keys;
+    private LinkedHashMap<KeyCacheObject, Boolean> keys;
 
     /** Reload flag. */
     private boolean reload;
@@ -106,7 +106,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion ver,
-        LinkedHashMap<K, Boolean> keys,
+        LinkedHashMap<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         boolean reload,
         long topVer,
@@ -172,7 +172,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @return Keys
      */
-    public LinkedHashMap<K, Boolean> keys() {
+    public LinkedHashMap<KeyCacheObject, Boolean> keys() {
         return keys;
     }
 
@@ -216,7 +216,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         assert ctx != null;
@@ -231,7 +231,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

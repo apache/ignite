@@ -35,14 +35,14 @@ import java.util.*;
 /**
  * DHT transaction prepare response.
  */
-public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
+public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<IgniteTxKey<K>> nearEvicted;
+    private Collection<IgniteTxKey> nearEvicted;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -61,7 +61,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     @GridDirectTransient
     /** Preload entries. */
-    private List<GridCacheEntryInfo<K, V>> preloadEntries;
+    private List<GridCacheEntryInfo> preloadEntries;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -108,14 +108,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey<K>> nearEvicted() {
+    public Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<IgniteTxKey<K>> nearEvicted) {
+    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -159,8 +159,8 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      *
      * @return Collection of entry infos need to be preloaded.
      */
-    public Collection<GridCacheEntryInfo<K, V>> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
+    public Collection<GridCacheEntryInfo> preloadEntries() {
+        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
     }
 
     /**
@@ -168,7 +168,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      *
      * @param info Info to add.
      */
-    public void addPreloadEntry(GridCacheEntryInfo<K, V> info) {
+    public void addPreloadEntry(GridCacheEntryInfo info) {
         assert info.cacheId() != 0;
 
         if (preloadEntries == null)
@@ -179,7 +179,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null)
@@ -190,7 +190,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         // Unmarshal even if deployment is disabled, since we could get bytes initially.

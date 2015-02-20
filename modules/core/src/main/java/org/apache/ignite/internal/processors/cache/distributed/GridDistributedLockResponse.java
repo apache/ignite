@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Lock response message.
  */
-public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     /** Values. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<V> vals;
+    private List<CacheObject> vals;
 
     /**
      * Empty constructor (required by {@link Externalizable}).
@@ -158,9 +158,9 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     public boolean isCurrentlyLocked(int idx) {
         assert idx >= 0;
 
-        Collection<GridCacheMvccCandidate<K>> cands = candidatesByIndex(idx);
+        Collection<GridCacheMvccCandidate> cands = candidatesByIndex(idx);
 
-        for (GridCacheMvccCandidate<K> cand : cands)
+        for (GridCacheMvccCandidate cand : cands)
             if (cand.owner())
                 return true;
 
@@ -173,7 +173,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param committedVers Committed versions relative to lock version.
      * @param rolledbackVers Rolled back versions relative to lock version.
      */
-    public void setCandidates(int idx, Collection<GridCacheMvccCandidate<K>> cands,
+    public void setCandidates(int idx, Collection<GridCacheMvccCandidate> cands,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
         assert idx >= 0;
 
@@ -204,22 +204,24 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addValueBytes(V val, @Nullable byte[] valBytes, GridCacheContext<K, V> ctx) throws IgniteCheckedException {
+    public void addValueBytes(CacheObject val, @Nullable byte[] valBytes, GridCacheContext ctx)
+        throws IgniteCheckedException {
         if (ctx.deploymentEnabled())
             prepareObject(val, ctx.shared());
 
-        GridCacheValueBytes vb = null;
-
-        if (val != null) {
-            vb = val instanceof byte[] ? GridCacheValueBytes.plain(val) : valBytes != null ?
-                GridCacheValueBytes.marshaled(valBytes) : null;
-        }
-        else if (valBytes != null)
-            vb = GridCacheValueBytes.marshaled(valBytes);
-
-        this.valBytes.add(vb);
-
-        vals.add(val);
+// TODO IGNITE-51.
+//        GridCacheValueBytes vb = null;
+//
+//        if (val != null) {
+//            vb = val instanceof byte[] ? GridCacheValueBytes.plain(val) : valBytes != null ?
+//                GridCacheValueBytes.marshaled(valBytes) : null;
+//        }
+//        else if (valBytes != null)
+//            vb = GridCacheValueBytes.marshaled(valBytes);
+//
+//        this.valBytes.add(vb);
+//
+//        vals.add(val);
     }
 
     /**
@@ -233,21 +235,22 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param idx Index.
      * @return Value for given index.
      */
-    @Nullable public V value(int idx) {
+    @Nullable public CacheObject value(int idx) {
         if (!F.isEmpty(vals)) {
-            V res = vals.get(idx);
+            CacheObject res = vals.get(idx);
 
             if (res != null)
                 return res;
         }
 
         // If there was no value in values collection, then it could be in value bytes collection in case of byte[].
-        if (!F.isEmpty(valBytes)) {
-            GridCacheValueBytes res = valBytes.get(idx);
-
-            if (res != null && res.isPlain())
-                return (V)res.get();
-        }
+// TODO IGNITE-51.
+//        if (!F.isEmpty(valBytes)) {
+//            GridCacheValueBytes res = valBytes.get(idx);
+//
+//            if (res != null && res.isPlain())
+//                return (V)res.get();
+//        }
 
         // Value is not found in both value and value bytes collections.
         return null;
@@ -255,7 +258,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(valBytes) && !F.isEmpty(vals))
@@ -266,7 +269,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (F.isEmpty(vals) && !F.isEmpty(valBytes))

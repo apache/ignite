@@ -34,19 +34,19 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
     /** Cached entry. */
     @GridToStringInclude
-    protected GridCacheEntryEx<K, V> cached;
+    protected GridCacheEntryEx cached;
 
     /**
      * @param cached Cached entry.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    protected EvictableEntryImpl(GridCacheEntryEx<K, V> cached) {
+    protected EvictableEntryImpl(GridCacheEntryEx cached) {
         this.cached = cached;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() throws IllegalStateException {
-        return cached.key();
+        return cached.key().value(cached.context());
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,9 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     @SuppressWarnings("unchecked")
     @Nullable public V peek() {
         try {
-            return cached.peek(GridCachePeekMode.GLOBAL);
+            CacheObject val = cached.peek(GridCachePeekMode.GLOBAL);
+
+            return val != null ? val.<V>value(cached.context()) : null;
         }
         catch (GridCacheEntryRemovedException e) {
             return null;
@@ -88,26 +90,31 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     @SuppressWarnings("unchecked")
     @Override public V getValue() {
         try {
-            IgniteInternalTx<K, V> tx = cached.context().tm().userTx();
+            IgniteInternalTx tx = cached.context().tm().userTx();
 
             if (tx != null) {
-                GridTuple<V> peek = tx.peek(cached.context(), false, cached.key(), null);
+                GridTuple<CacheObject> peek = tx.peek(cached.context(), false, cached.key(), null);
 
                 if (peek != null)
-                    return peek.get();
+                    return peek.get().value(cached.context());
             }
 
-            if (cached.detached())
-                return cached.rawGet();
+            if (cached.detached()) {
+                CacheObject val = cached.rawGet();
+
+                return val != null ? val.<V>value(cached.context()) : null;
+            }
 
             for (;;) {
-                GridCacheEntryEx<K, V> e = cached.context().cache().peekEx(cached.key());
+                GridCacheEntryEx e = cached.context().cache().peekEx(cached.key());
 
                 if (e == null)
                     return null;
 
                 try {
-                    return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                    CacheObject val = e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+
+                    return val != null ? val.<V>value(cached.context()) : null;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.

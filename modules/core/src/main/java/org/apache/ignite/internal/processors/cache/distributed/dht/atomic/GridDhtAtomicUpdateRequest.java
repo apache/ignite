@@ -36,7 +36,7 @@ import java.util.*;
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,7 +58,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<K> keys;
+    private List<KeyCacheObject> keys;
 
     /** Key bytes. */
     @GridToStringInclude
@@ -68,7 +68,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Values to update. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<V> vals;
+    private List<CacheObject> vals;
 
     /** Value bytes. */
     @GridToStringInclude
@@ -97,7 +97,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<K> nearKeys;
+    private List<KeyCacheObject> nearKeys;
 
     /** Key bytes. */
     @GridToStringInclude
@@ -107,7 +107,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Values to update. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<V> nearVals;
+    private List<CacheObject> nearVals;
 
     /** Value bytes. */
     @GridToStringInclude
@@ -119,7 +119,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Entry processors. */
     @GridDirectTransient
-    private List<EntryProcessor<K, V, ?>> entryProcessors;
+    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @GridDirectCollection(byte[].class)
@@ -127,7 +127,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Near entry processors. */
     @GridDirectTransient
-    private List<EntryProcessor<K, V, ?>> nearEntryProcessors;
+    private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
     @GridDirectCollection(byte[].class)
@@ -222,11 +222,11 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
      */
-    public void addWriteValue(K key,
+    public void addWriteValue(KeyCacheObject key,
         @Nullable byte[] keyBytes,
-        @Nullable V val,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
-        EntryProcessor<K, V, ?> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
@@ -291,11 +291,11 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public void addNearWriteValue(K key,
+    public void addNearWriteValue(KeyCacheObject key,
         @Nullable byte[] keyBytes,
-        @Nullable V val,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
-        EntryProcessor<K, V, ?> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime)
     {
@@ -422,7 +422,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /**
      * @return Keys.
      */
-    public Collection<K> keys() {
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -430,7 +430,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Key.
      */
-    public K key(int idx) {
+    public KeyCacheObject key(int idx) {
         return keys.get(idx);
     }
 
@@ -438,7 +438,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Near key index.
      * @return Key.
      */
-    public K nearKey(int idx) {
+    public KeyCacheObject nearKey(int idx) {
         return nearKeys.get(idx);
     }
 
@@ -462,20 +462,21 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Value.
      */
-    @Nullable public V value(int idx) {
+    @Nullable public CacheObject value(int idx) {
         if (vals != null) {
-            V val = vals.get(idx);
+            CacheObject val = vals.get(idx);
 
             if (val != null)
                 return val;
         }
 
-        if (valBytes != null) {
-            GridCacheValueBytes valBytes0 = valBytes.get(idx);
-
-            if (valBytes0 != null && valBytes0.isPlain())
-                return (V)valBytes0.get();
-        }
+// TODO IGNITE-51.
+//        if (valBytes != null) {
+//            GridCacheValueBytes valBytes0 = valBytes.get(idx);
+//
+//            if (valBytes0 != null && valBytes0.isPlain())
+//                return valBytes0.get();
+//        }
 
         return null;
     }
@@ -484,7 +485,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Entry processor.
      */
-    @Nullable public EntryProcessor<K, V, ?> entryProcessor(int idx) {
+    @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         return entryProcessors == null ? null : entryProcessors.get(idx);
     }
 
@@ -492,20 +493,21 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Near key index.
      * @return Value.
      */
-    @Nullable public V nearValue(int idx) {
+    @Nullable public CacheObject nearValue(int idx) {
         if (nearVals != null) {
-            V val = nearVals.get(idx);
+            CacheObject val = nearVals.get(idx);
 
             if (val != null)
                 return val;
         }
 
-        if (nearValBytes != null) {
-            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
-
-            if (valBytes0 != null && valBytes0.isPlain())
-                return (V)valBytes0.get();
-        }
+// TODO IGNITE-51.
+//        if (nearValBytes != null) {
+//            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
+//
+//            if (valBytes0 != null && valBytes0.isPlain())
+//                return (V)valBytes0.get();
+//        }
 
         return null;
     }
@@ -514,7 +516,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Transform closure.
      */
-    @Nullable public EntryProcessor<K, V, ?> nearEntryProcessor(int idx) {
+    @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
         return nearEntryProcessors == null ? null : nearEntryProcessors.get(idx);
     }
 
@@ -627,7 +629,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         keyBytes = marshalCollection(keys, ctx);
@@ -647,7 +649,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         keys = unmarshalCollection(keyBytes, ctx, ldr);

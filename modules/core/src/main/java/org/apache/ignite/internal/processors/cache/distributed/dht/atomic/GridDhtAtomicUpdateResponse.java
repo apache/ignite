@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * DHT atomic cache backup update response.
  */
-public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** Failed keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> failedKeys;
+    private Collection<KeyCacheObject> failedKeys;
 
     /** Serialized failed keys. */
     private byte[] failedKeysBytes;
@@ -61,7 +61,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> nearEvicted;
+    private Collection<KeyCacheObject> nearEvicted;
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
@@ -105,7 +105,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Failed keys.
      */
-    public Collection<K> failedKeys() {
+    public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
     }
 
@@ -115,7 +115,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
      * @param key Key to add.
      * @param e Error cause.
      */
-    public void addFailedKey(K key, Throwable e) {
+    public void addFailedKey(KeyCacheObject key, Throwable e) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>();
 
@@ -130,7 +130,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Evicted readers.
      */
-    public Collection<K> nearEvicted() {
+    public Collection<KeyCacheObject> nearEvicted() {
         return nearEvicted;
     }
 
@@ -140,7 +140,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
      * @param key Evicted key.
      * @param bytes Bytes of evicted key.
      */
-    public void addNearEvicted(K key, @Nullable byte[] bytes) {
+    public void addNearEvicted(KeyCacheObject key, @Nullable byte[] bytes) {
         if (nearEvicted == null)
             nearEvicted = new ArrayList<>();
 
@@ -156,7 +156,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         failedKeysBytes = ctx.marshaller().marshal(failedKeys);
@@ -167,7 +167,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         failedKeys = ctx.marshaller().unmarshal(failedKeysBytes, ldr);

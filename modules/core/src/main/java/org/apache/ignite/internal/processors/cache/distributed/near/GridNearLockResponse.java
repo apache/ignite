@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Near cache lock response.
  */
-public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
+public class GridNearLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -161,12 +161,12 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
      * @throws IgniteCheckedException If failed.
      */
     public void addValueBytes(
-        @Nullable V val,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
         boolean filterPassed,
         @Nullable GridCacheVersion dhtVer,
         @Nullable GridCacheVersion mappedVer,
-        GridCacheContext<K, V> ctx
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         int idx = valuesSize();
 

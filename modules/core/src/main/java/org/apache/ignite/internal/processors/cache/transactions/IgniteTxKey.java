@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -26,13 +27,13 @@ import java.io.*;
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey<K> implements Externalizable {
+public class IgniteTxKey implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Key. */
     @GridToStringInclude
-    private K key;
+    private KeyCacheObject key;
 
     /** Cache ID. */
     private int cacheId;
@@ -48,7 +49,7 @@ public class IgniteTxKey<K> implements Externalizable {
      * @param key User key.
      * @param cacheId Cache ID.
      */
-    public IgniteTxKey(K key, int cacheId) {
+    public IgniteTxKey(KeyCacheObject key, int cacheId) {
         this.key = key;
         this.cacheId = cacheId;
     }
@@ -56,7 +57,7 @@ public class IgniteTxKey<K> implements Externalizable {
     /**
      * @return User key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
     }
 
@@ -98,7 +99,7 @@ public class IgniteTxKey<K> implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheId = in.readInt();
-        key = (K)in.readObject();
+        key = (KeyCacheObject)in.readObject();
     }
 
     /** {@inheritDoc} */

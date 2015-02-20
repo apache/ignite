@@ -26,12 +26,12 @@ import org.jetbrains.annotations.*;
 /**
  * Extras where attributes and MVCC are set.
  */
-public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheAttributesMvccEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
     private GridLeanMap<String, Object> attrData;
 
     /** MVCC. */
-    private GridCacheMvcc<K> mvcc;
+    private GridCacheMvcc mvcc;
 
     /**
      * Constructor.
@@ -39,7 +39,7 @@ public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasA
      * @param attrData Attributes data.
      * @param mvcc MVCC.
      */
-    public GridCacheAttributesMvccEntryExtras(GridLeanMap<String, Object> attrData, GridCacheMvcc<K> mvcc) {
+    public GridCacheAttributesMvccEntryExtras(GridLeanMap<String, Object> attrData, GridCacheMvcc mvcc) {
         assert attrData != null;
         assert mvcc != null;
 
@@ -53,23 +53,23 @@ public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasA
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<String, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 
             return this;
         }
         else
-            return new GridCacheMvccEntryExtras<>(mvcc);
+            return new GridCacheMvccEntryExtras(mvcc);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvcc<K> mvcc() {
+    @Override public GridCacheMvcc mvcc() {
         return mvcc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(@Nullable GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(@Nullable GridCacheMvcc mvcc) {
         if (mvcc != null) {
             this.mvcc = mvcc;
 
@@ -80,13 +80,13 @@ public class GridCacheAttributesMvccEntryExtras<K> extends GridCacheEntryExtrasA
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
         return obsoleteVer != null ? new GridCacheAttributesMvccObsoleteEntryExtras<>(attrData, mvcc, obsoleteVer) :
             this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
         return ttl != 0 ? new GridCacheAttributesMvccTtlEntryExtras<>(attrData, mvcc, ttl, expireTime) : this;
     }
 

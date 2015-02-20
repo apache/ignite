@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Force keys response. Contains absent keys.
  */
-public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,12 +49,12 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** Missed (not found) keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> missedKeys;
+    private Collection<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridCacheEntryInfo<K, V>> infos;
+    private List<GridCacheEntryInfo> infos;
 
     /** */
     private byte[] infosBytes;
@@ -88,15 +88,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Keys.
      */
-    public Collection<K> missedKeys() {
-        return missedKeys == null ? Collections.<K>emptyList() : missedKeys;
+    public Collection<KeyCacheObject> missedKeys() {
+        return missedKeys == null ? Collections.<KeyCacheObject>emptyList() : missedKeys;
     }
 
     /**
      * @return Forced entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> forcedInfos() {
-        return infos == null ? Collections.<GridCacheEntryInfo<K,V>>emptyList() : infos;
+    public Collection<GridCacheEntryInfo> forcedInfos() {
+        return infos == null ? Collections.<GridCacheEntryInfo>emptyList() : infos;
     }
 
     /**
@@ -116,7 +116,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @param key Key.
      */
-    public void addMissed(K key) {
+    public void addMissed(KeyCacheObject key) {
         if (missedKeys == null)
             missedKeys = new ArrayList<>();
 
@@ -126,7 +126,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @param info Entry info to add.
      */
-    public void addInfo(GridCacheEntryInfo<K, V> info) {
+    public void addInfo(GridCacheEntryInfo info) {
         assert info != null;
 
         if (infos == null)
@@ -137,7 +137,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (missedKeys != null && missedKeyBytes == null)
@@ -151,7 +151,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (missedKeys == null && missedKeyBytes != null)

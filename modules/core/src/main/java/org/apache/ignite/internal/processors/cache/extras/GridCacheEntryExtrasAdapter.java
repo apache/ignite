@@ -24,14 +24,14 @@ import org.apache.ignite.internal.util.*;
 /**
  * Cache extras adapter.
  */
-public abstract class GridCacheEntryExtrasAdapter<K> implements GridCacheEntryExtras<K> {
+public abstract class GridCacheEntryExtrasAdapter implements GridCacheEntryExtras {
     /** {@inheritDoc} */
     @Override public GridLeanMap<String, Object> attributesData() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvcc<K> mvcc() {
+    @Override public GridCacheMvcc mvcc() {
         return null;
     }
 

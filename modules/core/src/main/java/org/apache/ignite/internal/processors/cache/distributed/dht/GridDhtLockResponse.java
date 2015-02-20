@@ -36,14 +36,14 @@ import java.util.*;
 /**
  * DHT cache lock response.
  */
-public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
+public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<IgniteTxKey<K>> nearEvicted;
+    private Collection<IgniteTxKey> nearEvicted;
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
@@ -59,7 +59,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     @GridDirectTransient
     /** Preload entries. */
-    private List<GridCacheEntryInfo<K, V>> preloadEntries;
+    private List<GridCacheEntryInfo> preloadEntries;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -103,14 +103,14 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey<K>> nearEvicted() {
+    public Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<IgniteTxKey<K>> nearEvicted) {
+    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -147,7 +147,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      *
      * @param info Info to add.
      */
-    public void addPreloadEntry(GridCacheEntryInfo<K, V> info) {
+    public void addPreloadEntry(GridCacheEntryInfo info) {
         if (preloadEntries == null)
             preloadEntries = new ArrayList<>();
 
@@ -159,13 +159,13 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      *
      * @return Collection of preload entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
+    public Collection<GridCacheEntryInfo> preloadEntries() {
+        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null && nearEvicted != null)
@@ -182,7 +182,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearEvicted == null && nearEvictedBytes != null)

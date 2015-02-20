@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Lock request message.
  */
-public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -72,7 +72,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** Keys. */
     @GridDirectTransient
-    private List<K> keys;
+    private List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
     @GridToStringInclude
@@ -258,11 +258,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
-        K key,
+        KeyCacheObject key,
         @Nullable byte[] keyBytes,
         boolean retVal,
-        @Nullable Collection<GridCacheMvccCandidate<K>> cands,
-        GridCacheContext<K, V> ctx
+        @Nullable Collection<GridCacheMvccCandidate> cands,
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         if (ctx.deploymentEnabled())
             prepareObject(key, ctx.shared());
@@ -289,7 +289,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Unmarshalled keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -323,7 +323,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (grpLockKey != null && grpLockKeyBytes == null) {
@@ -335,7 +335,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

@@ -29,7 +29,7 @@ import java.nio.*;
 /**
  * Swap entry.
  */
-public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
+public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 

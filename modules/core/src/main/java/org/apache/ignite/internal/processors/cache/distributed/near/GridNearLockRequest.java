@@ -38,7 +38,7 @@ import java.util.*;
 /**
  * Near cache lock request.
  */
-public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
+public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +53,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<Object, Object>>[] filter;
 
     /** Implicit flag. */
     private boolean implicitTx;
@@ -225,7 +225,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /**
      * @return Filter.
      */
-    public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
+    public IgnitePredicate<Cache.Entry<Object, Object>>[] filter() {
         return filter;
     }
 
@@ -234,7 +234,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void filter(IgnitePredicate<Cache.Entry<K, V>>[] filter, GridCacheContext<K, V> ctx)
+    public void filter(IgnitePredicate<Cache.Entry<Object, Object>>[] filter, GridCacheContext ctx)
         throws IgniteCheckedException {
         this.filter = filter;
     }
@@ -278,16 +278,16 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
-        K key,
+        KeyCacheObject key,
         byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        GridCacheContext<K, V> ctx
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, keyBytes, retVal, (Collection<GridCacheMvccCandidate<K>>)null, ctx);
+        addKeyBytes(key, keyBytes, retVal, (Collection<GridCacheMvccCandidate>)null, ctx);
     }
 
     /**
@@ -306,7 +306,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (filterBytes == null)
@@ -314,7 +314,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (filter == null && filterBytes != null)

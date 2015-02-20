@@ -27,17 +27,17 @@ import javax.cache.processor.*;
 /**
  * Cache entry atomic update result.
  */
-public class GridCacheUpdateAtomicResult<K, V> {
+public class GridCacheUpdateAtomicResult {
     /** Success flag.*/
     private final boolean success;
 
     /** Old value. */
     @GridToStringInclude
-    private final V oldVal;
+    private final CacheObject oldVal;
 
     /** New value. */
     @GridToStringInclude
-    private final V newVal;
+    private final CacheObject newVal;
 
     /** New TTL. */
     private final long newTtl;
@@ -51,7 +51,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
 
     /** DR resolution result. */
     @GridToStringInclude
-    private final GridCacheVersionConflictContext<K, V> conflictRes;
+    private final GridCacheVersionConflictContext<?, ?> conflictRes;
 
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
@@ -73,13 +73,13 @@ public class GridCacheUpdateAtomicResult<K, V> {
      * @param sndToDht Whether update should be propagated to DHT node.
      */
     public GridCacheUpdateAtomicResult(boolean success,
-        @Nullable V oldVal,
-        @Nullable V newVal,
+        @Nullable CacheObject oldVal,
+        @Nullable CacheObject newVal,
         @Nullable EntryProcessorResult<?> res,
         long newTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
-        @Nullable GridCacheVersionConflictContext<K, V> conflictRes,
+        @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht) {
         this.success = success;
         this.oldVal = oldVal;
@@ -109,14 +109,14 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return Old value.
      */
-    @Nullable public V oldValue() {
+    @Nullable public CacheObject oldValue() {
         return oldVal;
     }
 
     /**
      * @return New value.
      */
-    @Nullable public V newValue() {
+    @Nullable public CacheObject newValue() {
         return newVal;
     }
 
@@ -145,7 +145,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return DR conflict resolution context.
      */
-    @Nullable public GridCacheVersionConflictContext<K, V> conflictResolveResult() {
+    @Nullable public GridCacheVersionConflictContext<?, ?> conflictResolveResult() {
         return conflictRes;
     }
 

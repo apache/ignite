@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * DHT cache unlock request.
  */
-public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
+public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
 
     /** */
     @GridDirectTransient
-    private List<K> nearKeys;
+    private List<KeyCacheObject> nearKeys;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -68,7 +68,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /**
      * @return Near keys.
      */
-    public List<K> nearKeys() {
+    public List<KeyCacheObject> nearKeys() {
         return nearKeys;
     }
 
@@ -80,7 +80,8 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    public void addNearKey(KeyCacheObject key, byte[] keyBytes, GridCacheSharedContext ctx)
+        throws IgniteCheckedException {
         if (ctx.deploymentEnabled())
             prepareObject(key, ctx);
 
@@ -91,7 +92,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearKeyBytes != null)

@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Get response.
  */
-public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
+public class GridNearGetResponse extends GridCacheMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -51,7 +51,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /** Result. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheEntryInfo<K, V>> entries;
+    private Collection<GridCacheEntryInfo> entries;
 
     /** */
     private byte[] entriesBytes;
@@ -122,14 +122,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /**
      * @return Entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> entries() {
+    public Collection<GridCacheEntryInfo> entries() {
         return entries;
     }
 
     /**
      * @param entries Entries.
      */
-    public void entries(Collection<GridCacheEntryInfo<K, V>> entries) {
+    public void entries(Collection<GridCacheEntryInfo> entries) {
         this.entries = entries;
     }
 
@@ -172,7 +172,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (entries != null) {
@@ -186,7 +186,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (entriesBytes != null) {

@@ -29,7 +29,7 @@ import java.nio.*;
 /**
  * Request for single partition info.
  */
-abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K, V> {
+abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

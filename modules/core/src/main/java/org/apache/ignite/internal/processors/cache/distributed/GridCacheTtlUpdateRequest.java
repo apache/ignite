@@ -31,14 +31,14 @@ import java.util.*;
 /**
  *
  */
-public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Entries keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<K> keys;
+    private List<KeyCacheObject> keys;
 
     /** Keys bytes. */
     @GridDirectCollection(byte[].class)
@@ -51,7 +51,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /** Near entries keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<K> nearKeys;
+    private List<KeyCacheObject> nearKeys;
 
     /** Near entries bytes. */
     @GridDirectCollection(byte[].class)
@@ -134,7 +134,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -158,7 +158,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Keys for near cache.
      */
-    public List<K> nearKeys() {
+    public List<KeyCacheObject> nearKeys() {
         return nearKeys;
     }
 
@@ -170,7 +170,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr)
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 

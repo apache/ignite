@@ -29,7 +29,7 @@ import java.nio.*;
 /**
  * Transaction finish response.
  */
-public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V> {
+public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

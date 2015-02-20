@@ -26,9 +26,9 @@ import java.nio.*;
 /**
  * Entry for batch swap operations.
  */
-public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
+public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
     /** Key. */
-    private K key;
+    private KeyCacheObject key;
 
     /** Key bytes. */
     private byte[] keyBytes;
@@ -50,7 +50,7 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
      * @param keyClsLdrId Key class loader ID.
      * @param valClsLdrId Optional value class loader ID.
      */
-    public GridCacheBatchSwapEntry(K key,
+    public GridCacheBatchSwapEntry(KeyCacheObject key,
         byte[] keyBytes,
         int part,
         ByteBuffer valBytes,
@@ -70,7 +70,7 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
     /**
      * @return Key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
     }
 

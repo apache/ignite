@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Lock request message.
  */
-public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** Keys. */
     @GridDirectTransient
-    private List<K> keys;
+    private List<KeyCacheObject> keys;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -70,7 +70,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     /**
      * @return Keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -80,7 +80,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addKey(K key, byte[] bytes, GridCacheContext<K, V> ctx) throws IgniteCheckedException {
+    public void addKey(KeyCacheObject key, byte[] bytes, GridCacheContext ctx) throws IgniteCheckedException {
         boolean depEnabled = ctx.deploymentEnabled();
 
         if (depEnabled)
@@ -99,7 +99,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
@@ -107,7 +107,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null && !F.isEmpty(keyBytes))

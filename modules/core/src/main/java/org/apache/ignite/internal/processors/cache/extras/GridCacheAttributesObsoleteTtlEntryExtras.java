@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 /**
  * Extras where attributes, obsolete version and TTL are set.
  */
-public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheAttributesObsoleteTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
     private GridLeanMap<String, Object> attrData;
 
@@ -65,7 +65,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntry
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<String, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 
@@ -76,7 +76,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntry
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
         return mvcc != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras<>(attrData, mvcc, obsoleteVer, ttl,
             expireTime) : this;
     }
@@ -87,7 +87,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntry
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
         if (obsoleteVer != null) {
             this.obsoleteVer = obsoleteVer;
 
@@ -108,7 +108,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntry
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
         if (ttl != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;

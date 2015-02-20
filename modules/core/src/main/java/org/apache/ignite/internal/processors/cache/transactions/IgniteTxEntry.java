@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
+public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,35 +53,32 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Owning transaction. */
     @GridToStringExclude
-    private IgniteInternalTx<K, V> tx;
+    private IgniteInternalTx tx;
 
     /** Cache key. */
     @GridToStringInclude
-    private K key;
-
-    /** Key bytes. */
-    private byte[] keyBytes;
+    private KeyCacheObject key;
 
     /** Cache ID. */
     private int cacheId;
 
     /** Transient tx key. */
-    private IgniteTxKey<K> txKey;
+    private IgniteTxKey txKey;
 
     /** Cache value. */
     @GridToStringInclude
-    private TxEntryValueHolder<K, V> val = new TxEntryValueHolder<>();
+    private TxEntryValueHolder val = new TxEntryValueHolder();
 
     /** Visible value for peek. */
     @GridToStringInclude
-    private TxEntryValueHolder<K, V> prevVal = new TxEntryValueHolder<>();
+    private TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
     /** Filter bytes. */
     private byte[] filterBytes;
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol;
+    private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -105,7 +102,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<Object, Object>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -114,10 +111,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     private transient boolean filtersSet;
 
     /** Underlying cache entry. */
-    private transient volatile GridCacheEntryEx<K, V> entry;
+    private transient volatile GridCacheEntryEx entry;
 
     /** Cache registry. */
-    private transient GridCacheContext<K, V> ctx;
+    private transient GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
@@ -163,13 +160,13 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param entry Cache entry.
      * @param conflictVer Data center replication version.
      */
-    public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteInternalTx<K, V> tx,
+    public IgniteTxEntry(GridCacheContext<?, ?> ctx,
+        IgniteInternalTx tx,
         GridCacheOperation op,
-        V val,
+        CacheObject val,
         long ttl,
         long conflictExpireTime,
-        GridCacheEntryEx<K, V> entry,
+        GridCacheEntryEx entry,
         @Nullable GridCacheVersion conflictVer) {
         assert ctx != null;
         assert tx != null;
@@ -185,7 +182,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         this.conflictVer = conflictVer;
 
         key = entry.key();
-        keyBytes = entry.keyBytes();
 
         cacheId = entry.context().cacheId();
 
@@ -206,15 +202,15 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
      */
-    public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteInternalTx<K, V> tx,
+    public IgniteTxEntry(GridCacheContext<?, ?> ctx,
+        IgniteInternalTx tx,
         GridCacheOperation op,
-        V val,
-        EntryProcessor<K, V, ?> entryProcessor,
+        CacheObject val,
+        EntryProcessor<Object, Object, Object> entryProcessor,
         Object[] invokeArgs,
         long ttl,
-        GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<Cache.Entry<K, V>>[] filters,
+        GridCacheEntryEx entry,
+        IgnitePredicate<Cache.Entry<Object, Object>>[] filters,
         GridCacheVersion conflictVer) {
         assert ctx != null;
         assert tx != null;
@@ -233,7 +229,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
             addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
-        keyBytes = entry.keyBytes();
 
         cacheId = entry.context().cacheId();
 
@@ -243,7 +238,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Cache context for this tx entry.
      */
-    public GridCacheContext<K, V> context() {
+    public GridCacheContext<?, ?> context() {
         return ctx;
     }
 
@@ -281,19 +276,17 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param ctx Context.
      * @return Clean copy of this entry.
      */
-    public IgniteTxEntry<K, V> cleanCopy(GridCacheContext<K, V> ctx) {
-        IgniteTxEntry<K, V> cp = new IgniteTxEntry<>();
+    public IgniteTxEntry cleanCopy(GridCacheContext<?, ?> ctx) {
+        IgniteTxEntry cp = new IgniteTxEntry();
 
         cp.key = key;
         cp.cacheId = cacheId;
         cp.ctx = ctx;
 
-        cp.val = new TxEntryValueHolder<>();
+        cp.val = new TxEntryValueHolder();
 
-        cp.keyBytes = keyBytes;
         cp.filters = filters;
         cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
-        cp.val.valueBytes(val.valueBytes());
         cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
@@ -351,7 +344,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @param val Value to set.
      */
-    void setAndMarkValid(V val) {
+    void setAndMarkValid(CacheObject val) {
         setAndMarkValid(op(), val, this.val.hasWriteValue(), this.val.hasReadValue());
     }
 
@@ -359,7 +352,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param op Operation.
      * @param val Value to set.
      */
-    void setAndMarkValid(GridCacheOperation op, V val) {
+    void setAndMarkValid(GridCacheOperation op, CacheObject val) {
         setAndMarkValid(op, val, this.val.hasWriteValue(), this.val.hasReadValue());
     }
 
@@ -369,7 +362,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param hasReadVal Has read value flag.
      * @param hasWriteVal Has write value flag.
      */
-    void setAndMarkValid(GridCacheOperation op, V val, boolean hasWriteVal, boolean hasReadVal) {
+    void setAndMarkValid(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
         this.val.value(op, val, hasWriteVal, hasReadVal);
 
         markValid();
@@ -395,7 +388,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Entry key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
     }
 
@@ -409,40 +402,17 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Tx key.
      */
-    public IgniteTxKey<K> txKey() {
+    public IgniteTxKey txKey() {
         if (txKey == null)
-            txKey = new IgniteTxKey<>(key, cacheId);
+            txKey = new IgniteTxKey(key, cacheId);
 
         return txKey;
     }
 
     /**
-     *
-     * @return Key bytes.
-     */
-    @Nullable public byte[] keyBytes() {
-        byte[] bytes = keyBytes;
-
-        if (bytes == null && entry != null) {
-            bytes = entry.keyBytes();
-
-            keyBytes = bytes;
-        }
-
-        return bytes;
-    }
-
-    /**
-     * @param keyBytes Key bytes.
-     */
-    public void keyBytes(byte[] keyBytes) {
-        initKeyBytes(keyBytes);
-    }
-
-    /**
      * @return Underlying cache entry.
      */
-    public GridCacheEntryEx<K, V> cached() {
+    public GridCacheEntryEx cached() {
         return entry;
     }
 
@@ -450,50 +420,19 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param entry Cache entry.
      * @param keyBytes Key bytes, possibly {@code null}.
      */
-    public void cached(GridCacheEntryEx<K,V> entry, @Nullable byte[] keyBytes) {
+    public void cached(GridCacheEntryEx entry, @Nullable byte[] keyBytes) {
         assert entry != null;
 
         assert entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
             ", entry=" + entry + ", ctxNear=" + ctx.isNear() + ", ctxDht=" + ctx.isDht() + ']';
 
         this.entry = entry;
-
-        initKeyBytes(keyBytes);
-    }
-
-    /**
-     * Initialized key bytes locally and on the underlying entry.
-     *
-     * @param bytes Key bytes to initialize.
-     */
-    private void initKeyBytes(@Nullable byte[] bytes) {
-        if (bytes != null) {
-            keyBytes = bytes;
-
-            while (true) {
-                try {
-                    if (entry != null)
-                        entry.keyBytes(bytes);
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignore) {
-                    entry = ctx.cache().entryEx(key);
-                }
-            }
-        }
-        else if (entry != null) {
-            bytes = entry.keyBytes();
-
-            if (bytes != null)
-                keyBytes = bytes;
-        }
     }
 
     /**
      * @return Entry value.
      */
-    @Nullable public V value() {
+    @Nullable public CacheObject value() {
         return val.value();
     }
 
@@ -521,7 +460,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Value visible for peek.
      */
-    @Nullable public V previousValue() {
+    @Nullable public CacheObject previousValue() {
         return prevVal.value();
     }
 
@@ -537,20 +476,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      */
     @Nullable public GridCacheOperation previousOperation() {
         return prevVal.op();
-    }
-
-    /**
-     * @return Value bytes.
-     */
-    @Nullable public byte[] valueBytes() {
-        return val.valueBytes();
-    }
-
-    /**
-     * @param valBytes Value bytes.
-     */
-    public void valueBytes(@Nullable byte[] valBytes) {
-        val.valueBytes(valBytes);
     }
 
     /**
@@ -586,7 +511,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param writeVal Write value flag.
      * @param readVal Read value flag.
      */
-    public void value(@Nullable V val, boolean writeVal, boolean readVal) {
+    public void value(@Nullable CacheObject val, boolean writeVal, boolean readVal) {
         this.val.value(this.val.op(), val, writeVal, readVal);
     }
 
@@ -595,7 +520,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      *
      * @param val Read value to set.
      */
-    public void readValue(@Nullable V val) {
+    public void readValue(@Nullable CacheObject val) {
         this.val.value(this.val.op(), val, false, true);
     }
 
@@ -603,11 +528,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param entryProcessor Entry processor.
      * @param invokeArgs Optional arguments for EntryProcessor.
      */
-    public void addEntryProcessor(EntryProcessor<K, V, ?> entryProcessor, Object[] invokeArgs) {
+    public void addEntryProcessor(EntryProcessor<Object, Object, Object> entryProcessor, Object[] invokeArgs) {
         if (entryProcessorsCol == null)
             entryProcessorsCol = new LinkedList<>();
 
-        entryProcessorsCol.add(new T2<EntryProcessor<K, V, ?>, Object[]>(entryProcessor, invokeArgs));
+        entryProcessorsCol.add(new T2<>(entryProcessor, invokeArgs));
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
@@ -618,7 +543,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Collection of entry processors.
      */
-    public Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors() {
+    public Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors() {
         return entryProcessorsCol;
     }
 
@@ -627,10 +552,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @return New value.
      */
     @SuppressWarnings("unchecked")
-    public V applyEntryProcessors(V val) {
-        for (T2<EntryProcessor<K, V, ?>, Object[]> t : entryProcessors()) {
+    public CacheObject applyEntryProcessors(Object val) {
+        for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(ctx, key, val);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key.value(ctx), val);
 
                 EntryProcessor processor = t.get1();
 
@@ -643,16 +568,19 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
             }
         }
 
-        if (ctx.portableEnabled())
-            val = (V)ctx.marshalToPortable(val);
-
-        return val;
+        return ctx.toCacheObject(val);
+// TODO IGNITE-51
+//        if (ctx.portableEnabled())
+//            val = (V)ctx.marshalToPortable(val);
+//
+//        return val;
     }
 
     /**
      * @param entryProcessorsCol Collection of entry processors.
      */
-    public void entryProcessors(@Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol) {
+    public void entryProcessors(
+        @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol) {
         this.entryProcessorsCol = entryProcessorsCol;
 
         // Must clear transform closure bytes since collection has changed.
@@ -711,14 +639,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<Cache.Entry<K, V>>[] filters() {
+    public IgnitePredicate<Cache.Entry<Object, Object>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<Cache.Entry<K, V>>[] filters) {
+    public void filters(IgnitePredicate<Cache.Entry<Object, Object>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -757,12 +685,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param transferExpiry {@code True} if expire policy should be marshalled.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx, boolean transferExpiry) throws IgniteCheckedException {
+    public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
-            if (keyBytes == null)
-                keyBytes = entry.getOrMarshalKeyBytes();
-
             if (transformClosBytes == null && entryProcessorsCol != null)
                 transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
@@ -786,36 +711,37 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<K, V> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (this.ctx == null) {
-            GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
-
-            if (cacheCtx.isNear() && !near)
-                cacheCtx = cacheCtx.near().dht().context();
-            else if (!cacheCtx.isNear() && near)
-                cacheCtx = cacheCtx.dht().near().context();
-
-            this.ctx = cacheCtx;
-        }
-
-        if (depEnabled) {
-            // Don't unmarshal more than once by checking key for null.
-            if (key == null)
-                key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
-
-            // Unmarshal transform closure anyway if it exists.
-            if (transformClosBytes != null && entryProcessorsCol == null)
-                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
-
-            if (filters == null && filterBytes != null) {
-                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
-
-                if (filters == null)
-                    filters = CU.empty();
-            }
-        }
-
-        val.unmarshal(this.ctx, clsLdr, depEnabled);
+    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
+// TODO IGNITE-51.
+//        if (this.ctx == null) {
+//            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
+//
+//            if (cacheCtx.isNear() && !near)
+//                cacheCtx = cacheCtx.near().dht().context();
+//            else if (!cacheCtx.isNear() && near)
+//                cacheCtx = cacheCtx.dht().near().context();
+//
+//            this.ctx = cacheCtx;
+//        }
+//
+//        if (depEnabled) {
+//            // Don't unmarshal more than once by checking key for null.
+//            if (key == null)
+//                key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
+//
+//            // Unmarshal transform closure anyway if it exists.
+//            if (transformClosBytes != null && entryProcessorsCol == null)
+//                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+//
+//            if (filters == null && filterBytes != null) {
+//                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
+//
+//                if (filters == null)
+//                    filters = CU.empty();
+//            }
+//        }
+//
+//        val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
 
     /**
@@ -834,61 +760,63 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(depEnabled);
-
-        if (depEnabled) {
-            U.writeByteArray(out, keyBytes);
-            U.writeByteArray(out, transformClosBytes);
-            U.writeByteArray(out, filterBytes);
-        }
-        else {
-            out.writeObject(key);
-            U.writeCollection(out, entryProcessorsCol);
-            U.writeArray(out, filters);
-        }
-
-        out.writeInt(cacheId);
-
-        val.writeTo(out);
-
-        out.writeLong(ttl);
-        out.writeLong(conflictExpireTime);
-
-        CU.writeVersion(out, explicitVer);
-        out.writeBoolean(grpLock);
-        CU.writeVersion(out, conflictVer);
-
-        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
+// TODO IGNITE-51.
+//        out.writeBoolean(depEnabled);
+//
+//        if (depEnabled) {
+//            U.writeByteArray(out, keyBytes);
+//            U.writeByteArray(out, transformClosBytes);
+//            U.writeByteArray(out, filterBytes);
+//        }
+//        else {
+//            out.writeObject(key);
+//            U.writeCollection(out, entryProcessorsCol);
+//            U.writeArray(out, filters);
+//        }
+//
+//        out.writeInt(cacheId);
+//
+//        val.writeTo(out);
+//
+//        out.writeLong(ttl);
+//        out.writeLong(conflictExpireTime);
+//
+//        CU.writeVersion(out, explicitVer);
+//        out.writeBoolean(grpLock);
+//        CU.writeVersion(out, conflictVer);
+//
+//        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        depEnabled = in.readBoolean();
-
-        if (depEnabled) {
-            keyBytes = U.readByteArray(in);
-            transformClosBytes = U.readByteArray(in);
-            filterBytes = U.readByteArray(in);
-        }
-        else {
-            key = (K)in.readObject();
-            entryProcessorsCol = U.readCollection(in);
-            filters = GridCacheUtils.readEntryFilterArray(in);
-        }
-
-        cacheId = in.readInt();
-
-        val.readFrom(in);
-
-        ttl = in.readLong();
-        conflictExpireTime = in.readLong();
-
-        explicitVer = CU.readVersion(in);
-        grpLock = in.readBoolean();
-        conflictVer = CU.readVersion(in);
-
-        expiryPlc = (ExpiryPolicy)in.readObject();
+// TODO IGNITE-51.
+//        depEnabled = in.readBoolean();
+//
+//        if (depEnabled) {
+//            keyBytes = U.readByteArray(in);
+//            transformClosBytes = U.readByteArray(in);
+//            filterBytes = U.readByteArray(in);
+//        }
+//        else {
+//            key = (K)in.readObject();
+//            entryProcessorsCol = U.readCollection(in);
+//            filters = GridCacheUtils.readEntryFilterArray(in);
+//        }
+//
+//        cacheId = in.readInt();
+//
+//        val.readFrom(in);
+//
+//        ttl = in.readLong();
+//        conflictExpireTime = in.readLong();
+//
+//        explicitVer = CU.readVersion(in);
+//        grpLock = in.readBoolean();
+//        conflictVer = CU.readVersion(in);
+//
+//        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -900,7 +828,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     @Override public Class<?> deployClass() {
         ClassLoader clsLdr = getClass().getClassLoader();
 
-        V val = value();
+        CacheObject val = value();
 
         // First of all check classes that may be loaded by class loader other than application one.
         return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
@@ -914,22 +842,16 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridToStringBuilder.toString(IgniteTxEntry.class, this,
-            "keyBytesSize", keyBytes == null ? "null" : Integer.toString(keyBytes.length),
-            "xidVer", tx == null ? "null" : tx.xidVersion());
+        return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
     }
 
     /**
      * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
      */
-    private static class TxEntryValueHolder<K, V> {
+    private static class TxEntryValueHolder {
         /** */
         @GridToStringInclude
-        private V val;
-
-        /** */
-        @GridToStringExclude
-        private byte[] valBytes;
+        private CacheObject val;
 
         /** */
         @GridToStringInclude
@@ -950,17 +872,12 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          * @param hasWriteVal Write value presence flag.
          * @param hasReadVal Read value presence flag.
          */
-        public void value(GridCacheOperation op, V val, boolean hasWriteVal, boolean hasReadVal) {
+        public void value(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
             if (hasReadVal && this.hasWriteVal)
                 return;
 
-            boolean clean = this.val != null;
-
             this.op = op;
             this.val = val;
-
-            if (clean)
-                valBytes = null;
 
             this.hasWriteVal = hasWriteVal || op == CREATE || op == UPDATE || op == DELETE;
             this.hasReadVal = hasReadVal || op == READ;
@@ -978,20 +895,15 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          *
          * @return Value.
          */
-        public V value() {
+        public CacheObject value() {
             return val;
         }
 
         /**
          * @param val Stored value.
          */
-        public void value(@Nullable V val) {
-            boolean clean = this.val != null;
-
+        public void value(@Nullable CacheObject val) {
             this.val = val;
-
-            if (clean)
-                valBytes = null;
         }
 
         /**
@@ -1027,39 +939,22 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
 
         /**
-         * Sets value bytes.
-         *
-         * @param valBytes Value bytes to set.
-         */
-        public void valueBytes(@Nullable byte[] valBytes) {
-            this.valBytes = valBytes;
-        }
-
-        /**
-         * Gets value bytes.
-         *
-         * @return Value bytes.
-         */
-        public byte[] valueBytes() {
-            return valBytes;
-        }
-
-        /**
          * @param sharedCtx Shared cache context.
          * @param ctx Cache context.
          * @param depEnabled Deployment enabled flag.
          * @throws IgniteCheckedException If marshaling failed.
          */
-        public void marshal(GridCacheSharedContext<K, V> sharedCtx, GridCacheContext<K, V> ctx, boolean depEnabled)
+        public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx, boolean depEnabled)
             throws IgniteCheckedException {
-            boolean valIsByteArr = val != null && val instanceof byte[];
-
-            // Do not send write values to remote nodes.
-            if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
-                (depEnabled || !ctx.isUnmarshalValues()))
-                valBytes = CU.marshal(sharedCtx, val);
-
-            valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
+// TODO IGNITE-51.
+//            boolean valIsByteArr = val != null && val instanceof byte[];
+//
+//            // Do not send write values to remote nodes.
+//            if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
+//                (depEnabled || !ctx.isUnmarshalValues()))
+//                valBytes = CU.marshal(sharedCtx, val);
+//
+//            valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
         }
 
         /**
@@ -1068,9 +963,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          * @param depEnabled Deployment enabled flag.
          * @throws IgniteCheckedException If unmarshalling failed.
          */
-        public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
-            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
-                val = ctx.marshaller().unmarshal(valBytes, ldr);
+        public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
+// TODO IGNITE-51.
+//            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
+//                val = ctx.marshaller().unmarshal(valBytes, ldr);
         }
 
         /**
@@ -1078,27 +974,28 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          * @throws IOException If failed.
          */
         public void writeTo(ObjectOutput out) throws IOException {
-            out.writeBoolean(hasWriteVal);
-            out.writeBoolean(valBytesSent);
-
-            if (hasWriteVal) {
-                if (valBytesSent)
-                    U.writeByteArray(out, valBytes);
-                else {
-                    if (val != null && val instanceof byte[]) {
-                        out.writeBoolean(true);
-
-                        U.writeByteArray(out, (byte[])val);
-                    }
-                    else {
-                        out.writeBoolean(false);
-
-                        out.writeObject(val);
-                    }
-                }
-            }
-
-            out.writeInt(op.ordinal());
+// TODO IGNITE-51.
+//            out.writeBoolean(hasWriteVal);
+//            out.writeBoolean(valBytesSent);
+//
+//            if (hasWriteVal) {
+//                if (valBytesSent)
+//                    U.writeByteArray(out, valBytes);
+//                else {
+//                    if (val != null && val instanceof byte[]) {
+//                        out.writeBoolean(true);
+//
+//                        U.writeByteArray(out, (byte[])val);
+//                    }
+//                    else {
+//                        out.writeBoolean(false);
+//
+//                        out.writeObject(val);
+//                    }
+//                }
+//            }
+//
+//            out.writeInt(op.ordinal());
         }
 
         /**
@@ -1108,22 +1005,23 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
          */
         @SuppressWarnings("unchecked")
         public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
-            hasWriteVal = in.readBoolean();
-            valBytesSent = in.readBoolean();
-
-            if (hasWriteVal) {
-                if (valBytesSent)
-                    valBytes = U.readByteArray(in);
-                else
-                    val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
-            }
-
-            op = fromOrdinal(in.readInt());
+// TODO IGNITE-51.
+//            hasWriteVal = in.readBoolean();
+//            valBytesSent = in.readBoolean();
+//
+//            if (hasWriteVal) {
+//                if (valBytesSent)
+//                    valBytes = U.readByteArray(in);
+//                else
+//                    val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+//            }
+//
+//            op = fromOrdinal(in.readInt());
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "[op=" + op +", val=" + val + ", valBytesLen=" + (valBytes == null ? 0 : valBytes.length) + ']';
+            return "[op=" + op +", val=" + val + ']';
         }
     }
 }

@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject {
+public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      *
      */
@@ -298,7 +298,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param cacheCtx Cache context.
      * @param part Invalid partition.
      */
-    public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part);
+    public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part);
 
     /**
      * @return Invalid partitions.
@@ -311,7 +311,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param key Key to get version for.
      * @return Owned version, if any.
      */
-    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey<K> key);
+    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey key);
 
     /**
      * Gets ID of additional node involved. For example, in DHT case, other node is
@@ -355,13 +355,13 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @return {@code True} if lock is owned.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public boolean ownsLock(GridCacheEntryEx<K, V> entry) throws GridCacheEntryRemovedException;
+    public boolean ownsLock(GridCacheEntryEx entry) throws GridCacheEntryRemovedException;
 
     /**
      * @param entry Entry to check.
      * @return {@code True} if lock is owned.
      */
-    public boolean ownsLockUnsafe(GridCacheEntryEx<K, V> entry);
+    public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
     /**
      * For Partitioned caches, this flag is {@code false} for remote DHT and remote NEAR
@@ -433,42 +433,42 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param key Key to check.
      * @return {@code True} if key is present.
      */
-    public boolean hasWriteKey(IgniteTxKey<K> key);
+    public boolean hasWriteKey(IgniteTxKey key);
 
     /**
      * @return Read set.
      */
-    public Set<IgniteTxKey<K>> readSet();
+    public Set<IgniteTxKey> readSet();
 
     /**
      * @return Write set.
      */
-    public Set<IgniteTxKey<K>> writeSet();
+    public Set<IgniteTxKey> writeSet();
 
     /**
      * @return All transaction entries.
      */
-    public Collection<IgniteTxEntry<K, V>> allEntries();
+    public Collection<IgniteTxEntry> allEntries();
 
     /**
      * @return Write entries.
      */
-    public Collection<IgniteTxEntry<K, V>> writeEntries();
+    public Collection<IgniteTxEntry> writeEntries();
 
     /**
      * @return Read entries.
      */
-    public Collection<IgniteTxEntry<K, V>> readEntries();
+    public Collection<IgniteTxEntry> readEntries();
 
     /**
      * @return Transaction write map.
      */
-    public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> writeMap();
+    public Map<IgniteTxKey, IgniteTxEntry> writeMap();
 
     /**
      * @return Transaction read map.
      */
-    public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap();
+    public Map<IgniteTxKey, IgniteTxEntry> readMap();
 
     /**
      * Gets a list of entries that needs to be locked on the next step of prepare stage of
@@ -476,7 +476,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return List of tx entries for optimistic locking.
      */
-    public Collection<IgniteTxEntry<K, V>> optimisticLockEntries();
+    public Collection<IgniteTxEntry> optimisticLockEntries();
 
     /**
      * Seals transaction for updates.
@@ -487,7 +487,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param key Key for the entry.
      * @return Entry for the key (either from write set or read set).
      */
-    @Nullable public IgniteTxEntry<K, V> entry(IgniteTxKey<K> key);
+    @Nullable public IgniteTxEntry entry(IgniteTxKey key);
 
     /**
      * @param ctx Cache context.
@@ -497,10 +497,10 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<V> peek(
-         GridCacheContext<K, V> ctx,
+     @Nullable public <K, V> GridTuple<CacheObject> peek(
+         GridCacheContext<?, ?> ctx,
          boolean failFast,
-         K key,
+         KeyCacheObject key,
          @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
@@ -542,7 +542,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      *
      * @return Future for prepare step.
      */
-    public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync();
+    public IgniteInternalFuture<IgniteInternalTx> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -611,7 +611,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param owner Lock candidate that won ownership of the lock.
      * @return {@code True} if transaction cared about notification.
      */
-    public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner);
+    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
 
     /**
      * @return {@code True} if transaction timed out.
@@ -654,7 +654,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param key Key to check.
      * @return {@code True} if key has been removed.
      */
-    public boolean removed(IgniteTxKey<K> key);
+    public boolean removed(IgniteTxKey key);
 
     /**
      * Gets allowed remaining time for this transaction.

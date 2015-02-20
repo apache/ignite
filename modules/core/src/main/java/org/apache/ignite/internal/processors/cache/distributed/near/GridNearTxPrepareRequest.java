@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Near transaction prepare request.
  */
-public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -96,9 +96,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
         long topVer,
-        IgniteInternalTx<K, V> tx,
-        Collection<IgniteTxEntry<K, V>> reads,
-        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteInternalTx tx,
+        Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes,
         IgniteTxKey grpLockKey,
         boolean partLock,
         boolean near,
@@ -218,14 +218,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<IgniteTxEntry<K, V>> cloneEntries(Collection<IgniteTxEntry<K, V>> c) {
+    private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
             return c;
 
-        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(c.size());
+        Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
-        for (IgniteTxEntry<K, V> e : c) {
-            GridCacheContext<K, V> cacheCtx = e.context();
+        for (IgniteTxEntry e : c) {
+            GridCacheContext cacheCtx = e.context();
 
             // Clone only if it is a near cache.
             if (cacheCtx.isNear())

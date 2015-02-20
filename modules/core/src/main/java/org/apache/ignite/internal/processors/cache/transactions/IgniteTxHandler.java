@@ -46,14 +46,14 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Isolated logic to process cache messages.
  */
-public class IgniteTxHandler<K, V> {
+public class IgniteTxHandler {
     /** Logger. */
     private IgniteLogger log;
 
     /** Shared cache context. */
-    private GridCacheSharedContext<K, V> ctx;
+    private GridCacheSharedContext<?, ?> ctx;
 
-    public IgniteInternalFuture<IgniteInternalTx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+    public IgniteInternalFuture<IgniteInternalTx> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         return prepareTx(nearNodeId, null, req, null);
     }

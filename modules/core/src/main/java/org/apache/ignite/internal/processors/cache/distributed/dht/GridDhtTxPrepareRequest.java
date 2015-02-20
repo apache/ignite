@@ -37,7 +37,7 @@ import java.util.*;
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,7 +59,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** Near writes. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> nearWrites;
+    private Collection<IgniteTxEntry> nearWrites;
 
     /** Serialized near writes. */
     @GridDirectCollection(byte[].class)
@@ -68,7 +68,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey<K>, GridCacheVersion> owned;
+    private Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned versions bytes. */
     private byte[] ownedBytes;
@@ -113,9 +113,9 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         IgniteUuid futId,
         IgniteUuid miniId,
         long topVer,
-        GridDhtTxLocalAdapter<K, V> tx,
-        Collection<IgniteTxEntry<K, V>> dhtWrites,
-        Collection<IgniteTxEntry<K, V>> nearWrites,
+        GridDhtTxLocalAdapter tx,
+        Collection<IgniteTxEntry> dhtWrites,
+        Collection<IgniteTxEntry> nearWrites,
         IgniteTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
@@ -186,8 +186,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Near writes.
      */
-    public Collection<IgniteTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
+    public Collection<IgniteTxEntry> nearWrites() {
+        return nearWrites == null ? Collections.<IgniteTxEntry>emptyList() : nearWrites;
     }
 
     /**
@@ -253,7 +253,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(IgniteTxKey<K> key, GridCacheVersion ownerMapped) {
+    public void owned(IgniteTxKey key, GridCacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -263,20 +263,20 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Owned versions map.
      */
-    public Map<IgniteTxKey<K>, GridCacheVersion> owned() {
+    public Map<IgniteTxKey, GridCacheVersion> owned() {
         return owned;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (ownedBytes == null && owned != null) {
             ownedBytes = CU.marshal(ctx, owned);
 
             if (ctx.deploymentEnabled()) {
-                for (IgniteTxKey<K> k : owned.keySet())
+                for (IgniteTxKey k : owned.keySet())
                     prepareObject(k, ctx);
             }
         }
@@ -286,13 +286,13 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
             nearWritesBytes = new ArrayList<>(nearWrites.size());
 
-            for (IgniteTxEntry<K, V> e : nearWrites)
+            for (IgniteTxEntry e : nearWrites)
                 nearWritesBytes.add(ctx.marshaller().marshal(e));
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedBytes != null && owned == null)
@@ -302,7 +302,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             nearWrites = new ArrayList<>(nearWritesBytes.size());
 
             for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
+                nearWrites.add(ctx.marshaller().<IgniteTxEntry>unmarshal(arr, ldr));
 
             unmarshalTx(nearWrites, true, ctx, ldr);
         }

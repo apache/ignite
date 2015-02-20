@@ -605,8 +605,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key to construct tx key for.
      * @return Transaction key.
      */
-    public IgniteTxKey<K> txKey(K key) {
-        return new IgniteTxKey<>(key, cacheId);
+    public IgniteTxKey txKey(KeyCacheObject key) {
+        return new IgniteTxKey(key, cacheId);
     }
 
     /**
@@ -1759,6 +1759,21 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return serMgr.unwrapPortableIfNeeded(o, keepPortable);
+    }
+    /**
+     * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
+        return portable().toCacheObject(obj);
+    }
+
+    /**
+     * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
+        return portable().toCacheKeyObject(obj);
     }
 
     /**

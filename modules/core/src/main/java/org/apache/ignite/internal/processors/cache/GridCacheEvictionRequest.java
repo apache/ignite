@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Cache eviction request.
  */
-public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridCacheEvictionRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /** Entries to clear from near and backup nodes. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridTuple3<K, GridCacheVersion, Boolean>> entries;
+    private Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> entries;
 
     /** Serialized entries. */
     @GridToStringExclude
@@ -80,7 +80,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (entries != null) {
@@ -92,7 +92,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (entriesBytes != null)
@@ -109,7 +109,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Entries - {{Key, Version, Boolean (near or not)}, ...}.
      */
-    Collection<GridTuple3<K, GridCacheVersion, Boolean>> entries() {
+    Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> entries() {
         return entries;
     }
 
@@ -127,7 +127,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
      * @param ver Entry version.
      * @param near {@code true} if key should be evicted from near cache.
      */
-    void addKey(K key, GridCacheVersion ver, boolean near) {
+    void addKey(KeyCacheObject key, GridCacheVersion ver, boolean near) {
         assert key != null;
         assert ver != null;
 

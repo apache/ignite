@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Extras where TTL and expire time are set.
  */
-public class GridCacheTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     /** TTL. */
     private long ttl;
 
@@ -46,18 +46,18 @@ public class GridCacheTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesTtlEntryExtras<K>(attrData, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<String, Object> attrData) {
+        return attrData != null ? new GridCacheAttributesTtlEntryExtras(attrData, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
         return mvcc != null ? new GridCacheMvccTtlEntryExtras<>(mvcc, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
-        return obsoleteVer != null ? new GridCacheObsoleteTtlEntryExtras<K>(obsoleteVer, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+        return obsoleteVer != null ? new GridCacheObsoleteTtlEntryExtras(obsoleteVer, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */
@@ -71,7 +71,7 @@ public class GridCacheTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
         if (ttl != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;

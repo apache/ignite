@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Cache eviction response.
  */
-public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheEvictionResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +40,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** Rejected keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> rejectedKeys = new HashSet<>();
+    private Collection<KeyCacheObject> rejectedKeys = new HashSet<>();
 
     /** Serialized rejected keys. */
     @GridToStringExclude
@@ -78,14 +78,14 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         rejectedKeyBytes = marshalCollection(rejectedKeys, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         rejectedKeys = unmarshalCollection(rejectedKeyBytes, ctx, ldr);
@@ -101,7 +101,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Rejected keys.
      */
-    Collection<K> rejectedKeys() {
+    Collection<KeyCacheObject> rejectedKeys() {
         return rejectedKeys;
     }
 
@@ -110,7 +110,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
      *
      * @param key Evicted key.
      */
-    void addRejected(K key) {
+    void addRejected(KeyCacheObject key) {
         assert key != null;
 
         rejectedKeys.add(key);

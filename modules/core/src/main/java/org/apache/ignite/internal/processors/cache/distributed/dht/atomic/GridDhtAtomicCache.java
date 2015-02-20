@@ -1723,7 +1723,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
-                        GridCacheVersionConflictContext<K, V> ctx = updRes.conflictResolveResult();
+                        GridCacheVersionConflictContext<?, ?> ctx = updRes.conflictResolveResult();
 
                         long ttl = updRes.newTtl();
                         long expireTime = updRes.conflictExpireTime();

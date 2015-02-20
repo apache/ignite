@@ -34,7 +34,7 @@ import java.util.*;
  * Force keys request. This message is sent by node while preloading to force
  * another node to put given keys into the next batch of transmitting entries.
  */
-public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /** Keys to request. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
     private long topVer;
@@ -67,7 +67,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        Collection<K> keys,
+        Collection<KeyCacheObject> keys,
         long topVer
     ) {
         assert futId != null;
@@ -96,7 +96,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @param keys Collection of keys.
      */
-    public GridDhtForceKeysRequest(Collection<K> keys) {
+    public GridDhtForceKeysRequest(Collection<KeyCacheObject> keys) {
         assert !F.isEmpty(keys);
 
         this.keys = keys;
@@ -126,7 +126,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @return Keys.
      */
-    public Collection<K> keys() {
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -139,7 +139,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (keyBytes == null)
@@ -147,7 +147,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

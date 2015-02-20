@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Partition supply message.
  */
-public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +55,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** Entries. */
     @GridDirectTransient
-    private Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos = new HashMap<>();
+    private Map<Integer, Collection<GridCacheEntryInfo>> infos = new HashMap<>();
 
     /** Cache entries in serialized form. */
     @GridToStringExclude
@@ -173,7 +173,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Entries.
      */
-    Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos() {
+    Map<Integer, Collection<GridCacheEntryInfo>> infos() {
         return infos;
     }
 
@@ -190,7 +190,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    void addEntry(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert info != null;
 
         marshalInfo(info, ctx);
@@ -216,11 +216,10 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert info != null;
-        assert info.keyBytes() != null;
-        assert info.valueBytes() != null || info.value() instanceof byte[] :
-            "Missing value bytes with invalid value: " + info.value();
+        assert info.key() != null;
+        assert info.value() != null;
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);
@@ -242,22 +241,22 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         infoBytes = ctx.marshaller().marshal(infoBytesMap);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         infoBytesMap = ctx.marshaller().unmarshal(infoBytes, ldr);
 
-        GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
+        GridCacheContext cacheCtx = ctx.cacheContext(cacheId);
 
         for (Map.Entry<Integer, Collection<byte[]>> e : infoBytesMap.entrySet()) {
-            Collection<GridCacheEntryInfo<K, V>> entries = unmarshalCollection(e.getValue(), ctx, ldr);
+            Collection<GridCacheEntryInfo> entries = unmarshalCollection(e.getValue(), ctx, ldr);
 
             unmarshalInfos(entries, cacheCtx, ldr);
 

@@ -36,7 +36,7 @@ import java.util.*;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Transaction read set. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> reads;
+    private Collection<IgniteTxEntry> reads;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -76,7 +76,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Transaction write entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> writes;
+    private Collection<IgniteTxEntry> writes;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -85,7 +85,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** DHT versions to verify. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey<K>, GridCacheVersion> dhtVers;
+    private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** Serialized map. */
     @GridToStringExclude
@@ -136,9 +136,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param onePhaseCommit One phase commit flag.
      */
     public GridDistributedTxPrepareRequest(
-        IgniteInternalTx<K, V> tx,
-        @Nullable Collection<IgniteTxEntry<K, V>> reads,
-        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteInternalTx tx,
+        @Nullable Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes,
         IgniteTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
@@ -183,7 +183,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param key Key for which version is verified.
      * @param dhtVer DHT version to check.
      */
-    public void addDhtVersion(IgniteTxKey<K> key, @Nullable GridCacheVersion dhtVer) {
+    public void addDhtVersion(IgniteTxKey key, @Nullable GridCacheVersion dhtVer) {
         if (dhtVers == null)
             dhtVers = new HashMap<>();
 
@@ -193,8 +193,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Map of versions to be verified.
      */
-    public Map<IgniteTxKey<K>, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap() : dhtVers;
+    public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
+        return dhtVers == null ? Collections.<IgniteTxKey, GridCacheVersion>emptyMap() : dhtVers;
     }
 
     /**
@@ -238,28 +238,28 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Read set.
      */
-    public Collection<IgniteTxEntry<K, V>> reads() {
+    public Collection<IgniteTxEntry> reads() {
         return reads;
     }
 
     /**
      * @return Write entries.
      */
-    public Collection<IgniteTxEntry<K, V>> writes() {
+    public Collection<IgniteTxEntry> writes() {
         return writes;
     }
 
     /**
      * @param reads Reads.
      */
-    protected void reads(Collection<IgniteTxEntry<K, V>> reads) {
+    protected void reads(Collection<IgniteTxEntry> reads) {
         this.reads = reads;
     }
 
     /**
      * @param writes Writes.
      */
-    protected void writes(Collection<IgniteTxEntry<K, V>> writes) {
+    protected void writes(Collection<IgniteTxEntry> writes) {
         this.writes = writes;
     }
 
@@ -293,7 +293,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (writes != null) {
@@ -301,7 +301,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             writesBytes = new ArrayList<>(writes.size());
 
-            for (IgniteTxEntry<K, V> e : writes)
+            for (IgniteTxEntry e : writes)
                 writesBytes.add(ctx.marshaller().marshal(e));
         }
 
@@ -310,7 +310,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             readsBytes = new ArrayList<>(reads.size());
 
-            for (IgniteTxEntry<K, V> e : reads)
+            for (IgniteTxEntry e : reads)
                 readsBytes.add(ctx.marshaller().marshal(e));
         }
 
@@ -325,14 +325,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (writesBytes != null) {
             writes = new ArrayList<>(writesBytes.size());
 
             for (byte[] arr : writesBytes)
-                writes.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
+                writes.add(ctx.marshaller().<IgniteTxEntry>unmarshal(arr, ldr));
 
             unmarshalTx(writes, false, ctx, ldr);
         }
@@ -341,7 +341,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             reads = new ArrayList<>(readsBytes.size());
 
             for (byte[] arr : readsBytes)
-                reads.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
+                reads.add(ctx.marshaller().<IgniteTxEntry>unmarshal(arr, ldr));
 
             unmarshalTx(reads, false, ctx, ldr);
         }
@@ -362,14 +362,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param col Set to write.
      * @throws IOException If write failed.
      */
-    private void writeCollection(ObjectOutput out, Collection<IgniteTxEntry<K, V>> col) throws IOException {
+    private void writeCollection(ObjectOutput out, Collection<IgniteTxEntry> col) throws IOException {
         boolean empty = F.isEmpty(col);
 
         if (!empty) {
             out.writeInt(col.size());
 
-            for (IgniteTxEntry<K, V> e : col) {
-                V val = e.value();
+            for (IgniteTxEntry e : col) {
+                CacheObject val = e.value();
                 boolean hasWriteVal = e.hasWriteValue();
                 boolean hasReadVal = e.hasReadValue();
 
