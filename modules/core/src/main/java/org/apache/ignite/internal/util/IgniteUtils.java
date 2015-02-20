@@ -518,10 +518,11 @@ public abstract class IgniteUtils {
 
     /**
      * Gets IgniteClosure for an IgniteCheckedException class.
-     * @param clazz
+     *
+     * @param clazz Class.
      * @return The IgniteClosure mapped to this exception class, or null if none.
      */
-    protected static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
         return exceptionConverters.get(clazz);
     }
 
