@@ -1541,7 +1541,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 info.add("/___/\\___/_/|_/___/ /_/ /___/  ");
                 info.add(" ");
                 info.add(COPYRIGHT);
-                info.addAll(Arrays.asList(pluginInfo().split(NL)));
+                info.addAll(Arrays.asList(pluginInfo().split(NL + ">>> ")));
                 info.add("");
                 info.add("Quiet mode.");
 
@@ -1579,7 +1579,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         String info = PLUGIN_INFO + NL;
 
         for (PluginConfiguration cfg : pluginsCfg)
-            info += cfg.name() + " " + cfg.version() + NL;
+            info += ">>> " + cfg.name() + " " + cfg.version() + NL;
 
         return info;
     }
