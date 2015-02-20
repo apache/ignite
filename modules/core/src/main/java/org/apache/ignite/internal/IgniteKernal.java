@@ -454,8 +454,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override public String apply(Map.Entry<String,?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -1595,7 +1596,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quiet(false, pluginInfo().split(NL + ">>> "));
 
         if (log.isInfoEnabled())
-            log.info(">>> " + pluginInfo());
+            log.info(pluginInfo());
     }
 
     /**
