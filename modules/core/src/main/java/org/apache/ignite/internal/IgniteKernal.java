@@ -454,8 +454,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override public String apply(Map.Entry<String,?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -1534,17 +1535,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
             if (log.isQuiet()) {
-                U.quiet(false,
-                    "   __________  ________________ ",
-                    "  /  _/ ___/ |/ /  _/_  __/ __/ ",
-                    " _/ // (7 7    // /  / / / _/   ",
-                    "/___/\\___/_/|_/___/ /_/ /___/  ",
-                    " ",
-                    ver,
-                    COPYRIGHT,
-                    pluginInfo(),
-                    "",
-                    "Quiet mode.");
+                List<String> info = new ArrayList<>();
+                info.add("   __________  ________________ ");
+                info.add("  /  _/ ___/ |/ /  _/_  __/ __/ ");
+                info.add(" _/ // (7 7    // /  / / / _/   ");
+                info.add("/___/\\___/_/|_/___/ /_/ /___/  ");
+                info.add(" ");
+                info.add(COPYRIGHT);
+                info.addAll(Arrays.asList(pluginInfo().split(NL)));
+                info.add("");
+                info.add("Quiet mode.");
+
+                U.quiet(false, info.toArray(new String[info.size()]));
 
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
