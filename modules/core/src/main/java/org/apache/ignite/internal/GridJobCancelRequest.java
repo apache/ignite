@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Job cancellation request.
  */
-public class GridJobCancelRequest extends MessageAdapter {
+public class GridJobCancelRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

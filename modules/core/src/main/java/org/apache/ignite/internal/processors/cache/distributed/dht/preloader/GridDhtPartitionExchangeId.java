@@ -30,8 +30,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Exchange ID.
  */
-public class GridDhtPartitionExchangeId extends MessageAdapter implements Comparable<GridDhtPartitionExchangeId>,
-    Externalizable {
+public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPartitionExchangeId>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

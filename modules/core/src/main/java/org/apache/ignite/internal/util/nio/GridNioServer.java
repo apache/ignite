@@ -143,7 +143,7 @@ public class GridNioServer<T> {
 
     /** */
     @GridToStringExclude
-    private IgnitePredicate<MessageAdapter> skipRecoveryPred;
+    private IgnitePredicate<Message> skipRecoveryPred;
 
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
@@ -194,7 +194,7 @@ public class GridNioServer<T> {
         boolean daemon,
         GridNioMetricsListener metricsLsnr,
         MessageFormatter formatter,
-        IgnitePredicate<MessageAdapter> skipRecoveryPred,
+        IgnitePredicate<Message> skipRecoveryPred,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -261,7 +261,7 @@ public class GridNioServer<T> {
         this.metricsLsnr = metricsLsnr;
         this.formatter = formatter;
 
-        this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<MessageAdapter>alwaysFalse();
+        this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
     }
 
     /**
@@ -354,7 +354,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, MessageAdapter msg) {
+    GridNioFuture<?> send(GridNioSession ses, Message msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
@@ -394,7 +394,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses, MessageAdapter msg) {
+    public GridNioFuture<?> sendSystem(GridNioSession ses, Message msg) {
         return sendSystem(ses, msg, null);
     }
 
@@ -407,7 +407,7 @@ public class GridNioServer<T> {
      * @return Future.
      */
     public GridNioFuture<?> sendSystem(GridNioSession ses,
-        MessageAdapter msg,
+        Message msg,
         @Nullable IgniteInClosure<? super GridNioFuture<?>> lsnr) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
@@ -890,7 +890,7 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    MessageAdapter msg;
+                    Message msg;
                     boolean finished = false;
 
                     if (req != null) {
@@ -1038,7 +1038,7 @@ public class GridNioServer<T> {
                     }
                 }
 
-                MessageAdapter msg;
+                Message msg;
                 boolean finished = false;
 
                 if (req != null) {
@@ -1783,7 +1783,7 @@ public class GridNioServer<T> {
         private ByteBuffer msg;
 
         /** Direct message. */
-        private MessageAdapter commMsg;
+        private Message commMsg;
 
         /** */
         private boolean accepted;
@@ -1863,7 +1863,7 @@ public class GridNioServer<T> {
          * @param skipRecovery Skip recovery flag.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            MessageAdapter commMsg, boolean skipRecovery) {
+            Message commMsg, boolean skipRecovery) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -1892,7 +1892,7 @@ public class GridNioServer<T> {
         /**
          * @return Direct message.
          */
-        private MessageAdapter directMessage() {
+        private Message directMessage() {
             return commMsg;
         }
 
@@ -2001,7 +2001,7 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (MessageAdapter)msg);
+                    return send(ses, (Message)msg);
             }
             else
                 return send(ses, (ByteBuffer)msg);
@@ -2104,7 +2104,7 @@ public class GridNioServer<T> {
         private MessageFormatter formatter;
 
         /** Skip recovery predicate. */
-        private IgnitePredicate<MessageAdapter> skipRecoveryPred;
+        private IgnitePredicate<Message> skipRecoveryPred;
 
         /**
          * Finishes building the instance.
@@ -2338,7 +2338,7 @@ public class GridNioServer<T> {
          * @param skipRecoveryPred Skip recovery predicate.
          * @return This for chaining.
          */
-        public Builder<T> skipRecoveryPredicate(IgnitePredicate<MessageAdapter> skipRecoveryPred) {
+        public Builder<T> skipRecoveryPredicate(IgnitePredicate<Message> skipRecoveryPred) {
             this.skipRecoveryPred = skipRecoveryPred;
 
             return this;

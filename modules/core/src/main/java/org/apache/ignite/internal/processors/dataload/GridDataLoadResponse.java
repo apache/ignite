@@ -25,7 +25,7 @@ import java.nio.*;
 /**
  *
  */
-public class GridDataLoadResponse extends MessageAdapter {
+public class GridDataLoadResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

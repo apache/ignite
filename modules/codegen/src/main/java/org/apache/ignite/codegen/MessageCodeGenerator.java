@@ -45,7 +45,7 @@ public class MessageCodeGenerator {
     private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final Class<?> BASE_CLS = MessageAdapter.class;
+    private static final Class<?> BASE_CLS = Message.class;
 
     /** */
     private static final String EMPTY = "";
@@ -98,7 +98,7 @@ public class MessageCodeGenerator {
         MessageCollectionItemType type = TYPES.get(cls);
 
         if (type == null) {
-            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
+            assert Message.class.isAssignableFrom(cls) : cls;
 
             type = MessageCollectionItemType.MSG;
         }
@@ -180,9 +180,9 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public void generateAll(boolean write) throws Exception {
-        Collection<Class<? extends MessageAdapter>> classes = classes();
+        Collection<Class<? extends Message>> classes = classes();
 
-        for (Class<? extends MessageAdapter> cls : classes) {
+        for (Class<? extends Message> cls : classes) {
             boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
             System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
@@ -203,7 +203,7 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    public void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
+    public void generateAndWrite(Class<? extends Message> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
@@ -297,7 +297,7 @@ public class MessageCodeGenerator {
      * @param cls Class.
      * @throws Exception In case of error.
      */
-    private void generate(Class<? extends MessageAdapter> cls) throws Exception {
+    private void generate(Class<? extends Message> cls) throws Exception {
         assert cls != null;
 
         write.clear();
@@ -761,11 +761,11 @@ public class MessageCodeGenerator {
      * @return Classes.
      * @throws Exception In case of error.
      */
-    private Collection<Class<? extends MessageAdapter>> classes() throws Exception {
-        Collection<Class<? extends MessageAdapter>> col = new TreeSet<>(
-            new Comparator<Class<? extends MessageAdapter>>() {
-                @Override public int compare(Class<? extends MessageAdapter> c1,
-                    Class<? extends MessageAdapter> c2) {
+    private Collection<Class<? extends Message>> classes() throws Exception {
+        Collection<Class<? extends Message>> col = new TreeSet<>(
+            new Comparator<Class<? extends Message>>() {
+                @Override public int compare(Class<? extends Message> c1,
+                    Class<? extends Message> c2) {
                     return c1.getName().compareTo(c2.getName());
                 }
             });
@@ -794,7 +794,7 @@ public class MessageCodeGenerator {
      */
     @SuppressWarnings("unchecked")
     private void processFile(File file, ClassLoader ldr, int prefixLen,
-        Collection<Class<? extends MessageAdapter>> col) throws Exception {
+        Collection<Class<? extends Message>> col) throws Exception {
         assert file != null;
         assert ldr != null;
         assert prefixLen > 0;
@@ -819,7 +819,7 @@ public class MessageCodeGenerator {
 
                 if (cls.getDeclaringClass() == null && cls.getEnclosingClass() == null &&
                     !BASE_CLS.equals(cls) && BASE_CLS.isAssignableFrom(cls))
-                    col.add((Class<? extends MessageAdapter>)cls);
+                    col.add((Class<? extends Message>)cls);
             }
         }
     }

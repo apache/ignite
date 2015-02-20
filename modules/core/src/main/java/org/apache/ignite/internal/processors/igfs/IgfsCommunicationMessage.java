@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Base class for all IGFS communication messages sent between nodes.
  */
-public abstract class IgfsCommunicationMessage extends MessageAdapter {
+public abstract class IgfsCommunicationMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Streamer cancel request.
  */
-public class GridStreamerCancelRequest extends MessageAdapter {
+public class GridStreamerCancelRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

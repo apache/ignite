@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Parent of all cache messages.
  */
-public abstract class GridCacheMessage<K, V> extends MessageAdapter {
+public abstract class GridCacheMessage<K, V> implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -23,7 +23,7 @@ import java.nio.*;
 /**
  * Base class for all communication messages.
  */
-public abstract class MessageAdapter implements Serializable {
+public interface Message extends Serializable {
     /**
      * Writes this message to provided byte buffer.
      *
@@ -31,7 +31,7 @@ public abstract class MessageAdapter implements Serializable {
      * @param writer Writer.
      * @return Whether message was fully written.
      */
-    public abstract boolean writeTo(ByteBuffer buf, MessageWriter writer);
+    public boolean writeTo(ByteBuffer buf, MessageWriter writer);
 
     /**
      * Reads this message from provided byte buffer.
@@ -40,19 +40,19 @@ public abstract class MessageAdapter implements Serializable {
      * @param reader Reader.
      * @return Whether message was fully read.
      */
-    public abstract boolean readFrom(ByteBuffer buf, MessageReader reader);
+    public boolean readFrom(ByteBuffer buf, MessageReader reader);
 
     /**
      * Gets message type.
      *
      * @return Message type.
      */
-    public abstract byte directType();
+    public byte directType();
 
     /**
      * Gets fields count.
      *
      * @return Fields count.
      */
-    public abstract byte fieldsCount();
+    public byte fieldsCount();
 }

@@ -55,7 +55,7 @@ public class GridDirectParser implements GridNioParser {
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
-        MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+        Message msg = ses.removeMeta(MSG_META_KEY);
 
         MessageReader reader = null;
 

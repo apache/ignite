@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Wrapped value bytes of cache entry.
  */
-public class GridCacheValueBytes extends MessageAdapter {
+public class GridCacheValueBytes implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

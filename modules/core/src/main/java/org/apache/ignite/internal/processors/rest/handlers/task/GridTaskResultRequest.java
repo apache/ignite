@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Task result request.
  */
-public class GridTaskResultRequest extends MessageAdapter {
+public class GridTaskResultRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

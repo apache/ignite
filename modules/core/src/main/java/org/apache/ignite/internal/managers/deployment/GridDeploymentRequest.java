@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Deployment request.
  */
-public class GridDeploymentRequest extends MessageAdapter {
+public class GridDeploymentRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

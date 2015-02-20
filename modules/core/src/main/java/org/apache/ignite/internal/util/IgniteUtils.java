@@ -9132,12 +9132,12 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer, MessageWriter)} method.
+     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
      * @param writer Message writer.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf,
+    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
         MessageWriter writer) throws IOException {
         assert msg != null;
         assert out != null;

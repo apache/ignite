@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Version for time delta snapshot.
  */
-public class GridClockDeltaVersion extends MessageAdapter implements Comparable<GridClockDeltaVersion>, Externalizable {
+public class GridClockDeltaVersion implements Message, Comparable<GridClockDeltaVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

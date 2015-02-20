@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Test message for communication SPI tests.
  */
-public class GridTestMessage extends MessageAdapter {
+public class GridTestMessage implements Message {
     /** */
     public static final byte DIRECT_TYPE = (byte)200;
 

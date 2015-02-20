@@ -237,7 +237,7 @@ public class DirectByteBufferStream {
     private boolean msgTypeDone;
 
     /** */
-    private MessageAdapter msg;
+    private Message msg;
 
     /** */
     private Iterator<?> it;
@@ -537,7 +537,7 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      */
-    public void writeMessage(MessageAdapter msg, MessageWriter writer) {
+    public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
@@ -908,7 +908,7 @@ public class DirectByteBufferStream {
      * @return Message.
      */
     @SuppressWarnings("unchecked")
-    public <T extends MessageAdapter> T readMessage() {
+    public <T extends Message> T readMessage() {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -929,7 +929,7 @@ public class DirectByteBufferStream {
         lastFinished = msg == null || msg.readFrom(buf, reader);
 
         if (lastFinished) {
-            MessageAdapter msg0 = msg;
+            Message msg0 = msg;
 
             msgTypeDone = false;
             msg = null;
@@ -1338,7 +1338,7 @@ public class DirectByteBufferStream {
                     if (val != null)
                         writer.beforeInnerMessageWrite();
 
-                    writeMessage((MessageAdapter)val, writer);
+                    writeMessage((Message)val, writer);
                 }
                 finally {
                     if (val != null)

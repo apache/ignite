@@ -30,7 +30,7 @@ import java.util.*;
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-public class GridLongList extends MessageAdapter implements Externalizable {
+public class GridLongList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

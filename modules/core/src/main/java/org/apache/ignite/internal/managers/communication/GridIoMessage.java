@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage extends MessageAdapter {
+public class GridIoMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridIoMessage extends MessageAdapter {
     private boolean skipOnTimeout;
 
     /** Message. */
-    private MessageAdapter msg;
+    private Message msg;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -79,7 +79,7 @@ public class GridIoMessage extends MessageAdapter {
         GridIoPolicy plc,
         Object topic,
         int topicOrd,
-        MessageAdapter msg,
+        Message msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout

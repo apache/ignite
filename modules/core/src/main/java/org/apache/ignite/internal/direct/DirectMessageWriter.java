@@ -187,7 +187,7 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
+    @Override public boolean writeMessage(String name, @Nullable Message msg) {
         stream.writeMessage(msg, this);
 
         return stream.lastFinished();

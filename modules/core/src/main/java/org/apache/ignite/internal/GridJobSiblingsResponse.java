@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job siblings response.
  */
-public class GridJobSiblingsResponse extends MessageAdapter {
+public class GridJobSiblingsResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

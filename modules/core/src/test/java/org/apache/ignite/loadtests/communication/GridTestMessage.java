@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-class GridTestMessage extends MessageAdapter implements Externalizable {
+class GridTestMessage implements Message, Externalizable {
     /** */
     private IgniteUuid id;
 

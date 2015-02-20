@@ -31,7 +31,7 @@ import java.nio.*;
  * File's binary data block key.
  */
 @GridInternal
-public final class IgfsBlockKey extends MessageAdapter implements Externalizable, Comparable<IgfsBlockKey> {
+public final class IgfsBlockKey implements Message, Externalizable, Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 

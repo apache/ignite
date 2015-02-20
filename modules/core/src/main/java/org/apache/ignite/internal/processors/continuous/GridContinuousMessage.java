@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
-public class GridContinuousMessage extends MessageAdapter {
+public class GridContinuousMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

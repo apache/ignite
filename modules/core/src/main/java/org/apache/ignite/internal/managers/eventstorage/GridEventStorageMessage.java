@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Event storage message.
  */
-public class GridEventStorageMessage extends MessageAdapter {
+public class GridEventStorageMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

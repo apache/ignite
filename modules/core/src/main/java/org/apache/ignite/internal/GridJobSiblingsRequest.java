@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Job siblings request.
  */
-public class GridJobSiblingsRequest extends MessageAdapter {
+public class GridJobSiblingsRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

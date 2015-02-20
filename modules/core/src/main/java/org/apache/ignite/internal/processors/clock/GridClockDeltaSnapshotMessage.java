@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Message containing time delta map for all nodes.
  */
-public class GridClockDeltaSnapshotMessage extends MessageAdapter {
+public class GridClockDeltaSnapshotMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

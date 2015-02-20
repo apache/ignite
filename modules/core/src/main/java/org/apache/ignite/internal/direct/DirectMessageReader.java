@@ -236,7 +236,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends MessageAdapter> T readMessage(String name) {
+    @Nullable @Override public <T extends Message> T readMessage(String name) {
         T msg = stream.readMessage();
 
         lastRead = stream.lastFinished();

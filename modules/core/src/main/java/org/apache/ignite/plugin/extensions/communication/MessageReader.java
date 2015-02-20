@@ -203,7 +203,7 @@ public interface MessageReader {
      * @param name Field name.
      * @return Message.
      */
-    public <T extends MessageAdapter> T readMessage(String name);
+    public <T extends Message> T readMessage(String name);
 
     /**
      * Reads array of objects.

@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * User message wrapper.
  */
-public class GridIoUserMessage extends MessageAdapter {
+public class GridIoUserMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

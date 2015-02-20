@@ -230,7 +230,7 @@ public interface MessageWriter {
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(String name, MessageAdapter val);
+    public boolean writeMessage(String name, Message val);
 
     /**
      * Writes array of objects.

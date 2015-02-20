@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Task session request.
  */
-public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMessage {
+public class GridTaskSessionRequest implements Message, GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

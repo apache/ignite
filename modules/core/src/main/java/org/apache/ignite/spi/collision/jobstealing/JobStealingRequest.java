@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Job stealing request.
  */
-public class JobStealingRequest extends MessageAdapter {
+public class JobStealingRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

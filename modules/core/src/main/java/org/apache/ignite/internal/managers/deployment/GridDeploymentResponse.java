@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Grid deployment response containing requested resource bytes.
  */
-public class GridDeploymentResponse extends MessageAdapter {
+public class GridDeploymentResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Affinity range.
  */
-public class IgfsFileAffinityRange extends MessageAdapter implements Externalizable {
+public class IgfsFileAffinityRange implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

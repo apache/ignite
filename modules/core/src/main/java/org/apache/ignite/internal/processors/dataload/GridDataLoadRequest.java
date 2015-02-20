@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDataLoadRequest extends MessageAdapter {
+public class GridDataLoadRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 

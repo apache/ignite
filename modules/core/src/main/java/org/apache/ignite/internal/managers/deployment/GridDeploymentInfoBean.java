@@ -31,8 +31,7 @@ import java.util.*;
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploymentInfo,
-    Externalizable {
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

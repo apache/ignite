@@ -316,8 +316,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "topic");
 
                         try {
-                            if (msg instanceof MessageAdapter)
-                                ctx.io().send(node, topic, (MessageAdapter)msg, SYSTEM_POOL);
+                            if (msg instanceof Message)
+                                ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }

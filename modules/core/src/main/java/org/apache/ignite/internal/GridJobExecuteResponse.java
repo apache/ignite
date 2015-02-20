@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMessage {
+public class GridJobExecuteResponse implements Message, GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

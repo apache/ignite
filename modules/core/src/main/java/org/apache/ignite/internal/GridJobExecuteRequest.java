@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMessage {
+public class GridJobExecuteRequest implements Message, GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
