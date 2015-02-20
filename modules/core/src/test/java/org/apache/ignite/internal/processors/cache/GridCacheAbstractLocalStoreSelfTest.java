@@ -1,0 +1,314 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.store.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
+
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+
+/**
+ *
+ */
+public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbstractTest {
+    /** */
+    public static final TestLocalStore<Integer, Integer> LOCAL_STORE_1 = new TestLocalStore<>();
+
+    /** */
+    public static final TestLocalStore<Integer, Integer> LOCAL_STORE_2 = new TestLocalStore<>();
+
+    /** */
+    public static final TestLocalStore<Integer, Integer> LOCAL_STORE_3 = new TestLocalStore<>();
+
+    /** */
+    public static final int KEYS = 1000;
+
+    /** */
+    public static final String BACKUP_CACHE = "backup";
+
+    /**
+     *
+     */
+    public GridCacheAbstractLocalStoreSelfTest() {
+        super(false /* doesn't start grid */);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        CacheConfiguration cacheCfg = cache(gridName, null, 0);
+
+        CacheConfiguration cacheBackupCfg = cache(gridName, BACKUP_CACHE, 2);
+
+        cfg.setCacheConfiguration(cacheCfg, cacheBackupCfg);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    private CacheConfiguration cache(String gridName, String cacheName, int backups) {
+        CacheConfiguration cacheCfg = new CacheConfiguration();
+
+        cacheCfg.setName(cacheName);
+        cacheCfg.setCacheMode(getCacheMode());
+        cacheCfg.setAtomicityMode(getAtomicMode());
+        cacheCfg.setDistributionMode(getDisrtMode());
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setPreloadMode(SYNC);
+
+        if (gridName.endsWith("1"))
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_1));
+        else if (gridName.endsWith("2"))
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_2));
+        else
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_3));
+
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteBehindBatchSize(1);
+        cacheCfg.setWriteBehindFlushFrequency(1);
+        cacheCfg.setWriteBehindFlushSize(1);
+        cacheCfg.setBackups(backups);
+        return cacheCfg;
+    }
+
+    /**
+     * @return Distribution mode.
+     */
+    protected abstract CacheDistributionMode getDisrtMode();
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected abstract CacheAtomicityMode getAtomicMode();
+
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode getCacheMode();
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNode() throws Exception {
+        Ignite ignite1 = startGrid(1);
+
+        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        for (int i = 0; i < KEYS; i++)
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i);
+
+        final CountDownLatch startPartExchange = new CountDownLatch(1);
+        final AtomicBoolean eventOcr = new AtomicBoolean(true);
+
+        if (getCacheMode() != REPLICATED) {
+            ignite1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event event) {
+                    startPartExchange.countDown();
+                    eventOcr.set(true);
+
+                    return true;
+                }
+            }, EventType.EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+        }
+
+        Ignite ignite2 = startGrid(2);
+
+        assertEquals(Ignition.allGrids().size(), 2);
+
+        // Wait when partition unloaded.
+        waitExpirePartition(startPartExchange, eventOcr);
+
+        checkLocalStore(ignite1, LOCAL_STORE_1);
+        checkLocalStore(ignite2, LOCAL_STORE_2);
+    }
+
+    /**
+     * Wait when partition unloaded.
+     */
+    private void waitExpirePartition(CountDownLatch startPartExchange, AtomicBoolean eventOcr) throws Exception {
+        if (getCacheMode() != REPLICATED) {
+            assert startPartExchange.await(1, TimeUnit.SECONDS);
+
+            while (true) {
+                if (eventOcr.get()) {
+                    eventOcr.set(false);
+
+                    TimeUnit.MILLISECONDS.sleep(100);
+                }
+                else
+                    break;
+            }
+        }
+    }
+
+    public void testBackupNode() throws Exception {
+        Ignite ignite1 = startGrid(1);
+
+        IgniteCache<Object, Object> cache = ignite1.jcache(BACKUP_CACHE);
+
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        for (int i = 0; i < KEYS; i++)
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i);
+
+        // Start 2'nd node.
+        Ignite ignite2 = startGrid(2);
+
+        assertEquals(2, Ignition.allGrids().size());
+
+        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+
+        // Start 3'nd node.
+        Ignite ignite3 = startGrid(3);
+
+        assertEquals(Ignition.allGrids().size(), 3);
+
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i * 3);
+
+        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+        checkLocalStoreForBackup(ignite3, LOCAL_STORE_3);
+
+        // Stop 3'nd node.
+        stopGrid(3, true);
+
+        assertEquals(Ignition.allGrids().size(), 2);
+
+        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+    }
+
+    /**
+     * Check that local stores contains only primary entry.
+     */
+    private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store) {
+        for (int i = 0; i < KEYS; i++) {
+            if (ignite.affinity(null).isPrimary(ignite.cluster().localNode(), i))
+                assertEquals(store.load(i).get1().intValue(), i);
+            else if (!ignite.affinity(null).isPrimaryOrBackup(ignite.cluster().localNode(), i))
+                assertNull(store.load(i));
+        }
+    }
+
+    /**
+     * Check that local stores contains only primary entry.
+     */
+    private void checkLocalStoreForBackup(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store) {
+        for (int i = 0; i < KEYS; i++) {
+            if (ignite.affinity(BACKUP_CACHE).isBackup(ignite.cluster().localNode(), i))
+                assertEquals(store.load(i).get1().intValue(), i);
+            else if (!ignite.affinity(BACKUP_CACHE).isPrimaryOrBackup(ignite.cluster().localNode(), i))
+                assertNull(store.load(i).get1());
+        }
+    }
+
+    /**
+     *
+     */
+    @CacheLocalStore
+    public static class TestLocalStore<K, V> implements CacheStore<K, IgniteBiTuple<V, ?>> {
+        /** */
+        private Map<K, IgniteBiTuple<V, ?>> map = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<K, IgniteBiTuple<V, ?>> clo, @Nullable Object... args)
+            throws CacheLoaderException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void txEnd(boolean commit) throws CacheWriterException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple<V, ?> load(K key) throws CacheLoaderException {
+            return map.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K, IgniteBiTuple<V, ?>> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
+            Map<K, IgniteBiTuple<V, ?>> res = new HashMap<>();
+
+            for (K key : keys) {
+                IgniteBiTuple<V, ?> val = map.get(key);
+
+                if (val != null)
+                    res.put(key, val);
+            }
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>> entry)
+            throws CacheWriterException {
+            map.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>>> entries)
+            throws CacheWriterException {
+            for (Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>> e : entries)
+                map.put(e.getKey(), e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            map.remove(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            for (Object key : keys)
+                map.remove(key);
+        }
+    }
+}

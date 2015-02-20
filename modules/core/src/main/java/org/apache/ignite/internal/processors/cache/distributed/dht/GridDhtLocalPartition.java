@@ -538,6 +538,9 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                 if (cached.clearInternal(clearVer, swap)) {
                     it.remove();
 
+                    if (cctx.store().isLocalStore())
+                        cctx.store().removeFromStore(null, cached.key());
+
                     if (!cached.isInternal()) {
                         mapPubSize.decrement();
 
