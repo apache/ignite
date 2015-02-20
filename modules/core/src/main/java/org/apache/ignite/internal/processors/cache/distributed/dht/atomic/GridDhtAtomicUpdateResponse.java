@@ -211,7 +211,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -222,23 +222,23 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 failedKeysBytes = reader.readByteArray("failedKeysBytes");
@@ -246,7 +246,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 futVer = reader.readMessage("futVer");
@@ -254,15 +254,15 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

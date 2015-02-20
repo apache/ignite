@@ -123,23 +123,23 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 miniId = reader.readIgniteUuid("miniId");
@@ -147,7 +147,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 success = reader.readBoolean("success");
@@ -155,7 +155,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

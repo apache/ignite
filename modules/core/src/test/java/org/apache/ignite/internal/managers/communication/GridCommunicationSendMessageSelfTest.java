@@ -151,7 +151,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             return true;
         }
 

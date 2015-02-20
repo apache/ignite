@@ -198,7 +198,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -209,23 +209,23 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 infosBytes = reader.readByteArray("infosBytes");
@@ -233,7 +233,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
@@ -241,15 +241,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                missedKeyBytes = reader.readCollection("missedKeyBytes", Type.BYTE_ARR);
+                missedKeyBytes = reader.readCollection("missedKeyBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

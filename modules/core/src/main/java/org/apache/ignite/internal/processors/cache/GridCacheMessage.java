@@ -681,20 +681,20 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 depInfo = reader.readMessage("depInfo");
@@ -702,7 +702,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 msgId = reader.readLong("msgId");
@@ -710,7 +710,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

@@ -294,20 +294,20 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 globalTime = reader.readLong("globalTime");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 nodeOrderDrId = reader.readInt("nodeOrderDrId");
@@ -315,7 +315,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 order = reader.readLong("order");
@@ -323,7 +323,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 topVer = reader.readInt("topVer");
@@ -331,7 +331,7 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

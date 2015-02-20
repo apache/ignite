@@ -172,20 +172,20 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 dataBytes = reader.readByteArray("dataBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 futId = reader.readIgniteUuid("futId");
@@ -193,7 +193,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 routineId = reader.readUuid("routineId");
@@ -201,7 +201,7 @@ public class GridContinuousMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 byte typeOrd;
@@ -213,7 +213,7 @@ public class GridContinuousMessage extends MessageAdapter {
 
                 type = GridContinuousMessageType.fromOrdinal(typeOrd);
 
-                readState++;
+                reader.incrementState();
 
         }
 

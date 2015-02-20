@@ -57,50 +57,50 @@ public class MessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final Map<Class<?>, MessageAdapter.Type> TYPES = U.newHashMap(30);
+    private static final Map<Class<?>, MessageCollectionItemType> TYPES = U.newHashMap(30);
 
     static {
-        TYPES.put(byte.class, MessageAdapter.Type.BYTE);
-        TYPES.put(Byte.class, MessageAdapter.Type.BYTE);
-        TYPES.put(short.class, MessageAdapter.Type.SHORT);
-        TYPES.put(Short.class, MessageAdapter.Type.SHORT);
-        TYPES.put(int.class, MessageAdapter.Type.INT);
-        TYPES.put(Integer.class, MessageAdapter.Type.INT);
-        TYPES.put(long.class, MessageAdapter.Type.LONG);
-        TYPES.put(Long.class, MessageAdapter.Type.LONG);
-        TYPES.put(float.class, MessageAdapter.Type.FLOAT);
-        TYPES.put(Float.class, MessageAdapter.Type.FLOAT);
-        TYPES.put(double.class, MessageAdapter.Type.DOUBLE);
-        TYPES.put(Double.class, MessageAdapter.Type.DOUBLE);
-        TYPES.put(char.class, MessageAdapter.Type.CHAR);
-        TYPES.put(Character.class, MessageAdapter.Type.CHAR);
-        TYPES.put(boolean.class, MessageAdapter.Type.BOOLEAN);
-        TYPES.put(Boolean.class, MessageAdapter.Type.BOOLEAN);
-        TYPES.put(byte[].class, MessageAdapter.Type.BYTE_ARR);
-        TYPES.put(short[].class, MessageAdapter.Type.SHORT_ARR);
-        TYPES.put(int[].class, MessageAdapter.Type.INT_ARR);
-        TYPES.put(long[].class, MessageAdapter.Type.LONG_ARR);
-        TYPES.put(float[].class, MessageAdapter.Type.FLOAT_ARR);
-        TYPES.put(double[].class, MessageAdapter.Type.DOUBLE_ARR);
-        TYPES.put(char[].class, MessageAdapter.Type.CHAR_ARR);
-        TYPES.put(boolean[].class, MessageAdapter.Type.BOOLEAN_ARR);
-        TYPES.put(String.class, MessageAdapter.Type.STRING);
-        TYPES.put(BitSet.class, MessageAdapter.Type.BIT_SET);
-        TYPES.put(UUID.class, MessageAdapter.Type.UUID);
-        TYPES.put(IgniteUuid.class, MessageAdapter.Type.IGNITE_UUID);
+        TYPES.put(byte.class, MessageCollectionItemType.BYTE);
+        TYPES.put(Byte.class, MessageCollectionItemType.BYTE);
+        TYPES.put(short.class, MessageCollectionItemType.SHORT);
+        TYPES.put(Short.class, MessageCollectionItemType.SHORT);
+        TYPES.put(int.class, MessageCollectionItemType.INT);
+        TYPES.put(Integer.class, MessageCollectionItemType.INT);
+        TYPES.put(long.class, MessageCollectionItemType.LONG);
+        TYPES.put(Long.class, MessageCollectionItemType.LONG);
+        TYPES.put(float.class, MessageCollectionItemType.FLOAT);
+        TYPES.put(Float.class, MessageCollectionItemType.FLOAT);
+        TYPES.put(double.class, MessageCollectionItemType.DOUBLE);
+        TYPES.put(Double.class, MessageCollectionItemType.DOUBLE);
+        TYPES.put(char.class, MessageCollectionItemType.CHAR);
+        TYPES.put(Character.class, MessageCollectionItemType.CHAR);
+        TYPES.put(boolean.class, MessageCollectionItemType.BOOLEAN);
+        TYPES.put(Boolean.class, MessageCollectionItemType.BOOLEAN);
+        TYPES.put(byte[].class, MessageCollectionItemType.BYTE_ARR);
+        TYPES.put(short[].class, MessageCollectionItemType.SHORT_ARR);
+        TYPES.put(int[].class, MessageCollectionItemType.INT_ARR);
+        TYPES.put(long[].class, MessageCollectionItemType.LONG_ARR);
+        TYPES.put(float[].class, MessageCollectionItemType.FLOAT_ARR);
+        TYPES.put(double[].class, MessageCollectionItemType.DOUBLE_ARR);
+        TYPES.put(char[].class, MessageCollectionItemType.CHAR_ARR);
+        TYPES.put(boolean[].class, MessageCollectionItemType.BOOLEAN_ARR);
+        TYPES.put(String.class, MessageCollectionItemType.STRING);
+        TYPES.put(BitSet.class, MessageCollectionItemType.BIT_SET);
+        TYPES.put(UUID.class, MessageCollectionItemType.UUID);
+        TYPES.put(IgniteUuid.class, MessageCollectionItemType.IGNITE_UUID);
     }
 
     /**
      * @param cls Class.
      * @return Type enum value.
      */
-    private static MessageAdapter.Type typeEnum(Class<?> cls) {
-        MessageAdapter.Type type = TYPES.get(cls);
+    private static MessageCollectionItemType typeEnum(Class<?> cls) {
+        MessageCollectionItemType type = TYPES.get(cls);
 
         if (type == null) {
             assert MessageAdapter.class.isAssignableFrom(cls) : cls;
 
-            type = MessageAdapter.Type.MSG;
+            type = MessageCollectionItemType.MSG;
         }
 
         return type;
@@ -241,7 +241,7 @@ public class MessageCodeGenerator {
 
                         writeFound = true;
                     }
-                    else if (line.contains("public boolean readFrom(ByteBuffer buf)")) {
+                    else if (line.contains("public boolean readFrom(ByteBuffer buf, MessageReader reader)")) {
                         src.addAll(read);
 
                         skip = true;
@@ -418,7 +418,7 @@ public class MessageCodeGenerator {
         }
 
         if (!fields.isEmpty())
-            code.add(builder().a("switch (").a(write ? "writer.state()" : "readState").a(") {").toString());
+            code.add(builder().a("switch (").a(write ? "writer.state()" : "reader.state()").a(") {").toString());
     }
 
     /**
@@ -501,7 +501,7 @@ public class MessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null);
 
         read.add(EMPTY);
-        read.add(builder().a("readState++;").toString());
+        read.add(builder().a("reader.incrementState();").toString());
         read.add(EMPTY);
 
         indent--;

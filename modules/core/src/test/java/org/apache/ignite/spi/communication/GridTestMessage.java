@@ -134,17 +134,17 @@ public class GridTestMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 srcNodeId = reader.readUuid(null);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 msgId = reader.readLong(null);
@@ -152,7 +152,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 resId = reader.readLong(null);
@@ -160,7 +160,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 payload = reader.readByteArray(null);
@@ -168,7 +168,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
         }
 
         return true;

@@ -160,23 +160,23 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 miniId = reader.readIgniteUuid("miniId");
@@ -184,7 +184,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 nearXidVer = reader.readMessage("nearXidVer");
@@ -192,7 +192,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 sys = reader.readBoolean("sys");
@@ -200,7 +200,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 txNum = reader.readInt("txNum");
@@ -208,7 +208,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

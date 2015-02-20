@@ -197,19 +197,19 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("keysBytes", keysBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keysBytes", keysBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("nearVers", nearVers, Type.MSG))
+                if (!writer.writeCollection("nearVers", nearVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -227,7 +227,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection("vers", vers, Type.MSG))
+                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -238,39 +238,39 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
-                keysBytes = reader.readCollection("keysBytes", Type.BYTE_ARR);
+                keysBytes = reader.readCollection("keysBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
-                nearKeysBytes = reader.readCollection("nearKeysBytes", Type.BYTE_ARR);
+                nearKeysBytes = reader.readCollection("nearKeysBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
-                nearVers = reader.readCollection("nearVers", Type.MSG);
+                nearVers = reader.readCollection("nearVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 topVer = reader.readLong("topVer");
@@ -278,7 +278,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 ttl = reader.readLong("ttl");
@@ -286,15 +286,15 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
-                vers = reader.readCollection("vers", Type.MSG);
+                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

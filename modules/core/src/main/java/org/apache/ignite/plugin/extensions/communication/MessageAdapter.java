@@ -17,8 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.jetbrains.annotations.*;
-
 import java.io.*;
 import java.nio.*;
 
@@ -26,22 +24,6 @@ import java.nio.*;
  * Base class for all communication messages.
  */
 public abstract class MessageAdapter implements Serializable {
-    /** Message reader. */
-    protected MessageReader reader;
-
-    /** Current read state. */
-    protected int readState;
-
-    /**
-     * @param reader Message reader.
-     */
-    public final void setReader(MessageReader reader) {
-        assert this.reader == null;
-        assert reader != null;
-
-        this.reader = reader;
-    }
-
     /**
      * Writes this message to provided byte buffer.
      *
@@ -55,9 +37,10 @@ public abstract class MessageAdapter implements Serializable {
      * Reads this message from provided byte buffer.
      *
      * @param buf Byte buffer.
+     * @param reader Reader.
      * @return Whether message was fully read.
      */
-    public abstract boolean readFrom(ByteBuffer buf);
+    public abstract boolean readFrom(ByteBuffer buf, MessageReader reader);
 
     /**
      * Gets message type.
@@ -72,94 +55,4 @@ public abstract class MessageAdapter implements Serializable {
      * @return Fields count.
      */
     public abstract byte fieldsCount();
-
-    /**
-     * Defines whether recovery for this message should be skipped.
-     *
-     * @return Whether recovery for this message should be skipped.
-     */
-    public boolean skipRecovery() {
-        return false;
-    }
-
-    /**
-     * Enum representing possible types of collection items.
-     */
-    public enum Type {
-        /** Byte. */
-        BYTE,
-
-        /** Short. */
-        SHORT,
-
-        /** Integer. */
-        INT,
-
-        /** Long. */
-        LONG,
-
-        /** Float. */
-        FLOAT,
-
-        /** Double. */
-        DOUBLE,
-
-        /** Character. */
-        CHAR,
-
-        /** Boolean. */
-        BOOLEAN,
-
-        /** Byte array. */
-        BYTE_ARR,
-
-        /** Short array. */
-        SHORT_ARR,
-
-        /** Integer array. */
-        INT_ARR,
-
-        /** Long array. */
-        LONG_ARR,
-
-        /** Float array. */
-        FLOAT_ARR,
-
-        /** Double array. */
-        DOUBLE_ARR,
-
-        /** Character array. */
-        CHAR_ARR,
-
-        /** Boolean array. */
-        BOOLEAN_ARR,
-
-        /** String. */
-        STRING,
-
-        /** Bit set. */
-        BIT_SET,
-
-        /** UUID. */
-        UUID,
-
-        /** Ignite UUID. */
-        IGNITE_UUID,
-
-        /** Message. */
-        MSG;
-
-        /** Enum values. */
-        private static final Type[] VALS = values();
-
-        /**
-         * Efficiently gets enumerated value from its ordinal.
-         *
-         * @param ord Ordinal value.
-         * @return Enumerated value.
-         */
-        @Nullable public static Type fromOrdinal(int ord) {
-            return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-        }
-    }
 }

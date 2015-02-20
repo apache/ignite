@@ -233,7 +233,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
+                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -262,23 +262,23 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 entriesBytes = reader.readByteArray("entriesBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 errBytes = reader.readByteArray("errBytes");
@@ -286,7 +286,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 futId = reader.readIgniteUuid("futId");
@@ -294,15 +294,15 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                invalidParts = reader.readCollection("invalidParts", Type.INT);
+                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 miniId = reader.readIgniteUuid("miniId");
@@ -310,7 +310,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
                 topVer = reader.readLong("topVer");
@@ -318,7 +318,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 ver = reader.readMessage("ver");
@@ -326,7 +326,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

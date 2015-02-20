@@ -158,20 +158,20 @@ public class GridTaskResultResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 err = reader.readString("err");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 finished = reader.readBoolean("finished");
@@ -179,7 +179,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 found = reader.readBoolean("found");
@@ -187,7 +187,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 resBytes = reader.readByteArray("resBytes");
@@ -195,7 +195,7 @@ public class GridTaskResultResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

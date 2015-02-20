@@ -309,7 +309,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMap("ldrParties", ldrParties, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("ldrParties", ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -332,20 +332,20 @@ public class GridEventStorageMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 byte depModeOrd;
@@ -357,7 +357,7 @@ public class GridEventStorageMessage extends MessageAdapter {
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 evtsBytes = reader.readByteArray("evtsBytes");
@@ -365,7 +365,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 exBytes = reader.readByteArray("exBytes");
@@ -373,7 +373,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 filter = reader.readByteArray("filter");
@@ -381,7 +381,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 filterClsName = reader.readString("filterClsName");
@@ -389,15 +389,15 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                ldrParties = reader.readMap("ldrParties", Type.UUID, Type.IGNITE_UUID, false);
+                ldrParties = reader.readMap("ldrParties", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -405,7 +405,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
                 userVer = reader.readString("userVer");
@@ -413,7 +413,7 @@ public class GridEventStorageMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

@@ -88,7 +88,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, Type.MSG))
+                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -99,23 +99,23 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
-                futVers = reader.readCollection("futVers", Type.MSG);
+                futVers = reader.readCollection("futVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

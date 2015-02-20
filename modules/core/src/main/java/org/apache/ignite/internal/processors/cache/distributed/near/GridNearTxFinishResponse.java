@@ -152,23 +152,23 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 5:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 miniId = reader.readIgniteUuid("miniId");
@@ -176,7 +176,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 nearThreadId = reader.readLong("nearThreadId");
@@ -184,7 +184,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

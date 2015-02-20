@@ -478,7 +478,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -538,7 +538,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeCollection("top", top, Type.UUID))
+                if (!writer.writeCollection("top", top, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -555,20 +555,20 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 cpSpi = reader.readString("cpSpi");
@@ -576,7 +576,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 byte depModeOrd;
@@ -588,7 +588,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 dynamicSiblings = reader.readBoolean("dynamicSiblings");
@@ -596,7 +596,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -604,7 +604,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 internal = reader.readBoolean("internal");
@@ -612,7 +612,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
@@ -620,7 +620,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 jobBytes = reader.readByteArray("jobBytes");
@@ -628,7 +628,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
                 jobId = reader.readIgniteUuid("jobId");
@@ -636,15 +636,15 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
-                ldrParticipants = reader.readMap("ldrParticipants", Type.UUID, Type.IGNITE_UUID, false);
+                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 sesAttrsBytes = reader.readByteArray("sesAttrsBytes");
@@ -652,7 +652,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 sesFullSup = reader.readBoolean("sesFullSup");
@@ -660,7 +660,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 sesId = reader.readIgniteUuid("sesId");
@@ -668,7 +668,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
                 siblingsBytes = reader.readByteArray("siblingsBytes");
@@ -676,7 +676,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
                 startTaskTime = reader.readLong("startTaskTime");
@@ -684,7 +684,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 15:
                 subjId = reader.readUuid("subjId");
@@ -692,7 +692,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 taskClsName = reader.readString("taskClsName");
@@ -700,7 +700,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 taskName = reader.readString("taskName");
@@ -708,7 +708,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 timeout = reader.readLong("timeout");
@@ -716,15 +716,15 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
-                top = reader.readCollection("top", Type.UUID);
+                top = reader.readCollection("top", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 userVer = reader.readString("userVer");
@@ -732,7 +732,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

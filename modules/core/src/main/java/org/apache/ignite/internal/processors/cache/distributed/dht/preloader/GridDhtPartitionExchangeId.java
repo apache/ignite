@@ -181,20 +181,20 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 evt = reader.readInt("evt");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 nodeId = reader.readUuid("nodeId");
@@ -202,7 +202,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 topVer = reader.readLong("topVer");
@@ -210,7 +210,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

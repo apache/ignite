@@ -107,23 +107,23 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 lastVer = reader.readMessage("lastVer");
@@ -131,7 +131,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

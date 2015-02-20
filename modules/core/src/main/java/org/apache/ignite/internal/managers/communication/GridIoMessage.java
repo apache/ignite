@@ -238,20 +238,20 @@ public class GridIoMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 msg = reader.readMessage("msg");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 ordered = reader.readBoolean("ordered");
@@ -259,7 +259,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 byte plcOrd;
@@ -271,7 +271,7 @@ public class GridIoMessage extends MessageAdapter {
 
                 plc = GridIoPolicy.fromOrdinal(plcOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 skipOnTimeout = reader.readBoolean("skipOnTimeout");
@@ -279,7 +279,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 timeout = reader.readLong("timeout");
@@ -287,7 +287,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -295,7 +295,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 topicOrd = reader.readInt("topicOrd");
@@ -303,7 +303,7 @@ public class GridIoMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

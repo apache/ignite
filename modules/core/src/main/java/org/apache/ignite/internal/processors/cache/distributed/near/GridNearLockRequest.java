@@ -343,13 +343,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
+                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -414,39 +414,39 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 22:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 23:
-                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 24:
-                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR, byte[].class);
+                filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 25:
                 hasTransforms = reader.readBoolean("hasTransforms");
@@ -454,7 +454,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 26:
                 implicitSingleTx = reader.readBoolean("implicitSingleTx");
@@ -462,7 +462,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 27:
                 implicitTx = reader.readBoolean("implicitTx");
@@ -470,7 +470,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 28:
                 miniId = reader.readIgniteUuid("miniId");
@@ -478,7 +478,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 29:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
@@ -486,7 +486,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 30:
                 subjId = reader.readUuid("subjId");
@@ -494,7 +494,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 31:
                 syncCommit = reader.readBoolean("syncCommit");
@@ -502,7 +502,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 32:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -510,7 +510,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 33:
                 topVer = reader.readLong("topVer");
@@ -518,7 +518,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

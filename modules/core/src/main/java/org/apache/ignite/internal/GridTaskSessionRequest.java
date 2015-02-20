@@ -133,20 +133,20 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 attrsBytes = reader.readByteArray("attrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 jobId = reader.readIgniteUuid("jobId");
@@ -154,7 +154,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 sesId = reader.readIgniteUuid("sesId");
@@ -162,7 +162,7 @@ public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

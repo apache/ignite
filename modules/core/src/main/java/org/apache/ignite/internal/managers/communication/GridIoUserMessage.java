@@ -239,7 +239,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("ldrParties", ldrParties, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("ldrParties", ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -262,20 +262,20 @@ public class GridIoUserMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 bodyBytes = reader.readByteArray("bodyBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
@@ -283,7 +283,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 depClsName = reader.readString("depClsName");
@@ -291,7 +291,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 byte depModeOrd;
@@ -303,15 +303,15 @@ public class GridIoUserMessage extends MessageAdapter {
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 4:
-                ldrParties = reader.readMap("ldrParties", Type.UUID, Type.IGNITE_UUID, false);
+                ldrParties = reader.readMap("ldrParties", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -319,7 +319,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 userVer = reader.readString("userVer");
@@ -327,7 +327,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

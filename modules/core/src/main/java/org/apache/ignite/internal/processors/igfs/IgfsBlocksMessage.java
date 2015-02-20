@@ -99,7 +99,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("blocks", blocks, Type.MSG, Type.BYTE_ARR))
+                if (!writer.writeMap("blocks", blocks, MessageCollectionItemType.MSG, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -122,23 +122,23 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
-                blocks = reader.readMap("blocks", Type.MSG, Type.BYTE_ARR, false);
+                blocks = reader.readMap("blocks", MessageCollectionItemType.MSG, MessageCollectionItemType.BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 fileId = reader.readIgniteUuid("fileId");
@@ -146,7 +146,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 id = reader.readLong("id");
@@ -154,7 +154,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

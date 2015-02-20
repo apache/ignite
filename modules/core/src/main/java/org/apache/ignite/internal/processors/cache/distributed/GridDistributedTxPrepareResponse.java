@@ -181,23 +181,23 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 8:
                 candsBytes = reader.readByteArray("candsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 errBytes = reader.readByteArray("errBytes");
@@ -205,7 +205,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

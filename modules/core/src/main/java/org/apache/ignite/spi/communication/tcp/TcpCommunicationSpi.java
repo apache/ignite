@@ -1506,6 +1506,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 GridDirectParser parser = new GridDirectParser(messageFactory, messageFormatter);
 
+                IgnitePredicate<MessageAdapter> skipRecoveryPred = new IgnitePredicate<MessageAdapter>() {
+                    @Override public boolean apply(MessageAdapter msg) {
+                        return msg instanceof RecoveryLastReceivedMessage;
+                    }
+                };
+
                 GridNioServer<MessageAdapter> srvr =
                     GridNioServer.<MessageAdapter>builder()
                         .address(locHost)
@@ -1526,6 +1532,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .filters(new GridNioCodecFilter(parser, log, true),
                             new GridConnectionBytesVerifyFilter(log))
                         .messageFormatter(messageFormatter)
+                        .skipRecoveryPredicate(skipRecoveryPred)
                         .build();
 
                 boundTcpPort = port;
@@ -3056,7 +3063,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             if (buf.remaining() < 32)
                 return false;
 
@@ -3134,7 +3141,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             if (buf.remaining() < 8)
                 return false;
 
@@ -3148,13 +3155,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             return RECOVERY_LAST_ID_MSG_TYPE;
         }
 
-        @Override public byte fieldsCount() {
-            return 0; // TODO: implement.
-        }
-
         /** {@inheritDoc} */
-        @Override public boolean skipRecovery() {
-            return true;
+        @Override public byte fieldsCount() {
+            return 0;
         }
 
         /** {@inheritDoc} */
@@ -3209,7 +3212,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             if (buf.remaining() < 16)
                 return false;
 
@@ -3225,8 +3228,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             return NODE_ID_MSG_TYPE;
         }
 
+        /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return 0; // TODO: implement.
+            return 0;
         }
 
         /** {@inheritDoc} */

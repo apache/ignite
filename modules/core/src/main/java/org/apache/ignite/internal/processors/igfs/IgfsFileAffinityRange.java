@@ -310,20 +310,20 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 affKey = reader.readIgniteUuid("affKey");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 done = reader.readBoolean("done");
@@ -331,7 +331,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 endOff = reader.readLong("endOff");
@@ -339,7 +339,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 startOff = reader.readLong("startOff");
@@ -347,7 +347,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 status = reader.readInt("status");
@@ -355,7 +355,7 @@ public class IgfsFileAffinityRange extends MessageAdapter implements Externaliza
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

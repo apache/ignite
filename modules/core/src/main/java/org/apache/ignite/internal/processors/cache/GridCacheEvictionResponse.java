@@ -156,7 +156,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -167,23 +167,23 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 err = reader.readBoolean("err");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 futId = reader.readLong("futId");
@@ -191,15 +191,15 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
-                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", Type.BYTE_ARR);
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

@@ -472,7 +472,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("readsBytes", readsBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("readsBytes", readsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -514,7 +514,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeCollection("writesBytes", writesBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("writesBytes", writesBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -525,16 +525,16 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 8:
                 byte concurrencyOrd;
 
@@ -545,7 +545,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 concurrency = TransactionConcurrency.fromOrdinal(concurrencyOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 dhtVersBytes = reader.readByteArray("dhtVersBytes");
@@ -553,7 +553,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
@@ -561,7 +561,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 invalidate = reader.readBoolean("invalidate");
@@ -569,7 +569,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 byte isolationOrd;
@@ -581,7 +581,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 13:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
@@ -589,7 +589,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
                 partLock = reader.readBoolean("partLock");
@@ -597,15 +597,15 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 15:
-                readsBytes = reader.readCollection("readsBytes", Type.BYTE_ARR);
+                readsBytes = reader.readCollection("readsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 sys = reader.readBoolean("sys");
@@ -613,7 +613,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 threadId = reader.readLong("threadId");
@@ -621,7 +621,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 timeout = reader.readLong("timeout");
@@ -629,7 +629,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
                 txNodesBytes = reader.readByteArray("txNodesBytes");
@@ -637,7 +637,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 txSize = reader.readInt("txSize");
@@ -645,7 +645,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 21:
                 writeVer = reader.readMessage("writeVer");
@@ -653,15 +653,15 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 22:
-                writesBytes = reader.readCollection("writesBytes", Type.BYTE_ARR);
+                writesBytes = reader.readCollection("writesBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

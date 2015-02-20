@@ -180,7 +180,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
+                if (!writer.writeCollection("nodeIds", nodeIds, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -203,20 +203,20 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 isUndeploy = reader.readBoolean("isUndeploy");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 ldrId = reader.readIgniteUuid("ldrId");
@@ -224,15 +224,15 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", Type.UUID);
+                nodeIds = reader.readCollection("nodeIds", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -240,7 +240,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 rsrcName = reader.readString("rsrcName");
@@ -248,7 +248,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

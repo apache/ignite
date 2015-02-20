@@ -142,20 +142,20 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 ver = reader.readLong("ver");
@@ -163,7 +163,7 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

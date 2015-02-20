@@ -168,7 +168,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMap("participants", participants, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("participants", participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -185,20 +185,20 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 byte depModeOrd;
@@ -210,7 +210,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 locDepOwner = reader.readBoolean("locDepOwner");
@@ -218,15 +218,15 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
-                participants = reader.readMap("participants", Type.UUID, Type.IGNITE_UUID, false);
+                participants = reader.readMap("participants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 userVer = reader.readString("userVer");
@@ -234,7 +234,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

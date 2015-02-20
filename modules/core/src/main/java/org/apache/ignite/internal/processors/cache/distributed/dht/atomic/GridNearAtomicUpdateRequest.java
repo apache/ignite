@@ -558,7 +558,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("conflictVers", conflictVers, Type.MSG))
+                if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -576,7 +576,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
+                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -600,13 +600,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, Type.BYTE_ARR))
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -654,7 +654,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection("valBytes", valBytes, Type.MSG))
+                if (!writer.writeCollection("valBytes", valBytes, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -665,23 +665,23 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf))
+        if (!super.readFrom(buf, reader))
             return false;
 
-        switch (readState) {
+        switch (reader.state()) {
             case 3:
                 conflictExpireTimes = reader.readMessage("conflictExpireTimes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 conflictTtls = reader.readMessage("conflictTtls");
@@ -689,15 +689,15 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
-                conflictVers = reader.readCollection("conflictVers", Type.MSG);
+                conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
@@ -705,7 +705,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 fastMap = reader.readBoolean("fastMap");
@@ -713,15 +713,15 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
-                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR, byte[].class);
+                filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 forceTransformBackups = reader.readBoolean("forceTransformBackups");
@@ -729,7 +729,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 futVer = reader.readMessage("futVer");
@@ -737,7 +737,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 hasPrimary = reader.readBoolean("hasPrimary");
@@ -745,23 +745,23 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", Type.BYTE_ARR, byte[].class);
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
-                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
                 byte opOrd;
@@ -773,7 +773,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 op = GridCacheOperation.fromOrdinal(opOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 15:
                 retval = reader.readBoolean("retval");
@@ -781,7 +781,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 subjId = reader.readUuid("subjId");
@@ -789,7 +789,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 byte syncModeOrd;
@@ -801,7 +801,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -809,7 +809,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
                 topVer = reader.readLong("topVer");
@@ -817,7 +817,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 updateVer = reader.readMessage("updateVer");
@@ -825,15 +825,15 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 21:
-                valBytes = reader.readCollection("valBytes", Type.MSG);
+                valBytes = reader.readCollection("valBytes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
