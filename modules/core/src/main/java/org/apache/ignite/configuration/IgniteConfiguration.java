@@ -384,7 +384,6 @@ public class IgniteConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
-    @SuppressWarnings("deprecation")
     public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
@@ -455,7 +454,8 @@ public class IgniteConfiguration {
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
-        txCfg = cfg.getTransactionConfiguration();
+        txCfg = cfg.getTransactionConfiguration() != null ?
+            new TransactionConfiguration(cfg.getTransactionConfiguration()) : null;
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
