@@ -305,8 +305,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, Object[] args) throws IgniteCheckedException {
-        dht().loadCache(p, ttl, args);
+    @Override public void localLoadCache(IgniteBiPredicate<K, V> p, Object[] args) throws IgniteCheckedException {
+        dht().localLoadCache(p, args);
     }
 
     /** {@inheritDoc} */
@@ -315,8 +315,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
-        return dht().loadCacheAsync(p, ttl, args);
+    @Override public IgniteInternalFuture<?> localLoadCacheAsync(IgniteBiPredicate<K, V> p, Object[] args) {
+        return dht().localLoadCacheAsync(p, args);
     }
 
     /**

@@ -194,9 +194,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync())
-                    setFuture(delegate.<K, V>cache().loadCacheAsync(p, 0, args));
+                    setFuture(delegate.localLoadCacheAsync(p, args));
                 else
-                    delegate.<K, V>cache().loadCache(p, 0, args);
+                    delegate.localLoadCache(p, args);
             }
             finally {
                 gate.leave(prev);

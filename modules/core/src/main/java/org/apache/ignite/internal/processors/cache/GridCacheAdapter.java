@@ -3865,7 +3865,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args)
+    @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args)
         throws IgniteCheckedException {
         final boolean replicate = ctx.isDrEnabled();
         final long topVer = ctx.affinity().affinityTopologyVersion();
@@ -3957,14 +3957,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p,
-        final long ttl,
+    @Override public IgniteInternalFuture<?> localLoadCacheAsync(final IgniteBiPredicate<K, V> p,
         final Object[] args)
     {
         return ctx.closures().callLocalSafe(
             ctx.projectSafe(new Callable<Object>() {
                 @Nullable @Override public Object call() throws IgniteCheckedException {
-                    loadCache(p, ttl, args);
+                    localLoadCache(p, args);
 
                     return null;
                 }

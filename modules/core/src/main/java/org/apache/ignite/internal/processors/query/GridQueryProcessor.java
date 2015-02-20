@@ -650,7 +650,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
-                if (qryCfg != null) {
+                if (qryCfg != null && ccfg.getTypeMetadata() != null) {
                     for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
                         portableIds.put(ctx.portable().typeId(meta.getValueType()), meta.getValueType());
                 }
@@ -676,7 +676,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
-                if (qryCfg != null) {
+                if (qryCfg != null && ccfg.getTypeMetadata() != null) {
                     for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
                         declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getValueType())), meta);
                 }
