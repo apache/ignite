@@ -18,12 +18,12 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * This test will test node local storage.
@@ -49,7 +49,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
 
         GridTuple3 key = F.t(keyNum, keyStr, keyDate);
 
-        ClusterNodeLocalMap<Object, Object> nl = g.cluster().nodeLocalMap();
+        ConcurrentMap<Object, Object> nl = g.cluster().nodeLocalMap();
 
         nl.put(keyStr, "Hello world!");
         nl.put(key, 12);

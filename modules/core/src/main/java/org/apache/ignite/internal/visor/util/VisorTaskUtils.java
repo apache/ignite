@@ -41,6 +41,7 @@ import java.nio.charset.*;
 import java.nio.file.*;
 import java.text.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
@@ -361,7 +362,7 @@ public class VisorTaskUtils {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 
-        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);

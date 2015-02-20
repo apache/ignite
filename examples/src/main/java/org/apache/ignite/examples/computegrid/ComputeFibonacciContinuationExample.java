@@ -28,6 +28,7 @@ import org.jetbrains.annotations.*;
 
 import java.math.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * This example demonstrates how to use continuation feature of Ignite by
@@ -123,7 +124,7 @@ public final class ComputeFibonacciContinuationExample {
                     return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                 // Node-local storage.
-                ClusterNodeLocalMap<Long, IgniteFuture<BigInteger>> locMap = ignite.cluster().nodeLocalMap();
+                ConcurrentMap<Long, IgniteFuture<BigInteger>> locMap = ignite.cluster().nodeLocalMap();
 
                 // Check if value is cached in node-local-map first.
                 fut1 = locMap.get(n - 1);
