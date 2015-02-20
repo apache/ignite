@@ -19,13 +19,10 @@ package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.concurrent.*;
 
 /**
  *
@@ -56,16 +53,6 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
         assert ctx != null;
 
         this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V addIfAbsent(K key, @Nullable Callable<V> dflt) {
-        return F.addIfAbsent(this, key, dflt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V addIfAbsent(K key, V val) {
-        return F.addIfAbsent(this, key, val);
     }
 
     /** {@inheritDoc} */
