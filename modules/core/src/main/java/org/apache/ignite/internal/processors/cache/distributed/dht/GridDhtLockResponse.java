@@ -213,25 +213,25 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         }
 
         switch (writer.state()) {
-            case 11:
+            case 9:
                 if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 10:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 12:
                 if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, Type.BYTE_ARR))
                     return false;
 
@@ -250,7 +250,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
             return false;
 
         switch (readState) {
-            case 11:
+            case 9:
                 invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
@@ -258,7 +258,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 readState++;
 
-            case 12:
+            case 10:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -266,7 +266,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 readState++;
 
-            case 13:
+            case 11:
                 nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -274,7 +274,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 readState++;
 
-            case 14:
+            case 12:
                 preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())

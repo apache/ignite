@@ -99,19 +99,19 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
         }
 
         switch (writer.state()) {
-            case 8:
+            case 6:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
                 if (!writer.writeBoolean("success", success))
                     return false;
 
@@ -130,7 +130,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
             return false;
 
         switch (readState) {
-            case 8:
+            case 6:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -138,7 +138,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
                 readState++;
 
-            case 9:
+            case 7:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -146,7 +146,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
                 readState++;
 
-            case 10:
+            case 8:
                 success = reader.readBoolean("success");
 
                 if (!reader.isLastRead())

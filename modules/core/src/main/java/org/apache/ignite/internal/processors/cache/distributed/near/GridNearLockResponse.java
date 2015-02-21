@@ -170,29 +170,30 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         }
 
         switch (writer.state()) {
-            case 11:
+            case 9:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 10:
                 if (!writer.writeBooleanArray("filterRes", filterRes))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeObjectArray("mappedVers", mappedVers, Type.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 12:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -206,7 +207,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             return false;
 
         switch (readState) {
-            case 11:
+            case 9:
                 dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -214,7 +215,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 readState++;
 
-            case 12:
+            case 10:
                 filterRes = reader.readBooleanArray("filterRes");
 
                 if (!reader.isLastRead())
@@ -222,7 +223,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 readState++;
 
-            case 13:
+            case 11:
                 mappedVers = reader.readObjectArray("mappedVers", Type.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -230,13 +231,14 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 readState++;
 
-            case 14:
+            case 12:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 readState++;
+
         }
 
         return true;

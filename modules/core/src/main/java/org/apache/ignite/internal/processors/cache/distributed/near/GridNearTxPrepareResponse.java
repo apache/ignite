@@ -274,43 +274,43 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         }
 
         switch (writer.state()) {
-            case 10:
+            case 8:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 9:
                 if (!writer.writeByteArray("filterFailedKeyBytes", filterFailedKeyBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 10:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 12:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 13:
                 if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, Type.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 14:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
 
@@ -329,7 +329,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         switch (readState) {
-            case 10:
+            case 8:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
@@ -337,7 +337,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 11:
+            case 9:
                 filterFailedKeyBytes = reader.readByteArray("filterFailedKeyBytes");
 
                 if (!reader.isLastRead())
@@ -345,7 +345,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 12:
+            case 10:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -353,7 +353,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 13:
+            case 11:
                 invalidParts = reader.readCollection("invalidParts", Type.INT);
 
                 if (!reader.isLastRead())
@@ -361,7 +361,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 14:
+            case 12:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -369,7 +369,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 15:
+            case 13:
                 ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -377,7 +377,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 readState++;
 
-            case 17:
+            case 14:
                 retValBytes = reader.readByteArray("retValBytes");
 
                 if (!reader.isLastRead())

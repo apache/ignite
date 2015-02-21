@@ -124,31 +124,31 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         }
 
         switch (writer.state()) {
-            case 8:
+            case 6:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 9:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 10:
                 if (!writer.writeInt("txNum", txNum))
                     return false;
 
@@ -167,7 +167,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
             return false;
 
         switch (readState) {
-            case 8:
+            case 6:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -175,7 +175,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
                 readState++;
 
-            case 9:
+            case 7:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -183,7 +183,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
                 readState++;
 
-            case 10:
+            case 8:
                 nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
@@ -191,7 +191,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
                 readState++;
 
-            case 11:
+            case 9:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -199,7 +199,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
                 readState++;
 
-            case 12:
+            case 10:
                 txNum = reader.readInt("txNum");
 
                 if (!reader.isLastRead())
