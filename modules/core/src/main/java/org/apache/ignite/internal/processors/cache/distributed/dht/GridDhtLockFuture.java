@@ -741,14 +741,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             if (log.isDebugEnabled())
                 log.debug("Mapping entry for DHT lock future: " + this);
 
-            boolean hasRmtNodes = false;
-
             // Assign keys to primary nodes.
             for (GridDhtCacheEntry<K, V> entry : entries) {
                 try {
                     while (true) {
                         try {
-                            hasRmtNodes = cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
+                            cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
 
                             GridCacheMvccCandidate<K> cand = entry.mappings(lockVer);
 
@@ -774,9 +772,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     assert false : "DHT lock should never get invalid partition [err=" + e + ", fut=" + this + ']';
                 }
             }
-
-            if (tx != null)
-                tx.needsCompletedVersions(hasRmtNodes);
 
             if (isDone()) {
                 if (log.isDebugEnabled())

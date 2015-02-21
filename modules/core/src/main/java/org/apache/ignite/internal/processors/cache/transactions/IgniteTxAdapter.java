@@ -239,6 +239,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
@@ -257,6 +258,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.timeout = timeout;
         this.invalidate = invalidate;
         this.storeEnabled = storeEnabled;
+        this.onePhaseCommit = onePhaseCommit;
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -281,7 +283,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param txSize Transaction size.
-     * @param grpLockKey Group lock key if this is group-lock transaction.
      */
     protected IgniteTxAdapter(
         GridCacheSharedContext<K, V> cctx,
@@ -797,17 +798,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
             rollback();
 
         awaitCompletion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needsCompletedVersions() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
-        Collection<GridCacheVersion> txs) {
-        /* No-op. */
     }
 
     /**
@@ -1945,16 +1935,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public Collection<GridCacheVersion> alternateVersions() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needsCompletedVersions() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

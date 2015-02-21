@@ -791,6 +791,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.timeout(),
                                     req.isInvalidate(),
                                     false,
+                                    false,
                                     req.txSize(),
                                     null,
                                     req.subjectId(),
@@ -956,13 +957,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(), req.futureId(), req.miniId(), tx != null && tx.onePhaseCommit(), entries.size(), err);
 
             if (err == null) {
-                res.pending(localDhtPendingVersions(entries, mappedVer));
-
-                // We have to add completed versions for cases when nearLocal and remote transactions
-                // execute concurrently.
-                res.completedVersions(ctx.tm().committedVersions(req.version()),
-                    ctx.tm().rolledbackVersions(req.version()));
-
                 int i = 0;
 
                 for (ListIterator<GridCacheEntryEx<K, V>> it = entries.listIterator(); it.hasNext();) {
@@ -1106,40 +1100,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * Collects versions of pending candidates versions less then base.
-     *
-     * @param entries Tx entries to process.
-     * @param baseVer Base version.
-     * @return Collection of pending candidates versions.
-     */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx<K, V>> entries,
-        GridCacheVersion baseVer) {
-        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
-
-        for (GridCacheEntryEx<K, V> entry : entries) {
-            // Since entries were collected before locks are added, some of them may become obsolete.
-            while (true) {
-                try {
-                    for (GridCacheMvccCandidate cand : entry.localCandidates()) {
-                        if (cand.version().isLess(baseVer))
-                            lessPending.add(cand.version());
-                    }
-
-                    break; // While.
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry is localDhtPendingVersions (will retry): " + entry);
-
-                    entry = entryExx(entry.key());
-                }
-            }
-        }
-
-        return lessPending;
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1166,9 +1126,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         entry.doneRemote(
                             req.version(),
                             req.version(),
-                            null,
-                            null,
-                            null,
                             /*system invalidate*/false);
 
                         // Note that we don't reorder completed versions here,
@@ -1387,9 +1344,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-        Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
-
         // Backups.
         for (Map.Entry<ClusterNode, List<T2<K, byte[]>>> entry : dhtMap.entrySet()) {
             ClusterNode n = entry.getKey();
@@ -1409,8 +1363,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (keyBytes != null)
                     for (T2<K, byte[]> key : keyBytes)
                         req.addNearKey(key.get1(), key.get2(), ctx.shared());
-
-                req.completedVersions(committed, rolledback);
 
                 ctx.io().send(n, req, ctx.ioPolicy());
             }
@@ -1437,8 +1389,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 try {
                     for (T2<K, byte[]> key : keyBytes)
                         req.addNearKey(key.get1(), key.get2(), ctx.shared());
-
-                    req.completedVersions(committed, rolledback);
 
                     ctx.io().send(n, req, ctx.ioPolicy());
                 }

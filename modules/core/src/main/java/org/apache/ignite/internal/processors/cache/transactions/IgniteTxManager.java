@@ -202,8 +202,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 if (tx instanceof IgniteTxRemoteEx) {
                     IgniteTxRemoteEx<K, V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
-                    rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(),
-                        Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList());
+                    rmtTx.doneRemote(tx.xidVersion());
                 }
 
                 tx.commit();
@@ -1032,76 +1031,6 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     }
 
     /**
-     * @param tx Transaction.
-     */
-    private void processCompletedEntries(IgniteInternalTx<K, V> tx) {
-        if (tx.needsCompletedVersions()) {
-            GridCacheVersion min = minVersion(tx.readEntries(), tx.xidVersion(), tx);
-
-            min = minVersion(tx.writeEntries(), min, tx);
-
-            assert min != null;
-
-            tx.completedVersions(min, committedVersions(min), rolledbackVersions(min));
-        }
-    }
-
-    /**
-     * Collects versions for all pending locks for all entries within transaction
-     *
-     * @param dhtTxLoc Transaction being committed.
-     */
-    private void collectPendingVersions(GridDhtTxLocal<K, V> dhtTxLoc) {
-        if (dhtTxLoc.needsCompletedVersions()) {
-            if (log.isDebugEnabled())
-                log.debug("Checking for pending locks with version less then tx version: " + dhtTxLoc);
-
-            Set<GridCacheVersion> vers = new LinkedHashSet<>();
-
-            collectPendingVersions(dhtTxLoc.readEntries(), dhtTxLoc.xidVersion(), vers);
-            collectPendingVersions(dhtTxLoc.writeEntries(), dhtTxLoc.xidVersion(), vers);
-
-            if (!vers.isEmpty())
-                dhtTxLoc.pendingVersions(vers);
-        }
-    }
-
-    /**
-     * Gets versions of all not acquired locks for collection of tx entries that are less then base version.
-     *
-     * @param entries Tx entries to process.
-     * @param baseVer Base version to compare with.
-     * @param vers Collection of versions that will be populated.
-     */
-    @SuppressWarnings("TypeMayBeWeakened")
-    private void collectPendingVersions(Iterable<IgniteTxEntry<K, V>> entries,
-        GridCacheVersion baseVer, Set<GridCacheVersion> vers) {
-
-        // The locks are not released yet, so we can safely list pending candidates versions.
-        for (IgniteTxEntry<K, V> txEntry : entries) {
-            GridCacheEntryEx<K, V> cached = txEntry.cached();
-
-            try {
-                // If check should be faster then exception handling.
-                if (!cached.obsolete()) {
-                    for (GridCacheMvccCandidate<K> cand : cached.localCandidates()) {
-                        if (!cand.owner() && cand.version().compareTo(baseVer) < 0) {
-                            if (log.isDebugEnabled())
-                                log.debug("Adding candidate version to pending set: " + cand);
-
-                            vers.add(cand.version());
-                        }
-                    }
-                }
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("There are no pending locks for entry (entry was deleted in transaction): " + txEntry);
-            }
-        }
-    }
-
-    /**
      * Go through all candidates for entries involved in transaction and find their min
      * version. We know that these candidates will commit after this transaction, and
      * therefore we can grab the min version so we can send all committed and rolled
@@ -1169,15 +1098,6 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx<K, V>> txIdMap = transactionMap(tx);
 
         if (txIdMap.remove(tx.xidVersion(), tx)) {
-            // 2. Must process completed entries before unlocking!
-            processCompletedEntries(tx);
-
-            if (tx instanceof GridDhtTxLocal) {
-                GridDhtTxLocal<K, V> dhtTxLoc = (GridDhtTxLocal<K, V>)tx;
-
-                collectPendingVersions(dhtTxLoc);
-            }
-
             // 3.1 Call dataStructures manager.
             cctx.kernalContext().dataStructures().onTxCommitted(tx);
 
@@ -1806,8 +1726,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         if (tx instanceof GridDistributedTxRemoteAdapter) {
             IgniteTxRemoteEx<K,V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
-            rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+            rmtTx.doneRemote(tx.xidVersion());
         }
 
         if (commit)
@@ -1833,8 +1752,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         if (tx instanceof GridDistributedTxRemoteAdapter) {
             IgniteTxRemoteEx<K,V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
-            rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+            rmtTx.doneRemote(tx.xidVersion());
         }
 
         try {

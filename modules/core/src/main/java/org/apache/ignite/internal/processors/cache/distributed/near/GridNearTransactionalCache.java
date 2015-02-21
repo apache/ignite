@@ -194,9 +194,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             entry.doneRemote(
                                 req.version(),
                                 req.version(),
-                                null,
-                                req.committedVersions(),
-                                req.rolledbackVersions(),
                                 /*system invalidate*/false);
 
                             // Note that we don't reorder completed versions here,
@@ -665,17 +662,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (map == null || map.isEmpty())
                 return;
 
-            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
-
             for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest<K, V> req = mapping.getValue();
 
                 if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys())) {
-                    req.completedVersions(committed, rolledback);
-
                     // We don't wait for reply to this message.
                     ctx.io().send(n, req, ctx.ioPolicy());
                 }

@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
 import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
@@ -275,6 +274,7 @@ public class IgniteTxHandler<K, V> {
                 req.timeout(),
                 req.isInvalidate(),
                 false,
+                req.onePhaseCommit(),
                 req.txSize(),
                 req.transactionNodes(),
                 req.subjectId(),
@@ -296,8 +296,6 @@ public class IgniteTxHandler<K, V> {
             if (req.onePhaseCommit()) {
                 assert req.last();
                 assert F.isEmpty(req.lastBackups()) || req.lastBackups().size() <= 1;
-
-                tx.onePhaseCommit(true);
             }
 
             if (req.returnValue())
@@ -524,36 +522,10 @@ public class IgniteTxHandler<K, V> {
         }
 
         try {
+            assert tx != null : "Transaction is null for near finish request [nodeId=" +
+                nodeId + ", req=" + req + "]";
+
             if (req.commit()) {
-                if (tx == null) {
-                    // Create transaction and add entries.
-                    tx = ctx.tm().onCreated(
-                        new GridDhtTxLocal<>(
-                            ctx,
-                            nodeId,
-                            req.version(),
-                            req.futureId(),
-                            req.miniId(),
-                            req.threadId(),
-                            true,
-                            false, /* we don't know, so assume false. */
-                            req.system(),
-                            PESSIMISTIC,
-                            READ_COMMITTED,
-                            /*timeout */0,
-                            req.isInvalidate(),
-                            req.storeEnabled(),
-                            req.txSize(),
-                            null,
-                            req.subjectId(),
-                            req.taskNameHash()));
-
-                    if (tx == null || !ctx.tm().onStarted(tx))
-                        throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + req);
-
-                    tx.topologyVersion(req.topologyVersion());
-                }
-
                 tx.storeEnabled(req.storeEnabled());
 
                 if (!tx.markFinalizing(USER_FINISH)) {
@@ -577,9 +549,6 @@ public class IgniteTxHandler<K, V> {
                 return commitFut;
             }
             else {
-                assert tx != null : "Transaction is null for near rollback request [nodeId=" +
-                    nodeId + ", req=" + req + "]";
-
                 tx.syncRollback(req.syncRollback());
 
                 tx.nearFinishFutureId(req.futureId());
@@ -749,7 +718,18 @@ public class IgniteTxHandler<K, V> {
         if (nearTx != null && nearTx.local())
             nearTx = null;
 
-        finish(nodeId, dhtTx, req);
+        if (req.checkCommitted()) {
+            boolean committed = true;
+
+            if (dhtTx == null) {
+                if (ctx.tm().addRolledbackTx(req.version()))
+                    committed = false;
+            }
+
+            sendReply(nodeId, req, committed);
+        }
+        else
+            finish(nodeId, dhtTx, req);
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -757,12 +737,12 @@ public class IgniteTxHandler<K, V> {
         if (dhtTx != null && !dhtTx.done()) {
             dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                    sendReply(nodeId, req);
+                    sendReply(nodeId, req, true);
                 }
             });
         }
         else
-            sendReply(nodeId, req);
+            sendReply(nodeId, req, true);
     }
 
     /**
@@ -802,13 +782,13 @@ public class IgniteTxHandler<K, V> {
                     tx.systemInvalidate(req.isSystemInvalidate());
 
                     // Complete remote candidates.
-                    tx.doneRemote(req.baseVersion(), null, null, null);
+                    tx.doneRemote(req.version());
 
                     tx.commit();
                 }
             }
             else {
-                tx.doneRemote(req.baseVersion(), null, null, null);
+                tx.doneRemote(req.version());
 
                 tx.rollback();
             }
@@ -845,7 +825,7 @@ public class IgniteTxHandler<K, V> {
             tx.invalidate(req.isInvalidate());
 
             // Complete remote candidates.
-            tx.doneRemote(req.version(), null, null, null);
+            tx.doneRemote(req.version());
 
             tx.commit();
         }
@@ -870,9 +850,11 @@ public class IgniteTxHandler<K, V> {
      * @param nodeId Node id that originated finish request.
      * @param req Request.
      */
-    protected void sendReply(UUID nodeId, GridDhtTxFinishRequest<K, V> req) {
+    protected void sendReply(UUID nodeId, GridDhtTxFinishRequest<K, V> req, boolean committed) {
         if (req.replyRequired()) {
             GridCacheMessage<K, V> res = new GridDhtTxFinishResponse<>(req.version(), req.futureId(), req.miniId());
+
+
 
             try {
                 ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);

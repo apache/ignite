@@ -134,6 +134,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             timeout,
             invalidate,
             storeEnabled,
+            false,
             txSize,
             subjId,
             taskNameHash);
@@ -546,15 +547,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /**
      * @param mapping Mapping to order.
-     * @param pendingVers Pending versions.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
      */
-    void readyNearLocks(GridDistributedTxMapping<K, V> mapping,
-        Collection<GridCacheVersion> pendingVers,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
-    {
+    void readyNearLocks(GridDistributedTxMapping<K, V> mapping) {
         Collection<IgniteTxEntry<K, V>> entries = F.concat(false, mapping.reads(), mapping.writes());
 
         for (IgniteTxEntry<K, V> txEntry : entries) {
@@ -570,7 +564,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                     GridCacheVersion explicit = txEntry.explicitVersion();
 
                     if (explicit == null)
-                        entry.readyNearLock(xidVer, mapping.dhtVersion(), committedVers, rolledbackVers, pendingVers);
+                        entry.readyNearLock(xidVer, mapping.dhtVersion());
 
                     break;
                 }
@@ -767,13 +761,20 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                 try {
                     // Make sure that here are no exceptions.
-                    f.get();
+                    if (!needCheckBackup()) {
+                        f.get();
 
-                    if (finish(true))
+                        if (finish(true))
+                            fut0.finish();
+                        else
+                            fut0.onError(new IgniteCheckedException("Failed to commit transaction: " +
+                                CU.txString(GridNearTxLocal.this)));
+                    }
+                    else {
+                        assert onePhaseCommit();
+
                         fut0.finish();
-                    else
-                        fut0.onError(new IgniteCheckedException("Failed to commit transaction: " +
-                            CU.txString(GridNearTxLocal.this)));
+                    }
                 }
                 catch (Error | RuntimeException e) {
                     commitErr.compareAndSet(null, e);

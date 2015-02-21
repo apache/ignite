@@ -63,12 +63,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     /** */
     private long dhtThreadId;
 
-    /** */
-    private boolean needsCompletedVers;
-
-    /** Versions of pending locks for entries of this tx. */
-    private Collection<GridCacheVersion> pendingVers;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -98,12 +92,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(cctx, xidVer, implicit, implicitSingle, sys, concurrency, isolation, timeout, invalidate, storeEnabled,
-            txSize, subjId, taskNameHash);
+            onePhaseCommit, txSize, subjId, taskNameHash);
 
         assert cctx != null;
 
@@ -145,32 +140,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param err Error, if any.
      */
     protected abstract void sendFinishReply(boolean commit, @Nullable Throwable err);
-
-    /**
-     * @param needsCompletedVers {@code True} if needs completed versions.
-     */
-    public void needsCompletedVersions(boolean needsCompletedVers) {
-        this.needsCompletedVers |= needsCompletedVers;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needsCompletedVersions() {
-        return needsCompletedVers;
-    }
-
-    /**
-     * @return Versions for all pending locks that were in queue before tx locks were released.
-     */
-    public Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
-    }
-
-    /**
-     * @param pendingVers Versions for all pending locks that were in queue before tx locsk were released.
-     */
-    public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
-        this.pendingVers = pendingVers;
-    }
 
     /**
      * @return DHT thread ID.

@@ -197,26 +197,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Moves completed candidates right before the base one. Note that
-     * if base is not found, then nothing happens and {@code false} is
-     * returned.
-     *
-     * @param baseVer Base version.
-     * @param committedVers Committed versions relative to base.
-     * @param rolledbackVers Rolled back versions relative to base.
-     * @return Lock owner.
-     */
-    @Nullable public GridCacheMvccCandidate<K> orderCompleted(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
-        return mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
-    }
-
-    /**
      * @param ver Version.
      */
     public void doneRemote(GridCacheVersion ver) {
-        mvcc.doneRemote(ver, Collections.<GridCacheVersion>emptyList(),
-            Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList());
+        mvcc.doneRemote(ver);
     }
 
     /**
@@ -238,15 +222,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /**
      * @param ver Ready near lock version.
      * @param mapped Mapped version.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
-     * @param pending Pending versions.
      * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pending) {
-        return mvcc.readyNearLocal(ver, mapped, committedVers, rolledbackVers, pending);
+    @Nullable public GridCacheMvccCandidate<K> readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped) {
+        return mvcc.readyNearLocal(ver, mapped);
     }
 
     /**

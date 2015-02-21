@@ -483,7 +483,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (tx.optimistic())
             tx.clearPrepareFuture(this);
 
-        if (tx.onePhaseCommit()) {
+        // Check if originating node has a near cache participating in transaction.
+        boolean hasNearCache = originatingNodeHasNearCache();
+
+        // Do not commit one-phase commit transaction if originating node has near cache enabled.
+        if (tx.onePhaseCommit() && !hasNearCache) {
             assert last;
 
             // Must create prepare response before transaction is committed to grab correct return value.
@@ -591,18 +595,36 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (prepErr == null) {
             addDhtValues(res);
 
-            GridCacheVersion min = tx.minVersion();
-
-            res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
-
-            res.pending(localDhtPendingVersions(tx.writeEntries(), min));
-
             tx.implicitSingleResult(ret);
         }
 
         res.filterFailedKeys(filterFailedKeys);
 
         return res;
+    }
+
+    /**
+     * Checks if transaction involves a near-enabled cache on originating node.
+     *
+     * @return {@code True} if originating node has a near cache enabled and that cache participates in
+     *      the transaction.
+     */
+    private boolean originatingNodeHasNearCache() {
+        ClusterNode node = cctx.discovery().node(tx.originatingNodeId());
+
+        if (node == null)
+            return false;
+
+        GridCacheAttributes[] attrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
+
+        for (GridCacheAttributes attr : attrs) {
+            if (attr.nearCacheEnabled()) {
+                if (tx.activeCacheIds().contains(CU.cacheId(attr.cacheName())))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -776,20 +798,16 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 Map<UUID, GridDistributedTxMapping<K, V>> futDhtMap = new HashMap<>();
                 Map<UUID, GridDistributedTxMapping<K, V>> futNearMap = new HashMap<>();
 
-                boolean hasRemoteNodes = false;
-
                 // Assign keys to primary nodes.
                 if (!F.isEmpty(writes)) {
                     for (IgniteTxEntry<K, V> write : writes)
-                        hasRemoteNodes |= map(tx.entry(write.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(write.txKey()), futDhtMap, futNearMap);
                 }
 
                 if (!F.isEmpty(reads)) {
                     for (IgniteTxEntry<K, V> read : reads)
-                        hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(read.txKey()), futDhtMap, futNearMap);
                 }
-
-                tx.needsCompletedVersions(hasRemoteNodes);
             }
 
             if (isDone())
@@ -1073,32 +1091,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         }
 
         return ret;
-    }
-
-    /**
-     * Collects versions of pending candidates versions less than base.
-     *
-     * @param entries Tx entries to process.
-     * @param baseVer Base version.
-     * @return Collection of pending candidates versions.
-     */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry<K, V>> entries,
-        GridCacheVersion baseVer) {
-        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
-
-        for (IgniteTxEntry<K, V> entry : entries) {
-            try {
-                for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
-                    if (cand.version().isLess(baseVer))
-                        lessPending.add(cand.version());
-                }
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                // No-op, no candidates.
-            }
-        }
-
-        return lessPending;
     }
 
     /** {@inheritDoc} */

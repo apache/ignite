@@ -282,8 +282,23 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     void finish() {
         if (tx.onePhaseCommit()) {
-            if (commit && tx.needCheckBackup())
-                checkBackup();
+            if (commit) {
+                if (tx.needCheckBackup())
+                    checkBackup();
+                else if (needFinishOnePhase()) {
+                    finish(mappings.values());
+
+                    boolean complete = true;
+
+                    for (IgniteInternalFuture<?> f : pending())
+                        // Mini-future in non-sync mode gets done when message gets sent.
+                        if (isMini(f) && !f.isDone())
+                            complete = false;
+
+                    if (complete)
+                        onComplete();
+                }
+            }
 
             markInitialized();
 
@@ -354,10 +369,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     false,
                     true,
                     true,
-                    tx.xidVersion(),
-                    null,
-                    null,
-                    null,
                     0,
                     null,
                     0);
@@ -373,6 +384,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    private boolean needFinishOnePhase() {
+        for (Integer cacheId : tx.activeCacheIds()) {
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx.isNear())
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -421,9 +446,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            null,
-            null,
-            null,
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash()

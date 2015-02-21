@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -56,11 +54,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** Check comitted flag. */
     private boolean checkCommitted;
 
-    /** Pending versions with order less than one for this message (needed for commit ordering). */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pendingVers;
-
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
 
@@ -92,10 +85,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param sysInvalidate System invalidation flag.
      * @param syncCommit Synchronous commit flag.
      * @param syncRollback Synchronous rollback flag.
-     * @param baseVer Base version.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
-     * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
@@ -115,22 +104,16 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         boolean sysInvalidate,
         boolean syncCommit,
         boolean syncRollback,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize);
+        super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, txSize);
 
         assert miniId != null;
         assert nearNodeId != null;
         assert isolation != null;
 
-        this.pendingVers = pendingVers;
         this.topVer = topVer;
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
@@ -202,20 +185,17 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /**
+     * @return Check committed flag.
+     */
+    public boolean checkCommitted() {
+        return checkCommitted;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * Gets versions of not acquired locks with version less then one of transaction being committed.
-     *
-     * @return Versions of locks for entries participating in transaction that have not been acquired yet
-     *      have version less then one of transaction being committed.
-     */
-    public Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
     /** {@inheritDoc} */
@@ -258,12 +238,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 21:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeCollection("pendingVers", pendingVers, Type.MSG))
                     return false;
 
                 writer.incrementState();
@@ -341,14 +315,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 21:
                 nearNodeId = reader.readUuid("nearNodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 22:
-                pendingVers = reader.readCollection("pendingVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

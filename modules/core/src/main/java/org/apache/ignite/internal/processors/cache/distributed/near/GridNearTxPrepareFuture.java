@@ -739,7 +739,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param entry Transaction entry.
      * @param topVer Topology version.
      * @param cur Current mapping.
-     * @throws IgniteCheckedException If transaction is group-lock and local node is not primary for key.
      * @return Mapping.
      */
     private GridDistributedTxMapping<K, V> map(
@@ -984,7 +983,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                         m.dhtVersion(res.dhtVersion());
 
                         if (m.near())
-                            tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+                            tx.readyNearLocks(m);
                     }
 
                     // Proceed prepare before finishing mini future.

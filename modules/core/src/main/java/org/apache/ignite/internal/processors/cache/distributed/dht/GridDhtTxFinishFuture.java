@@ -321,10 +321,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.isSystemInvalidate(),
                 tx.syncCommit(),
                 tx.syncRollback(),
-                tx.completedBase(),
-                tx.committedVersions(),
-                tx.rolledbackVersions(),
-                tx.pendingVersions(),
                 tx.size(),
                 tx.subjectId(),
                 tx.taskNameHash());
@@ -371,10 +367,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.isSystemInvalidate(),
                     tx.syncCommit(),
                     tx.syncRollback(),
-                    tx.completedBase(),
-                    tx.committedVersions(),
-                    tx.rolledbackVersions(),
-                    tx.pendingVersions(),
                     tx.size(),
                     tx.subjectId(),
                     tx.taskNameHash());

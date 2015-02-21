@@ -32,12 +32,8 @@ public interface IgniteTxRemoteEx<K, V> extends IgniteInternalTx<K, V> {
 
     /**
      * @param baseVer Base version.
-     * @param committedVers Committed version.
-     * @param rolledbackVers Rolled back version.
-     * @param pendingVers Pending versions.
      */
-    public void doneRemote(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers, Collection<GridCacheVersion> pendingVers);
+    public void doneRemote(GridCacheVersion baseVer);
 
     /**
      * @param e Sets write value for pessimistic transactions.

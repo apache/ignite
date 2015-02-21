@@ -64,16 +64,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     @GridToStringExclude
     private byte[] candsByKeyBytes;
 
-    /** Committed versions with order higher than one for this message (needed for commit ordering). */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> committedVers;
-
-    /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> rolledbackVers;
-
     /** Count of keys referenced in candidates array (needed only locally for optimization). */
     @GridToStringInclude
     @GridDirectTransient
@@ -148,30 +138,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
      */
     public void version(GridCacheVersion ver) {
         this.ver = ver;
-    }
-
-    /**
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
-     */
-    public void completedVersions(Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers) {
-        this.committedVers = committedVers;
-        this.rolledbackVers = rolledbackVers;
-    }
-
-    /**
-     * @return Committed versions.
-     */
-    public Collection<GridCacheVersion> committedVersions() {
-        return committedVers == null ? Collections.<GridCacheVersion>emptyList() : committedVers;
-    }
-
-    /**
-     * @return Rolled back versions.
-     */
-    public Collection<GridCacheVersion> rolledbackVersions() {
-        return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
     }
 
     /**
@@ -266,18 +232,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
                 writer.incrementState();
 
-            case 5:
-                if (!writer.writeCollection("committedVers", committedVers, Type.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection("rolledbackVers", rolledbackVers, Type.MSG))
-                    return false;
-
-                writer.incrementState();
-
             case 7:
                 if (!writer.writeMessage("ver", ver))
                     return false;
@@ -307,22 +261,6 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
             case 4:
                 candsByKeyBytes = reader.readByteArray("candsByKeyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 5:
-                committedVers = reader.readCollection("committedVers", Type.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 6:
-                rolledbackVers = reader.readCollection("rolledbackVers", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

@@ -301,7 +301,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @return Context.
      */
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -667,10 +667,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 assert map.isEmpty() || map.size() == 1 : map.size();
 
-                if (ctx.portableEnabled())
-                    return map.isEmpty() ? false : map.values().iterator().next() != null;
-                else
-                    return map.get(key0) != null;
+                return ctx.portableEnabled() ?
+                    !map.isEmpty() && map.values().iterator().next() != null :
+                    map.get(key0) != null;
             }
         });
     }
@@ -3975,15 +3974,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final Collection<? extends K> keys0;
 
-        if (ctx.portableEnabled() && !ctx.store().convertPortable()) {
-            keys0 = F.viewReadOnly(keys, new C1<K, K>() {
+        keys0 = ctx.portableEnabled() && !ctx.store().convertPortable() ?
+            F.viewReadOnly(keys, new C1<K, K>() {
                 @Override public K apply(K k) {
                     return (K)ctx.marshalToPortable(k);
                 }
-            });
-        }
-        else
-            keys0 = keys;
+            }) :
+            keys;
 
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {

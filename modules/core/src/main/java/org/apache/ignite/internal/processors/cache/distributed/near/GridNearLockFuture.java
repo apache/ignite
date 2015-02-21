@@ -1030,8 +1030,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         // returned value if any.
                                         entry.resetFromPrimary(newVal, newBytes, lockVer, dhtVer, node.id());
 
-                                        entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
-                                            res.rolledbackVersions(), res.pending());
+                                        entry.readyNearLock(lockVer, mappedVer);
 
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
@@ -1394,8 +1393,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 tx.entry(cctx.txKey(k)).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
                             }
 
-                            entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(),
-                                res.pending());
+                            entry.readyNearLock(lockVer, mappedVer);
 
                             if (retval) {
                                 if (readRecordable)

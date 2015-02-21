@@ -25,7 +25,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Transaction completion message.
@@ -55,9 +54,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Sync commit flag. */
     private boolean syncRollback;
 
-    /** Min version used as base for completed versions. */
-    private GridCacheVersion baseVer;
-
     /** Expected txSize. */
     private int txSize;
 
@@ -79,9 +75,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param sys System flag.
-     * @param baseVer Base version.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
      */
     public GridDistributedTxFinishRequest(
@@ -94,9 +87,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         boolean sys,
         boolean syncCommit,
         boolean syncRollback,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
         int txSize
     ) {
         super(xidVer, 0);
@@ -110,10 +100,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.sys = sys;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
-        this.baseVer = baseVer;
         this.txSize = txSize;
-
-        completedVersions(committedVers, rolledbackVers);
     }
 
     /**
@@ -174,13 +161,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
-     * @return Base version.
-     */
-    public GridCacheVersion baseVersion() {
-        return baseVer;
-    }
-
-    /**
      * @return Expected tx size.
      */
     public int txSize() {
@@ -210,12 +190,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         }
 
         switch (writer.state()) {
-            case 8:
-                if (!writer.writeMessage("baseVer", baseVer))
-                    return false;
-
-                writer.incrementState();
-
             case 9:
                 if (!writer.writeBoolean("commit", commit))
                     return false;
@@ -283,14 +257,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             return false;
 
         switch (readState) {
-            case 8:
-                baseVer = reader.readMessage("baseVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
             case 9:
                 commit = reader.readBoolean("commit");
 

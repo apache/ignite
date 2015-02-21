@@ -70,9 +70,6 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param explicitLock Explicit lock flag.
      * @param storeEnabled Store enabled flag.
      * @param topVer Topology version.
-     * @param baseVer Base version.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
      */
     public GridNearTxFinishRequest(
@@ -87,14 +84,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         boolean explicitLock,
         boolean storeEnabled,
         long topVer,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
-            rolledbackVers, txSize);
+        super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, txSize);
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;

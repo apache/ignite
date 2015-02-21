@@ -108,6 +108,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
@@ -115,7 +116,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     ) {
         super(
             cctx,
-            cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
+            onePhaseCommit ? nearXidVer : cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
             implicit,
             implicitSingle,
             sys,
@@ -124,6 +125,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             timeout,
             invalidate,
             storeEnabled,
+            onePhaseCommit,
             txSize,
             subjId,
             taskNameHash);

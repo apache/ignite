@@ -41,11 +41,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Collection of versions that are pending and less than lock version. */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
-
     /** Future ID.  */
     private IgniteUuid futId;
 
@@ -119,24 +114,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         this.dhtVer = dhtVer;
         this.invalidParts = invalidParts;
         this.retVal = retVal;
-    }
-
-    /**
-     * Gets pending versions that are less than {@link #version()}.
-     *
-     * @return Pending versions.
-     */
-    public Collection<GridCacheVersion> pending() {
-        return pending == null ? Collections.<GridCacheVersion>emptyList() : pending;
-    }
-
-    /**
-     * Sets pending versions that are less than {@link #version()}.
-     *
-     * @param pending Pending versions.
-     */
-    public void pending(Collection<GridCacheVersion> pending) {
-        this.pending = pending;
     }
 
     /**
@@ -333,12 +310,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 writer.incrementState();
 
-            case 16:
-                if (!writer.writeCollection("pending", pending, Type.MSG))
-                    return false;
-
-                writer.incrementState();
-
             case 17:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
@@ -400,14 +371,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
             case 15:
                 ownedValsBytes = reader.readCollection("ownedValsBytes", Type.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 16:
-                pending = reader.readCollection("pending", Type.MSG);
 
                 if (!reader.isLastRead())
                     return false;

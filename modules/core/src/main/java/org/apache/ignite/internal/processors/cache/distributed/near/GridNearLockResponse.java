@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Near cache lock response.
@@ -38,11 +36,6 @@ import java.util.*;
 public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Collection of versions that are pending and less than lock version. */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
 
     /** */
     private IgniteUuid miniId;
@@ -94,24 +87,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
         if (filterRes)
             this.filterRes = new boolean[cnt];
-    }
-
-    /**
-     * Gets pending versions that are less than {@link #version()}.
-     *
-     * @return Pending versions.
-     */
-    public Collection<GridCacheVersion> pending() {
-        return pending;
-    }
-
-    /**
-     * Sets pending versions that are less than {@link #version()}.
-     *
-     * @param pending Pending versions.
-     */
-    public void pending(Collection<GridCacheVersion> pending) {
-        this.pending = pending;
     }
 
     /**
@@ -218,13 +193,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 writer.incrementState();
-
-            case 15:
-                if (!writer.writeCollection("pending", pending, Type.MSG))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -269,15 +237,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 readState++;
-
-            case 15:
-                pending = reader.readCollection("pending", Type.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
         }
 
         return true;

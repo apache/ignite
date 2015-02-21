@@ -170,14 +170,9 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     /**
      * @param idx Candidates index.
      * @param cands Collection of candidates.
-     * @param committedVers Committed versions relative to lock version.
-     * @param rolledbackVers Rolled back versions relative to lock version.
      */
-    public void setCandidates(int idx, Collection<GridCacheMvccCandidate<K>> cands,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
+    public void setCandidates(int idx, Collection<GridCacheMvccCandidate<K>> cands) {
         assert idx >= 0;
-
-        completedVersions(committedVers, rolledbackVers);
 
         candidatesByIndex(idx, cands);
     }

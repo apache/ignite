@@ -75,15 +75,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     /** Flag indicating with TM commit happened. */
     protected AtomicBoolean doneFlag = new AtomicBoolean(false);
 
-    /** Committed versions, relative to base. */
-    private Collection<GridCacheVersion> committedVers = Collections.emptyList();
-
-    /** Rolled back versions, relative to base. */
-    private Collection<GridCacheVersion> rolledbackVers = Collections.emptyList();
-
-    /** Base for completed versions. */
-    private GridCacheVersion completedBase;
-
     /** Flag indicating that transformed values should be sent to remote nodes. */
     private boolean sndTransformedVals;
 
@@ -129,12 +120,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(cctx, xidVer, implicit, implicitSingle, /*local*/true, sys, concurrency, isolation, timeout, invalidate,
-            storeEnabled, txSize, subjId, taskNameHash);
+            storeEnabled, onePhaseCommit, txSize, subjId, taskNameHash);
 
         minVer = xidVer;
     }
@@ -982,12 +974,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (doneFlag.compareAndSet(false, true)) {
                 // Unlock all locks.
                 cctx.tm().commitTx(this);
-
-                boolean needsCompletedVersions = needsCompletedVersions();
-
-                assert !needsCompletedVersions || completedBase != null;
-                assert !needsCompletedVersions || committedVers != null;
-                assert !needsCompletedVersions || rolledbackVers != null;
             }
         }
     }
@@ -1003,44 +989,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             cctx.tm().commitTx(this);
 
             state(COMMITTED);
-
-            boolean needsCompletedVersions = needsCompletedVersions();
-
-            assert !needsCompletedVersions || completedBase != null;
-            assert !needsCompletedVersions || committedVers != null;
-            assert !needsCompletedVersions || rolledbackVers != null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void completedVersions(
-        GridCacheVersion completedBase,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers) {
-        this.completedBase = completedBase;
-        this.committedVers = committedVers;
-        this.rolledbackVers = rolledbackVers;
-    }
-
-    /**
-     * @return Completed base for ordering.
-     */
-    public GridCacheVersion completedBase() {
-        return completedBase;
-    }
-
-    /**
-     * @return Committed versions.
-     */
-    public Collection<GridCacheVersion> committedVersions() {
-        return committedVers;
-    }
-
-    /**
-     * @return Rolledback versions.
-     */
-    public Collection<GridCacheVersion> rolledbackVersions() {
-        return rolledbackVers;
     }
 
     /** {@inheritDoc} */

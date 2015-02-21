@@ -218,19 +218,16 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /**
      * @param baseVer Base version.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
      */
-    @Override public void doneRemote(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers, Collection<GridCacheVersion> pendingVers) {
+    @Override public void doneRemote(GridCacheVersion baseVer) {
         if (readMap != null && !readMap.isEmpty()) {
             for (IgniteTxEntry<K, V> txEntry : readMap.values())
-                doneRemote(txEntry, baseVer, committedVers, rolledbackVers, pendingVers);
+                doneRemote(txEntry, baseVer);
         }
 
         if (writeMap != null && !writeMap.isEmpty()) {
             for (IgniteTxEntry<K, V> txEntry : writeMap.values())
-                doneRemote(txEntry, baseVer, committedVers, rolledbackVers, pendingVers);
+                doneRemote(txEntry, baseVer);
         }
     }
 
@@ -239,13 +236,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      *
      * @param txEntry Entry.
      * @param baseVer Base version for completed versions.
-     * @param committedVers Completed versions relative to base version.
-     * @param rolledbackVers Rolled back versions relative to base version.
-     * @param pendingVers Pending versions.
      */
-    private void doneRemote(IgniteTxEntry<K, V> txEntry, GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers) {
+    private void doneRemote(IgniteTxEntry<K, V> txEntry, GridCacheVersion baseVer) {
         while (true) {
             GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
 
@@ -253,7 +245,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                 // Handle explicit locks.
                 GridCacheVersion doneVer = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
-                entry.doneRemote(doneVer, baseVer, pendingVers, committedVers, rolledbackVers, isSystemInvalidate());
+                entry.doneRemote(doneVer, baseVer, isSystemInvalidate());
 
                 break;
             }

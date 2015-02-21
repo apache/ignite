@@ -660,19 +660,6 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     public Collection<GridCacheVersion> alternateVersions();
 
     /**
-     * @return {@code True} if transaction needs completed versions for processing.
-     */
-    public boolean needsCompletedVersions();
-
-    /**
-     * @param base Base for committed versions.
-     * @param committed Committed transactions relative to base.
-     * @param rolledback Rolled back transactions relative to base.
-     */
-    public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
-        Collection<GridCacheVersion> rolledback);
-
-    /**
      * @return {@code True} if transaction has at least one internal entry.
      */
     public boolean internal();
