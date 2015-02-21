@@ -91,11 +91,11 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -123,20 +123,23 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 miniId = reader.readIgniteUuid("miniId");
@@ -144,7 +147,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 success = reader.readBoolean("success");
@@ -152,7 +155,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -162,6 +165,11 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 17;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 11;
     }
 
     /** {@inheritDoc} */

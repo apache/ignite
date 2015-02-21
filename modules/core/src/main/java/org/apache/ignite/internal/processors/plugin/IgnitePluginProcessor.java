@@ -30,7 +30,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * TODO 9447: move to internal package.
+ *
  */
 public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** */

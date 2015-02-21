@@ -66,8 +66,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new GridTestMessage();
             }
         });
@@ -82,7 +82,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
     /** */
     @SuppressWarnings({"deprecation"})
-    private class TestListener implements CommunicationListener<MessageAdapter> {
+    private class TestListener implements CommunicationListener<Message> {
         /** */
         private boolean block;
 
@@ -96,7 +96,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         private AtomicInteger rcvCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             // info("Test listener received message: " + msg);
 
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
@@ -705,7 +705,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
-        for (CommunicationSpi<MessageAdapter> spi : spis) {
+        for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Test message for communication SPI tests.
  */
-public class GridTestMessage extends MessageAdapter {
+public class GridTestMessage implements Message {
     /** */
     public static final byte DIRECT_TYPE = (byte)200;
 
@@ -97,11 +97,11 @@ public class GridTestMessage extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -134,17 +134,17 @@ public class GridTestMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        switch (reader.state()) {
             case 0:
                 srcNodeId = reader.readUuid(null);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 msgId = reader.readLong(null);
@@ -152,7 +152,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 resId = reader.readLong(null);
@@ -160,7 +160,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 payload = reader.readByteArray(null);
@@ -168,7 +168,7 @@ public class GridTestMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
         }
 
         return true;
@@ -177,6 +177,11 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return DIRECT_TYPE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 4;
     }
 
     /** {@inheritDoc} */

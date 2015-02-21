@@ -208,16 +208,16 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("dataBytes", dataBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("dataBytes", dataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -241,7 +241,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("metaDataBytes", metaDataBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("metaDataBytes", metaDataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -258,20 +258,23 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 3:
-                dataBytes = reader.readCollection("dataBytes", Type.BYTE_ARR);
+                dataBytes = reader.readCollection("dataBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 errBytes = reader.readByteArray("errBytes");
@@ -279,7 +282,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 fields = reader.readBoolean("fields");
@@ -287,7 +290,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 finished = reader.readBoolean("finished");
@@ -295,15 +298,15 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
-                metaDataBytes = reader.readCollection("metaDataBytes", Type.BYTE_ARR);
+                metaDataBytes = reader.readCollection("metaDataBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
                 reqId = reader.readLong("reqId");
@@ -311,7 +314,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -321,6 +324,11 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 59;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 9;
     }
 
     /** {@inheritDoc} */
