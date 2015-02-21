@@ -50,7 +50,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
 
     /** */
-    protected static final Map<UUID, CommunicationSpi<MessageAdapter>> spis = new HashMap<>();
+    protected static final Map<UUID, CommunicationSpi<Message>> spis = new HashMap<>();
 
     /** */
     protected static final Collection<ClusterNode> nodes = new ArrayList<>();
@@ -62,8 +62,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new GridTestMessage();
             }
         });
@@ -71,7 +71,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     @SuppressWarnings({"deprecation"})
-    private class MessageListener implements CommunicationListener<MessageAdapter> {
+    private class MessageListener implements CommunicationListener<Message> {
         /** */
         private final UUID locNodeId;
 
@@ -85,7 +85,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             info("Received message [locNodeId=" + locNodeId + ", nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 
@@ -139,7 +139,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
         msgDestMap.clear();
 
-        for (Entry<UUID, CommunicationSpi<MessageAdapter>> entry : spis.entrySet()) {
+        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(entry.getKey()))
@@ -181,10 +181,10 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         msgDestMap.clear();
 
         // Send message from each SPI to all SPI's, including itself.
-        for (Entry<UUID, CommunicationSpi<MessageAdapter>> entry : spis.entrySet()) {
+        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
             UUID sndId = entry.getKey();
 
-            CommunicationSpi<MessageAdapter> commSpi = entry.getValue();
+            CommunicationSpi<Message> commSpi = entry.getValue();
 
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
@@ -223,7 +223,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @param idx Node index.
      * @return Spi.
      */
-    protected abstract CommunicationSpi<MessageAdapter> getSpi(int idx);
+    protected abstract CommunicationSpi<Message> getSpi(int idx);
 
     /**
      * @return Spi count.
@@ -278,7 +278,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < getSpiCount(); i++) {
-            CommunicationSpi<MessageAdapter> spi = getSpi(i);
+            CommunicationSpi<Message> spi = getSpi(i);
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
@@ -325,7 +325,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (CommunicationSpi<MessageAdapter> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

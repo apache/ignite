@@ -185,7 +185,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             Object obj = ((GridIoMessage)msg).message();
 

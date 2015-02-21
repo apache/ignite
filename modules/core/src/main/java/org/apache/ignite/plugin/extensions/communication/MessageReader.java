@@ -35,6 +35,8 @@ public interface MessageReader {
      */
     public void setBuffer(ByteBuffer buf);
 
+    public boolean beforeMessageRead();
+
     /**
      * Reads {@code byte} value.
      *
@@ -201,7 +203,7 @@ public interface MessageReader {
      * @param name Field name.
      * @return Message.
      */
-    public <T extends MessageAdapter> T readMessage(String name);
+    public <T extends Message> T readMessage(String name);
 
     /**
      * Reads array of objects.
@@ -211,7 +213,7 @@ public interface MessageReader {
      * @param itemCls Array component class.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, MessageAdapter.Type itemType, Class<T> itemCls);
+    public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls);
 
     /**
      * Reads collection.
@@ -220,7 +222,7 @@ public interface MessageReader {
      * @param itemType Collection item type.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(String name, MessageAdapter.Type itemType);
+    public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType);
 
     /**
      * Reads map.
@@ -231,8 +233,8 @@ public interface MessageReader {
      * @param linked Whether {@link LinkedHashMap} should be created.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(String name, MessageAdapter.Type keyType, MessageAdapter.Type valType,
-        boolean linked);
+    public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
+        MessageCollectionItemType valType, boolean linked);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}
@@ -242,4 +244,16 @@ public interface MessageReader {
      * @return Whether las value was fully read.
      */
     public boolean isLastRead();
+
+    /**
+     * Gets current read state.
+     *
+     * @return Read state.
+     */
+    public int state();
+
+    /**
+     * Increments read state.
+     */
+    public void incrementState();
 }
