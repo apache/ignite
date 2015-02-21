@@ -1032,7 +1032,8 @@ public class DirectByteBufferStream {
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType, boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
+        boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
