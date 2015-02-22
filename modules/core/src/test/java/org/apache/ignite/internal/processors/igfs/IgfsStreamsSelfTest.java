@@ -195,7 +195,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         while (true) {
             affKey = new IgniteUuid(uuid, idx);
 
-            if (grid(0).mapKeyToNode(DATA_CACHE_NAME, affKey).id().equals(grid(0).localNode().id()))
+            if (grid(0).cluster().mapKeyToNode(DATA_CACHE_NAME, affKey).id().equals(grid(0).localNode().id()))
                 break;
 
             idx++;

@@ -278,7 +278,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             true,
             false,
             true,
-            loc ? cctx.grid().forLocal() : null);
+            loc ? cctx.grid().cluster().forLocal() : null);
     }
 
     public void cancelInternalQuery(UUID routineId) {
@@ -347,7 +347,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (grp == null)
-            grp = cctx.kernalContext().grid();
+            grp = cctx.kernalContext().grid().cluster();
 
         Collection<ClusterNode> nodes = grp.nodes();
 

@@ -132,7 +132,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (grid(0).affinity(null).isPrimary(n, key)) {
                     found = true;
 
@@ -160,7 +160,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (grid(0).affinity(null).isBackup(n, key)) {
                     found = true;
 
@@ -188,7 +188,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (!grid(0).affinity(null).isPrimaryOrBackup(n, key)) {
                     found = true;
 
@@ -216,7 +216,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (grid(0).affinity(null).isPrimary(n, key)) {
                     found = true;
 
@@ -244,7 +244,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (grid(0).affinity(null).isBackup(n, key)) {
                     found = true;
 
@@ -272,7 +272,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         while (true) {
             boolean found = false;
 
-            for (ClusterNode n : grid(0).nodes()) {
+            for (ClusterNode n : grid(0).cluster().nodes()) {
                 if (!grid(0).affinity(null).isPrimaryOrBackup(n, key)) {
                     found = true;
 

@@ -53,7 +53,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         startGrid(1);
         startGrid(2);
 
-        assertEquals(2, grid(1).nodes().size());
+        assertEquals(2, grid(1).cluster().nodes().size());
     }
 
     /** {@inheritDoc} */

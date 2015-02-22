@@ -189,7 +189,7 @@ class VisorConfigurationCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = ignite.node(java.util.UUID.fromString(id.get))
+                    node = ignite.cluster.node(java.util.UUID.fromString(id.get))
 
                     if (node == null) {
                         scold("'id' does not match any node: " + id.get)
@@ -207,7 +207,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                ignite.compute(ignite.forNode(node))
+                ignite.compute(ignite.cluster.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {

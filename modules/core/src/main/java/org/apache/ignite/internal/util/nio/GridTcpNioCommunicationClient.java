@@ -103,7 +103,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg)
         throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;

@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Task result request.
  */
-public class GridTaskResultRequest extends MessageAdapter {
+public class GridTaskResultRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -102,11 +102,11 @@ public class GridTaskResultRequest extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -128,17 +128,20 @@ public class GridTaskResultRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 taskId = reader.readIgniteUuid("taskId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -146,7 +149,7 @@ public class GridTaskResultRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -156,5 +159,10 @@ public class GridTaskResultRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 76;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 }

@@ -1014,7 +1014,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @return Execution request.
      * @throws IgniteCheckedException If failed.
      */
-    private MessageAdapter createExecutionRequest(GridStreamerExecutionBatch batch)
+    private Message createExecutionRequest(GridStreamerExecutionBatch batch)
         throws IgniteCheckedException {
         boolean depEnabled = ctx.deploy().enabled();
 
@@ -1088,7 +1088,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param msg Message to send.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendWithRetries(UUID dstNodeId, MessageAdapter msg) throws IgniteCheckedException {
+    private void sendWithRetries(UUID dstNodeId, Message msg) throws IgniteCheckedException {
         for (int i = 0; i < SEND_RETRY_COUNT; i++) {
             try {
                 ctx.io().send(dstNodeId, topic, msg, GridIoPolicy.SYSTEM_POOL);

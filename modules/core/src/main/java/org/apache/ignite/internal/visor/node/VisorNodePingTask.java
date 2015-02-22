@@ -69,7 +69,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
         @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) {
             long start = System.currentTimeMillis();
 
-            return new GridTuple3<>(ignite.pingNode(nodeToPing), start, System.currentTimeMillis());
+            return new GridTuple3<>(ignite.cluster().pingNode(nodeToPing), start, System.currentTimeMillis());
         }
 
         /** {@inheritDoc} */

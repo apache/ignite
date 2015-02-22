@@ -185,7 +185,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
         assert primary != null;
 
-        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).nodes());
+        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).cluster().nodes());
 
         nodes.remove(primary);
 

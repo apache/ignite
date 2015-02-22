@@ -263,7 +263,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final ClusterNodeLocalMap<String, Long> nl = ignite.nodeLocalMap();
+            final ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
