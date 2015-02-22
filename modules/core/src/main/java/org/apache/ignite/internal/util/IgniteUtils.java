@@ -300,6 +300,8 @@ public abstract class IgniteUtils {
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
 
+    private volatile static IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+
     /**
      * Initializes enterprise check.
      */
@@ -1489,6 +1491,55 @@ public abstract class IgniteUtils {
         return locHost0 != null && !resetLocalHost().equals(locHost0);
     }
 
+    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
+        final int reachTimeout = 2000;
+
+        if (addrs.isEmpty())
+            return Collections.emptyList();
+
+        if (addrs.size() == 1) {
+            if (reachable(addrs.get(1), reachTimeout))
+                return Collections.singletonList(addrs.get(1));
+
+            return Collections.emptyList();
+        }
+
+        final List<InetAddress> res = new ArrayList<>(addrs.size());
+
+        Collection<Future<?>> futs = new ArrayList<>(addrs.size());
+
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+
+        for (final InetAddress addr : addrs) {
+            futs.add(executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    if (reachable(addr, reachTimeout)) {
+                        synchronized (res) {
+                            res.add(addr);
+                        }
+                    }
+                }
+            }));
+        }
+
+        for (Future<?> fut : futs) {
+            try {
+                fut.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException("Thread has been interrupted.", e);
+            } catch (ExecutionException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        executor.shutdown();
+
+        return res;
+    }
+
     /**
      * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
      * a common address this method returns single host name, and when a wildcard address passed
@@ -1501,28 +1552,42 @@ public abstract class IgniteUtils {
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
         throws IOException, IgniteCheckedException {
+
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
         Collection<String> hostNames = new ArrayList<>();
 
         if (locAddr.isAnyLocalAddress()) {
-            // It should not take longer than 2 seconds to reach
-            // local address on any network.
-            int reachTimeout = 2000;
+            IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
-                for (InetAddress addr : asIterable(itf.getInetAddresses())) {
-                    if (!addr.isLinkLocalAddress() && reachable(itf, addr, reachTimeout))
-                        addresses(addr, addrs, hostNames);
+            if (res == null) {
+                List<InetAddress> localAddrs = new ArrayList<>();
+
+                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                    for (InetAddress addr : asIterable(itf.getInetAddresses())) {
+                        if (!addr.isLinkLocalAddress())
+                            localAddrs.add(addr);
+                    }
                 }
+
+                localAddrs = filterReachable(localAddrs);
+
+                for (InetAddress addr : localAddrs)
+                    addresses(addr, addrs, hostNames);
+
+                if (F.isEmpty(addrs))
+                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+
+                res = F.t(addrs, hostNames);
+
+                cachedLocalAddr = res;
             }
 
-            if (F.isEmpty(addrs))
-                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+            return res;
         }
-        else
-            addresses(locAddr, addrs, hostNames);
+
+        addresses(locAddr, addrs, hostNames);
 
         return F.t(addrs, hostNames);
     }
