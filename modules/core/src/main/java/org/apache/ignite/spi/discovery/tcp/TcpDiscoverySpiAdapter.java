@@ -1030,8 +1030,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         public SocketMultiConnector(Collection<InetSocketAddress> addrs, final int retryCnt) {
             connInProgress = addrs.size();
 
-            executor = new ThreadPoolExecutor(0, 10, 1L, TimeUnit.MILLISECONDS,
-                new SynchronousQueue<Runnable>());
+            executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
 
             for (final InetSocketAddress addr : addrs) {
                 executor.execute(new Runnable() {
