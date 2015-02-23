@@ -116,14 +116,6 @@
                     -->
                     <property name="queryIndexEnabled" value="true"/>
 
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
@@ -165,14 +157,6 @@
                     -->
                     <property name="queryIndexEnabled" value="true"/>
 
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
@@ -211,14 +195,6 @@
                         Default value is false.
                     -->
                     <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
 
                 <!--
@@ -240,14 +216,6 @@
                         Default value is false.
                     -->
                     <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
             </list>
         </property>

@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
@@ -115,7 +114,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Gets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Gets optional page size, if {@code 0}, then default is used.
      *
      * @return Optional page size.
      */
@@ -124,7 +123,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Sets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Sets optional page size, if {@code 0}, then default is used.
      *
      * @param pageSize Optional page size.
      * @return {@code this} For chaining.

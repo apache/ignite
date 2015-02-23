@@ -53,7 +53,7 @@ import org.jetbrains.annotations.*;
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
- * {@link org.apache.ignite.configuration.QueryConfiguration#setSqlFunctionClasses(Class[])}.
+ * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * Ignite supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
