@@ -204,14 +204,6 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @param baseVer Base version.
-     * @param owned Owned.
-     */
-    public void orderOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
-        mvcc.markOwned(baseVer, owned);
-    }
-
-    /**
      * @param ver Lock version to acquire or set to ready.
      * @return Current owner.
      */

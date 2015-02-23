@@ -632,11 +632,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(IgniteTxKey<K> key) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
     }
@@ -1633,11 +1628,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public Set<Integer> invalidPartitions() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

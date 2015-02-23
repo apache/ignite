@@ -472,7 +472,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     /**
      * @param cacheCtx Cache context.
      * @param entries Entries to lock.
-     * @param onePhaseCommit One phase commit flag.
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
@@ -482,7 +481,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     IgniteInternalFuture<GridCacheReturn<V>> lockAllAsync(
         GridCacheContext<K, V> cacheCtx,
         List<GridCacheEntryEx<K, V>> entries,
-        boolean onePhaseCommit,
         long msgId,
         final boolean read,
         long accessTtl

@@ -60,9 +60,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /** Implicit transaction with one key flag. */
     private boolean implicitSingleTx;
 
-    /** One phase commit flag. */
-    private boolean onePhaseCommit;
-
     /** Array of mapped DHT versions for this entry. */
     @GridToStringInclude
     private GridCacheVersion[] dhtVers;
@@ -192,20 +189,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public boolean implicitSingleTx() {
         return implicitSingleTx;
-    }
-
-    /**
-     * @return One phase commit flag.
-     */
-    public boolean onePhaseCommit() {
-        return onePhaseCommit;
-    }
-
-    /**
-     * @param onePhaseCommit One phase commit flag.
-     */
-    public void onePhaseCommit(boolean onePhaseCommit) {
-        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -372,30 +355,24 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -471,14 +448,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 readState++;
 
             case 25:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 26:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -486,7 +455,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 readState++;
 
-            case 27:
+            case 26:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
@@ -494,7 +463,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 readState++;
 
-            case 28:
+            case 27:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -502,7 +471,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 readState++;
 
-            case 29:
+            case 28:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())

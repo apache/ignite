@@ -323,27 +323,6 @@ public final class GridCacheMvcc<K> {
     }
 
     /**
-     * Puts owned versions in front of base.
-     *
-     * @param baseVer Base version.
-     * @param owned Owned list.
-     * @return Current owner.
-     */
-    @Nullable public GridCacheMvccCandidate<K> markOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
-        if (owned == null)
-            return anyOwner();
-
-        if (rmts != null) {
-            GridCacheMvccCandidate<K> baseCand = candidate(rmts, baseVer);
-
-            if (baseCand != null)
-                baseCand.ownerVersion(owned);
-        }
-
-        return anyOwner();
-    }
-
-    /**
      * @param parent Parent entry.
      * @param threadId Thread ID.
      * @param ver Lock version.

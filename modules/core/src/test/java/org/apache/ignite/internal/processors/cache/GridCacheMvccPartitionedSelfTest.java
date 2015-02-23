@@ -156,44 +156,6 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests remote candidates.
-     */
-    public void testNearLocalsWithOwned() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
-
-        GridCacheTestEntryEx<String, String> entry = new GridCacheTestEntryEx<>(cache.context(), "1");
-
-        UUID node1 = UUID.randomUUID();
-
-        GridCacheVersion ver1 = version(1);
-        GridCacheVersion ver2 = version(2);
-
-        GridCacheMvccCandidate<String> c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
-        GridCacheMvccCandidate<String> c2 = entry.addNearLocal(node1, 1, ver2, 0, true);
-
-        Collection<GridCacheMvccCandidate<String>> rmtCands = entry.remoteMvccSnapshot();
-        Collection<GridCacheMvccCandidate<String>> nearLocCands = entry.localCandidates();
-
-        assertEquals(1, nearLocCands.size());
-        assertEquals(ver2, nearLocCands.iterator().next().version());
-
-        assertEquals(1, rmtCands.size());
-        assertEquals(ver1, rmtCands.iterator().next().version());
-
-        entry.orderOwned(ver1, ver2);
-
-        entry.readyNearLocal(ver2, ver2);
-
-        checkRemote(c1, ver1, false, false);
-
-        assertFalse(c1.owner());
-
-        checkLocal(c2, ver2, true, false, false);
-
-        assertNull(entry.anyOwner());
-    }
-
-    /**
      * Tests salvageRemote method
      */
     public void testSalvageRemote() {

@@ -20,14 +20,29 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Checks one-phase commit scenarios.
@@ -39,11 +54,18 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /** */
     private int backups = 1;
 
+    /** */
+    private static Map<Class<?>, AtomicInteger> msgCntMap = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
+
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
+
+        cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
 
         return cfg;
     }
@@ -93,10 +115,13 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     private void checkKey(IgniteTransactions transactions, Cache<Object, Object> cache, int key) throws Exception {
         cache.put(key, key);
 
-        finalCheck(key);
+        finalCheck(key, true);
 
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+        TransactionIsolation[] isolations = {READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE};
+        TransactionConcurrency[] concurrencies = {OPTIMISTIC, PESSIMISTIC};
+
+        for (TransactionIsolation isolation : isolations) {
+            for (TransactionConcurrency concurrency : concurrencies) {
                 info("Checking transaction [isolation=" + isolation + ", concurrency=" + concurrency + ']');
 
                 try (Transaction tx = transactions.txStart(concurrency, isolation)) {
@@ -105,7 +130,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
 
-                finalCheck(key);
+                finalCheck(key, true);
             }
         }
     }
@@ -113,7 +138,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void finalCheck(final int key) throws Exception {
+    private void finalCheck(final int key, boolean onePhase) throws Exception {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
@@ -150,6 +175,27 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
                 }
             }
         }, 10_000);
+
+        if (onePhase) {
+            assertMessageCount(GridNearTxPrepareRequest.class, 1);
+            assertMessageCount(GridDhtTxPrepareRequest.class, 1);
+            assertMessageCount(GridNearTxFinishRequest.class, 1);
+            assertMessageCount(GridDhtTxFinishRequest.class, 0);
+
+            msgCntMap.clear();
+        }
+    }
+
+    /**
+     * @param cls Class to check.
+     * @param cnt Expected count.
+     */
+    private void assertMessageCount(Class<?> cls, int cnt) {
+        AtomicInteger val = msgCntMap.get(cls);
+
+        int iVal = val == null ? 0 : val.get();
+
+        assertEquals("Invalid message count for class: " + cls.getSimpleName(), cnt, iVal);
     }
 
     /**
@@ -168,6 +214,29 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
                 return key;
 
             key++;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MessageCountingCommunicationSpi extends TcpCommunicationSpi {
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+            if (msg instanceof GridIoMessage) {
+                GridIoMessage ioMsg = (GridIoMessage)msg;
+
+                Class<?> cls = ioMsg.message().getClass();
+
+                AtomicInteger cntr = msgCntMap.get(cls);
+
+                if (cntr == null)
+                    cntr = F.addIfAbsent(msgCntMap, cls, new AtomicInteger());
+
+                cntr.incrementAndGet();
+            }
+
+            super.sendMessage(node, msg);
         }
     }
 }

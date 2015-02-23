@@ -233,8 +233,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.version(),
                             req.timeout(),
                             tx != null,
-                            tx != null && tx.implicitSingle(),
-                            null
+                            tx != null && tx.implicitSingle()
                         );
 
                         // Invalidate key in near cache, if any.
@@ -667,18 +666,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         IgniteInternalFuture<Object> keyFut = null;
 
-        if (req.onePhaseCommit()) {
-            boolean forceKeys = req.hasTransforms() || req.filter() != null;
-
-            if (!forceKeys) {
-                for (int i = 0; i < req.keysCount() && !forceKeys; i++)
-                    forceKeys |= req.returnValue(i);
-            }
-
-            if (forceKeys)
-                keyFut = ctx.dht().dhtPreloader().request(keys, req.topologyVersion());
-        }
-
         if (keyFut == null)
             keyFut = new GridFinishedFutureEx<>();
 
@@ -824,7 +811,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             IgniteInternalFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
-                                req.onePhaseCommit(),
                                 req.messageId(),
                                 req.txRead(),
                                 req.accessTtl());

@@ -296,6 +296,8 @@ public class IgniteTxHandler<K, V> {
             if (req.onePhaseCommit()) {
                 assert req.last();
                 assert F.isEmpty(req.lastBackups()) || req.lastBackups().size() <= 1;
+
+                tx.onePhaseCommit(true);
             }
 
             if (req.returnValue())

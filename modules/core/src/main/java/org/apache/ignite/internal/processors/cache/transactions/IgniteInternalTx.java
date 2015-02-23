@@ -296,14 +296,6 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     public Set<Integer> invalidPartitions();
 
     /**
-     * Gets owned version for near remote transaction.
-     *
-     * @param key Key to get version for.
-     * @return Owned version, if any.
-     */
-    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey<K> key);
-
-    /**
      * Gets ID of additional node involved. For example, in DHT case, other node is
      * near node ID.
      *

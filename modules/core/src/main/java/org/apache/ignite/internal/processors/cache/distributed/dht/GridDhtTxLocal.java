@@ -116,7 +116,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     ) {
         super(
             cctx,
-            onePhaseCommit ? nearXidVer : cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
+            cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
             implicit,
             implicitSingle,
             sys,

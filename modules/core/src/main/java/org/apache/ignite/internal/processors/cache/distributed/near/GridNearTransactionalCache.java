@@ -318,8 +318,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 req.version(),
                                 req.timeout(),
                                 tx != null,
-                                tx != null && tx.implicitSingle(),
-                                req.owned(entry.key())
+                                tx != null && tx.implicitSingle()
                             );
 
                             assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;

@@ -178,11 +178,6 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         return false; // Serializable will be enforced on primary mode.
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(IgniteTxKey<K> key) {
-        return owned == null ? null : owned.get(key);
-    }
-
     /**
      * @return Near transaction ID.
      */

@@ -858,8 +858,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             if (needVal)
                                 // Mark last added key as needed to be preloaded.
                                 req.markLastKeyForPreload();
-
-                            it.set(addOwned(req, e));
                         }
 
                         add(fut); // Append new future.
@@ -882,37 +880,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         finally {
             markInitialized();
         }
-    }
-
-    /**
-     * @param req Request.
-     * @param e Entry.
-     * @return Entry.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridDhtCacheEntry<K, V> addOwned(GridDhtLockRequest<K, V> req, GridDhtCacheEntry<K, V> e)
-        throws IgniteCheckedException {
-        while (true) {
-            try {
-                GridCacheMvccCandidate<K> added = e.candidate(lockVer);
-
-                assert added != null;
-                assert added.dhtLocal();
-
-                if (added.ownerVersion() != null)
-                    req.owned(e.key(), e.getOrMarshalKeyBytes(), added.ownerVersion());
-
-                break;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Got removed entry when creating DHT lock request (will retry): " + e);
-
-                e = cctx.dht().entryExx(e.key(), topVer);
-            }
-        }
-
-        return e;
     }
 
     /** {@inheritDoc} */

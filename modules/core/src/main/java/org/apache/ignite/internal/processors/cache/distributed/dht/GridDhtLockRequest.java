@@ -22,7 +22,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -57,11 +56,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
     /** Mini future ID. */
     private IgniteUuid miniId;
-
-    /** Owner mapped version, if any. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Map<K, GridCacheVersion> owned;
 
     /** Owner mapped version bytes. */
     private byte[] ownedBytes;
@@ -264,28 +258,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /**
-     * Sets owner and its mapped version.
-     *
-     * @param key Key.
-     * @param keyBytes Key bytes.
-     * @param ownerMapped Owner mapped version.
-     */
-    public void owned(K key, byte[] keyBytes, GridCacheVersion ownerMapped) {
-        if (owned == null)
-            owned = new GridLeanMap<>(3);
-
-        owned.put(key, ownerMapped);
-    }
-
-    /**
-     * @param key Key.
-     * @return Owner and its mapped versions.
-     */
-    @Nullable public GridCacheVersion owned(K key) {
-        return owned == null ? null : owned.get(key);
-    }
-
-    /**
      * @param idx Entry index to check.
      * @return {@code True} if near entry should be invalidated.
      */
@@ -313,9 +285,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         super.prepareMarshal(ctx);
 
         assert F.isEmpty(nearKeys) || !F.isEmpty(nearKeyBytes);
-
-        if (owned != null)
-            ownedBytes = CU.marshal(ctx, owned);
     }
 
     /** {@inheritDoc} */
@@ -324,9 +293,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         if (nearKeys == null && nearKeyBytes != null)
             nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
-
-        if (ownedBytes != null)
-            owned = ctx.marshaller().unmarshal(ownedBytes, ldr);
     }
 
     /** {@inheritDoc} */

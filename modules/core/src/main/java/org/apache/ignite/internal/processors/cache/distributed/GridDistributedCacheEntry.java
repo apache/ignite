@@ -153,7 +153,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param timeout Lock acquire timeout.
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
-     * @param owned Owned candidate version.
      * @throws GridDistributedLockCancelledException If lock has been canceled.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      */
@@ -164,8 +163,8 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
         GridCacheVersion ver,
         long timeout,
         boolean tx,
-        boolean implicitSingle,
-        @Nullable GridCacheVersion owned) throws GridDistributedLockCancelledException,
+        boolean implicitSingle
+    ) throws GridDistributedLockCancelledException,
         GridCacheEntryRemovedException {
         GridCacheMvccCandidate<K> prev;
         GridCacheMvccCandidate<K> owner;
@@ -201,9 +200,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
                 implicitSingle,
                 /*near-local*/false
             );
-
-            if (owned != null)
-                mvcc.markOwned(ver, owned);
 
             owner = mvcc.anyOwner();
 
@@ -651,8 +647,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
                 tx.xidVersion(),
                 tx.timeout(),
                 true,
-                tx.implicitSingle(),
-                tx.ownedVersion(txKey())
+                tx.implicitSingle()
             );
 
             return true;
