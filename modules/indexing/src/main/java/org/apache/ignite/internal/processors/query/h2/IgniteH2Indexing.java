@@ -249,7 +249,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed to create db schema.
      */
     private void createSchema(String schema) throws IgniteCheckedException {
-        executeStatement(schema(null), "CREATE SCHEMA \"" + schema + '"');
+        executeStatement("INFORMATION_SCHEMA", "CREATE SCHEMA IF NOT EXISTS \"" + schema + '"');
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -855,10 +855,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
 
-        Schema s = schemas.get(spaceName);
-
-
-
         return true;
     }
 
@@ -913,7 +909,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert schema != null;
         assert tbl != null;
 
-        boolean escapeAll = isEscapeAll(schema.spaceName);
+        boolean escapeAll = schema.escapeAll;
 
         String keyType = dbTypeFromClass(tbl.type().keyClass());
         String valTypeStr = dbTypeFromClass(tbl.type().valueClass());
@@ -997,8 +993,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Schema name.
      */
     private static String schema(@Nullable String space) {
-        if (F.isEmpty(space))
-            return "PUBLIC";
+        if (space == null)
+            return "";
 
         return space;
     }
@@ -1007,11 +1003,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type) {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
-        if (tbl.schema.offheap != null)
-            throw new UnsupportedOperationException("Index rebuilding is not supported when off-heap memory is used");
-
         if (tbl == null)
             return;
+
+        if (tbl.schema.offheap != null)
+            throw new UnsupportedOperationException("Index rebuilding is not supported when off-heap memory is used");
 
         tbl.tbl.rebuildIndexes();
     }
@@ -1068,12 +1064,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
-        try {
-            Class.forName("org.h2.Driver");
-        }
-        catch (ClassNotFoundException e) {
-            throw new IgniteCheckedException("Failed to find org.h2.Driver class", e);
-        }
+        org.h2.Driver.load();
 
         try {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
@@ -1267,19 +1258,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    public boolean isEscapeAll(String spaceName) {
-        return ctx.cache().cache(spaceName).configuration().isSqlEscapeAll();
-    }
-
-    /** {@inheritDoc} */
     public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
         String schema = schema(ccfg.getName());
 
+        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), ccfg.getOffHeapMaxMemory() >= 0 ?
+            new GridUnsafeMemory(0) : null, ccfg.getSqlOnheapRowCacheSize(), ccfg.isSqlEscapeAll())) != null)
+            throw new IgniteCheckedException("Cache already registered: " + ccfg.getName());
+
         createSchema(schema);
-
-        schemas.put(schema, new Schema(schema, ccfg.getOffHeapMaxMemory() >= 0 ? new GridUnsafeMemory(0) : null,
-            ccfg.getSqlOnheapRowCacheSize()));
-
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
@@ -1509,7 +1495,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.schema = schema;
 
             fullTblName = '\"' + IgniteH2Indexing.schema(schema.spaceName) + "\"." +
-                escapeName(type.name(), isEscapeAll(schema.spaceName));
+                escapeName(type.name(), schema.escapeAll);
         }
 
         /**
@@ -1579,7 +1565,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     int i = 0;
 
-                    boolean escapeAll = isEscapeAll(schema.spaceName);
+                    boolean escapeAll = schema.escapeAll;
 
                     for (String field : idx.fields()) {
                         // H2 reserved keywords used as column name is case sensitive.
@@ -1791,13 +1777,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** Cache for deserialized offheap rows. */
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
 
+        /** */
+        private final boolean escapeAll;
+
         /**
          * @param spaceName Space name.
          * @param offheap Offheap memory.
          */
-        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, int onheapCacheSize) {
+        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, int onheapCacheSize, boolean escapeAll) {
             this.spaceName = spaceName;
             this.offheap = offheap;
+            this.escapeAll = escapeAll;
 
             if (offheap != null)
                 rowCache = new CacheLongKeyLIRS<>(onheapCacheSize, 1, 128, 256);

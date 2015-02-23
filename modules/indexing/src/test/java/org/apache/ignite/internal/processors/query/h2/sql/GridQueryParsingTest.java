@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -75,6 +76,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(false);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
+        cc.setIndexedTypes(
+            F.<Class<?>,Class<?>>t(String.class, Address.class),
+            F.<Class<?>,Class<?>>t(String.class, Person.class));
 
         c.setCacheConfiguration(cc);
 
@@ -198,7 +202,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select street from Person p, (select a.street from Address a where a.street is not null) ");
         checkQuery("select addr.street from Person p, (select a.street from Address a where a.street is not null) addr");
 
-        checkQuery("select p.name n from PUBLIC.Person p order by p.old + 10");
+        checkQuery("select p.name n from \"\".Person p order by p.old + 10");
     }
 
     /**

@@ -111,13 +111,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
         Map<TypeName,CacheTypeMetadata> declaredTypes = new HashMap<>();
 
-        boolean cacheRegistered = false;
+        idx.registerCache(ccfg);
 
         if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            idx.registerCache(ccfg);
-
-            cacheRegistered = true;
-
             for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                 declaredTypes.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
 
@@ -125,7 +121,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 portableIds.put(valTypeId, meta.getValueType());
 
-                TypeDescriptor desc = processPortableMeta(meta);
+                TypeDescriptor desc = processPortableMeta(ccfg, meta);
 
                 desc.registered(idx.registerType(ccfg.getName(), desc));
 
@@ -135,11 +131,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!F.isEmpty(ccfg.getIndexedTypes())) {
-            if (!cacheRegistered)
-                idx.registerCache(ccfg);
-
             for (IgniteBiTuple<Class<?>,Class<?>> types : ccfg.getIndexedTypes()) {
-                TypeDescriptor desc = processKeyAndValue(ccfg.getName(), types.getKey(), types.getValue(),
+                TypeDescriptor desc = processKeyAndValue(ccfg, types.getKey(), types.getValue(),
                     declaredTypes);
 
                 desc.registered(idx.registerType(ccfg.getName(), desc));
@@ -150,22 +143,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
+     * @param ccfg Cache configuration.
      * @param keyCls Key class.
      * @param valCls Value class.
      * @param declaredTypes Knows types.
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private TypeDescriptor processKeyAndValue(String space, Class<?> keyCls, Class<?> valCls,
+    private TypeDescriptor processKeyAndValue(CacheConfiguration<?,?> ccfg, Class<?> keyCls, Class<?> valCls,
         Map<TypeName,CacheTypeMetadata> declaredTypes)
         throws IgniteCheckedException {
-        TypeDescriptor d = new TypeDescriptor();
+        TypeDescriptor d = new TypeDescriptor(ccfg);
 
         d.keyClass(keyCls);
         d.valueClass(valCls);
 
-        CacheTypeMetadata keyMeta = declaredTypes.get(new TypeName(space, keyCls.getName()));
+        CacheTypeMetadata keyMeta = declaredTypes.get(new TypeName(ccfg.getName(), keyCls.getName()));
 
         if (keyMeta == null)
             processAnnotationsInClass(true, d.keyCls, d, null);
@@ -176,7 +169,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         d.name(valTypeName);
 
-        CacheTypeMetadata typeMeta = declaredTypes.get(new TypeName(space, valCls.getName()));
+        CacheTypeMetadata typeMeta = declaredTypes.get(new TypeName(ccfg.getName(), valCls.getName()));
 
         if (typeMeta == null)
             processAnnotationsInClass(false, d.valCls, d, null);
@@ -973,13 +966,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Processes declarative metadata for portable object.
      *
+     * @param ccfg Cache configuration.
      * @param meta Declared metadata.
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private TypeDescriptor processPortableMeta(CacheTypeMetadata meta)
+    private TypeDescriptor processPortableMeta(CacheConfiguration<?,?> ccfg, CacheTypeMetadata meta)
         throws IgniteCheckedException {
-        TypeDescriptor d = new TypeDescriptor();
+        TypeDescriptor d = new TypeDescriptor(ccfg);
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
@@ -1386,6 +1380,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private static class TypeDescriptor implements GridQueryTypeDescriptor {
         /** */
+        private CacheConfiguration<?,?> ccfg;
+
+        /** */
         private String name;
 
         /** Value field names and types with preserved order. */
@@ -1414,6 +1411,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** SPI can decide not to register this type. */
         private boolean registered;
+
+        /**
+         * @param ccfg Cache configuration.
+         */
+        private TypeDescriptor(CacheConfiguration<?,?> ccfg) {
+            this.ccfg = ccfg;
+        }
 
         /**
          * @return {@code True} if type registration in SPI was finished and type was not rejected.
