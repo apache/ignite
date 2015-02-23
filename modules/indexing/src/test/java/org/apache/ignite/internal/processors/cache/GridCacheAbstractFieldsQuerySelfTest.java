@@ -95,14 +95,6 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setPreloadMode(SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-        qcfg.setIndexFixedTyping(true);
-
-        cache.setQueryConfiguration(qcfg);
-
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
 

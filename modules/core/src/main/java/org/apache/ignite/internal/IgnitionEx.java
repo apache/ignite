@@ -1389,7 +1389,6 @@ public class IgnitionEx {
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionConfiguration(new TransactionConfiguration(cfg.getTransactionConfiguration()));
-            myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
             myCfg.setClassLoader(cfg.getClassLoader());
             myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 

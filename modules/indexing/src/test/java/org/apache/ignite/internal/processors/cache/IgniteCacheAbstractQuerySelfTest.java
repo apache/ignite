@@ -106,12 +106,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(disco);
 
-        QueryConfiguration idxCfg = new QueryConfiguration();
-
-        idxCfg.setIndexCustomFunctionClasses(SqlFunctions.class);
-
-        c.setQueryConfiguration(idxCfg);
-
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
@@ -136,13 +130,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);
-
-            CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-            qcfg.setIndexPrimitiveKey(true);
-            qcfg.setIndexFixedTyping(true);
-
-            cc.setQueryConfiguration(qcfg);
+            cc.setSqlFunctionClasses(SqlFunctions.class);
 
             // Explicitly set number of backups equal to number of grids.
             if (cacheMode() == CacheMode.PARTITIONED)

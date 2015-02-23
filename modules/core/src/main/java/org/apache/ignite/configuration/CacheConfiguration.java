@@ -21,10 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -159,6 +160,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
+
+    /** Default timeout after which long query warning will be printed. */
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
+    /** Default size for onheap SQL row cache size. */
+    public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
     /** Cache name. */
     private String name;
@@ -304,8 +311,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private CacheInterceptor<?, ?> interceptor;
 
-    /** Query configuration. */
-    private CacheQueryConfiguration qryCfg;
+    /** */
+    private Class<?>[] sqlFuncCls;
+
+    /** */
+    private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -315,6 +325,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
+
+    /** */
+    private boolean sqlEscapeAll;
+
+    /** */
+    private IgniteBiTuple<Class<?>,Class<?>>[] indexedTypes;
+
+    /** */
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -359,12 +378,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
+        indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
+        longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
@@ -379,9 +400,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         preloadPoolSize = cc.getPreloadThreadPoolSize();
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
-        qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
+        sqlEscapeAll = cc.isSqlEscapeAll();
+        sqlFuncCls = cc.getSqlFunctionClasses();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeValBytes = cc.isStoreValueBytes();
@@ -1546,26 +1568,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.typeMeta = typeMeta;
     }
 
-
-    /**
-     * Gets query configuration. Query configuration defines which fields should be indexed for objects
-     * without annotations or portable objects.
-     *
-     * @return Cache query configuration.
-     */
-    public CacheQueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * Sets query configuration.
-     *
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
-    }
-
     /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
@@ -1586,6 +1588,106 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
+    }
+
+    /**
+     * Sets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @param cls One or more classes with SQL functions.
+     */
+    public void setSqlFunctionClasses(Class<?>... cls) {
+        this.sqlFuncCls = cls;
+    }
+
+    /**
+     * Gets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @return Classes with SQL functions.
+     */
+    @Nullable public Class<?>[] getSqlFunctionClasses() {
+        return sqlFuncCls;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @return Timeout in milliseconds.
+     */
+    public long getLongQueryWarningTimeout() {
+        return longQryWarnTimeout;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param longQryWarnTimeout Timeout in milliseconds.
+     */
+    public void setLongQueryWarningTimeout(long longQryWarnTimeout) {
+        this.longQryWarnTimeout = longQryWarnTimeout;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     */
+    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     *
+     * @return Key and value type pairs.
+     */
+    public IgniteBiTuple<Class<?>,Class<?>>[] getIndexedTypes() {
+        return indexedTypes;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     *
+     * @param indexedTypes Key and value type pairs.
+     */
+    public void setIndexedTypes(IgniteBiTuple<Class<?>,Class<?>>... indexedTypes) {
+        this.indexedTypes = indexedTypes;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @return size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public int getSqlOnheapRowCacheSize() {
+        return sqlOnheapRowCacheSize;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @param size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public void setSqlOnheapRowCacheSize(int size) {
+        this.sqlOnheapRowCacheSize = size;
     }
 
     /** {@inheritDoc} */

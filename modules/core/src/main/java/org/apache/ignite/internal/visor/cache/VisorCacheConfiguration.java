@@ -195,8 +195,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.writerFactory(compactClass(ccfg.getCacheWriterFactory()));
         cfg.expiryPolicyFactory(compactClass(ccfg.getExpiryPolicyFactory()));
 
-        cfg.queryConfiguration(VisorCacheQueryConfiguration.from(ccfg.getQueryConfiguration()));
-
         return cfg;
     }
 

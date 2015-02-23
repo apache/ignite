@@ -135,13 +135,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setEvictionPolicy(null);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
-
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setDeploymentMode(SHARED);

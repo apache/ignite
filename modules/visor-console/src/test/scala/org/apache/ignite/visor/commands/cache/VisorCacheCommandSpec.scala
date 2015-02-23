@@ -52,13 +52,6 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg.setName(name)
         cfg.setQueryIndexEnabled(true)
 
-        val qc = new CacheQueryConfiguration()
-
-        qc.setIndexPrimitiveKey(true)
-        qc.setIndexFixedTyping(true)
-
-        cfg.setQueryConfiguration(qc)
-
         cfg
     }
 

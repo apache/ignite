@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -59,10 +60,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Type descriptors. */
-    private final Map<TypeId, TypeDescriptor> types = new HashMap<>();
+    private final Map<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
 
     /** Type descriptors. */
-    private final Map<TypeName, TypeDescriptor> typesByName = new HashMap<>();
+    private final Map<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
 
     /** */
     private ExecutorService execSvc;
@@ -71,10 +72,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridQueryIndexing idx;
 
     /** Portable ID to name mapping. */
-    private final Map<Integer, String> portableIds = new HashMap<>();
-
-    /** Type resolvers per space name. */
-    private final Map<String,QueryTypeResolver> typeResolvers = new HashMap<>();
+    private final Map<Integer, String> portableIds = new ConcurrentHashMap8<>();
 
     /**
      * @param ctx Kernal context.
@@ -98,46 +96,56 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx != null) {
             ctx.resource().injectGeneric(idx);
 
+            execSvc = ctx.getExecutorService();
+
             idx.start(ctx);
 
-            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration()){
-                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration())
+                initializeCache(ccfg);
+        }
+    }
 
-                if (qryCfg != null && qryCfg.getTypeResolver() != null)
-                    typeResolvers.put(ccfg.getName(), qryCfg.getTypeResolver());
+    /**
+     * @param ccfg Cache configuration.
+     */
+    public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        Map<TypeName,CacheTypeMetadata> declaredTypes = new HashMap<>();
 
-                Map<TypeName,CacheTypeMetadata> declaredTypes = new HashMap<>();
+        boolean cacheRegistered = false;
 
-                if (!F.isEmpty(ccfg.getTypeMetadata())) {
-                    for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                        declaredTypes.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
+        if (!F.isEmpty(ccfg.getTypeMetadata())) {
+            idx.registerCache(ccfg);
 
-                        int valTypeId = ctx.portable().typeId(meta.getValueType());
+            cacheRegistered = true;
 
-                        portableIds.put(valTypeId, meta.getValueType());
+            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
+                declaredTypes.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
 
-                        TypeDescriptor desc = processPortableMeta(meta);
+                int valTypeId = ctx.portable().typeId(meta.getValueType());
 
-                        desc.registered(idx.registerType(ccfg.getName(), desc));
+                portableIds.put(valTypeId, meta.getValueType());
 
-                        typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                        types.put(new TypeId(ccfg.getName(), valTypeId), desc);
-                    }
-                }
+                TypeDescriptor desc = processPortableMeta(meta);
 
-                if (qryCfg != null && !F.isEmpty(qryCfg.getAnnotatedEntryTypes())) {
-                    for (IgniteBiTuple<Class<?>,Class<?>> types : qryCfg.getAnnotatedEntryTypes()) {
-                        TypeDescriptor desc = processKeyAndValue(ccfg.getName(), types.getKey(), types.getValue(),
-                            declaredTypes);
+                desc.registered(idx.registerType(ccfg.getName(), desc));
 
-                        desc.registered(idx.registerType(ccfg.getName(), desc));
-
-                        typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                    }
-                }
+                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
+                types.put(new TypeId(ccfg.getName(), valTypeId), desc);
             }
+        }
 
-            execSvc = ctx.getExecutorService();
+        if (!F.isEmpty(ccfg.getIndexedTypes())) {
+            if (!cacheRegistered)
+                idx.registerCache(ccfg);
+
+            for (IgniteBiTuple<Class<?>,Class<?>> types : ccfg.getIndexedTypes()) {
+                TypeDescriptor desc = processKeyAndValue(ccfg.getName(), types.getKey(), types.getValue(),
+                    declaredTypes);
+
+                desc.registered(idx.registerType(ccfg.getName(), desc));
+
+                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
+            }
         }
     }
 
@@ -335,31 +343,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             final Class<?> valCls = val.getClass();
 
-            TypeId id = null;
+            TypeId id;
 
-            QueryTypeResolver rslvr = typeResolvers.get(space);
+            if (ctx.portable().isPortableObject(val)) {
+                int typeId = ctx.portable().typeId(val);
 
-            if (rslvr != null) {
-                String typeName = rslvr.resolveTypeName(key, val);
+                String typeName = portableName(typeId);
 
-                if (typeName != null)
-                    id = new TypeId(space, ctx.portable().typeId(typeName));
+                if (typeName == null)
+                    return;
+
+                id = new TypeId(space, typeId);
             }
-
-            if (id == null) {
-                if (ctx.portable().isPortableObject(val)) {
-                    int typeId = ctx.portable().typeId(val);
-
-                    String typeName = portableName(typeId);
-
-                    if (typeName == null)
-                        return;
-
-                    id = new TypeId(space, typeId);
-                }
-                else
-                    id = new TypeId(space, valCls);
-            }
+            else
+                id = new TypeId(space, valCls);
 
             TypeDescriptor desc = types.get(id);
 

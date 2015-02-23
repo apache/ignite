@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -65,12 +63,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        QueryConfiguration idxCfg = new QueryConfiguration();
-
-        idxCfg.setIndexCustomFunctionClasses(GridQueryParsingTest.class);
-
-        c.setQueryConfiguration(idxCfg);
-
         c.setMarshaller(new OptimizedMarshaller(true));
 
         // Cache.
@@ -82,13 +74,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(false);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexFixedTyping(true);
-
-        cc.setQueryConfiguration(qcfg);
+        cc.setSqlFunctionClasses(GridQueryParsingTest.class);
 
         c.setCacheConfiguration(cc);
 

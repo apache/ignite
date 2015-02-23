@@ -38,17 +38,22 @@ public class GridQueryRequest implements Serializable {
     private int pageSize;
 
     /** */
+    private String space;
+
+    /** */
     @GridToStringInclude
     private Collection<GridCacheSqlQuery> qrys;
 
     /**
      * @param reqId Request ID.
      * @param pageSize Page size.
+     * @param space Space.
      * @param qrys Queries.
      */
-    public GridQueryRequest(long reqId, int pageSize, Collection<GridCacheSqlQuery> qrys) {
+    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys) {
         this.reqId = reqId;
         this.pageSize = pageSize;
+        this.space = space;
 
         assert qrys instanceof Serializable;
 
@@ -67,6 +72,13 @@ public class GridQueryRequest implements Serializable {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Space.
+     */
+    public String space() {
+        return space;
     }
 
     /**

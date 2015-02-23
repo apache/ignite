@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -95,26 +94,12 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setBackups(1);
         cacheCfg.setEvictionPolicy(evictsEnabled() ? new CacheLruEvictionPolicy(100) : null);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
+        cacheCfg.setSqlOnheapRowCacheSize(128);
 
         if (offheapEnabled() && evictsEnabled())
             cacheCfg.setOffHeapMaxMemory(1000); // Small offheap for evictions.
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        QueryConfiguration indexing = new QueryConfiguration();
-
-        indexing.setMaxOffheapRowsCacheSize(128);
-
-        if (offheapEnabled())
-            indexing.setMaxOffHeapMemory(0);
-
-        cfg.setQueryConfiguration(indexing);
 
         GridQueryProcessor.idxCls = FakeIndexing.class;
 

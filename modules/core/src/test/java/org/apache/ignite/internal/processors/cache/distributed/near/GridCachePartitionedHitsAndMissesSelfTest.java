@@ -90,12 +90,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cfg.setQueryConfiguration(qcfg);
-
         return cfg;
     }
 

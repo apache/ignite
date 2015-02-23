@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
 import java.io.*;
 
 /**
@@ -44,30 +40,6 @@ public class VisorCacheQueryConfiguration implements Serializable {
 
     /** {@code true} if SQL engine should generate SQL statements with escaped names. */
     private boolean escapeAll;
-
-    /**
-     * @param qccfg Cache query configuration.
-     * @return Fill data transfer object with cache query configuration data.
-     */
-    public static VisorCacheQueryConfiguration from(CacheQueryConfiguration qccfg) {
-        VisorCacheQueryConfiguration cfg = null;
-
-        if (qccfg != null) {
-            cfg = new VisorCacheQueryConfiguration();
-
-            QueryTypeResolver rslvr = qccfg.getTypeResolver();
-
-            if (rslvr != null)
-                cfg.typeResolver(U.compact(rslvr.getClass().getName()));
-
-            cfg.indexPrimitiveKey(qccfg.isIndexPrimitiveKey());
-            cfg.indexPrimitiveValue(qccfg.isIndexPrimitiveValue());
-            cfg.indexFixedTyping(qccfg.isIndexFixedTyping());
-            cfg.escapeAll(qccfg.isEscapeAll());
-        }
-
-        return cfg;
-    }
 
     /**
      * @return Query type resolver class name.

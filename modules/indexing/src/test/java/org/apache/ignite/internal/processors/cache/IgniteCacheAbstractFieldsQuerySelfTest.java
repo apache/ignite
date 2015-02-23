@@ -96,14 +96,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setPreloadMode(SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(primitives);
-        qcfg.setIndexPrimitiveValue(primitives);
-        qcfg.setIndexFixedTyping(true);
-
-        cache.setQueryConfiguration(qcfg);
-
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
 

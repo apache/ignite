@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -81,10 +82,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     protected void startIndexing(IgniteH2Indexing spi) throws Exception {
-        spi.registerSpace("A");
-        spi.registerSpace("B");
+        spi.registerCache(cacheCfg("A"));
+        spi.registerCache(cacheCfg("B"));
 
         spi.start(null);
+    }
+
+    private CacheConfiguration cacheCfg(String name) {
+        CacheConfiguration cfg = new CacheConfiguration<Object,Object>();
+
+        cfg.setName(name);
+
+        return cfg;
     }
 
     @Override protected void afterTest() throws Exception {
@@ -153,6 +162,10 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      */
     private IgniteH2Indexing getIndexing() {
         return idx;
+    }
+
+    protected boolean offheap() {
+        return false;
     }
 
     /**
@@ -310,7 +323,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
-        boolean h2IdxOffheap = spi.configuration().getMaxOffHeapMemory() > 0;
+        boolean h2IdxOffheap = offheap();
 
         // At the time of this writing index rebuilding is not supported for GridH2Indexing with off-heap storage.
         if (!h2IdxOffheap) {
@@ -356,14 +369,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     public void testLongQueries() throws Exception {
         IgniteH2Indexing spi = getIndexing();
 
-        long longQryExecTime = 100;
+        long longQryExecTime = CacheConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 
         IgniteLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
-
-        spi.configuration().setLongQueryExecutionTimeout(longQryExecTime);
-        spi.configuration().setLongQueryExplain(true);
 
         try {
             GridTestUtils.setFieldValue(spi, "log", log);
@@ -394,7 +404,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
         finally {
             GridTestUtils.setFieldValue(spi, "log", oldLog);
-            spi.configuration().setLongQueryExecutionTimeout(3000);
         }
     }
 
@@ -407,43 +416,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                       F.<Object>asList(0, 7000000), null);
               }
           }, 5);
-    }
-
-    /**
-     * Test long queries write explain warnings into log.
-     *
-     * @throws Exception If failed.
-     */
-    public void testZeroLongQuery() throws Exception {
-        IgniteH2Indexing spi = getIndexing();
-
-        long longQryExecTime = -1;
-
-        GridStringLogger log = new GridStringLogger(false, this.log);
-
-        IgniteLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
-        spi.configuration().setLongQueryExecutionTimeout(longQryExecTime);
-        spi.configuration().setLongQueryExplain(true);
-
-        try {
-            GridTestUtils.setFieldValue(spi, "log", log);
-
-            String sql = "SELECT * FROM MyNonExistingTable";
-
-            GridQueryFieldsResult res = spi.queryFields(null, sql, Collections.emptyList(), null);
-
-            assertFalse(res.iterator().hasNext());
-
-            String logStr = log.toString();
-
-            F.println(logStr);
-
-            assertTrue(logStr.contains("Failed to explain plan because required table does not exist"));
-        }
-        finally {
-            GridTestUtils.setFieldValue(spi, "log", oldLog);
-            spi.configuration().setLongQueryExecutionTimeout(3000);
-        }
     }
 
     /**

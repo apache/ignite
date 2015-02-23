@@ -186,7 +186,7 @@ public class GridReduceQueryExecutor {
         runs.put(qryReqId, r);
 
         try {
-            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, qry.mapQueries()), // TODO conf page size
+            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, space, qry.mapQueries()), // TODO conf page size
                 GridTopic.TOPIC_QUERY, false, 0);
 
             r.latch.await();
@@ -196,7 +196,7 @@ public class GridReduceQueryExecutor {
 
             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-            final ResultSet res = h2.executeSqlQueryWithTimer(r.conn, rdc.query(), F.asList(rdc.parameters()));
+            final ResultSet res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
 
             for (GridMergeTable tbl : r.tbls)
                 dropTable(r.conn, tbl.getName());

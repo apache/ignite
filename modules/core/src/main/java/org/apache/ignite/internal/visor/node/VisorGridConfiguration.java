@@ -120,7 +120,6 @@ public class VisorGridConfiguration implements Serializable {
         systemProperties(getProperties());
         atomic(VisorAtomicConfiguration.from(c.getAtomicConfiguration()));
         transaction(VisorTransactionConfiguration.from(c.getTransactionConfiguration()));
-        queryConfiguration(VisorQueryConfiguration.from(c.getQueryConfiguration()));
 
         return this;
     }

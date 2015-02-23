@@ -42,6 +42,9 @@ public class GridSqlFunction extends GridSqlElement {
     }
 
     /** */
+    private final String schema;
+
+    /** */
     private final String name;
 
     /** */
@@ -54,29 +57,32 @@ public class GridSqlFunction extends GridSqlElement {
      * @param type Function type.
      */
     public GridSqlFunction(GridSqlFunctionType type) {
-        this(type, type.functionName());
+        this(null, type, type.functionName());
     }
 
     /**
+     * @param schema Schema.
      * @param type Type.
      * @param name Name.
      */
-    private GridSqlFunction(GridSqlFunctionType type, String name) {
+    private GridSqlFunction(String schema, GridSqlFunctionType type, String name) {
         if (name == null)
             throw new NullPointerException();
 
         if (type == null)
             type = UNKNOWN_FUNCTION;
 
+        this.schema = schema;
         this.name = name;
         this.type = type;
     }
 
     /**
+     * @param schema Schema.
      * @param name Name.
      */
-    public GridSqlFunction(String name) {
-        this(TYPE_MAP.get(name), name);
+    public GridSqlFunction(String schema, String name) {
+        this(schema, TYPE_MAP.get(name), name);
     }
 
     /**
@@ -91,7 +97,12 @@ public class GridSqlFunction extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(Parser.quoteIdentifier(name));
+        StatementBuilder buff = new StatementBuilder();
+
+        if (schema != null)
+            buff.append(Parser.quoteIdentifier(schema)).append('.');
+
+        buff.append(Parser.quoteIdentifier(name));
 
         if (type == CASE) {
             if (!children.isEmpty())

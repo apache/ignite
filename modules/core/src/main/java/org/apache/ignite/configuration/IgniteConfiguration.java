@@ -363,9 +363,6 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private QueryConfiguration qryCfg;
-
-    /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /** User's class loader. */
@@ -1883,20 +1880,6 @@ public class IgniteConfiguration {
      */
     public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public QueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(QueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
     }
 
     /**

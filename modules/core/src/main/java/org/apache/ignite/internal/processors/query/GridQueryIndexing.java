@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -130,6 +131,14 @@ public interface GridQueryIndexing {
      */
     public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, IndexingQueryFilter filters)
         throws IgniteCheckedException;
+
+    /**
+     * Registers cache.
+     *
+     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.

@@ -146,8 +146,10 @@ public class GridMapQueryExecutor {
             // Run queries.
             int i = 0;
 
+            String space = req.space();
+
             for (GridCacheSqlQuery qry : req.queries()) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(h2.connectionForSpace(null), qry.query(),
+                ResultSet rs = h2.executeSqlQueryWithTimer(space, h2.connectionForSpace(space), qry.query(),
                     F.asList(qry.parameters()));
 
                 assert rs instanceof JdbcResultSet : rs.getClass();

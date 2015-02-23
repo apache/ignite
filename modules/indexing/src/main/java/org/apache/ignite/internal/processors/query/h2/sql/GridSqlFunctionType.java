@@ -58,6 +58,9 @@ public enum GridSqlFunctionType {
     /** */
     EXTRACT,
 
+    /** */
+    SYSTEM_RANGE,
+
     /** Constant for all other functions. */
     UNKNOWN_FUNCTION;
 

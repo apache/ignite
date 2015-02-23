@@ -147,6 +147,9 @@ public class GridSqlQueryParser {
     private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
 
     /** */
+    private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
@@ -182,7 +185,7 @@ public class GridSqlQueryParser {
                 res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl));
             }
             else if (tbl instanceof RangeTable) {
-                res = new GridSqlFunction("SYSTEM_RANGE");
+                res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
 
                 res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl)));
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl)));
@@ -441,7 +444,7 @@ public class GridSqlQueryParser {
         if (expression instanceof Function) {
             Function f = (Function)expression;
 
-            GridSqlFunction res = new GridSqlFunction(f.getName());
+            GridSqlFunction res = new GridSqlFunction(null, f.getName());
 
             for (Expression arg : f.getArgs())
                 res.addChild(parseExpression(arg));
@@ -456,7 +459,9 @@ public class GridSqlQueryParser {
         if (expression instanceof JavaFunction) {
             JavaFunction f = (JavaFunction)expression;
 
-            GridSqlFunction res = new GridSqlFunction(f.getName());
+            FunctionAlias alias = FUNC_ALIAS.get(f);
+
+            GridSqlFunction res = new GridSqlFunction(alias.getSchema().getName(), f.getName());
 
             for (Expression arg : f.getArgs())
                 res.addChild(parseExpression(arg));

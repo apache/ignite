@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -50,37 +48,6 @@ public class VisorQueryConfiguration implements Serializable {
 
     /** The flag indicating that serializer for H2 database will be set to Ignite's marshaller. */
     private boolean useOptimizedSerializer;
-
-    /**
-     * @param qcfg Query configuration.
-     * @return Fill data transfer object with query configuration data.
-     */
-    public static VisorQueryConfiguration from(QueryConfiguration qcfg) {
-        VisorQueryConfiguration c = null;
-
-        if (qcfg != null) {
-            c = new VisorQueryConfiguration();
-
-            Class<?>[] clss = qcfg.getIndexCustomFunctionClasses();
-
-            int sz = clss != null ? clss.length : 0;
-
-            String[] strClss = new String[sz];
-
-            for (int i = 0; i < sz; i++)
-                strClss[i] = U.compact(clss[i].getName());
-
-            c.indexCustomFunctionClasses(strClss);
-            c.searchPath(qcfg.getSearchPath());
-            c.initialScriptPath(qcfg.getInitialScriptPath());
-            c.maxOffHeapMemory(qcfg.getMaxOffHeapMemory());
-            c.longQueryExecutionTimeout(qcfg.getLongQueryExecutionTimeout());
-            c.longQueryExplain(qcfg.isLongQueryExplain());
-            c.useOptimizedSerializer(qcfg.isUseOptimizedSerializer());
-        }
-
-        return c;
-    }
 
     /**
      * @return Classes with methods annotated by {@link QuerySqlFunction}.
