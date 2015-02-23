@@ -57,9 +57,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** Mini future ID. */
     private IgniteUuid miniId;
 
-    /** Owner mapped version bytes. */
-    private byte[] ownedBytes;
-
     /** Topology version. */
     private long topVer;
 
@@ -335,30 +332,24 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeByteArray("ownedBytes", ownedBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -410,14 +401,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 readState++;
 
             case 22:
-                ownedBytes = reader.readByteArray("ownedBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 23:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
@@ -425,7 +408,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 readState++;
 
-            case 24:
+            case 23:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -433,7 +416,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 readState++;
 
-            case 25:
+            case 24:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -441,7 +424,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 readState++;
 
-            case 26:
+            case 25:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
