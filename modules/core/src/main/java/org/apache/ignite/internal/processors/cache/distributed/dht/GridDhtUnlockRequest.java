@@ -118,7 +118,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         }
 
         switch (writer.state()) {
-            case 9:
+            case 7:
                 if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
                     return false;
 
@@ -137,7 +137,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
             return false;
 
         switch (readState) {
-            case 9:
+            case 7:
                 nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
 
                 if (!reader.isLastRead())

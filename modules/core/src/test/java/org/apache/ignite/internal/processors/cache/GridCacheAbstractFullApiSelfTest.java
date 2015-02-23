@@ -2593,6 +2593,53 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @param keys0 Keys to check.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void checkUnlocked(final Collection<String> keys0) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    for (int i = 0; i < gridCount(); i++) {
+                        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)ignite(i)).internalCache();
+
+                        for (String key : keys0) {
+                            GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+
+                            if (entry != null) {
+                                if (entry.lockedByAny()) {
+                                    info("Entry is still locked [i=" + i + ", entry=" + entry + ']');
+
+                                    return false;
+                                }
+                            }
+
+                            if (cache.isNear()) {
+                                entry = cache.context().near().dht().peekEx(key);
+
+                                if (entry != null) {
+                                    if (entry.lockedByAny()) {
+                                        info("Entry is still locked [i=" + i + ", entry=" + entry + ']');
+
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    info("Entry was removed, will retry");
+
+                    return false;
+                }
+            }
+        }, 10_000);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testGlobalClearAll() throws Exception {

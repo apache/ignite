@@ -138,6 +138,10 @@ public class MessageCodeGenerator {
 
         gen.generateAll(true);
 
+//        gen.generateAndWrite(GridDistributedUnlockRequest.class);
+//        gen.generateAndWrite(GridNearUnlockRequest.class);
+//        gen.generateAndWrite(GridDhtUnlockRequest.class);
+//
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
 //        gen.generateAndWrite(GridDistributedLockResponse.class);
 //        gen.generateAndWrite(GridNearLockRequest.class);
