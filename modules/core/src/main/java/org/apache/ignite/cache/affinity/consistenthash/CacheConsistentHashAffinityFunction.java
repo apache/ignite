@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Cache affinity can be configured for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  */
+@Deprecated
 public class CacheConsistentHashAffinityFunction implements CacheAffinityFunction {
     /** */
     private static final long serialVersionUID = 0L;
