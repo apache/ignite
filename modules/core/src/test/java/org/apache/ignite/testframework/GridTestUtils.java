@@ -20,7 +20,7 @@ package org.apache.ignite.testframework;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
@@ -879,8 +879,8 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Affinity.
      */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
-        return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
+    static <K, V> CacheRendezvousAffinityFunction affinity(GridCache<K, V> cache) {
+        return (CacheRendezvousAffinityFunction)cache.cache().configuration().getAffinity();
     }
 
     /**
