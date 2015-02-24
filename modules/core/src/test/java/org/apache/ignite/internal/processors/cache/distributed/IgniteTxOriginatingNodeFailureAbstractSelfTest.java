@@ -239,7 +239,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, Message msg)
                 throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
                     super.sendMessage(node, msg);

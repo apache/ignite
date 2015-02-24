@@ -447,11 +447,11 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -575,20 +575,23 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 3:
                 all = reader.readBoolean("all");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 argsBytes = reader.readByteArray("argsBytes");
@@ -596,7 +599,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 cacheName = reader.readString("cacheName");
@@ -604,7 +607,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 cancel = reader.readBoolean("cancel");
@@ -612,7 +615,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 clause = reader.readString("clause");
@@ -620,7 +623,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 8:
                 clsName = reader.readString("clsName");
@@ -628,7 +631,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 fields = reader.readBoolean("fields");
@@ -636,7 +639,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 id = reader.readLong("id");
@@ -644,7 +647,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 incBackups = reader.readBoolean("incBackups");
@@ -652,7 +655,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 incMeta = reader.readBoolean("incMeta");
@@ -660,7 +663,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
                 keepPortable = reader.readBoolean("keepPortable");
@@ -668,7 +671,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
                 keyValFilterBytes = reader.readByteArray("keyValFilterBytes");
@@ -676,7 +679,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 15:
                 pageSize = reader.readInt("pageSize");
@@ -684,7 +687,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 prjFilterBytes = reader.readByteArray("prjFilterBytes");
@@ -692,7 +695,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 rdcBytes = reader.readByteArray("rdcBytes");
@@ -700,7 +703,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 subjId = reader.readUuid("subjId");
@@ -708,7 +711,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
                 taskHash = reader.readInt("taskHash");
@@ -716,7 +719,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 transBytes = reader.readByteArray("transBytes");
@@ -724,7 +727,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 21:
                 byte typeOrd;
@@ -736,7 +739,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
                 type = GridCacheQueryType.fromOrdinal(typeOrd);
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -746,6 +749,11 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 58;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 22;
     }
 
     /** {@inheritDoc} */

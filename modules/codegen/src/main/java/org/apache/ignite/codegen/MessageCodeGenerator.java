@@ -45,7 +45,7 @@ public class MessageCodeGenerator {
     private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final Class<?> BASE_CLS = MessageAdapter.class;
+    private static final Class<?> BASE_CLS = Message.class;
 
     /** */
     private static final String EMPTY = "";
@@ -57,50 +57,50 @@ public class MessageCodeGenerator {
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final Map<Class<?>, MessageAdapter.Type> TYPES = U.newHashMap(30);
+    private static final Map<Class<?>, MessageCollectionItemType> TYPES = U.newHashMap(30);
 
     static {
-        TYPES.put(byte.class, MessageAdapter.Type.BYTE);
-        TYPES.put(Byte.class, MessageAdapter.Type.BYTE);
-        TYPES.put(short.class, MessageAdapter.Type.SHORT);
-        TYPES.put(Short.class, MessageAdapter.Type.SHORT);
-        TYPES.put(int.class, MessageAdapter.Type.INT);
-        TYPES.put(Integer.class, MessageAdapter.Type.INT);
-        TYPES.put(long.class, MessageAdapter.Type.LONG);
-        TYPES.put(Long.class, MessageAdapter.Type.LONG);
-        TYPES.put(float.class, MessageAdapter.Type.FLOAT);
-        TYPES.put(Float.class, MessageAdapter.Type.FLOAT);
-        TYPES.put(double.class, MessageAdapter.Type.DOUBLE);
-        TYPES.put(Double.class, MessageAdapter.Type.DOUBLE);
-        TYPES.put(char.class, MessageAdapter.Type.CHAR);
-        TYPES.put(Character.class, MessageAdapter.Type.CHAR);
-        TYPES.put(boolean.class, MessageAdapter.Type.BOOLEAN);
-        TYPES.put(Boolean.class, MessageAdapter.Type.BOOLEAN);
-        TYPES.put(byte[].class, MessageAdapter.Type.BYTE_ARR);
-        TYPES.put(short[].class, MessageAdapter.Type.SHORT_ARR);
-        TYPES.put(int[].class, MessageAdapter.Type.INT_ARR);
-        TYPES.put(long[].class, MessageAdapter.Type.LONG_ARR);
-        TYPES.put(float[].class, MessageAdapter.Type.FLOAT_ARR);
-        TYPES.put(double[].class, MessageAdapter.Type.DOUBLE_ARR);
-        TYPES.put(char[].class, MessageAdapter.Type.CHAR_ARR);
-        TYPES.put(boolean[].class, MessageAdapter.Type.BOOLEAN_ARR);
-        TYPES.put(String.class, MessageAdapter.Type.STRING);
-        TYPES.put(BitSet.class, MessageAdapter.Type.BIT_SET);
-        TYPES.put(UUID.class, MessageAdapter.Type.UUID);
-        TYPES.put(IgniteUuid.class, MessageAdapter.Type.IGNITE_UUID);
+        TYPES.put(byte.class, MessageCollectionItemType.BYTE);
+        TYPES.put(Byte.class, MessageCollectionItemType.BYTE);
+        TYPES.put(short.class, MessageCollectionItemType.SHORT);
+        TYPES.put(Short.class, MessageCollectionItemType.SHORT);
+        TYPES.put(int.class, MessageCollectionItemType.INT);
+        TYPES.put(Integer.class, MessageCollectionItemType.INT);
+        TYPES.put(long.class, MessageCollectionItemType.LONG);
+        TYPES.put(Long.class, MessageCollectionItemType.LONG);
+        TYPES.put(float.class, MessageCollectionItemType.FLOAT);
+        TYPES.put(Float.class, MessageCollectionItemType.FLOAT);
+        TYPES.put(double.class, MessageCollectionItemType.DOUBLE);
+        TYPES.put(Double.class, MessageCollectionItemType.DOUBLE);
+        TYPES.put(char.class, MessageCollectionItemType.CHAR);
+        TYPES.put(Character.class, MessageCollectionItemType.CHAR);
+        TYPES.put(boolean.class, MessageCollectionItemType.BOOLEAN);
+        TYPES.put(Boolean.class, MessageCollectionItemType.BOOLEAN);
+        TYPES.put(byte[].class, MessageCollectionItemType.BYTE_ARR);
+        TYPES.put(short[].class, MessageCollectionItemType.SHORT_ARR);
+        TYPES.put(int[].class, MessageCollectionItemType.INT_ARR);
+        TYPES.put(long[].class, MessageCollectionItemType.LONG_ARR);
+        TYPES.put(float[].class, MessageCollectionItemType.FLOAT_ARR);
+        TYPES.put(double[].class, MessageCollectionItemType.DOUBLE_ARR);
+        TYPES.put(char[].class, MessageCollectionItemType.CHAR_ARR);
+        TYPES.put(boolean[].class, MessageCollectionItemType.BOOLEAN_ARR);
+        TYPES.put(String.class, MessageCollectionItemType.STRING);
+        TYPES.put(BitSet.class, MessageCollectionItemType.BIT_SET);
+        TYPES.put(UUID.class, MessageCollectionItemType.UUID);
+        TYPES.put(IgniteUuid.class, MessageCollectionItemType.IGNITE_UUID);
     }
 
     /**
      * @param cls Class.
      * @return Type enum value.
      */
-    private static MessageAdapter.Type typeEnum(Class<?> cls) {
-        MessageAdapter.Type type = TYPES.get(cls);
+    private static MessageCollectionItemType typeEnum(Class<?> cls) {
+        MessageCollectionItemType type = TYPES.get(cls);
 
         if (type == null) {
-            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
+            assert Message.class.isAssignableFrom(cls) : cls;
 
-            type = MessageAdapter.Type.MSG;
+            type = MessageCollectionItemType.MSG;
         }
 
         return type;
@@ -117,6 +117,9 @@ public class MessageCodeGenerator {
 
     /** */
     private final String srcDir;
+
+    /** */
+    private int totalFieldCnt;
 
     /** */
     private List<Field> fields;
@@ -177,9 +180,9 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public void generateAll(boolean write) throws Exception {
-        Collection<Class<? extends MessageAdapter>> classes = classes();
+        Collection<Class<? extends Message>> classes = classes();
 
-        for (Class<? extends MessageAdapter> cls : classes) {
+        for (Class<? extends Message> cls : classes) {
             boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
             System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
@@ -200,7 +203,7 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    public void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
+    public void generateAndWrite(Class<? extends Message> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
@@ -225,6 +228,7 @@ public class MessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
+            boolean fieldCntFound = false;
 
             while ((line = rdr.readLine()) != null) {
                 if (!skip) {
@@ -237,12 +241,19 @@ public class MessageCodeGenerator {
 
                         writeFound = true;
                     }
-                    else if (line.contains("public boolean readFrom(ByteBuffer buf)")) {
+                    else if (line.contains("public boolean readFrom(ByteBuffer buf, MessageReader reader)")) {
                         src.addAll(read);
 
                         skip = true;
 
                         readFound = true;
+                    }
+                    else if (line.contains("public byte fieldsCount()")) {
+                        src.add(TAB + TAB + "return " + totalFieldCnt + ";");
+
+                        skip = true;
+
+                        fieldCntFound = true;
                     }
                 }
                 else if (line.startsWith(TAB + "}")) {
@@ -257,6 +268,9 @@ public class MessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
+
+            if (!fieldCntFound)
+                System.out.println("    fieldCount method doesn't exist.");
         }
         finally {
             if (rdr != null)
@@ -283,7 +297,7 @@ public class MessageCodeGenerator {
      * @param cls Class.
      * @throws Exception In case of error.
      */
-    private void generate(Class<? extends MessageAdapter> cls) throws Exception {
+    private void generate(Class<? extends Message> cls) throws Exception {
         assert cls != null;
 
         write.clear();
@@ -302,6 +316,10 @@ public class MessageCodeGenerator {
 
         Collections.sort(fields, FIELD_CMP);
 
+        int state = startState(cls);
+
+        totalFieldCnt = state + fields.size();
+
         indent = 2;
 
         boolean hasSuper = cls.getSuperclass() != BASE_CLS;
@@ -310,8 +328,6 @@ public class MessageCodeGenerator {
         start(read, hasSuper ? "readFrom" : null, false);
 
         indent++;
-
-        int state = startState(cls);
 
         for (Field field : fields)
             processField(field, state++);
@@ -365,6 +381,17 @@ public class MessageCodeGenerator {
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
         code.add(EMPTY);
 
+        if (!write) {
+            code.add(builder().a("if (!reader.beforeMessageRead())").toString());
+
+            indent++;
+
+            code.add(builder().a("return false;").toString());
+            code.add(EMPTY);
+
+            indent--;
+        }
+
         if (superMtd != null) {
             if (write)
                 returnFalseIfFailed(code, "super." + superMtd, BUF_VAR, "writer");
@@ -375,14 +402,14 @@ public class MessageCodeGenerator {
         }
 
         if (write) {
-            code.add(builder().a("if (!writer.isTypeWritten()) {").toString());
+            code.add(builder().a("if (!writer.isHeaderWritten()) {").toString());
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
+            returnFalseIfFailed(code, "writer.writeHeader", "directType()", "fieldsCount()");
 
             code.add(EMPTY);
-            code.add(builder().a("writer.onTypeWritten();").toString());
+            code.add(builder().a("writer.onHeaderWritten();").toString());
 
             indent--;
 
@@ -391,7 +418,7 @@ public class MessageCodeGenerator {
         }
 
         if (!fields.isEmpty())
-            code.add(builder().a("switch (").a(write ? "writer.state()" : "readState").a(") {").toString());
+            code.add(builder().a("switch (").a(write ? "writer.state()" : "reader.state()").a(") {").toString());
     }
 
     /**
@@ -474,7 +501,7 @@ public class MessageCodeGenerator {
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null);
 
         read.add(EMPTY);
-        read.add(builder().a("readState++;").toString());
+        read.add(builder().a("reader.incrementState();").toString());
         read.add(EMPTY);
 
         indent--;
@@ -734,11 +761,11 @@ public class MessageCodeGenerator {
      * @return Classes.
      * @throws Exception In case of error.
      */
-    private Collection<Class<? extends MessageAdapter>> classes() throws Exception {
-        Collection<Class<? extends MessageAdapter>> col = new TreeSet<>(
-            new Comparator<Class<? extends MessageAdapter>>() {
-                @Override public int compare(Class<? extends MessageAdapter> c1,
-                    Class<? extends MessageAdapter> c2) {
+    private Collection<Class<? extends Message>> classes() throws Exception {
+        Collection<Class<? extends Message>> col = new TreeSet<>(
+            new Comparator<Class<? extends Message>>() {
+                @Override public int compare(Class<? extends Message> c1,
+                    Class<? extends Message> c2) {
                     return c1.getName().compareTo(c2.getName());
                 }
             });
@@ -767,7 +794,7 @@ public class MessageCodeGenerator {
      */
     @SuppressWarnings("unchecked")
     private void processFile(File file, ClassLoader ldr, int prefixLen,
-        Collection<Class<? extends MessageAdapter>> col) throws Exception {
+        Collection<Class<? extends Message>> col) throws Exception {
         assert file != null;
         assert ldr != null;
         assert prefixLen > 0;
@@ -792,7 +819,7 @@ public class MessageCodeGenerator {
 
                 if (cls.getDeclaringClass() == null && cls.getEnclosingClass() == null &&
                     !BASE_CLS.equals(cls) && BASE_CLS.isAssignableFrom(cls))
-                    col.add((Class<? extends MessageAdapter>)cls);
+                    col.add((Class<? extends Message>)cls);
             }
         }
     }

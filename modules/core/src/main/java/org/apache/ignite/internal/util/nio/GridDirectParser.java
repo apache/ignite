@@ -31,29 +31,50 @@ public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Reader metadata key. */
+    private static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** */
     private final MessageFactory msgFactory;
 
+    /** */
+    private final MessageFormatter formatter;
+
     /**
      * @param msgFactory Message factory.
+     * @param formatter Formatter.
      */
-    public GridDirectParser(MessageFactory msgFactory) {
+    public GridDirectParser(MessageFactory msgFactory, MessageFormatter formatter) {
         assert msgFactory != null;
+        assert formatter != null;
 
         this.msgFactory = msgFactory;
+        this.formatter = formatter;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
+        throws IOException, IgniteCheckedException {
+        Message msg = ses.removeMeta(MSG_META_KEY);
 
-        if (msg == null && buf.hasRemaining())
+        MessageReader reader = null;
+
+        if (msg == null && buf.hasRemaining()) {
             msg = msgFactory.create(buf.get());
+
+            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory));
+        }
 
         boolean finished = false;
 
-        if (buf.hasRemaining())
-            finished = msg.readFrom(buf);
+        if (buf.hasRemaining()) {
+            if (reader == null)
+                reader = ses.meta(READER_META_KEY);
+
+            assert reader != null;
+
+            finished = msg.readFrom(buf, reader);
+        }
 
         if (finished)
             return msg;

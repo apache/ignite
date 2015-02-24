@@ -141,7 +141,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         private Collection<GridDhtPartitionsSingleMessage> sentMsgs = new ConcurrentLinkedQueue<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             recordMessage((GridIoMessage)msg);
 

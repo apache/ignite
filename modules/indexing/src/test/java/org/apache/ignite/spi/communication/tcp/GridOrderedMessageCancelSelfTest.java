@@ -164,7 +164,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, Message msg,
             IgniteRunnable msgC) {
             try {
                 GridIoMessage ioMsg = (GridIoMessage)msg;

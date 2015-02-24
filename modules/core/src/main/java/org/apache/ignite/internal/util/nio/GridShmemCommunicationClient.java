@@ -108,7 +108,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg)
+    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, Message msg)
         throws IgniteCheckedException {
         if (closed())
             throw new IgniteCheckedException("Communication client was closed: " + this);

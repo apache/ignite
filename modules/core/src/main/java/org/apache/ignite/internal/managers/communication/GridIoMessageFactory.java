@@ -50,38 +50,37 @@ import java.util.*;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<MessageAdapter>> CUSTOM = new ConcurrentHashMap8<>();
-
-    /** Message reader factory. */
-    private final MessageFormatter formatter;
+    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
 
     /**
-     * @param formatter Message formatter.
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFormatter formatter, MessageFactory[] ext) {
-        assert formatter != null;
-
-        this.formatter = formatter;
+    public GridIoMessageFactory(MessageFactory[] ext) {
         this.ext = ext;
     }
 
     /** {@inheritDoc} */
-    @Override public MessageAdapter create(byte type) {
-        MessageAdapter msg = null;
+    @Override public Message create(byte type) {
+        Message msg = null;
 
         switch (type) {
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.NodeIdMessage();
+                msg = new TcpCommunicationSpi.NodeIdMessage();
+
+                break;
 
             case TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+                msg = new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+
+                break;
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
-                return new TcpCommunicationSpi.HandshakeMessage();
+                msg = new TcpCommunicationSpi.HandshakeMessage();
+
+                break;
 
             case 0:
                 msg = new GridJobCancelRequest();
@@ -504,7 +503,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 }
 
                 if (msg == null) {
-                    IgniteOutClosure<MessageAdapter> c = CUSTOM.get(type);
+                    IgniteOutClosure<Message> c = CUSTOM.get(type);
 
                     if (c != null)
                         msg = c.apply();
@@ -513,8 +512,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
         if (msg == null)
             throw new IgniteException("Invalid message type: " + type);
-
-        msg.setReader(formatter.reader());
 
         return msg;
     }
@@ -525,7 +522,7 @@ public class GridIoMessageFactory implements MessageFactory {
      * @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<MessageAdapter> c) {
+    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);
