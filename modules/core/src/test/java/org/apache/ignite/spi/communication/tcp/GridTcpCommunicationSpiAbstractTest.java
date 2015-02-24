@@ -93,7 +93,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         for (CommunicationSpi spi : spis.values()) {
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
-            for (int i = 0; i < 10 && !clients.isEmpty(); i++) {
+            for (int i = 0; i < 20 && !clients.isEmpty(); i++) {
                 info("Check failed for SPI [grid=" + GridTestUtils.getFieldValue(spi, "gridName") +
                     ", spi=" + spi + ']');
 

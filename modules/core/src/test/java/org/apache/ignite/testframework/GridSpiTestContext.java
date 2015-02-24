@@ -519,8 +519,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader() {
-                    return new DirectMessageReader(messageFactory());
+                @Override public MessageReader reader(MessageFactory factory) {
+                    return new DirectMessageReader(factory, this);
                 }
             };
         }
@@ -531,7 +531,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new GridIoMessageFactory(messageFormatter(), null);
+            factory = new GridIoMessageFactory(null);
 
         return factory;
     }

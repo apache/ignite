@@ -282,7 +282,7 @@ class GridDeploymentCommunication {
      * @param topic Response topic.
      * @param res Response.
      */
-    private void sendResponse(UUID nodeId, Object topic, MessageAdapter res) {
+    private void sendResponse(UUID nodeId, Object topic, Message res) {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node != null) {
@@ -314,7 +314,7 @@ class GridDeploymentCommunication {
     void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws IgniteCheckedException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
-        MessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
+        Message req = new GridDeploymentRequest(null, null, rsrcName, true);
 
         if (!rmtNodes.isEmpty()) {
             ctx.io().send(

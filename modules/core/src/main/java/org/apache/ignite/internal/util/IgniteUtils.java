@@ -47,7 +47,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
-import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -517,6 +516,15 @@ public abstract class IgniteUtils {
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
     }
 
+    /**
+     * Gets IgniteClosure for an IgniteCheckedException class.
+     *
+     * @param clazz Class.
+     * @return The IgniteClosure mapped to this exception class, or null if none.
+     */
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+        return exceptionConverters.get(clazz);
+    }
 
     /**
      * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
@@ -616,24 +624,6 @@ public abstract class IgniteUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
-        if (e instanceof CachePartialUpdateCheckedException)
-            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
-            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
-
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
@@ -9142,12 +9132,12 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer, MessageWriter)} method.
+     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
      * @param writer Message writer.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf,
+    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
         MessageWriter writer) throws IOException {
         assert msg != null;
         assert out != null;

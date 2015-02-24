@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMessage {
+public class GridJobExecuteResponse implements Message, GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -208,11 +208,11 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -264,17 +264,20 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 gridExBytes = reader.readByteArray("gridExBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 isCancelled = reader.readBoolean("isCancelled");
@@ -282,7 +285,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
@@ -290,7 +293,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 jobId = reader.readIgniteUuid("jobId");
@@ -298,7 +301,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 nodeId = reader.readUuid("nodeId");
@@ -306,7 +309,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 resBytes = reader.readByteArray("resBytes");
@@ -314,7 +317,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 sesId = reader.readIgniteUuid("sesId");
@@ -322,7 +325,7 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -332,6 +335,11 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */

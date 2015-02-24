@@ -352,11 +352,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -397,7 +397,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -450,20 +450,23 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
@@ -471,7 +474,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 isInTx = reader.readBoolean("isInTx");
@@ -479,7 +482,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 isInvalidate = reader.readBoolean("isInvalidate");
@@ -487,7 +490,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 isRead = reader.readBoolean("isRead");
@@ -495,7 +498,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
                 byte isolationOrd;
@@ -507,15 +510,15 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 isolation = TransactionIsolation.fromOrdinal(isolationOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 14:
-                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 15:
                 nearXidVer = reader.readMessage("nearXidVer");
@@ -523,7 +526,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 nodeId = reader.readUuid("nodeId");
@@ -531,7 +534,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 partLock = reader.readBoolean("partLock");
@@ -539,7 +542,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 retVals = reader.readBooleanArray("retVals");
@@ -547,7 +550,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
                 threadId = reader.readLong("threadId");
@@ -555,7 +558,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 timeout = reader.readLong("timeout");
@@ -563,7 +566,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 21:
                 txSize = reader.readInt("txSize");
@@ -571,7 +574,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -581,6 +584,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 21;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 22;
     }
 
     /** {@inheritDoc} */

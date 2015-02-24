@@ -431,7 +431,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, Message msg)
                 throws IgniteSpiException {
                 if (getSpiContext().localNode().id().equals(failingNodeId)) {
                     if (ignoredMessage((GridIoMessage)msg) && ignoreMsgNodeIds != null) {
