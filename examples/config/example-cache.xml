@@ -156,7 +156,7 @@
                 <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Organization</value>
 
                 <!-- Key and value type for SQL table Person. -->
-                <value>java.util.UUID</value>
+                <value>org.apache.ignite.cache.affinity.CacheAffinityKey</value>
                 <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Person</value>
             </list>
         </property>

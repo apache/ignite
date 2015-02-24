@@ -366,6 +366,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
+            if (!desc.keyClass().isAssignableFrom(key.getClass()))
+                throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
+                    desc.keyClass().getName() + ", actualCls=" + key.getClass().getName() + "]");
+
             idx.store(space, desc, key, val, ver, expirationTime);
         }
         finally {
