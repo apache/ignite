@@ -26,8 +26,6 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.query.Query.*;
-
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
  * arrangement of data in which data is split into {@code dimensions} and {@code facts}.
@@ -157,7 +155,7 @@ public class CacheStarSchemaExample {
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(sql(
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
@@ -187,7 +185,7 @@ public class CacheStarSchemaExample {
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(sql(
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "

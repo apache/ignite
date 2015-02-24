@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -37,7 +38,6 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Tests cross cache queries.
@@ -227,9 +227,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Object,Object> c = ignite.jcache("partitioned");
 
-        c.queryFields(sql("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
+        c.queryFields(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
-        List<List<?>> res = c.queryFields(sql("select cast(? as varchar), id " +
+        List<List<?>> res = c.queryFields(new SqlFieldsQuery("select cast(? as varchar), id " +
             "from FactPurchase order by id limit ? offset ?").setArgs("aaa", 1, 1)).getAll();
 
         assertEquals(1, res.size());

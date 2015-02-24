@@ -96,7 +96,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      */
     private void checkQuery(IgniteCache<Integer, CacheValue> cache) throws Exception {
         QueryCursor<Cache.Entry<Integer, CacheValue>> qry =
-            cache.query(Query.sql(CacheValue.class, "val >= 5"));
+            cache.query(new SqlQuery(CacheValue.class, "val >= 5"));
 
         Collection<Cache.Entry<Integer, CacheValue>> queried = qry.getAll();
 

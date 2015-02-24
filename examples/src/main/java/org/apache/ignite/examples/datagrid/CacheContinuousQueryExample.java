@@ -60,9 +60,9 @@ public class CacheContinuousQueryExample {
                 cache.put(i, Integer.toString(i));
 
             // Create new continuous query.
-            ContinuousQuery<Integer, String> qry = Query.continuous();
+            ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
-            qry.setInitialPredicate(Query.scan(new IgniteBiPredicate<Integer, String>() {
+            qry.setInitialPredicate(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
                 @Override public boolean apply(Integer key, String val) {
                     return key > 10;
                 }

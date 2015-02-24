@@ -21,10 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Tests for partitioned cache queries.
@@ -152,7 +149,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     QueryCursor<Cache.Entry<UUID, Person>> master =
-                        cache0.query(text(Person.class, "Master"));
+                        cache0.query(new TextQuery(Person.class, "Master"));
 
                     Collection<Cache.Entry<UUID, Person>> entries = master.getAll();
 
@@ -173,7 +170,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     QueryCursor<Cache.Entry<UUID, Person>> bachelors =
-                            cache0.query(sql(Person.class, "degree = 'Bachelor'"));
+                            cache0.query(new SqlQuery(Person.class, "degree = 'Bachelor'"));
 
                     Collection<Cache.Entry<UUID, Person>> entries = bachelors.getAll();
 

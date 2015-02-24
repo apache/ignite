@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
@@ -33,6 +35,9 @@ import javax.cache.*;
  * Test {@link CacheConfiguration#setQueryIndexEnabled} checked before executing query
  */
 public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     public GridCacheQueryIndexDisabledSelfTest() {
         super(true);
@@ -52,6 +57,8 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
 

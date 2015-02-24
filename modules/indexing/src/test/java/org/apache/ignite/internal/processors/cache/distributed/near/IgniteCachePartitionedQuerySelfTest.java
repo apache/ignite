@@ -27,7 +27,6 @@ import javax.cache.Cache;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.query.Query.sql;
 
 /**
  * Tests for partitioned cache queries.
@@ -65,14 +64,14 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
-            .queryFields(sql("select name from Person where salary > ?").setArgs(1600));
+            .queryFields(new SqlFieldsQuery("select name from Person where salary > ?").setArgs(1600));
 
         Collection<List<?>> res = qry.getAll();
 
         assertEquals(3, res.size());
 
         // Fields query count(*)
-        qry = cache0.queryFields(sql("select count(*) from Person"));
+        qry = cache0.queryFields(new SqlFieldsQuery("select count(*) from Person"));
 
         res = qry.getAll();
 
@@ -105,7 +104,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         assert grid(0).cluster().nodes().size() == gridCount();
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.query(sql(Person.class, "salary < 2000"));
+            cache0.query(new SqlQuery(Person.class, "salary < 2000"));
 
         // Execute on full projection, duplicates are expected.
         Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();

@@ -20,7 +20,7 @@ package org.apache.ignite.visor.commands.cache
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheAtomicityMode._
 import org.apache.ignite.cache.CacheMode._
-import org.apache.ignite.cache.query.Query._
+import org.apache.ignite.cache.query.SqlQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration._
 import org.apache.ignite.spi.discovery.tcp._
@@ -102,12 +102,12 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         c.put(3, Foo(150))
 
         // Create and execute query that mast return 2 rows.
-        val q1 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(1))).getAll()
+        val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(1))).getAll()
 
         assert(q1.size() == 2)
 
         // Create and execute query that mast return 0 rows.
-        val q2 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(100))).getAll()
+        val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(100))).getAll()
 
         assert(q2.size() == 0)
 

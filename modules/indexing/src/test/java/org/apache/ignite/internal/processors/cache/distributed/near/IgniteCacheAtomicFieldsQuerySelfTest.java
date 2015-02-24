@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
@@ -47,7 +45,7 @@ public class IgniteCacheAtomicFieldsQuerySelfTest extends IgniteCachePartitioned
      */
     public void testUnsupportedOperations() {
         try {
-            QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(Query.sql(
+            QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new SqlFieldsQuery(
                 "update Person set name = ?").setArgs("Mary Poppins"));
 
             qry.getAll();

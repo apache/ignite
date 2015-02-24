@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -38,7 +39,6 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Tests cross cache queries.
@@ -107,7 +107,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
 
         IgniteCache<Object,Object> p = ignite.jcache("partitioned");
 
-        List<Cache.Entry<Object,Object>> res = p.query(sql(FactPurchase.class,
+        List<Cache.Entry<Object,Object>> res = p.query(new SqlQuery(FactPurchase.class,
             "price = 5")).getAll();
 
         assertEquals(1, res.size());
@@ -127,7 +127,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
             }
         };
 
-        final long cnt = F.reduce(p.queryFields(sql("select count(*) from FactPurchase where price > 5")), rdc);
+        final long cnt = F.reduce(p.queryFields(new SqlFieldsQuery("select count(*) from FactPurchase where price > 5")), rdc);
 
         X.println("all facts: " + cnt);
 
@@ -135,7 +135,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
 
         for (int i = 0; i < 3; i++) {
             List<List<?>> rows = grid(i).jcache("partitioned").localQueryFields(
-                sql("select count(*) from FactPurchase where price > 5")).getAll();
+                new SqlFieldsQuery("select count(*) from FactPurchase where price > 5")).getAll();
 
             assertEquals(1, rows.size());
 
@@ -150,7 +150,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
 
         for (int i = 0; i < 3; i++) {
             List<Cache.Entry<Object,Object>> rows = grid(i).jcache("partitioned").localQuery(
-                sql(FactPurchase.class, "price > 5")).getAll();
+                new SqlQuery(FactPurchase.class, "price > 5")).getAll();
 
             X.println("node facts: " + rows.size());
 

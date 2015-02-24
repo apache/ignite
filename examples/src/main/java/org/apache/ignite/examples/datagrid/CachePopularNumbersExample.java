@@ -18,12 +18,11 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 
 import javax.cache.processor.*;
 import java.util.*;
-
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Real time popular numbers counter.
@@ -119,7 +118,8 @@ public class CachePopularNumbersExample {
 
                 try {
                     List<List<?>> results = new ArrayList<>(cache.queryFields(
-                        sql("select _key, _val from Long order by _val desc limit ?").setArgs(cnt)).getAll());
+                        new SqlFieldsQuery("select _key, _val from Long order by _val desc limit ?").setArgs(cnt))
+                        .getAll());
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
