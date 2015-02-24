@@ -232,7 +232,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
                 writer.incrementState();
 
-            case 7:
+            case 5:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -267,7 +267,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
                 readState++;
 
-            case 7:
+            case 5:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
