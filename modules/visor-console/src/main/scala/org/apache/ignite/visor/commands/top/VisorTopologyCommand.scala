@@ -225,7 +225,7 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = ignite.forPredicate(new IgnitePredicate[ClusterNode] {
+        var nodes = ignite.cluster.forPredicate(new IgnitePredicate[ClusterNode] {
             override def apply(e: ClusterNode) = f(e)
         }).nodes()
 
@@ -327,7 +327,7 @@ class VisorTopologyCommand {
 
         nl()
 
-        val m = ignite.forNodes(nodes).metrics()
+        val m = ignite.cluster.forNodes(nodes).metrics()
 
         val freeHeap = (m.getHeapMemoryTotal - m.getHeapMemoryUsed) * 100 / m.getHeapMemoryTotal
 

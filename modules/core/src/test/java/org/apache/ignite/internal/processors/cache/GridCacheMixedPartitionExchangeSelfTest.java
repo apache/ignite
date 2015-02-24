@@ -129,7 +129,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             fut.get();
 
-            long topVer = grid(0).topologyVersion();
+            long topVer = grid(0).cluster().topologyVersion();
 
             assertEquals(29, topVer);
 

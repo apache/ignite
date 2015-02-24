@@ -322,7 +322,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
         FsStatus status = fs.getFsStatus();
 
-        assertEquals(4, grid(0).nodes().size());
+        assertEquals(4, grid(0).cluster().nodes().size());
 
         long used = 0, max = 0;
 

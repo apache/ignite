@@ -85,11 +85,11 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -100,7 +100,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("fragmentRanges", fragmentRanges, Type.MSG))
+                if (!writer.writeCollection("fragmentRanges", fragmentRanges, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -111,28 +111,31 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 fileId = reader.readIgniteUuid("fileId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
-                fragmentRanges = reader.readCollection("fragmentRanges", Type.MSG);
+                fragmentRanges = reader.readCollection("fragmentRanges", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -142,5 +145,10 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 69;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 }

@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-class GridTestMessage extends MessageAdapter implements Externalizable {
+class GridTestMessage implements Message, Externalizable {
     /** */
     private IgniteUuid id;
 
@@ -113,12 +113,17 @@ class GridTestMessage extends MessageAdapter implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
         return 0;
     }
 }

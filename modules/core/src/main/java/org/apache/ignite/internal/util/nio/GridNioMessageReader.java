@@ -33,7 +33,7 @@ public interface GridNioMessageReader {
      * @param buf Buffer.
      * @return Whether message was fully read.
      */
-    public boolean read(@Nullable UUID nodeId, MessageAdapter msg, ByteBuffer buf);
+    public boolean read(@Nullable UUID nodeId, Message msg, ByteBuffer buf);
 
     /**
      * @return Optional message factory.

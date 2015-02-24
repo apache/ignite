@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Message containing time delta map for all nodes.
  */
-public class GridClockDeltaSnapshotMessage extends MessageAdapter {
+public class GridClockDeltaSnapshotMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -75,16 +75,16 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("deltas", deltas, Type.UUID, Type.LONG))
+                if (!writer.writeMap("deltas", deltas, MessageCollectionItemType.UUID, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -101,17 +101,20 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
-                deltas = reader.readMap("deltas", Type.UUID, Type.LONG, false);
+                deltas = reader.readMap("deltas", MessageCollectionItemType.UUID, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 snapVer = reader.readMessage("snapVer");
@@ -119,7 +122,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -129,6 +132,11 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 60;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 
     /** {@inheritDoc} */

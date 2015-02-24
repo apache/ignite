@@ -184,54 +184,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
 
     /**
-     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
-     * to load state from the underlying persistent storage. The loaded values
-     * will then be given to the optionally passed in predicate, and, if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all loaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
-     * @throws IgniteCheckedException If loading failed.
-     */
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
-     * to reload state from the underlying persistent storage. The reloaded values
-     * will then be given to the optionally passed in predicate, and if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all reloaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
-     * @return Future to be completed whenever loading completes.
-     */
-    public IgniteInternalFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
-
-    /**
      * Gets a random entry out of cache. In the worst cache scenario this method
      * has complexity of <pre>O(S * N/64)</pre> where {@code N} is the size of internal hash
      * table and {@code S} is the number of hash table buckets to sample, which is {@code 5}

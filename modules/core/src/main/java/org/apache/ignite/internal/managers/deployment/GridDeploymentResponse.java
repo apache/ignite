@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Grid deployment response containing requested resource bytes.
  */
-public class GridDeploymentResponse extends MessageAdapter {
+public class GridDeploymentResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,11 +109,11 @@ public class GridDeploymentResponse extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -141,17 +141,20 @@ public class GridDeploymentResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 byteSrc = reader.readMessage("byteSrc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 errMsg = reader.readString("errMsg");
@@ -159,7 +162,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 success = reader.readBoolean("success");
@@ -167,7 +170,7 @@ public class GridDeploymentResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -177,6 +180,11 @@ public class GridDeploymentResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 12;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */

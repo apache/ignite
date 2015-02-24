@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Job siblings request.
  */
-public class GridJobSiblingsRequest extends MessageAdapter {
+public class GridJobSiblingsRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -87,11 +87,11 @@ public class GridJobSiblingsRequest extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -113,17 +113,20 @@ public class GridJobSiblingsRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 sesId = reader.readIgniteUuid("sesId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 topicBytes = reader.readByteArray("topicBytes");
@@ -131,7 +134,7 @@ public class GridJobSiblingsRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -141,6 +144,11 @@ public class GridJobSiblingsRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 
     /** {@inheritDoc} */

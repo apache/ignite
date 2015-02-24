@@ -189,7 +189,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg)
         throws IgniteCheckedException {
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);

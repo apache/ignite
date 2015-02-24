@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-public class GridStreamerResponse extends MessageAdapter {
+public class GridStreamerResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,11 +78,11 @@ public class GridStreamerResponse extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -104,17 +104,20 @@ public class GridStreamerResponse extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 futId = reader.readIgniteUuid("futId");
@@ -122,7 +125,7 @@ public class GridStreamerResponse extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -132,5 +135,10 @@ public class GridStreamerResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 81;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 }

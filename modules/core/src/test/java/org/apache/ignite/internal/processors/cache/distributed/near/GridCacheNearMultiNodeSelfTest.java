@@ -251,7 +251,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = mapKeys(cnt);
 
-        for (ClusterNode n : grid(0).nodes()) {
+        for (ClusterNode n : grid(0).cluster().nodes()) {
             Set<Integer> primary = map.get(n.id()).get1();
             Set<Integer> backups = map.get(n.id()).get2();
 
@@ -668,7 +668,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         lock.lock();
 
         try {
-            long topVer = grid(0).topologyVersion();
+            long topVer = grid(0).cluster().topologyVersion();
 
             GridNearCacheEntry<Integer, String> nearEntry1 = nearEntry(0, key);
 
