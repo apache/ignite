@@ -150,7 +150,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (!bannedClasses.contains(msg.getClass()))
                 super.sendMessage(node, msg);
         }

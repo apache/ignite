@@ -318,13 +318,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 writer.incrementState();
 
-            case 23:
+            case 19:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 20:
                 if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -394,7 +394,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             return false;
 
         switch (reader.state()) {
-            case 22:
+            case 18:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
@@ -402,7 +402,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 reader.incrementState();
 
-            case 23:
+            case 19:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -410,7 +410,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 reader.incrementState();
 
-            case 24:
+            case 20:
                 filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -444,14 +444,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 24:
                 miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;

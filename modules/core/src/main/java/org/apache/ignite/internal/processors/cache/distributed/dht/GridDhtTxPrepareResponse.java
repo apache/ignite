@@ -267,7 +267,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 9:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())

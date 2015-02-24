@@ -260,15 +260,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             return false;
 
         switch (reader.state()) {
-            case 8:
-                baseVer = reader.readMessage("baseVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
+            case 6:
                 commit = reader.readBoolean("commit");
 
                 if (!reader.isLastRead())
@@ -292,15 +284,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 reader.incrementState();
 
-            case 12:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
+            case 9:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())

@@ -325,7 +325,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 writer.incrementState();
 
-            case 25:
+            case 21:
                 if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -395,16 +395,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 reader.incrementState();
 
-            case 25:
+            case 21:
                 nearKeyBytes = reader.readCollection("nearKeyBytes", MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                ownedBytes = reader.readByteArray("ownedBytes");
 
                 if (!reader.isLastRead())
                     return false;

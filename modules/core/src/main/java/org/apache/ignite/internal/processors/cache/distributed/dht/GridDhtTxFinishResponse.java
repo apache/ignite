@@ -151,7 +151,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 miniId = reader.readIgniteUuid("miniId");

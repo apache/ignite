@@ -212,7 +212,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (reader.state()) {
-            case 19:
+            case 15:
                 explicitLock = reader.readBoolean("explicitLock");
 
                 if (!reader.isLastRead())

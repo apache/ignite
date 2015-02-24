@@ -170,7 +170,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 6:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())

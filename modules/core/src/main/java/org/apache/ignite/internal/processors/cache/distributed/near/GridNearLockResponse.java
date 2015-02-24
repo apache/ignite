@@ -193,13 +193,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 writer.incrementState();
-
-            case 15:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -247,15 +240,6 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 reader.incrementState();
-
-            case 15:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return true;

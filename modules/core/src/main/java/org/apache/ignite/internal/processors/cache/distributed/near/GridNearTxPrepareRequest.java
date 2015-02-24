@@ -271,7 +271,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 writer.incrementState();
 
-            case 26:
+            case 22:
                 if (!writer.writeCollection("lastBackups", lastBackups, MessageCollectionItemType.UUID))
                     return false;
 
@@ -329,7 +329,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (reader.state()) {
-            case 23:
+            case 19:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -353,7 +353,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 26:
+            case 22:
                 lastBackups = reader.readCollection("lastBackups", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())

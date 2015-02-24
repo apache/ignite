@@ -236,12 +236,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 writer.incrementState();
 
-            case 22:
-                if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
             case 19:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
@@ -288,7 +282,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (reader.state()) {
-            case 19:
+            case 16:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte("isolation");
@@ -316,15 +310,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 reader.incrementState();
 
-            case 22:
-                pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
+            case 19:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())

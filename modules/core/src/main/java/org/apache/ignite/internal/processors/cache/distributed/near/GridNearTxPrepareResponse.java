@@ -310,12 +310,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 writer.incrementState();
 
-            case 16:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
             case 17:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
@@ -338,7 +332,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 8:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
@@ -380,14 +374,6 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
             case 15:
                 ownedValsBytes = reader.readCollection("ownedValsBytes", MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

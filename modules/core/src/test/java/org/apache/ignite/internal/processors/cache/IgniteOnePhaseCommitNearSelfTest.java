@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -222,7 +221,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
      */
     private static class MessageCountingCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
 
