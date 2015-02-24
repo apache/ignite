@@ -61,7 +61,11 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoader.Update
 
                 K key = entry.key();
 
-                GridCacheDrInfo<V> val = entry.value() != null ? entry.expireTime() != 0 ?
+                // Ensure that updater to not receive special-purpose values for TTL and expire time.
+                assert entry.ttl() != CU.TTL_NOT_CHANGED && entry.ttl() != CU.TTL_ZERO && entry.ttl() >= 0;
+                assert entry.expireTime() != CU.EXPIRE_TIME_CALCULATE && entry.expireTime() >= 0;
+
+                GridCacheDrInfo<V> val = entry.value() != null ? entry.ttl() != CU.TTL_ETERNAL ?
                     new GridCacheDrExpirationInfo<>(entry.value(), entry.version(), entry.ttl(), entry.expireTime()) :
                     new GridCacheDrInfo<>(entry.value(), entry.version()) : null;
 

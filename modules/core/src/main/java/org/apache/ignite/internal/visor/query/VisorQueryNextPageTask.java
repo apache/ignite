@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- *  Task for collecting next page previously executed SQL or SCAN query.
+ * Task for collecting next page previously executed SQL or SCAN query.
  */
 @GridInternal
 public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<String, Integer>, VisorQueryResult> {
@@ -71,7 +71,8 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = ignite.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage =
+                ignite.cluster().nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
 
@@ -94,7 +95,8 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = ignite.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage =
+                ignite.cluster().nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
 

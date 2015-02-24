@@ -79,7 +79,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
      * Accumulating listener.
      */
     @SuppressWarnings({"deprecation"})
-    private class MessageListener implements CommunicationListener<MessageAdapter> {
+    private class MessageListener implements CommunicationListener<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;
 
@@ -100,7 +100,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             msgC.run();
 
             if (msg instanceof GridTestMessage) {

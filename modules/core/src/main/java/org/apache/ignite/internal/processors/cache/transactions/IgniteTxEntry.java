@@ -832,9 +832,16 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         val.writeTo(out);
 
         out.writeLong(ttl);
-        out.writeLong(conflictExpireTime);
 
         CU.writeVersion(out, explicitVer);
+
+        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
+            out.writeBoolean(true);
+            out.writeLong(conflictExpireTime);
+        }
+        else
+            out.writeBoolean(false);
+
         CU.writeVersion(out, conflictVer);
 
         out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
@@ -861,9 +868,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         val.readFrom(in);
 
         ttl = in.readLong();
-        conflictExpireTime = in.readLong();
 
         explicitVer = CU.readVersion(in);
+
+        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
         conflictVer = CU.readVersion(in);
 
         expiryPlc = (ExpiryPolicy)in.readObject();

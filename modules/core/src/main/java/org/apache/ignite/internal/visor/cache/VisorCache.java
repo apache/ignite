@@ -40,7 +40,7 @@ public class VisorCache implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default cache size sampling.  */
+    /** Default cache size sampling. */
     private static final int DFLT_CACHE_SIZE_SAMPLING = 10;
 
     /** Cache name. */

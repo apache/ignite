@@ -152,11 +152,11 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -202,20 +202,23 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
-            case 15:
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 19:
                 explicitLock = reader.readBoolean("explicitLock");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 16:
                 miniId = reader.readIgniteUuid("miniId");
@@ -223,7 +226,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 17:
                 storeEnabled = reader.readBoolean("storeEnabled");
@@ -231,7 +234,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 18:
                 subjId = reader.readUuid("subjId");
@@ -239,7 +242,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 19:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -247,7 +250,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 20:
                 topVer = reader.readLong("topVer");
@@ -255,7 +258,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -265,6 +268,11 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 53;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 25;
     }
 
     /** {@inheritDoc} */

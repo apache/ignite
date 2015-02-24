@@ -109,11 +109,11 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -135,13 +135,16 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 5:
                 errBytes = reader.readByteArray("errBytes");
 
@@ -156,7 +159,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -166,5 +169,10 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 33;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 6;
     }
 }

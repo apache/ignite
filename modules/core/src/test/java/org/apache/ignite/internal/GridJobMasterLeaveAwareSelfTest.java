@@ -170,7 +170,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -195,7 +195,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -224,7 +224,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).forPredicate(excludeLastPredicate())).withAsync().
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -509,7 +509,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).forPredicate(excludeLastPredicate()));
+        IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()));
 
         jobLatch.await();
 
@@ -732,7 +732,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private CountDownLatch waitLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             sendMessage0(node, msg);
         }
@@ -745,7 +745,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          * @param msg Message to be sent.
          * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
-        private void sendMessage0(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+        private void sendMessage0(ClusterNode node, Message msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 

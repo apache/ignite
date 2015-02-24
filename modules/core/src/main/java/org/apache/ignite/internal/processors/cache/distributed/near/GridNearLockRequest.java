@@ -304,11 +304,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -318,14 +318,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 writer.incrementState();
 
-            case 19:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+            case 23:
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, Type.BYTE_ARR))
+            case 24:
+                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -384,36 +384,39 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
-            case 18:
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 22:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 19:
-                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                readState++;
-
-            case 20:
-                filterBytes = reader.readObjectArray("filterBytes", Type.BYTE_ARR, byte[].class);
+            case 23:
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
+
+            case 24:
+                filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
 
             case 21:
                 hasTransforms = reader.readBoolean("hasTransforms");
@@ -421,7 +424,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 22:
                 implicitSingleTx = reader.readBoolean("implicitSingleTx");
@@ -429,7 +432,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 23:
                 implicitTx = reader.readBoolean("implicitTx");
@@ -437,7 +440,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 24:
                 miniId = reader.readIgniteUuid("miniId");
@@ -445,15 +448,23 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 25:
+            case 29:
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 30:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 26:
                 syncCommit = reader.readBoolean("syncCommit");
@@ -461,7 +472,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 27:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -469,7 +480,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 28:
                 topVer = reader.readLong("topVer");
@@ -477,7 +488,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -487,6 +498,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 51;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 34;
     }
 
     /** {@inheritDoc} */

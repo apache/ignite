@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridStreamerExecutionRequest extends MessageAdapter {
+public class GridStreamerExecutionRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -153,11 +153,11 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -186,7 +186,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, Type.UUID, Type.IGNITE_UUID))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -209,17 +209,20 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 batchBytes = reader.readByteArray("batchBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
@@ -227,7 +230,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 byte depModeOrd;
@@ -239,7 +242,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 forceLocDep = reader.readBoolean("forceLocDep");
@@ -247,15 +250,15 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
-                ldrParticipants = reader.readMap("ldrParticipants", Type.UUID, Type.IGNITE_UUID, false);
+                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 sampleClsName = reader.readString("sampleClsName");
@@ -263,7 +266,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
                 userVer = reader.readString("userVer");
@@ -271,7 +274,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -281,5 +284,10 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 80;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 }
