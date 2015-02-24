@@ -363,6 +363,6 @@ public interface IgniteMXBean {
     /**
      * Prints errors.
      */
-    @MXBeanDescription("Print errors.")
+    @MXBeanDescription("Prints last suppressed errors.")
     public void printLastErrors();
 }

@@ -20,8 +20,6 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -30,7 +28,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
- * Class collects errors from {@link TcpCommunicationSpi} and {@link TcpDiscoverySpi}.
+ * Utility to collect suppressed errors within internal code.
  */
 public class IgniteExceptionRegistry {
     /** */
@@ -70,7 +68,7 @@ public class IgniteExceptionRegistry {
         while (queue.size() >= maxSize)
             queue.pollLast();
 
-        queue.offerFirst(new IgniteExceptionInfo(e, msg, Thread.currentThread().getId(), 
+        queue.offerFirst(new IgniteExceptionInfo(e, msg, Thread.currentThread().getId(),
             Thread.currentThread().getName(), U.currentTimeMillis()));
     }
 
@@ -80,20 +78,10 @@ public class IgniteExceptionRegistry {
      * @return Exceptions.
      */
     Collection<IgniteExceptionInfo> getErrors() {
-        int size = queue.size();
+        List<IgniteExceptionInfo> errors = new ArrayList<>();
 
-        List<IgniteExceptionInfo> errors = new ArrayList<>(size);
-
-        int cnt = 0;
-
-        for (IgniteExceptionInfo entry : queue) {
-            if (cnt < size)
-                errors.add(entry);
-            else
-                break;
-            
-            ++cnt;
-        }
+        for (IgniteExceptionInfo entry : queue)
+            errors.add(entry);
 
         return errors;
     }
@@ -118,7 +106,7 @@ public class IgniteExceptionRegistry {
         int cnt = 0;
 
         Iterator<IgniteExceptionInfo> descIter = queue.descendingIterator();
-        
+
         while (descIter.hasNext() && cnt < size){
             IgniteExceptionInfo error = descIter.next();
 

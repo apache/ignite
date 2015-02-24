@@ -1879,7 +1879,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         log.debug("Failed to establish shared memory connection with local node (node has left): " +
                             node.id());
 
-                    onException("Failed to establish shared memory connection with local node (node has left): " 
+                    onException("Failed to establish shared memory connection with local node (node has left): "
                         + node.id(), e);
                 }
             }
@@ -2121,7 +2121,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         client = null;
                     }
 
-                    onException("Client creation failed. Addr=" + addr + '.', e);
+                    onException("Client creation failed [addr=" + addr + ", err=" + e + ']', e);
 
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
@@ -2842,7 +2842,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             log.debug("Recovery reconnect failed, " +
                                 "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
-                        onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]", 
+                        onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
                             e);
                     }
 
