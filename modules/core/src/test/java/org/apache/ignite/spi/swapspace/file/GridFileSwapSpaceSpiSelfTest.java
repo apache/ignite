@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.swapspace.file;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
@@ -103,7 +103,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
      * @return Swap key.
      */
     private SwapKey key(int i) {
-        return new SwapKey(i, i % 11, U.intToBytes(i));
+        return new SwapKey(i, i % 11, IgniteByteUtils.intToBytes(i));
     }
 
     /**
@@ -339,7 +339,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
         while (iter.hasNext()) {
             Map.Entry<byte[], byte[]> entry = iter.next();
 
-            hash1 += U.bytesToInt(entry.getKey(), 0) * Arrays.hashCode(entry.getValue());
+            hash1 += IgniteByteUtils.bytesToInt(entry.getKey(), 0) * Arrays.hashCode(entry.getValue());
 
             cnt++;
         }

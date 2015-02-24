@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -215,8 +216,8 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
 
         byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
 
-        U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
-        U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
+        IgniteByteUtils.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
+        IgniteByteUtils.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
         ClusterMetricsSnapshot.serialize(buf, 16, metrics);
 
@@ -264,7 +265,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         public Collection<T2<UUID, ClusterMetrics>> clientMetrics() {
             return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterMetrics>>() {
                 @Override public T2<UUID, ClusterMetrics> apply(byte[] bytes) {
-                    UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
+                    UUID nodeId = new UUID(IgniteByteUtils.bytesToLong(bytes, 0), IgniteByteUtils.bytesToLong(bytes, 8));
 
                     return new T2<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16));
                 }
@@ -287,19 +288,19 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeByteArray(out, metrics);
+            IgniteByteUtils.writeByteArray(out, metrics);
 
             out.writeInt(clientMetrics != null ? clientMetrics.size() : -1);
 
             if (clientMetrics != null) {
                 for (byte[] arr : clientMetrics)
-                    U.writeByteArray(out, arr);
+                    IgniteByteUtils.writeByteArray(out, arr);
             }
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            metrics = U.readByteArray(in);
+            metrics = IgniteByteUtils.readByteArray(in);
 
             int clientMetricsSize = in.readInt();
 
@@ -307,7 +308,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
                 clientMetrics = new ArrayList<>(clientMetricsSize);
 
                 for (int i = 0; i < clientMetricsSize; i++)
-                    clientMetrics.add(U.readByteArray(in));
+                    clientMetrics.add(IgniteByteUtils.readByteArray(in));
             }
         }
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
@@ -266,17 +267,17 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         out.writeBoolean(valBytesSent);
 
         if (keyBytesSent)
-            U.writeByteArray(out, keyBytes);
+            IgniteByteUtils.writeByteArray(out, keyBytes);
         else
             out.writeObject(key);
 
         if (valBytesSent)
-            U.writeByteArray(out, valBytes);
+            IgniteByteUtils.writeByteArray(out, valBytes);
         else {
             if (val != null && val instanceof byte[]) {
                 out.writeBoolean(true);
 
-                U.writeByteArray(out, (byte[])val);
+                IgniteByteUtils.writeByteArray(out, (byte[]) val);
             }
             else {
                 out.writeBoolean(false);
@@ -312,14 +313,14 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         valBytesSent = in.readBoolean();
 
         if (keyBytesSent)
-            keyBytes = U.readByteArray(in);
+            keyBytes = IgniteByteUtils.readByteArray(in);
         else
             key = (K)in.readObject();
 
         if (valBytesSent)
-            valBytes = U.readByteArray(in);
+            valBytes = IgniteByteUtils.readByteArray(in);
         else
-            val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+            val = in.readBoolean() ? (V) IgniteByteUtils.readByteArray(in) : (V)in.readObject();
 
         ttl = in.readLong();
 

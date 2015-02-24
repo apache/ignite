@@ -20,6 +20,7 @@ package org.apache.ignite.internal.igfs.common;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -361,14 +362,14 @@ public class IgfsControlResponse extends IgfsMessage {
     public void writeExternal(ObjectOutput out) throws IOException {
         byte[] hdr = new byte[RES_HEADER_SIZE];
 
-        U.intToBytes(resType, hdr, 0);
+        IgniteByteUtils.intToBytes(resType, hdr, 0);
 
         int off = 4;
 
         hdr[off++] = err != null ? (byte)1 : (byte)0;
 
         if (resType == RES_TYPE_BYTE_ARRAY)
-            U.intToBytes(len, hdr, off);
+            IgniteByteUtils.intToBytes(len, hdr, off);
 
         out.write(hdr);
 
@@ -446,7 +447,7 @@ public class IgfsControlResponse extends IgfsMessage {
 
         in.readFully(hdr);
 
-        resType = U.bytesToInt(hdr, 0);
+        resType = IgniteByteUtils.bytesToInt(hdr, 0);
 
         boolean hasErr = hdr[4] != 0;
 

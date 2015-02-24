@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -166,8 +167,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         out.writeBoolean(depEnabled);
 
         if (depEnabled) {
-            U.writeByteArray(out, topicBytes);
-            U.writeByteArray(out, predBytes);
+            IgniteByteUtils.writeByteArray(out, topicBytes);
+            IgniteByteUtils.writeByteArray(out, predBytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
@@ -182,8 +183,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         depEnabled = in.readBoolean();
 
         if (depEnabled) {
-            topicBytes = U.readByteArray(in);
-            predBytes = U.readByteArray(in);
+            topicBytes = IgniteByteUtils.readByteArray(in);
+            predBytes = IgniteByteUtils.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfoBean)in.readObject();
         }

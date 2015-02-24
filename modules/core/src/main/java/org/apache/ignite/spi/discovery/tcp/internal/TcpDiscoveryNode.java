@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -401,7 +402,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
             ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
         }
 
-        U.writeByteArray(out, mtr);
+        IgniteByteUtils.writeByteArray(out, mtr);
 
         out.writeLong(order);
         out.writeLong(intOrder);
@@ -422,7 +423,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         consistentId = U.consistentId(addrs, discPort);
 
-        byte[] mtr = U.readByteArray(in);
+        byte[] mtr = IgniteByteUtils.readByteArray(in);
 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);

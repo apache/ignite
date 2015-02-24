@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -120,15 +121,15 @@ public class GridClockMessage {
 
         int off = 0;
 
-        off = U.longToBytes(origNodeId.getLeastSignificantBits(), buf, off);
-        off = U.longToBytes(origNodeId.getMostSignificantBits(), buf, off);
+        off = IgniteByteUtils.longToBytes(origNodeId.getLeastSignificantBits(), buf, off);
+        off = IgniteByteUtils.longToBytes(origNodeId.getMostSignificantBits(), buf, off);
 
-        off = U.longToBytes(targetNodeId.getLeastSignificantBits(), buf, off);
-        off = U.longToBytes(targetNodeId.getMostSignificantBits(), buf, off);
+        off = IgniteByteUtils.longToBytes(targetNodeId.getLeastSignificantBits(), buf, off);
+        off = IgniteByteUtils.longToBytes(targetNodeId.getMostSignificantBits(), buf, off);
 
-        off = U.longToBytes(origTs, buf, off);
+        off = IgniteByteUtils.longToBytes(origTs, buf, off);
 
-        off = U.longToBytes(replyTs, buf, off);
+        off = IgniteByteUtils.longToBytes(replyTs, buf, off);
 
         assert off == PACKET_SIZE;
 
@@ -148,18 +149,18 @@ public class GridClockMessage {
         if (len < PACKET_SIZE)
             throw new IgniteCheckedException("Failed to assemble time server packet (message is too short).");
 
-        long lsb = U.bytesToLong(buf, off);
-        long msb = U.bytesToLong(buf, off + 8);
+        long lsb = IgniteByteUtils.bytesToLong(buf, off);
+        long msb = IgniteByteUtils.bytesToLong(buf, off + 8);
 
         UUID origNodeId = new UUID(msb, lsb);
 
-        lsb = U.bytesToLong(buf, off + 16);
-        msb = U.bytesToLong(buf, off + 24);
+        lsb = IgniteByteUtils.bytesToLong(buf, off + 16);
+        msb = IgniteByteUtils.bytesToLong(buf, off + 24);
 
         UUID targetNodeId = new UUID(msb, lsb);
 
-        long origTs = U.bytesToLong(buf, off + 32);
-        long replyTs = U.bytesToLong(buf, off + 40);
+        long origTs = IgniteByteUtils.bytesToLong(buf, off + 32);
+        long replyTs = IgniteByteUtils.bytesToLong(buf, off + 40);
 
         return new GridClockMessage(origNodeId, targetNodeId, origTs, replyTs);
     }

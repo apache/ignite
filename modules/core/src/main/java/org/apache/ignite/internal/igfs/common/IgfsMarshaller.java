@@ -19,6 +19,7 @@ package org.apache.ignite.internal.igfs.common;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -46,9 +47,9 @@ public class IgfsMarshaller {
 
         byte[] hdr = new byte[HEADER_SIZE];
 
-        U.longToBytes(reqId, hdr, 0);
+        IgniteByteUtils.longToBytes(reqId, hdr, 0);
 
-        U.intToBytes(cmd.ordinal(), hdr, 8);
+        IgniteByteUtils.intToBytes(cmd.ordinal(), hdr, 8);
 
         return hdr;
     }
@@ -65,9 +66,9 @@ public class IgfsMarshaller {
 
         Arrays.fill(hdr, (byte)0);
 
-        U.longToBytes(reqId, hdr, 0);
+        IgniteByteUtils.longToBytes(reqId, hdr, 0);
 
-        U.intToBytes(cmd.ordinal(), hdr, 8);
+        IgniteByteUtils.intToBytes(cmd.ordinal(), hdr, 8);
 
         return hdr;
     }
@@ -151,10 +152,10 @@ public class IgfsMarshaller {
 
                     IgfsStreamControlRequest req = (IgfsStreamControlRequest)msg;
 
-                    U.longToBytes(req.streamId(), hdr, 12);
+                    IgniteByteUtils.longToBytes(req.streamId(), hdr, 12);
 
                     if (msg.command() == READ_BLOCK)
-                        U.intToBytes(req.length(), hdr, 20);
+                        IgniteByteUtils.intToBytes(req.length(), hdr, 20);
 
                     out.write(hdr);
 
@@ -268,10 +269,10 @@ public class IgfsMarshaller {
                 case WRITE_BLOCK: {
                     IgfsStreamControlRequest req = new IgfsStreamControlRequest();
 
-                    long streamId = U.bytesToLong(hdr, 12);
+                    long streamId = IgniteByteUtils.bytesToLong(hdr, 12);
 
                     req.streamId(streamId);
-                    req.length(U.bytesToInt(hdr, 20));
+                    req.length(IgniteByteUtils.bytesToInt(hdr, 20));
 
                     if (cmd == READ_BLOCK)
                         req.position(in.readLong());

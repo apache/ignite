@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -160,7 +161,7 @@ public class GridRestResponse implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(successStatus);
-        U.writeByteArray(out, sesTokBytes);
+        IgniteByteUtils.writeByteArray(out, sesTokBytes);
         U.writeString(out, sesTokStr);
         U.writeString(out, err);
         out.writeObject(obj);
@@ -169,7 +170,7 @@ public class GridRestResponse implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         successStatus = in.readInt();
-        sesTokBytes = U.readByteArray(in);
+        sesTokBytes = IgniteByteUtils.readByteArray(in);
         sesTokStr = U.readString(in);
         err = U.readString(in);
         obj = in.readObject();

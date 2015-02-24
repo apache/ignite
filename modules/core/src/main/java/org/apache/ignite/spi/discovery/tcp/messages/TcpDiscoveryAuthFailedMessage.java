@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -63,14 +64,14 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeByteArray(out, addr.getAddress());
+        IgniteByteUtils.writeByteArray(out, addr.getAddress());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        addr = InetAddress.getByAddress(U.readByteArray(in));
+        addr = InetAddress.getByAddress(IgniteByteUtils.readByteArray(in));
     }
 
     /** {@inheritDoc} */

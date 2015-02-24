@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -437,7 +438,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                             byte[] data = resPckt.getData();
 
-                            if (!U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length)) {
+                            if (!IgniteByteUtils.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length)) {
                                 U.error(log, "Failed to verify message header.");
 
                                 continue;
@@ -557,7 +558,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @throws IgniteCheckedException If unmarshalling failed.
          */
         private AddressResponse(byte[] data) throws IgniteCheckedException {
-            assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
+            assert IgniteByteUtils.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
             this.data = data;
 
@@ -705,7 +706,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                     sock.receive(pckt);
 
-                    if (!U.bytesEqual(U.IGNITE_HEADER, 0, reqData, 0, U.IGNITE_HEADER.length)) {
+                    if (!IgniteByteUtils.bytesEqual(U.IGNITE_HEADER, 0, reqData, 0, U.IGNITE_HEADER.length)) {
                         U.error(log, "Failed to verify message header.");
 
                         continue;

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.event.*;
@@ -575,7 +576,7 @@ public class VisorTaskUtils {
 
                 boolean zipped = buf.length > 512;
 
-                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? U.zipBytes(buf) : buf);
+                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? IgniteByteUtils.zipBytes(buf) : buf);
             }
         }
         finally {
