@@ -1006,7 +1006,7 @@ object visor extends VisorTag {
      * @param dflt Value to return if `arr` is `null` or empty.
      * @return String.
      */
-    def arr2Str[T: ClassTag](arr: Array[T], dflt: Any = ""): String = {
+    def arr2Str[T: ClassTag](arr: Array[T], dflt: Any = NA): String = {
         if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
     }
 
