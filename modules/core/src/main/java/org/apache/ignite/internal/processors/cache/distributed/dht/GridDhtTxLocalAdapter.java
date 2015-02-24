@@ -45,7 +45,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated user transaction.
  */
-public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K, V> {
+public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
