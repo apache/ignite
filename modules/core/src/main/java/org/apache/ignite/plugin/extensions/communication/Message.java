@@ -15,28 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
+import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
- * Message reader.
+ * Base class for all communication messages.
  */
-public interface GridNioMessageReader {
+public interface Message extends Serializable {
     /**
-     * @param nodeId Node ID.
-     * @param msg Message to read.
-     * @param buf Buffer.
-     * @return Whether message was fully read.
+     * Writes this message to provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @param writer Writer.
+     * @return Whether message was fully written.
      */
-    public boolean read(@Nullable UUID nodeId, Message msg, ByteBuffer buf);
+    public boolean writeTo(ByteBuffer buf, MessageWriter writer);
 
     /**
-     * @return Optional message factory.
+     * Reads this message from provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @param reader Reader.
+     * @return Whether message was fully read.
      */
-    @Nullable public MessageFactory messageFactory();
+    public boolean readFrom(ByteBuffer buf, MessageReader reader);
+
+    /**
+     * Gets message type.
+     *
+     * @return Message type.
+     */
+    public byte directType();
+
+    /**
+     * Gets fields count.
+     *
+     * @return Fields count.
+     */
+    public byte fieldsCount();
 }

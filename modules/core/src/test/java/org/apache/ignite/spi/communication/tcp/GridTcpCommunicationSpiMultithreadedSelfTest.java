@@ -61,7 +61,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** SPIs */
-    private static final Map<UUID, CommunicationSpi<MessageAdapter>> spis =
+    private static final Map<UUID, CommunicationSpi<Message>> spis =
         new ConcurrentHashMap<>();
 
     /** Listeners. */
@@ -74,8 +74,8 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     private static boolean reject;
 
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new GridTestMessage();
             }
         });
@@ -94,7 +94,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
      * Accumulating listener.
      */
     @SuppressWarnings({"deprecation"})
-    private static class MessageListener implements CommunicationListener<MessageAdapter> {
+    private static class MessageListener implements CommunicationListener<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;
 
@@ -114,7 +114,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             msgC.run();
 
             if (msg instanceof GridTestMessage) {
@@ -284,7 +284,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
                         try {
                             for (ClusterNode node : nodes) {
-                                MessageAdapter msg =
+                                Message msg =
                                     new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
                                 spis.get(from.id()).sendMessage(node, msg);
@@ -332,7 +332,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         fut2.get();
 
         // Wait when all messages are acknowledged to do not break next tests' logic.
-        for (CommunicationSpi<MessageAdapter> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             GridNioServer srv = U.field(spi, "nioSrvr");
 
             Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
@@ -377,7 +377,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
                     ClusterNode to = nodes.get(1);
 
-                    CommunicationSpi<MessageAdapter> spi = spis.get(from.id());
+                    CommunicationSpi<Message> spi = spis.get(from.id());
 
                     while (cntr.getAndIncrement() < msgCnt) {
                         GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
@@ -415,7 +415,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     /**
      * @return Spi.
      */
-    private CommunicationSpi<MessageAdapter> newCommunicationSpi() {
+    private CommunicationSpi<Message> newCommunicationSpi() {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         if (!useShmem)
@@ -446,7 +446,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < getSpiCount(); i++) {
-            CommunicationSpi<MessageAdapter> spi = newCommunicationSpi();
+            CommunicationSpi<Message> spi = newCommunicationSpi();
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
@@ -521,7 +521,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (CommunicationSpi<MessageAdapter> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

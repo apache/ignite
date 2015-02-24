@@ -155,11 +155,11 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -181,20 +181,23 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
                 candsBytes = reader.readByteArray("candsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 errBytes = reader.readByteArray("errBytes");
@@ -202,7 +205,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -212,6 +215,11 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 26;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 10;
     }
 
     /** {@inheritDoc} */

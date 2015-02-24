@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -53,26 +50,6 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
 
             @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                 // No-op.
-            }
-        };
-    }
-
-    /**
-     * Discovery SPI authenticator.
-     *
-     * @return Authenticator.
-     */
-    @GridSpiTestConfig
-    public DiscoverySpiNodeAuthenticator getAuthenticator() {
-        return new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                return new GridSecurityContext(subj);
-            }
-
-            @Override public boolean isGlobalNodeAuthentication() {
-                return false;
             }
         };
     }

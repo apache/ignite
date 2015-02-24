@@ -123,7 +123,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -217,7 +217,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -317,7 +317,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);

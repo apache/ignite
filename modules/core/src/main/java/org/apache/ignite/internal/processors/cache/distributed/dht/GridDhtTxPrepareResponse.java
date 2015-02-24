@@ -213,11 +213,11 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -228,7 +228,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
+                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -240,13 +240,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -257,28 +257,31 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 10:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
-                invalidParts = reader.readCollection("invalidParts", Type.INT);
+                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 miniId = reader.readIgniteUuid("miniId");
@@ -286,23 +289,23 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
-                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", Type.BYTE_ARR);
+                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -312,5 +315,10 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 35;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 15;
     }
 }

@@ -343,11 +343,11 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -370,7 +370,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -411,20 +411,23 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 22:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 23:
                 invalidateEntries = reader.readBitSet("invalidateEntries");
@@ -432,7 +435,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 24:
                 miniId = reader.readIgniteUuid("miniId");
@@ -440,15 +443,15 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 25:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
+                nearKeyBytes = reader.readCollection("nearKeyBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 26:
                 ownedBytes = reader.readByteArray("ownedBytes");
@@ -456,7 +459,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 27:
                 preloadKeys = reader.readBitSet("preloadKeys");
@@ -464,7 +467,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 28:
                 subjId = reader.readUuid("subjId");
@@ -472,7 +475,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 29:
                 taskNameHash = reader.readInt("taskNameHash");
@@ -480,7 +483,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 30:
                 topVer = reader.readLong("topVer");
@@ -488,7 +491,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -498,6 +501,11 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 30;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 31;
     }
 
     /** {@inheritDoc} */

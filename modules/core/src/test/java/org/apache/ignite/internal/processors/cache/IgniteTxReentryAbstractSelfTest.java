@@ -135,7 +135,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         private AtomicInteger dhtLocks = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             countMsg((GridIoMessage)msg);
 
