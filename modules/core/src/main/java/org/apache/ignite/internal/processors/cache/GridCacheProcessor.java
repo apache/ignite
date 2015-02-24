@@ -132,14 +132,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
                 aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction(false, 512);
+                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction(false, 512);
 
                 aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
 
@@ -152,8 +152,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                    CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
+                    CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
                         aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
