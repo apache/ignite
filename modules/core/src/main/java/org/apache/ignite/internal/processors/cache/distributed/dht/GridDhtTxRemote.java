@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 /**
  * Transaction created by system implicitly on remote nodes.
  */
-public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> {
+public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,7 +80,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxRemote(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -234,10 +234,10 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        for (Iterator<IgniteTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
-            IgniteTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
+            IgniteTxEntry e = it.next();
 
-            GridCacheEntryEx<K, V> cached = e.cached();
+            GridCacheEntryEx cached = e.cached();
 
             if (cached != null) {
                 if (cached.partition() == part)
@@ -253,7 +253,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void addWrite(IgniteTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
+    public void addWrite(IgniteTxEntry entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -300,7 +300,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
+        IgniteTxEntry txEntry = new IgniteTxEntry<>(cacheCtx,
             this,
             op,
             val,

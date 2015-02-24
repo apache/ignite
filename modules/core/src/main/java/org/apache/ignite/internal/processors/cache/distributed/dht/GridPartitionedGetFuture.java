@@ -233,7 +233,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -281,7 +281,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(CU.affinityNodes(cctx, topVer).size());
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings =
+            U.newHashMap(CU.affinityNodes(cctx, topVer).size());
 
         final int keysSize = keys.size();
 
@@ -324,7 +325,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
-                final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
+                final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     cache().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
@@ -358,8 +359,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
+                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>, Map<K, V>>() {
+                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
                         try {
                             return createResultMap(fut.get());
                         }
@@ -376,7 +377,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             else {
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
 
-                GridCacheMessage<K, V> req = new GridNearGetRequest<>(
+                GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
                     futId,
                     fut.futureId(),
@@ -425,7 +426,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
 
         while (true) {
-            GridCacheEntryEx<K, V> entry = null;
+            GridCacheEntryEx entry = null;
 
             try {
                 if (!reload && allowLocRead) {
@@ -437,7 +438,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(null,
+                            CacheObject v = entry.innerGet(null,
                                 /*swap*/true,
                                 /*read-through*/false,
                                 /*fail-fast*/true,
@@ -533,18 +534,18 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param infos Entry infos.
      * @return Result map.
      */
-    private Map<K, V> createResultMap(Collection<GridCacheEntryInfo<K, V>> infos) {
+    private Map<K, V> createResultMap(Collection<GridCacheEntryInfo> infos) {
         int keysSize = infos.size();
 
         try {
             if (keysSize != 0) {
                 Map<K, V> map = new GridLeanMap<>(keysSize);
 
-                for (GridCacheEntryInfo<K, V> info : infos) {
+                for (GridCacheEntryInfo info : infos) {
                     info.unmarshalValue(cctx, cctx.deploy().globalLoader());
 
-                    K key = info.key();
-                    V val = info.value();
+                    K key = info.key().value(cctx);
+                    V val = info.value().value(cctx);
 
                     if (cctx.portableEnabled()) {
                         key = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
@@ -667,7 +668,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param res Result callback.
          */
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        void onResult(final GridNearGetResponse<K, V> res) {
+        void onResult(final GridNearGetResponse res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
             // If error happened on remote node, fail the whole future.

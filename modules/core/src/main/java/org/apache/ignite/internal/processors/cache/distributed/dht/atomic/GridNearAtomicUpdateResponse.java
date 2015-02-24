@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
     /** Failed keys. */
     @GridToStringInclude
     @GridDirectTransient
-    private volatile Collection<K> failedKeys;
+    private volatile Collection<KeyCacheObject> failedKeys;
 
     /** Serialized failed keys. */
     private byte[] failedKeysBytes;
@@ -74,7 +74,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
     /** Keys that should be remapped. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> remapKeys;
+    private Collection<KeyCacheObject> remapKeys;
 
     /** Serialized keys that should be remapped. */
     private byte[] remapKeysBytes;
@@ -90,7 +90,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
     /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<V> nearVals;
+    private List<CacheObject> nearVals;
 
     /** Serialized values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
@@ -160,7 +160,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
     /**
      * @return Collection of failed keys.
      */
-    public Collection<K> failedKeys() {
+    public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
     }
 
@@ -181,14 +181,14 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
     /**
      * @param remapKeys Remap keys.
      */
-    public void remapKeys(Collection<K> remapKeys) {
+    public void remapKeys(Collection<KeyCacheObject> remapKeys) {
         this.remapKeys = remapKeys;
     }
 
     /**
      * @return Remap keys.
      */
-    public Collection<K> remapKeys() {
+    public Collection<KeyCacheObject> remapKeys() {
         return remapKeys;
     }
 
@@ -202,7 +202,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
      * @param expireTime Expire time for near cache update.
      */
     public void addNearValue(int keyIdx,
-        @Nullable V val,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
         long ttl,
         long expireTime) {
@@ -323,7 +323,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
      * @param idx Index.
      * @return Value generated on primary node which should be put to originating node's near cache.
      */
-    @Nullable public V nearValue(int idx) {
+    @Nullable public CacheObject nearValue(int idx) {
         return nearVals.get(idx);
     }
 
@@ -348,7 +348,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
      * @param key Key to add.
      * @param e Error cause.
      */
-    public synchronized void addFailedKey(K key, Throwable e) {
+    public synchronized void addFailedKey(KeyCacheObject key, Throwable e) {
         if (failedKeys == null)
             failedKeys = new ConcurrentLinkedQueue<>();
 
@@ -366,7 +366,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage impleme
      * @param keys Key to add.
      * @param e Error cause.
      */
-    public synchronized void addFailedKeys(Collection<K> keys, Throwable e) {
+    public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>(keys.size());
 

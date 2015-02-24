@@ -44,7 +44,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     private final IgniteInternalFuture finFut;
 
     /** Preload predicate. */
-    protected IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
      * @param cctx Cache context.
@@ -86,12 +86,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
         this.preloadPred = preloadPred;
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPredicate() {
+    @Override public IgnitePredicate<GridCacheEntryInfo> preloadPredicate() {
         return preloadPred;
     }
 
@@ -111,7 +111,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(Collection<? extends K> keys, long topVer) {
+    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, long topVer) {
         return new GridFinishedFuture<>(cctx.kernalContext());
     }
 

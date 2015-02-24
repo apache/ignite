@@ -146,7 +146,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                         }
 
                         // Removed exception may be thrown here.
-                        GridCacheMvccCandidate<K> cand = fut.addEntry(entry);
+                        GridCacheMvccCandidate cand = fut.addEntry(entry);
 
                         if (cand == null && fut.isDone())
                             return fut;
@@ -209,7 +209,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert false : "Should not be called";
     }
 

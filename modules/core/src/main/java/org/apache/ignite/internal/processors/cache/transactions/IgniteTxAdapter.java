@@ -426,11 +426,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      *
      * @return Store manager.
      */
-    protected GridCacheStoreManager<?, ?> store() {
+    protected GridCacheStoreManager store() {
         if (!activeCacheIds().isEmpty()) {
             int cacheId = F.first(activeCacheIds());
 
-            GridCacheStoreManager<?, ?> store = cctx.cacheContext(cacheId).store();
+            GridCacheStoreManager store = cctx.cacheContext(cacheId).store();
 
             return store.configured() ? store : null;
         }
@@ -1887,7 +1887,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext<?, ?> ctx,
+        @Nullable @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
             KeyCacheObject key,
             @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {

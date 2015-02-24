@@ -427,7 +427,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         // Allow to get cached value from the local node.
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
 
-        GridCacheEntryEx<K, V> entry = allowLocRead ? near.peekEx(key) : null;
+        GridCacheEntryEx entry = allowLocRead ? near.peekEx(key) : null;
 
         while (true) {
             try {

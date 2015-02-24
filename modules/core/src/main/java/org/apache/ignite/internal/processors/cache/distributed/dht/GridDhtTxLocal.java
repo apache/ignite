@@ -43,7 +43,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated user transaction.
  */
-public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements GridCacheMappedVersion {
+public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -96,7 +96,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxLocal(
-        GridCacheSharedContext<K, V> cctx,
+        GridCacheSharedContext cctx,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         IgniteUuid nearFutId,
@@ -247,7 +247,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @Override @Nullable protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        IgniteTxEntry<K, V> entry, long topVer) {
+        IgniteTxEntry entry, long topVer) {
         // Don't add local node as reader.
         if (!cctx.localNodeId().equals(nearNodeId)) {
             GridCacheContext<K, V> cacheCtx = cached.context();
@@ -269,14 +269,14 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateExplicitVersion(IgniteTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
+    @Override protected void updateExplicitVersion(IgniteTxEntry txEntry, GridCacheEntryEx entry)
         throws GridCacheEntryRemovedException {
         // DHT local transactions don't have explicit locks.
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
         if (optimistic()) {
             assert isSystemInvalidate();
 
@@ -363,19 +363,19 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync(
-        @Nullable Iterable<IgniteTxEntry<K, V>> reads,
-        @Nullable Iterable<IgniteTxEntry<K, V>> writes,
-        Map<IgniteTxKey<K>, GridCacheVersion> verMap,
+    public IgniteInternalFuture<IgniteInternalTx> prepareAsync(
+        @Nullable Iterable<IgniteTxEntry> reads,
+        @Nullable Iterable<IgniteTxEntry> writes,
+        Map<IgniteTxKey, GridCacheVersion> verMap,
         long msgId,
         IgniteUuid nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
         Collection<UUID> lastBackups,
-        IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
+        IgniteInClosure<GridNearTxPrepareResponse> completeCb
     ) {
         // In optimistic mode prepare still can be called explicitly from salvageTx.
-        GridDhtTxPrepareFuture<K, V> fut = prepFut.get();
+        GridDhtTxPrepareFuture fut = prepFut.get();
 
         if (fut == null) {
             init();
@@ -428,11 +428,11 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
         try {
             if (reads != null)
-                for (IgniteTxEntry<K, V> e : reads)
+                for (IgniteTxEntry e : reads)
                     addEntry(msgId, e);
 
             if (writes != null)
-                for (IgniteTxEntry<K, V> e : writes)
+                for (IgniteTxEntry e : writes)
                     addEntry(msgId, e);
 
             userPrepare();
@@ -509,8 +509,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
+                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
 
@@ -597,8 +597,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }

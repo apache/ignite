@@ -71,7 +71,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        Iterator<GridCacheEntryEx<K, V>> iter = cache.map().stripedEntryIterator(id, totalCnt);
+        Iterator<GridCacheEntryEx> iter = cache.map().stripedEntryIterator(id, totalCnt);
 
         while (iter.hasNext())
             clearEntry(iter.next());
@@ -131,7 +131,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      *
      * @param e Entry.
      */
-    protected void clearEntry(GridCacheEntryEx<K, V> e) {
+    protected void clearEntry(GridCacheEntryEx e) {
         try {
             e.clear(obsoleteVer, false, CU.<K, V>empty());
         }

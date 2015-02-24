@@ -37,7 +37,7 @@ import java.util.*;
  * Replicated cache entry.
  */
 @SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** Size overhead. */
     private static final int DHT_SIZE_OVERHEAD = 16;
 
@@ -50,10 +50,10 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** Reader clients. */
     @GridToStringInclude
-    private volatile ReaderId<K, V>[] rdrs = ReaderId.EMPTY_ARRAY;
+    private volatile ReaderId[] rdrs = ReaderId.EMPTY_ARRAY;
 
     /** Local partition. */
-    private final GridDhtLocalPartition<K, V> locPart;
+    private final GridDhtLocalPartition locPart;
 
     /**
      * @param ctx Cache context.
@@ -65,8 +65,15 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    public GridDhtCacheEntry(GridCacheContext<K, V> ctx, long topVer, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridDhtCacheEntry(GridCacheContext ctx,
+        long topVer,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, key, hash, val, next, ttl, hdrId);
 
         // Record this entry with partition.
@@ -113,14 +120,14 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Local candidate by near version.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> localCandidateByNearVersion(GridCacheVersion nearVer,
+    @Nullable public synchronized GridCacheMvccCandidate localCandidateByNearVersion(GridCacheVersion nearVer,
         boolean rmv) throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        GridCacheMvcc<K> mvcc = mvccExtras();
+        GridCacheMvcc mvcc = mvccExtras();
 
         if (mvcc != null) {
-            for (GridCacheMvccCandidate<K> c : mvcc.localCandidatesNoCopy(false)) {
+            for (GridCacheMvccCandidate c : mvcc.localCandidatesNoCopy(false)) {
                 GridCacheVersion ver = c.otherVersion();
 
                 if (ver != null && ver.equals(nearVer))
@@ -150,7 +157,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws GridDistributedLockCancelledException If lock was cancelled.
      */
-    @Nullable public GridCacheMvccCandidate<K> addDhtLocal(
+    @Nullable public GridCacheMvccCandidate addDhtLocal(
         UUID nearNodeId,
         GridCacheVersion nearVer,
         long topVer,
@@ -160,11 +167,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         boolean reenter,
         boolean tx,
         boolean implicitSingle) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
-        GridCacheMvccCandidate<K> cand;
-        GridCacheMvccCandidate<K> prev;
-        GridCacheMvccCandidate<K> owner;
+        GridCacheMvccCandidate cand;
+        GridCacheMvccCandidate prev;
+        GridCacheMvccCandidate owner;
 
-        V val;
+        CacheObject val;
 
         synchronized (this) {
             // Check removed locks prior to obsolete flag.
@@ -173,10 +180,10 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             checkObsolete();
 
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
-                mvcc = new GridCacheMvcc<>(cctx);
+                mvcc = new GridCacheMvcc(cctx);
 
                 mvccExtras(mvcc);
             }
@@ -229,10 +236,10 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteInternalTx tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
-            GridDhtTxLocalAdapter<K, V> dhtTx = (GridDhtTxLocalAdapter<K, V>)tx;
+            GridDhtTxLocalAdapter dhtTx = (GridDhtTxLocalAdapter)tx;
 
             // Null is returned if timeout is negative and there is other lock owner.
             return addDhtLocal(
@@ -269,8 +276,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate<K> removeLock() {
-        GridCacheMvccCandidate<K> ret = super.removeLock();
+    @Override public GridCacheMvccCandidate removeLock() {
+        GridCacheMvccCandidate ret = super.removeLock();
 
         locPart.onUnlock();
 
@@ -299,24 +306,25 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue(long topVer)
+    @Nullable public synchronized GridTuple3<GridCacheVersion, CacheObject, byte[]> versionedValue(long topVer)
         throws GridCacheEntryRemovedException {
         if (isNew() || !valid(-1) || deletedUnlocked())
             return null;
         else {
-            V val0 = null;
+            CacheObject val0 = null;
             byte[] valBytes0 = null;
 
-            GridCacheValueBytes valBytesTuple = valueBytesUnlocked();
-
-            if (!valBytesTuple.isNull()) {
-                if (valBytesTuple.isPlain())
-                    val0 = (V)valBytesTuple.get();
-                else
-                    valBytes0 = valBytesTuple.get();
-            }
-            else
-                val0 = val;
+// TODO IGNITE-51.
+//            GridCacheValueBytes valBytesTuple = valueBytesUnlocked();
+//
+//            if (!valBytesTuple.isNull()) {
+//                if (valBytesTuple.isPlain())
+//                    val0 = (V)valBytesTuple.get();
+//                else
+//                    valBytes0 = valBytesTuple.get();
+//            }
+//            else
+//                val0 = val;
 
             return F.t(ver, val0, valBytes0);
         }
@@ -334,12 +342,13 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param nodeId Node ID.
      * @return reader ID.
      */
-    @Nullable public ReaderId<K, V> readerId(UUID nodeId) {
-        ReaderId<K, V>[] rdrs = this.rdrs;
+    @Nullable public ReaderId readerId(UUID nodeId) {
+        ReaderId[] rdrs = this.rdrs;
 
-        for (ReaderId<K, V> reader : rdrs)
+        for (ReaderId reader : rdrs) {
             if (reader.nodeId().equals(nodeId))
                 return reader;
+        }
 
         return null;
     }
@@ -387,11 +396,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         boolean ret = false;
 
-        GridCacheMultiTxFuture<K, V> txFut = null;
+        GridCacheMultiTxFuture txFut = null;
 
-        Collection<GridCacheMvccCandidate<K>> cands = null;
+        Collection<GridCacheMvccCandidate> cands = null;
 
-        ReaderId<K, V> reader;
+        ReaderId reader;
 
         synchronized (this) {
             checkObsolete();
@@ -399,9 +408,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             reader = readerId(nodeId);
 
             if (reader == null) {
-                reader = new ReaderId<>(nodeId, msgId);
+                reader = new ReaderId(nodeId, msgId);
 
-                ReaderId<K, V>[] rdrs = Arrays.copyOf(this.rdrs, this.rdrs.length + 1);
+                ReaderId[] rdrs = Arrays.copyOf(this.rdrs, this.rdrs.length + 1);
 
                 rdrs[rdrs.length - 1] = reader;
 
@@ -431,8 +440,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             assert txFut != null;
 
             if (!F.isEmpty(cands)) {
-                for (GridCacheMvccCandidate<K> c : cands) {
-                    IgniteInternalTx<K, V> tx = cctx.tm().tx(c.version());
+                for (GridCacheMvccCandidate c : cands) {
+                    IgniteInternalTx tx = cctx.tm().tx(c.version());
 
                     if (tx != null) {
                         assert tx.local();
@@ -445,7 +454,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             txFut.init();
 
             if (!txFut.isDone()) {
-                final ReaderId<K, V> reader0 = reader;
+                final ReaderId reader0 = reader;
 
                 txFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
@@ -479,7 +488,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     public synchronized boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        ReaderId<K, V>[] rdrs = this.rdrs;
+        ReaderId[] rdrs = this.rdrs;
 
         int readerIdx = -1;
 
@@ -497,7 +506,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         if (rdrs.length == 1)
             this.rdrs = ReaderId.EMPTY_ARRAY;
         else {
-            ReaderId<K, V>[] newRdrs = Arrays.copyOf(rdrs, rdrs.length - 1);
+            ReaderId[] newRdrs = Arrays.copyOf(rdrs, rdrs.length - 1);
 
             System.arraycopy(rdrs, readerIdx + 1, newRdrs, readerIdx, rdrs.length - readerIdx - 1);
 
@@ -535,7 +544,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         try {
             synchronized (this) {
-                V prev = saveValueForIndexUnlocked();
+                CacheObject prev = saveValueForIndexUnlocked();
 
                 // Call markObsolete0 to avoid recursive calls to clear if
                 // we are clearing dht local partition (onMarkedObsolete should not be called).
@@ -578,7 +587,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    public synchronized Collection<ReaderId<K, V>> checkReaders() throws GridCacheEntryRemovedException {
+    public synchronized Collection<ReaderId> checkReaders() throws GridCacheEntryRemovedException {
         return checkReadersLocked();
     }
 
@@ -587,17 +596,17 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If removed.
      */
     @SuppressWarnings("unchecked")
-    protected Collection<ReaderId<K, V>> checkReadersLocked() throws GridCacheEntryRemovedException {
+    protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert Thread.holdsLock(this);
 
         checkObsolete();
 
-        ReaderId<K, V>[] rdrs = this.rdrs;
+        ReaderId[] rdrs = this.rdrs;
 
         if (rdrs.length == 0)
             return Collections.emptySet();
 
-        List<ReaderId<K, V>> newRdrs = null;
+        List<ReaderId> newRdrs = null;
 
         for (int i = 0; i < rdrs.length; i++) {
             if (!cctx.discovery().alive(rdrs[i].nodeId())) {
@@ -640,11 +649,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> mappings(GridCacheVersion ver)
+    @Nullable public synchronized GridCacheMvccCandidate mappings(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        GridCacheMvcc<K> mvcc = mvccExtras();
+        GridCacheMvcc mvcc = mvccExtras();
 
         return mvcc == null ? null : mvcc.candidate(ver);
     }
@@ -664,7 +673,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /**
      * Reader ID.
      */
-    private static class ReaderId<K, V> {
+    private static class ReaderId {
         /** */
         private static final ReaderId[] EMPTY_ARRAY = new ReaderId[0];
 
@@ -678,7 +687,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         private long msgId;
 
         /** Transaction future. */
-        private GridCacheMultiTxFuture<K, V> txFut;
+        private GridCacheMultiTxFuture txFut;
 
         /**
          * @param nodeId Node ID.
@@ -714,7 +723,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
          * @param cctx Cache context.
          * @return Transaction future.
          */
-        GridCacheMultiTxFuture<K, V> getOrCreateTxFuture(GridCacheContext<K, V> cctx) {
+        GridCacheMultiTxFuture getOrCreateTxFuture(GridCacheContext cctx) {
             if (txFut == null)
                 txFut = new GridCacheMultiTxFuture<>(cctx);
 
@@ -724,7 +733,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         /**
          * @return Transaction future.
          */
-        GridCacheMultiTxFuture<K, V> txFuture() {
+        GridCacheMultiTxFuture txFuture() {
             return txFut;
         }
 
@@ -733,8 +742,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
          *
          * @return Previous transaction future.
          */
-        GridCacheMultiTxFuture<K, V> resetTxFuture() {
-            GridCacheMultiTxFuture<K, V> txFut = this.txFut;
+        GridCacheMultiTxFuture resetTxFuture() {
+            GridCacheMultiTxFuture txFut = this.txFut;
 
             this.txFut = null;
 

@@ -125,7 +125,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param ver Version to remove.
      */
     public void removeVersionedEntry(K key, GridCacheVersion ver) {
-        GridCacheEntryEx<K, V> entry = peekEx(key);
+        GridCacheEntryEx entry = peekEx(key);
 
         if (entry == null)
             return;

@@ -40,10 +40,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Transactions to wait for. */
-    private final Set<IgniteInternalTx<K, V>> txs = new GridLeanSet<>();
+    private final Set<IgniteInternalTx> txs = new GridLeanSet<>();
 
     /** */
-    private Set<IgniteInternalTx<K, V>> remainingTxs;
+    private Set<IgniteInternalTx> remainingTxs;
 
     /** Logger. */
     private IgniteLogger log;
@@ -70,21 +70,21 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /**
      * @return Transactions to wait for.
      */
-    public Set<IgniteInternalTx<K, V>> txs() {
+    public Set<IgniteInternalTx> txs() {
         return txs;
     }
 
     /**
      * @return Remaining transactions.
      */
-    public Set<IgniteInternalTx<K, V>> remainingTxs() {
+    public Set<IgniteInternalTx> remainingTxs() {
         return remainingTxs;
     }
 
     /**
      * @param tx Transaction to add.
      */
-    public void addTx(IgniteInternalTx<K, V> tx) {
+    public void addTx(IgniteInternalTx tx) {
         txs.add(tx);
     }
 
@@ -100,7 +100,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
         else {
             remainingTxs = new GridConcurrentHashSet<>(txs);
 
-            for (final IgniteInternalTx<K, V> tx : txs) {
+            for (final IgniteInternalTx tx : txs) {
                 if (!tx.done()) {
                     tx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> t) {

@@ -55,7 +55,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     private ByteBuffer valBytes;
 
     /** Value. */
-    private V val;
+    private CacheObject val;
 
     /** Falg indicating that value is byte array, so valBytes should not be unmarshalled. */
     private boolean valIsByteArr;
@@ -195,16 +195,17 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
+    @Override public CacheObject value() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void value(V val) {
+    @Override public void value(CacheObject val) {
         this.val = val;
 
-        if (val instanceof byte[])
-            valBytes = null;
+// TODO IGNITE-51.
+//        if (val instanceof byte[])
+//            valBytes = null;
     }
 
     /** {@inheritDoc} */
@@ -294,7 +295,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
      * @param arr Entry bytes.
      * @return Entry.
      */
-    public static <T> GridCacheSwapEntryImpl<T> unmarshal(byte[] arr) {
+    public static GridCacheSwapEntryImpl unmarshal(byte[] arr) {
         long off = BYTE_ARR_OFF;
 
         long ttl = UNSAFE.getLong(arr, off);
@@ -329,7 +330,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         IgniteUuid keyClsLdrId = U.readGridUuid(arr, off);
 
-        return new GridCacheSwapEntryImpl<T>(ByteBuffer.wrap(valBytes),
+        return new GridCacheSwapEntryImpl(ByteBuffer.wrap(valBytes),
             valIsByteArr,
             ver,
             ttl,

@@ -358,7 +358,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     @SuppressWarnings({"unchecked"})
     public boolean loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends KeyCacheObject> keys,
-        final IgniteBiInClosure<Object, Object> vis) throws IgniteCheckedException {
+        final IgniteBiInClosure<KeyCacheObject, Object> vis) throws IgniteCheckedException {
         if (store != null) {
             loadAllFromStore(tx, keys, vis, null);
 
@@ -381,9 +381,9 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     private void loadAllFromStore(@Nullable IgniteInternalTx tx,
-        Collection<Object> keys,
-        @Nullable final IgniteBiInClosure<Object, Object> vis,
-        @Nullable final GridInClosure3<Object, Object, GridCacheVersion> verVis)
+        Collection<? extends KeyCacheObject> keys,
+        @Nullable final IgniteBiInClosure<KeyCacheObject, Object> vis,
+        @Nullable final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> verVis)
         throws IgniteCheckedException {
         assert vis != null ^ verVis != null;
         assert verVis == null || locStore;
@@ -492,7 +492,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    public boolean loadCache(final GridInClosure3<Object, Object, GridCacheVersion> vis, Object[] args)
+    public boolean loadCache(final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> vis, Object[] args)
         throws IgniteCheckedException {
         if (store != null) {
             if (log.isDebugEnabled())
@@ -515,7 +515,9 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                         else
                             v = o;
 
-                        vis.apply(k, v, ver);
+                        KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
+
+                        vis.apply(cacheKey, v, ver);
                     }
                 }, args);
             }

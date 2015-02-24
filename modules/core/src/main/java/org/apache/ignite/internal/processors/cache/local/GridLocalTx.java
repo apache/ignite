@@ -74,7 +74,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         GridLocalTxFuture<K, V> fut = this.fut.get();
 
         return fut != null && fut.onOwnerChanged(entry, owner);
@@ -107,11 +107,11 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
         try {
             prepare();
 
-            return new GridFinishedFuture<IgniteInternalTx<K, V>>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

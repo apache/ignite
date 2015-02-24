@@ -282,7 +282,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @return {@code True} if locked.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
+    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check (If filter failed, lock is failed).
         return cached.lockedLocallyByIdOrThread(lockVer, threadId) && filter(cached);
     }
@@ -296,14 +296,14 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable private GridCacheMvccCandidate<K> addEntry(long topVer, GridNearCacheEntry<K, V> entry, UUID dhtNodeId)
+    @Nullable private GridCacheMvccCandidate addEntry(long topVer, GridNearCacheEntry<K, V> entry, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         // Check if lock acquisition is timed out.
         if (timedOut)
             return null;
 
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
-        GridCacheMvccCandidate<K> c = entry.addNearLocal(
+        GridCacheMvccCandidate c = entry.addNearLocal(
             dhtNodeId,
             threadId,
             lockVer,
@@ -314,7 +314,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            IgniteTxEntry<K, V> txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -364,7 +364,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
 
-            for (GridCacheEntryEx<K, V> e : entriesCopy()) {
+            for (GridCacheEntryEx e : entriesCopy()) {
                 try {
                     e.removeLock(lockVer);
                 }
@@ -490,7 +490,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param cached Entry to check.
      * @return {@code True} if filter passed.
      */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
+    private boolean filter(GridCacheEntryEx cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
                 if (log.isDebugEnabled())
@@ -515,7 +515,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      *
      * @param entry Entry whose lock ownership changed.
      */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (owner != null && owner.version().equals(lockVer)) {
             onDone(true);
 
@@ -532,7 +532,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         if (!isDone() && initialized() && !hasPending()) {
             for (int i = 0; i < entries.size(); i++) {
                 while (true) {
-                    GridCacheEntryEx<K, V> cached = entries.get(i);
+                    GridCacheEntryEx cached = entries.get(i);
 
                     try {
                         if (!locked(cached)) {
@@ -805,7 +805,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             }
 
                             // Removed exception may be thrown here.
-                            GridCacheMvccCandidate<K> cand = addEntry(topVer, entry, node.id());
+                            GridCacheMvccCandidate cand = addEntry(topVer, entry, node.id());
 
                             if (isDone()) {
                                 if (log.isDebugEnabled())

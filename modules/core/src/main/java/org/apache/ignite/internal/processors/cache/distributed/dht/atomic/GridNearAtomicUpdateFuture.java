@@ -107,7 +107,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private final boolean retval;
 
     /** Cached entry if keys size is 1. */
-    private GridCacheEntryEx<K, V> cached;
+    private GridCacheEntryEx cached;
 
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
@@ -196,7 +196,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx<K, V> cached,
+        @Nullable GridCacheEntryEx cached,
         @Nullable ExpiryPolicy expiryPlc,
         final IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,

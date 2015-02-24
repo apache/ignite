@@ -93,7 +93,7 @@ public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeEntry(GridCacheEntryEx<K, V> e) {
+    @Override public boolean removeEntry(GridCacheEntryEx e) {
         throw new AssertionError();
     }
 

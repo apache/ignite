@@ -351,7 +351,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If storing value failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public <K, V> GridCacheUpdateTxResult<CacheObject> innerSet(
+    public GridCacheUpdateTxResult innerSet(
         @Nullable IgniteInternalTx tx,
         UUID evtNodeId,
         UUID affNodeId,
@@ -363,7 +363,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -390,7 +390,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If remove failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public <K, V> GridCacheUpdateTxResult<CacheObject> innerRemove(
+    public GridCacheUpdateTxResult innerRemove(
         @Nullable IgniteInternalTx tx,
         UUID evtNodeId,
         UUID affNodeId,
@@ -399,7 +399,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
@@ -485,7 +485,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public <K, V> GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> innerUpdateLocal(
+    public GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -495,7 +495,7 @@ public interface GridCacheEntryEx {
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
@@ -627,20 +627,6 @@ public interface GridCacheEntryEx {
      */
     @Nullable public <K, V> CacheObject peek(Collection<GridCachePeekMode> modes,
         IgnitePredicate<Cache.Entry<K, V>>... filter) throws GridCacheEntryRemovedException;
-
-    /**
-     * Peeks into entry without loading value or updating statistics.
-     *
-     * @param mode Peek mode.
-     * @param filter Optional filter.
-     * @return Value.
-     * @throws GridCacheEntryRemovedException If entry has been removed.
-     * @throws GridCacheFilterFailedException If {@code failFast} is {@code true} and
-     *      filter didn't pass.
-     */
-    @Nullable public <K, V> CacheObject peekFailFast(GridCachePeekMode mode,
-        IgnitePredicate<Cache.Entry<K, V>>... filter)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
      * @param failFast Fail-fast flag.

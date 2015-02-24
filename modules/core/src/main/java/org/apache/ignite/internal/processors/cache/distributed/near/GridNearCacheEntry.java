@@ -312,7 +312,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
+    @Override protected V readThrough(IgniteInternalTx tx, K key, boolean reload,
         UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
@@ -415,7 +415,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate<K> addLocal(
+    @Override public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         long timeout,
@@ -446,7 +446,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public GridCacheMvccCandidate<K> addNearLocal(
+    @Nullable public GridCacheMvccCandidate addNearLocal(
         @Nullable UUID dhtNodeId,
         long threadId,
         GridCacheVersion ver,
@@ -455,9 +455,9 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         boolean tx,
         boolean implicitSingle)
         throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev;
-        GridCacheMvccCandidate<K> owner;
-        GridCacheMvccCandidate<K> cand;
+        GridCacheMvccCandidate prev;
+        GridCacheMvccCandidate owner;
+        GridCacheMvccCandidate cand;
 
         V val;
 
@@ -466,7 +466,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         synchronized (this) {
             checkObsolete();
 
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
                 mvcc = new GridCacheMvcc<>(cctx);
@@ -474,7 +474,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                 mvccExtras(mvcc);
             }
 
-            GridCacheMvccCandidate<K> c = mvcc.localCandidate(locId, threadId);
+            GridCacheMvccCandidate c = mvcc.localCandidate(locId, threadId);
 
             if (c != null)
                 return reenter ? c.reenter() : null;
@@ -514,13 +514,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return {@code true} if candidate was found.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
+    @Nullable public synchronized GridCacheMvccCandidate dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        GridCacheMvcc<K> mvcc = mvccExtras();
+        GridCacheMvcc mvcc = mvccExtras();
 
-        GridCacheMvccCandidate<K> cand = mvcc == null ? null : mvcc.candidate(ver);
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
 
         if (cand == null)
             return null;
@@ -535,18 +535,18 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      *
      * @return Removed candidate, or <tt>null</tt> if thread still holds the lock.
      */
-    @Nullable @Override public GridCacheMvccCandidate<K> removeLock() {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+    @Nullable @Override public GridCacheMvccCandidate removeLock() {
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
         V val;
 
         UUID locId = cctx.nodeId();
 
-        GridCacheMvccCandidate<K> cand = null;
+        GridCacheMvccCandidate cand = null;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.anyOwner();
@@ -559,7 +559,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 if (cand != null && cand.owner()) {
                     // If a reentry, then release reentry. Otherwise, remove lock.
-                    GridCacheMvccCandidate<K> reentry = cand.unenter();
+                    GridCacheMvccCandidate reentry = cand.unenter();
 
                     if (reentry != null) {
                         assert reentry.reentry();

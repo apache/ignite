@@ -122,8 +122,15 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param preload Whether update happened during preloading.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onEntryUpdated(GridCacheEntryEx e, K key, V newVal, GridCacheValueBytes newBytes,
-        V oldVal, GridCacheValueBytes oldBytes, boolean preload) throws IgniteCheckedException {
+    public void onEntryUpdated(GridCacheEntryEx e,
+        KeyCacheObject key,
+        CacheObject newVal,
+        GridCacheValueBytes newBytes,
+        CacheObject oldVal,
+        GridCacheValueBytes oldBytes,
+        boolean preload)
+        throws IgniteCheckedException
+    {
         assert e != null;
         assert key != null;
 
@@ -190,7 +197,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param oldBytes Old value bytes.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onEntryExpired(GridCacheEntryEx e, K key, V oldVal, GridCacheValueBytes oldBytes)
+    public void onEntryExpired(GridCacheEntryEx e, KeyCacheObject key, CacheObject oldVal, GridCacheValueBytes oldBytes)
         throws IgniteCheckedException {
         assert e != null;
         assert key != null;

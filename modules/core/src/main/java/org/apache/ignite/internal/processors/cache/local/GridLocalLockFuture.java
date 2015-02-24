@@ -203,7 +203,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @return {@code True} if locked.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
+    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check.
         return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId))) &&
             filter(cached); // If filter failed, lock is failed.
@@ -216,10 +216,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable GridCacheMvccCandidate<K> addEntry(GridLocalCacheEntry<K, V> entry)
+    @Nullable GridCacheMvccCandidate addEntry(GridLocalCacheEntry<K, V> entry)
         throws GridCacheEntryRemovedException {
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
-        GridCacheMvccCandidate<K> c = entry.addLocal(
+        GridCacheMvccCandidate c = entry.addLocal(
             threadId,
             lockVer,
             timeout,
@@ -283,7 +283,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param cached Entry to check.
      * @return {@code True} if filter passed.
      */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
+    private boolean filter(GridCacheEntryEx cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
                 if (log.isDebugEnabled())
@@ -310,7 +310,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         if (!isDone()) {
             for (int i = 0; i < entries.size(); i++) {
                 while (true) {
-                    GridCacheEntryEx<K, V> cached = entries.get(i);
+                    GridCacheEntryEx cached = entries.get(i);
 
                     try {
                         if (!locked(cached))
@@ -338,11 +338,11 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (!isDone()) {
             for (int i = 0; i < entries.size(); i++) {
                 while (true) {
-                    GridCacheEntryEx<K, V> cached = entries.get(i);
+                    GridCacheEntryEx cached = entries.get(i);
 
                     try {
                         if (!locked(cached))

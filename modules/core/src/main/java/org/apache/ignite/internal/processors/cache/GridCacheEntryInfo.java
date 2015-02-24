@@ -199,19 +199,20 @@ public class GridCacheEntryInfo implements Externalizable {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        boolean depEnabled = ctx.gridDeploy().enabled();
-
-        boolean valIsByteArr = val != null && val instanceof byte[];
-
-        if (keyBytes == null && depEnabled)
-            keyBytes = CU.marshal(ctx, key);
-
-        keyBytesSent = depEnabled || key == null;
-
-        if (valBytes == null && val != null && !valIsByteArr)
-            valBytes = CU.marshal(ctx, val);
-
-        valBytesSent = (valBytes != null && !valIsByteArr) || val == null;
+// TODO IGNITE-51
+//        boolean depEnabled = ctx.gridDeploy().enabled();
+//
+//        boolean valIsByteArr = val != null && val instanceof byte[];
+//
+//        if (keyBytes == null && depEnabled)
+//            keyBytes = CU.marshal(ctx, key);
+//
+//        keyBytesSent = depEnabled || key == null;
+//
+//        if (valBytes == null && val != null && !valIsByteArr)
+//            valBytes = CU.marshal(ctx, val);
+//
+//        valBytesSent = (valBytes != null && !valIsByteArr) || val == null;
     }
 
     /**
@@ -221,7 +222,7 @@ public class GridCacheEntryInfo implements Externalizable {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+    public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
         Marshaller mrsh = ctx.marshaller();
 
         if (key == null)
@@ -233,77 +234,79 @@ public class GridCacheEntryInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
-        out.writeBoolean(keyBytesSent);
-        out.writeBoolean(valBytesSent);
-
-        if (keyBytesSent)
-            U.writeByteArray(out, keyBytes);
-        else
-            out.writeObject(key);
-
-        if (valBytesSent)
-            U.writeByteArray(out, valBytes);
-        else {
-            if (val != null && val instanceof byte[]) {
-                out.writeBoolean(true);
-
-                U.writeByteArray(out, (byte[])val);
-            }
-            else {
-                out.writeBoolean(false);
-
-                out.writeObject(val);
-            }
-        }
-
-        out.writeLong(ttl);
-
-        long remaining;
-
-        // 0 means never expires.
-        if (expireTime == 0)
-            remaining = -1;
-        else {
-            remaining = expireTime - U.currentTimeMillis();
-
-            if (remaining < 0)
-                remaining = 0;
-        }
-
-        // Write remaining time.
-        out.writeLong(remaining);
-
-        CU.writeVersion(out, ver);
+// TODO IGNITE-51.
+//        out.writeInt(cacheId);
+//        out.writeBoolean(keyBytesSent);
+//        out.writeBoolean(valBytesSent);
+//
+//        if (keyBytesSent)
+//            U.writeByteArray(out, keyBytes);
+//        else
+//            out.writeObject(key);
+//
+//        if (valBytesSent)
+//            U.writeByteArray(out, valBytes);
+//        else {
+//            if (val != null && val instanceof byte[]) {
+//                out.writeBoolean(true);
+//
+//                U.writeByteArray(out, (byte[])val);
+//            }
+//            else {
+//                out.writeBoolean(false);
+//
+//                out.writeObject(val);
+//            }
+//        }
+//
+//        out.writeLong(ttl);
+//
+//        long remaining;
+//
+//        // 0 means never expires.
+//        if (expireTime == 0)
+//            remaining = -1;
+//        else {
+//            remaining = expireTime - U.currentTimeMillis();
+//
+//            if (remaining < 0)
+//                remaining = 0;
+//        }
+//
+//        // Write remaining time.
+//        out.writeLong(remaining);
+//
+//        CU.writeVersion(out, ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
-        keyBytesSent = in.readBoolean();
-        valBytesSent = in.readBoolean();
-
-        if (keyBytesSent)
-            keyBytes = U.readByteArray(in);
-        else
-            key = (K)in.readObject();
-
-        if (valBytesSent)
-            valBytes = U.readByteArray(in);
-        else
-            val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
-
-        ttl = in.readLong();
-
-        long remaining = in.readLong();
-
-        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
-
-        // Account for overflow.
-        if (expireTime < 0)
-            expireTime = 0;
-
-        ver = CU.readVersion(in);
+// TODO IGNITE-51.
+//        cacheId = in.readInt();
+//        keyBytesSent = in.readBoolean();
+//        valBytesSent = in.readBoolean();
+//
+//        if (keyBytesSent)
+//            keyBytes = U.readByteArray(in);
+//        else
+//            key = (K)in.readObject();
+//
+//        if (valBytesSent)
+//            valBytes = U.readByteArray(in);
+//        else
+//            val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+//
+//        ttl = in.readLong();
+//
+//        long remaining = in.readLong();
+//
+//        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
+//
+//        // Account for overflow.
+//        if (expireTime < 0)
+//            expireTime = 0;
+//
+//        ver = CU.readVersion(in);
     }
 
     /** {@inheritDoc} */
