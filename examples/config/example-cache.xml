@@ -151,14 +151,13 @@
 
         <property name="indexedTypes">
             <list>
-                <bean class="org.apache.ignite.lang.IgniteBiTuple">
-                    <constructor-arg index="0" value="java.util.UUID"/>
-                    <constructor-arg index="1" value="org.apache.ignite.examples.datagrid.CacheQueryExample.Organization"/>
-                </bean>
-                <bean class="org.apache.ignite.lang.IgniteBiTuple">
-                    <constructor-arg index="0" value="java.util.UUID"/>
-                    <constructor-arg index="1" value="org.apache.ignite.examples.datagrid.CacheQueryExample.Person"/>
-                </bean>
+                <!-- Key and value type for SQL table Organization. -->
+                <value>java.util.UUID</value>
+                <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Organization</value>
+
+                <!-- Key and value type for SQL table Person. -->
+                <value>java.util.UUID</value>
+                <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Person</value>
             </list>
         </property>
     </bean>

@@ -130,14 +130,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(ccfg.getIndexedTypes())) {
-            for (IgniteBiTuple<Class<?>,Class<?>> types : ccfg.getIndexedTypes()) {
-                TypeDescriptor desc = processKeyAndValue(ccfg, types.getKey(), types.getValue(),
-                    declaredTypes);
+        Class<?>[] clss = ccfg.getIndexedTypes();
+
+        if (!F.isEmpty(clss)) {
+            for (int i = 0; i < clss.length; i += 2) {
+                Class<?> keyCls = clss[i];
+                Class<?> valCls = clss[i + 1];
+
+                TypeDescriptor desc = processKeyAndValueClasses(ccfg, keyCls, valCls, declaredTypes);
 
                 desc.registered(idx.registerType(ccfg.getName(), desc));
 
                 typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
+                types.put(new TypeId(ccfg.getName(), valCls), desc);
             }
         }
     }
@@ -150,7 +155,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private TypeDescriptor processKeyAndValue(CacheConfiguration<?,?> ccfg, Class<?> keyCls, Class<?> valCls,
+    private TypeDescriptor processKeyAndValueClasses(CacheConfiguration<?,?> ccfg, Class<?> keyCls, Class<?> valCls,
         Map<TypeName,CacheTypeMetadata> declaredTypes)
         throws IgniteCheckedException {
         TypeDescriptor d = new TypeDescriptor(ccfg);

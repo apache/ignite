@@ -25,7 +25,6 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -330,7 +329,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean sqlEscapeAll;
 
     /** */
-    private IgniteBiTuple<Class<?>,Class<?>>[] indexedTypes;
+    private Class<?>[] indexedTypes;
 
     /** */
     private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
@@ -1652,19 +1651,35 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
      *
      * @return Key and value type pairs.
      */
-    public IgniteBiTuple<Class<?>,Class<?>>[] getIndexedTypes() {
+    public Class<?>[] getIndexedTypes() {
         return indexedTypes;
     }
 
     /**
      * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
      *
      * @param indexedTypes Key and value type pairs.
      */
-    public void setIndexedTypes(IgniteBiTuple<Class<?>,Class<?>>... indexedTypes) {
+    public void setIndexedTypes(Class<?>... indexedTypes) {
         this.indexedTypes = indexedTypes;
     }
 

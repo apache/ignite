@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -77,8 +76,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setSwapEnabled(false);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
         cc.setIndexedTypes(
-            F.<Class<?>,Class<?>>t(String.class, Address.class),
-            F.<Class<?>,Class<?>>t(String.class, Person.class));
+            String.class, Address.class,
+            String.class, Person.class
+        );
 
         c.setCacheConfiguration(cc);
 
@@ -90,11 +90,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         ignite = startGrid();
-
-        GridCache cache = ((IgniteKernal)ignite).cache(null);
-
-        cache.putx("testAddr", new Address());
-        cache.putx("testPerson", new Person());
     }
 
     /**
