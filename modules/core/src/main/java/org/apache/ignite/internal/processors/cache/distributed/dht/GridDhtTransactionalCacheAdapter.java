@@ -707,7 +707,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = ctx.tm().tx(dhtVer);
                         }
 
-                        final List<GridCacheEntryEx<K, V>> entries = new ArrayList<>(cnt);
+                        final List<GridCacheEntryEx> entries = new ArrayList<>(cnt);
 
                         // Unmarshal filter first.
                         if (filter == null)
@@ -948,7 +948,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private GridNearLockResponse<K, V> createLockReply(
         ClusterNode nearNode,
-        List<GridCacheEntryEx<K, V>> entries,
+        List<GridCacheEntryEx> entries,
         GridNearLockRequest<K, V> req,
         @Nullable GridDhtTxLocalAdapter<K,V> tx,
         GridCacheVersion mappedVer,
@@ -971,8 +971,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 int i = 0;
 
-                for (ListIterator<GridCacheEntryEx<K, V>> it = entries.listIterator(); it.hasNext();) {
-                    GridCacheEntryEx<K, V> e = it.next();
+                for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext();) {
+                    GridCacheEntryEx e = it.next();
 
                     assert e != null;
 
@@ -1014,7 +1014,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     boolean filterPassed = false;
 
                                     if (tx != null && tx.onePhaseCommit()) {
-                                        IgniteTxEntry<K, V> writeEntry = tx.entry(ctx.txKey(e.key()));
+                                        IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
 
                                         assert writeEntry != null :
                                             "Missing tx entry for locked cache entry: " + e;
@@ -1118,11 +1118,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx<K, V>> entries,
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx> entries,
         GridCacheVersion baseVer) {
         Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
 
-        for (GridCacheEntryEx<K, V> entry : entries) {
+        for (GridCacheEntryEx entry : entries) {
             // Since entries were collected before locks are added, some of them may become obsolete.
             while (true) {
                 try {
@@ -1277,7 +1277,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
-    private void map(GridCacheEntryEx<K, V> entry,
+    private void map(GridCacheEntryEx entry,
         @Nullable Iterable<? extends ClusterNode> nodes,
         Map<ClusterNode, List<T2<K, byte[]>>> map) throws IgniteCheckedException {
         if (nodes != null) {
@@ -1326,7 +1326,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
 
                 try {
-                    GridCacheMvccCandidate<K> cand = null;
+                    GridCacheMvccCandidate cand = null;
 
                     if (dhtVer == null) {
                         cand = entry.localCandidateByNearVersion(ver, true);
@@ -1465,7 +1465,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If invalidate failed.
      */
     private void invalidateNearEntry(K key, GridCacheVersion ver) throws IgniteCheckedException {
-        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+        GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
             nearEntry.invalidate(null, ver);
@@ -1476,7 +1476,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param ver Version.
      */
     private void obsoleteNearEntry(K key, GridCacheVersion ver) {
-        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+        GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
             nearEntry.markObsolete(ver);

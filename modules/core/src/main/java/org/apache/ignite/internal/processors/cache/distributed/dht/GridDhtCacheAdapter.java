@@ -300,7 +300,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx<K, V> entryEx(K key, boolean touch) throws GridDhtInvalidPartitionException {
+    @Override public GridCacheEntryEx entryEx(K key, boolean touch) throws GridDhtInvalidPartitionException {
         return super.entryEx(key, touch);
     }
 
@@ -309,7 +309,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx<K, V> entryEx(K key, long topVer) throws GridDhtInvalidPartitionException {
+    @Override public GridCacheEntryEx entryEx(K key, long topVer) throws GridDhtInvalidPartitionException {
         return super.entryEx(key, topVer);
     }
 
@@ -344,7 +344,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridDhtInvalidPartitionException if entry does not belong to this node and
      *      {@code allowDetached} is {@code false}.
      */
-    public GridCacheEntryEx<K, V> entryExx(K key, long topVer, boolean allowDetached, boolean touch) {
+    public GridCacheEntryEx entryExx(K key, long topVer, boolean allowDetached, boolean touch) {
         try {
             return allowDetached && !ctx.affinity().localNode(key, topVer) ?
                 new GridDhtDetachedCacheEntry<>(ctx, key, key.hashCode(), null, null, 0, 0) :
@@ -437,7 +437,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             // Reserve to make sure that partition does not get unloaded.
             if (part.reserve()) {
-                GridCacheEntryEx<K, V> entry = null;
+                GridCacheEntryEx entry = null;
 
                 try {
                     long ttl = CU.ttlForLoad(plc);
@@ -504,10 +504,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@inheritDoc}
      */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        @Nullable Collection<? extends K> keys,
+        @Nullable Collection<? extends KeyCacheObject> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -777,7 +777,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (int i = 0; i < size; i++) {
             try {
-                GridCacheEntryEx<K, V> entry = null;
+                GridCacheEntryEx entry = null;
 
                 try {
                     if (swap) {
@@ -908,7 +908,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry.isDht();
 
         GridDhtLocalPartition<K, V> part = topology().localPartition(entry.partition(), -1, false);
@@ -940,8 +940,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             final Iterator<GridDhtLocalPartition<K, V>> partIt = topology().currentLocalPartitions().iterator();
 
-            Iterator<GridCacheEntryEx<K, V>> it = new Iterator<GridCacheEntryEx<K, V>>() {
-                private GridCacheEntryEx<K, V> next;
+            Iterator<GridCacheEntryEx> it = new Iterator<GridCacheEntryEx>() {
+                private GridCacheEntryEx next;
 
                 private Iterator<GridDhtCacheEntry<K, V>> curIt;
 
@@ -953,11 +953,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     return next != null;
                 }
 
-                @Override public GridCacheEntryEx<K, V> next() {
+                @Override public GridCacheEntryEx next() {
                     if (next == null)
                         throw new NoSuchElementException();
 
-                    GridCacheEntryEx<K, V> e = next;
+                    GridCacheEntryEx e = next;
 
                     advance();
 

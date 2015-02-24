@@ -198,7 +198,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param key Key.
      * @return Partition.
      */
-    public <T> int partition(T key) {
+    public <T> int partition(Object key) {
         return aff.partition(key);
     }
 
@@ -228,7 +228,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Primary node for given key.
      */
-    @Nullable public ClusterNode primary(K key, long topVer) {
+    @Nullable public ClusterNode primary(Object key, long topVer) {
         return primary(partition(key), topVer);
     }
 
@@ -252,7 +252,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code True} if checked node is primary for given key.
      */
-    public boolean primary(ClusterNode n, K key, long topVer) {
+    public boolean primary(ClusterNode n, Object key, long topVer) {
         return F.eq(primary(key, topVer), n);
     }
 
@@ -271,7 +271,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Backup nodes.
      */
-    public Collection<ClusterNode> backups(K key, long topVer) {
+    public Collection<ClusterNode> backups(Object key, long topVer) {
         return backups(partition(key), topVer);
     }
 
@@ -310,7 +310,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code true} if given key belongs to local node.
      */
-    public boolean localNode(K key, long topVer) {
+    public boolean localNode(Object key, long topVer) {
         return localNode(partition(key), topVer);
     }
 

@@ -224,12 +224,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (error() instanceof IgniteTxHeuristicCheckedException) {
                     long topVer = this.tx.topologyVersion();
 
-                    for (IgniteTxEntry<K, V> e : this.tx.writeMap().values()) {
+                    for (IgniteTxEntry e : this.tx.writeMap().values()) {
                         GridCacheContext<K, V> cacheCtx = e.context();
 
                         try {
                             if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
-                                GridCacheEntryEx<K, V> Entry = cacheCtx.cache().peekEx(e.key());
+                                GridCacheEntryEx Entry = cacheCtx.cache().peekEx(e.key());
 
                                 if (Entry != null)
                                     Entry.invalidate(null, this.tx.xidVersion());

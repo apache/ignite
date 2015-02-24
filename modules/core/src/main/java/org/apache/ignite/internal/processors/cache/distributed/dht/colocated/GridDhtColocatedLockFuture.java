@@ -264,11 +264,11 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      *      implicit transaction accesses locked entry.
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
-    @Nullable private GridCacheMvccCandidate<K> addEntry(GridDistributedCacheEntry<K, V> entry) throws IgniteCheckedException {
-        GridCacheMvccCandidate<K> cand = cctx.mvcc().explicitLock(threadId, entry.key());
+    @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry<K, V> entry) throws IgniteCheckedException {
+        GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, entry.key());
 
         if (inTx()) {
-            IgniteTxEntry<K, V> txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
 
@@ -684,7 +684,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             assert loc ^ entry.detached() : "Invalid entry [loc=" + loc + ", entry=" + entry + ']';
 
-                            GridCacheMvccCandidate<K> cand = addEntry(entry);
+                            GridCacheMvccCandidate cand = addEntry(entry);
 
                             // Will either return value from dht cache or null if this is a miss.
                             GridTuple3<GridCacheVersion, V, byte[]> val = entry.detached() ? null :
@@ -1006,7 +1006,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             return false;
         }
 
-        GridCacheMvccCandidate<K> cand = addEntry(entry);
+        GridCacheMvccCandidate cand = addEntry(entry);
 
         if (cand != null && !cand.reentry())
             distributedKeys.add(key);
@@ -1225,7 +1225,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     }
 
                     if (inTx()) {
-                        IgniteTxEntry<K, V> txEntry = tx.entry(cctx.txKey(k));
+                        IgniteTxEntry txEntry = tx.entry(cctx.txKey(k));
 
                         // In colocated cache we must receive responses only for detached entries.
                         assert txEntry.cached().detached();

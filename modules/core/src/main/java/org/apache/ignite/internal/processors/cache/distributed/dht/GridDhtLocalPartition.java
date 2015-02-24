@@ -68,7 +68,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     private final GridFutureAdapter<?> rent;
 
     /** Entries map. */
-    private final ConcurrentMap<K, GridDhtCacheEntry<K, V>> map;
+    private final ConcurrentMap<K, GridDhtCacheEntry> map;
 
     /** Context. */
     private final GridCacheContext<K, V> cctx;
@@ -78,7 +78,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     private final long createTime = U.currentTimeMillis();
 
     /** Eviction history. */
-    private volatile Map<K, GridCacheVersion> evictHist = new HashMap<>();
+    private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
 
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
@@ -267,7 +267,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
      * @param key Key.
      * @param ver Version.
      */
-    public void onEntryEvicted(K key, GridCacheVersion ver) {
+    public void onEntryEvicted(KeyCacheObject key, GridCacheVersion ver) {
         assert key != null;
         assert ver != null;
         assert lock.isHeldByCurrentThread(); // Only one thread can enter this method at a time.
@@ -275,7 +275,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         if (state() != MOVING)
             return;
 
-        Map<K, GridCacheVersion> evictHist0 = evictHist;
+        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
 
         if (evictHist0 != null ) {
             GridCacheVersion ver0 = evictHist0.get(key);
@@ -303,7 +303,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         if (state() != MOVING)
             return false;
 
-        Map<K, GridCacheVersion> evictHist0 = evictHist;
+        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
 
         if (evictHist0 != null)  {
             GridCacheVersion ver0 = evictHist0.get(key);

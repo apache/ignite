@@ -157,7 +157,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        IgniteInternalTx<K, V> tx = (IgniteInternalTx<K, V>)cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +

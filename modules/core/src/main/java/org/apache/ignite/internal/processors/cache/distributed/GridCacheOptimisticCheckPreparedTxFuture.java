@@ -56,7 +56,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
-    private final IgniteInternalTx<K, V> tx;
+    private final IgniteInternalTx tx;
 
     /** All involved nodes. */
     private final Map<UUID, ClusterNode> nodes;
@@ -77,7 +77,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx<K, V> tx,
+    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx tx,
         UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
         super(cctx.kernalContext(), CU.boolReducer());
 

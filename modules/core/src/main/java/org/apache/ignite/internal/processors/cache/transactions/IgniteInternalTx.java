@@ -498,7 +498,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
      @Nullable public <K, V> GridTuple<CacheObject> peek(
-         GridCacheContext<?, ?> ctx,
+         GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key,
          @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException;

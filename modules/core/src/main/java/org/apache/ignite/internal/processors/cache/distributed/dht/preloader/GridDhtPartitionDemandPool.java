@@ -484,7 +484,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws IgniteCheckedException {
             try {
-                GridCacheEntryEx<K, V> cached = null;
+                GridCacheEntryEx cached = null;
 
                 try {
                     cached = cctx.dht().entryEx(entry.key());

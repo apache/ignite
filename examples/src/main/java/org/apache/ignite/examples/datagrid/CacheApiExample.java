@@ -105,8 +105,8 @@ public class CacheApiExample {
 
         // Invoke - assign new value based on previous value.
         cache.put(6, "6");
-        cache.invoke(6, new EntryProcessor<Integer, String, Void>() {
-            @Override public Void process(MutableEntry<Integer, String> entry, Object... args) {
+        cache.invoke(6, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
                 String v = entry.getValue();
 
                 entry.setValue(v + "6"); // Set new value based on previous value.

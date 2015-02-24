@@ -99,7 +99,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
@@ -264,7 +264,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
-                Collection<GridCacheMvccCandidate<K>> cands = req.candidatesByIndex(i);
+                Collection<GridCacheMvccCandidate> cands = req.candidatesByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -440,7 +440,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
-    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, long topVer) {
+    protected boolean isNearLocallyMapped(GridCacheEntryEx e, long topVer) {
         return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
     }
 
@@ -451,7 +451,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if attempt was made to evict the entry.
      */
-    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer, long topVer) {
+    protected boolean evictNearEntry(GridCacheEntryEx e, GridCacheVersion obsoleteVer, long topVer) {
         assert e != null;
         assert obsoleteVer != null;
 
@@ -488,7 +488,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         break; // While.
 
                     try {
-                        GridCacheMvccCandidate<K> cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
+                        GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
 
                         long topVer = -1;
 
@@ -522,7 +522,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             }
 
                             // Remove candidate from local node first.
-                            GridCacheMvccCandidate<K> rmv = entry.removeLock();
+                            GridCacheMvccCandidate rmv = entry.removeLock();
 
                             if (rmv != null) {
                                 if (!rmv.reentry()) {
@@ -612,7 +612,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     try {
                         if (entry != null) {
-                            GridCacheMvccCandidate<K> cand = entry.candidate(ver);
+                            GridCacheMvccCandidate cand = entry.candidate(ver);
 
                             if (cand != null) {
                                 if (map == null) {
@@ -691,7 +691,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert false : "Should not be called";
     }
 

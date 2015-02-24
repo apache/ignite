@@ -33,6 +33,6 @@ interface GridLocalLockCallback<K, V> {
      * @param prev Previous candidate.
      * @param owner Current candidate.
      */
-    public void onOwnerChanged(GridLocalCacheEntry<K, V> entry, GridCacheMvccCandidate<K> prev,
-        GridCacheMvccCandidate<K> owner);
+    public void onOwnerChanged(GridLocalCacheEntry<K, V> entry, GridCacheMvccCandidate prev,
+        GridCacheMvccCandidate owner);
 }

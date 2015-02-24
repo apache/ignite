@@ -105,7 +105,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAffinityManager<K, V> affMgr;
 
     /** Event manager. */
-    private GridCacheEventManager<K, V> evtMgr;
+    private GridCacheEventManager evtMgr;
 
     /** Query manager. */
     private GridCacheQueryManager<K, V> qryMgr;
@@ -114,7 +114,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheContinuousQueryManager<K, V> contQryMgr;
 
     /** Swap manager. */
-    private GridCacheSwapManager<K, V> swapMgr;
+    private GridCacheSwapManager swapMgr;
 
     /** Evictions manager. */
     private GridCacheEvictionManager<K, V> evictMgr;
@@ -126,7 +126,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheTtlManager<K, V> ttlMgr;
 
     /** Store manager. */
-    private GridCacheStoreManager<K, V> storeMgr;
+    private GridCacheStoreManager storeMgr;
 
     /** Replication manager. */
     private GridCacheDrManager<K, V> drMgr;
@@ -153,7 +153,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgnitePredicate<Cache.Entry<K, V>>[] hasValArr;
 
     /** No-peek-value filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] noPeekArr;
+    private IgnitePredicate<Cache.Entry<Object, Object>>[] noPeekArr;
 
     /** Has-peek-value filter array. */
     private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
@@ -234,10 +234,10 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
-        GridCacheEventManager<K, V> evtMgr,
-        GridCacheSwapManager<K, V> swapMgr,
+        GridCacheEventManager evtMgr,
+        GridCacheSwapManager swapMgr,
         IgniteCacheSerializationManager<K, V> serMgr,
-        GridCacheStoreManager<K, V> storeMgr,
+        GridCacheStoreManager storeMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager<K, V> contQryMgr,
@@ -471,7 +471,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param e Entry.
      */
-    public void incrementPublicSize(GridCacheMapEntry<K, V> e) {
+    public void incrementPublicSize(GridCacheMapEntry e) {
         assert deferredDelete();
         assert e != null;
         assert !e.isInternal();
@@ -489,7 +489,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param e Entry.
      */
-    public void decrementPublicSize(GridCacheMapEntry<K, V> e) {
+    public void decrementPublicSize(GridCacheMapEntry e) {
         assert deferredDelete();
         assert e != null;
         assert !e.isInternal();
@@ -840,7 +840,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache transaction manager.
      */
-    public IgniteTxManager<K, V> tm() {
+    public IgniteTxManager tm() {
          return sharedCtx.tm();
     }
 
@@ -854,14 +854,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Lock manager.
      */
-    public GridCacheMvccManager<K, V> mvcc() {
+    public GridCacheMvccManager mvcc() {
         return sharedCtx.mvcc();
     }
 
     /**
      * @return Event manager.
      */
-    public GridCacheEventManager<K, V> events() {
+    public GridCacheEventManager events() {
         return evtMgr;
     }
 
@@ -896,14 +896,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Swap manager.
      */
-    public GridCacheSwapManager<K, V> swap() {
+    public GridCacheSwapManager swap() {
         return swapMgr;
     }
 
     /**
      * @return Store manager.
      */
-    public GridCacheStoreManager<K, V> store() {
+    public GridCacheStoreManager store() {
         return storeMgr;
     }
 
@@ -972,7 +972,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
+    public IgnitePredicate<Cache.Entry<Object, Object>>[] noPeekArray() {
         return noPeekArr;
     }
 
@@ -1033,10 +1033,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     public <K1, V1> boolean isAll(
-        GridCacheEntryEx<K1, V1> e,
+        GridCacheEntryEx e,
         @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
     ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.wrapLazyValue(), p);
+        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(), p);
     }
 
     /**
@@ -1506,9 +1506,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if mapped.
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
-    public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
-        @Nullable Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
+    public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry entry, IgniteLogger log,
+        Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
+        @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap) throws GridCacheEntryRemovedException {
         assert topVer != -1;
 
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
@@ -1547,13 +1547,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param map Map.
      * @return {@code True} if mapped.
      */
-    private boolean map(GridDhtCacheEntry<K, V> entry, Iterable<ClusterNode> nodes,
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> map) {
+    private boolean map(GridDhtCacheEntry entry, Iterable<ClusterNode> nodes,
+        Map<ClusterNode, List<GridDhtCacheEntry>> map) {
         boolean ret = false;
 
         if (nodes != null) {
             for (ClusterNode n : nodes) {
-                List<GridDhtCacheEntry<K, V>> entries = map.get(n);
+                List<GridDhtCacheEntry> entries = map.get(n);
 
                 if (entries == null)
                     map.put(n, entries = new LinkedList<>());
@@ -1625,7 +1625,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param entry Entry.
      * @param ver Version.
      */
-    public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+    public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry != null;
         assert !Thread.holdsLock(entry);
         assert ver != null;
@@ -1711,6 +1711,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Object marshalled with grid marshaller.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO IGNITE-51.
     public byte[] convertPortableBytes(byte[] bytes) throws IgniteCheckedException {
         assert portableEnabled() && offheapTiered();
 

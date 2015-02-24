@@ -282,7 +282,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                         boolean partMissing = false;
 
-                        for (GridCacheEntryEx<K, V> e : loc.entries()) {
+                        for (GridCacheEntryEx e : loc.entries()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition, so we send '-1' partition and move on.
                                 s.missed(part);

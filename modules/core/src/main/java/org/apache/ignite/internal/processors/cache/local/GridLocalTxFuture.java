@@ -37,8 +37,8 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated cache transaction future.
  */
-final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
+final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -187,10 +187,10 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     void checkLocks() {
-        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
-                    GridCacheEntryEx<K, V> entry = txEntry.cached();
+                    GridCacheEntryEx entry = txEntry.cached();
 
                     if (entry == null) {
                         onError(new IgniteTxRollbackCheckedException("Failed to find cache entry for " +
@@ -232,11 +232,11 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
      * @param owner Owner.
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback [owner=" + owner + ", entry=" + entry + ']');
 
-        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
                     GridCacheEntryEx<K,V> cached = txEntry.cached();

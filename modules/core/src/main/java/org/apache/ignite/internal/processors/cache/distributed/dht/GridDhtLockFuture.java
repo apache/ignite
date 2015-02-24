@@ -324,7 +324,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return {@code True} if locked.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
+    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         return (cached.lockedLocally(lockVer) && filter(cached)); // If filter failed, lock is failed.
     }
 
@@ -333,7 +333,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param owner Lock owner.
      * @return {@code True} if locked.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached, GridCacheMvccCandidate<K> owner) {
+    private boolean locked(GridCacheEntryEx cached, GridCacheMvccCandidate owner) {
         // Reentry-aware check (if filter failed, lock is failed).
         return owner != null && owner.matches(lockVer, cctx.nodeId(), threadId) && filter(cached);
     }
@@ -346,7 +346,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
      */
-    @Nullable public GridCacheMvccCandidate<K> addEntry(GridDhtCacheEntry<K, V> entry)
+    @Nullable public GridCacheMvccCandidate addEntry(GridDhtCacheEntry<K, V> entry)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (log.isDebugEnabled())
             log.debug("Adding entry: " + entry);
@@ -359,7 +359,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             return null;
 
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
-        GridCacheMvccCandidate<K> c = entry.addDhtLocal(
+        GridCacheMvccCandidate c = entry.addDhtLocal(
             nearNodeId,
             nearLockVer,
             topVer,
@@ -424,7 +424,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
 
-            for (GridCacheEntryEx<K, V> e : entriesCp) {
+            for (GridCacheEntryEx e : entriesCp) {
                 try {
                     e.removeLock(lockVer);
                 }
@@ -538,7 +538,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     break; // While.
 
                 try {
-                    GridCacheMvccCandidate<K> owner = entry.readyLock(lockVer);
+                    GridCacheMvccCandidate owner = entry.readyLock(lockVer);
 
                     if (timeout < 0) {
                         if (owner == null || !owner.version().equals(lockVer)) {
@@ -589,7 +589,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param cached Entry to check.
      * @return {@code True} if filter passed.
      */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
+    private boolean filter(GridCacheEntryEx cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
                 if (log.isDebugEnabled())
@@ -614,7 +614,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      * @param entry Entry whose lock ownership changed.
      */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (isDone())
             return false; // Check other futures.
 
@@ -750,7 +750,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         try {
                             hasRmtNodes = cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
 
-                            GridCacheMvccCandidate<K> cand = entry.mappings(lockVer);
+                            GridCacheMvccCandidate cand = entry.mappings(lockVer);
 
                             // Possible in case of lock cancellation.
                             if (cand == null) {
@@ -901,7 +901,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         throws IgniteCheckedException {
         while (true) {
             try {
-                GridCacheMvccCandidate<K> added = e.candidate(lockVer);
+                GridCacheMvccCandidate added = e.candidate(lockVer);
 
                 assert added != null;
                 assert added.dhtLocal();

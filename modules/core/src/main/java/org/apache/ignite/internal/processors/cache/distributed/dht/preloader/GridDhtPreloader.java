@@ -354,7 +354,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 if (locPart == null && !top.owners(p).contains(loc))
                     res.addMissed(k);
 
-                GridCacheEntryEx<K, V> entry;
+                GridCacheEntryEx entry;
 
                 if (cctx.isSwapOrOffheapEnabled()) {
                     entry = cctx.dht().entryEx(k, true);

@@ -37,12 +37,12 @@ import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 /**
  * Transaction created by system implicitly on remote nodes.
  */
-public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> {
+public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Evicted keys. */
-    private Collection<IgniteTxKey<K>> evicted = new LinkedList<>();
+    private Collection<IgniteTxKey> evicted = new LinkedList<>();
 
     /** Near node ID. */
     private UUID nearNodeId;
@@ -51,7 +51,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private GridCacheVersion nearXidVer;
 
     /** Owned versions. */
-    private Map<IgniteTxKey<K>, GridCacheVersion> owned;
+    private Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Group lock flag. */
     private boolean grpLock;
@@ -84,7 +84,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext ctx,
         ClassLoader ldr,
         UUID nodeId,
         UUID nearNodeId,
@@ -96,7 +96,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         TransactionIsolation isolation,
         boolean invalidate,
         long timeout,
-        Collection<IgniteTxEntry<K, V>> writeEntries,
+        Collection<IgniteTxEntry> writeEntries,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
@@ -115,7 +115,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
             writeEntries != null ? Math.max(txSize, writeEntries.size()) : txSize, 1.0f);
 
         if (writeEntries != null)
-            for (IgniteTxEntry<K, V> entry : writeEntries) {
+            for (IgniteTxEntry entry : writeEntries) {
                 entry.unmarshal(ctx, true, ldr);
 
                 addEntry(entry);
@@ -186,7 +186,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(IgniteTxKey<K> key) {
+    @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
         return owned == null ? null : owned.get(key);
     }
 
@@ -215,7 +215,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      *
      * @param vers Map of owned versions.
      */
-    public void ownedVersions(Map<IgniteTxKey<K>, GridCacheVersion> vers) {
+    public void ownedVersions(Map<IgniteTxKey, GridCacheVersion> vers) {
         if (F.isEmpty(vers))
             return;
 
@@ -240,7 +240,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     /**
      * @return Evicted keys.
      */
-    public Collection<IgniteTxKey<K>> evicted() {
+    public Collection<IgniteTxKey> evicted() {
         return evicted;
     }
 
@@ -249,7 +249,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      *
      * @param key Evicted key.
      */
-    public void addEvicted(IgniteTxKey<K> key) {
+    public void addEvicted(IgniteTxKey key) {
         evicted.add(key);
     }
 
@@ -260,8 +260,8 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param entries Entries to add.
      * @throws IgniteCheckedException If failed.
      */
-    public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry<K, V>> entries) throws IgniteCheckedException {
-        for (IgniteTxEntry<K, V> entry : entries) {
+    public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry> entries) throws IgniteCheckedException {
+        for (IgniteTxEntry entry : entries) {
             entry.unmarshal(cctx, true, ldr);
 
             addEntry(entry);
@@ -273,7 +273,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry was enlisted.
      */
-    private boolean addEntry(IgniteTxEntry<K, V> entry) throws IgniteCheckedException {
+    private boolean addEntry(IgniteTxEntry entry) throws IgniteCheckedException {
         checkInternal(entry.txKey());
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -330,7 +330,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      */
     public boolean addEntry(
         GridCacheContext<K, V> cacheCtx,
-        IgniteTxKey<K> key,
+        IgniteTxKey key,
         byte[] keyBytes,
         GridCacheOperation op,
         V val,
@@ -358,7 +358,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     return false;
                 }
                 else {
-                    IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
+                    IgniteTxEntry txEntry = new IgniteTxEntry<>(cacheCtx,
                         this,
                         op,
                         val,

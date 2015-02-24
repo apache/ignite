@@ -1492,9 +1492,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
+                    // TODO IGNITE-51.
+                    KeyCacheObject key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
 
-                    qryMgr.remove(key, keyBytes);
+                    qryMgr.remove(key);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);

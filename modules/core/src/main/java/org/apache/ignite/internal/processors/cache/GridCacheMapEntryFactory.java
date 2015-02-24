@@ -34,6 +34,12 @@ public interface GridCacheMapEntryFactory {
      * @param hdrId Header id.
      * @return New cache entry.
      */
-    public GridCacheMapEntry create(GridCacheContext ctx, long topVer, KeyCacheObject key, int hash, CacheObject val,
-        @Nullable GridCacheMapEntry next, long ttl, int hdrId);
+    public GridCacheMapEntry create(GridCacheContext ctx,
+        long topVer,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        @Nullable GridCacheMapEntry next,
+        long ttl,
+        int hdrId);
 }

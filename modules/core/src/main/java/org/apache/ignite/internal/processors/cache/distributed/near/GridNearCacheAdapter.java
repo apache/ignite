@@ -94,7 +94,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx<K, V> entryEx(K key, boolean touch) {
+    @Override public GridCacheEntryEx entryEx(K key, boolean touch) {
         GridNearCacheEntry<K, V> entry = null;
 
         while (true) {
@@ -113,7 +113,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx<K, V> entryEx(K key, long topVer) {
+    @Override public GridCacheEntryEx entryEx(K key, long topVer) {
         GridNearCacheEntry<K, V> entry = null;
 
         while (true) {
@@ -181,7 +181,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         Collection<? extends K> keys,
         boolean reload,
         boolean skipVals,
-        IgniteInternalTx<K, V> tx,
+        IgniteInternalTx tx,
         @Nullable UUID subjId,
         String taskName,
         IgniteBiInClosure<K, V> vis
@@ -529,21 +529,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             return val.get();
 
         return !modes.contains(NEAR_ONLY) ? dht().peek(key, modes) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, V> peekAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        final Map<K, V> resMap = super.peekAll(keys, filter);
-
-        if (resMap.size() != keys.size())
-            resMap.putAll(dht().peekAll(keys, F.and(filter, new IgnitePredicate<Cache.Entry<K, V>>() {
-                @Override public boolean apply(Cache.Entry<K, V> e) {
-                    return !resMap.containsKey(e.getKey());
-                }
-            })));
-
-        return resMap;
     }
 
     /** {@inheritDoc} */

@@ -516,7 +516,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     }
 
     /**
-     * Sets read value if this tx entrty does not have write value yet.
+     * Sets read value if this tx entry does not have write value yet.
      *
      * @param val Read value to set.
      */
@@ -548,14 +548,17 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     }
 
     /**
-     * @param val Value.
+     * @param cacheVal Value.
      * @return New value.
      */
     @SuppressWarnings("unchecked")
-    public CacheObject applyEntryProcessors(Object val) {
+    public CacheObject applyEntryProcessors(CacheObject cacheVal) {
+        Object key = CU.value(this.key, ctx);
+        Object val = CU.value(cacheVal, ctx);
+
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key.value(ctx), val);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key, val);
 
                 EntryProcessor processor = t.get1();
 
@@ -574,6 +577,28 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //            val = (V)ctx.marshalToPortable(val);
 //
 //        return val;
+    }
+
+    public <V> V applyEntryProcessors(V cacheVal) {
+        Object val = cacheVal;
+        Object key = CU.value(this.key, ctx);
+
+        for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
+            try {
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key, val);
+
+                EntryProcessor processor = t.get1();
+
+                processor.process(invokeEntry, t.get2());
+
+                val = invokeEntry.getValue();
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        return (V)val;
     }
 
     /**

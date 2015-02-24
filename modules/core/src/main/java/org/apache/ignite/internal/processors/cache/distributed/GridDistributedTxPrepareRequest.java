@@ -397,9 +397,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private Collection<IgniteTxEntry<K, V>> readCollection(ObjectInput in) throws IOException,
+    @Nullable private Collection<IgniteTxEntry> readCollection(ObjectInput in) throws IOException,
         ClassNotFoundException {
-        List<IgniteTxEntry<K, V>> col = null;
+        List<IgniteTxEntry> col = null;
 
         int size = in.readInt();
 
@@ -408,7 +408,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             col = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                col.add((IgniteTxEntry<K, V>)in.readObject());
+                col.add((IgniteTxEntry)in.readObject());
         }
 
         return col == null ? Collections.<IgniteTxEntry<K,V>>emptyList() : col;

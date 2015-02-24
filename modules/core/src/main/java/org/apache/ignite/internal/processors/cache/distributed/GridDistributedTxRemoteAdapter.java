@@ -287,7 +287,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         try {
             if (hasWriteKey(entry.txKey())) {
                 commitIfLocked();
@@ -318,13 +318,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param e Transaction entry to set.
      * @return {@code True} if value was set.
      */
-    @Override public boolean setWriteValue(IgniteTxEntry<K, V> e) {
+    @Override public boolean setWriteValue(IgniteTxEntry e) {
         checkInternal(e.txKey());
 
-        IgniteTxEntry<K, V> entry = writeMap.get(e.txKey());
+        IgniteTxEntry entry = writeMap.get(e.txKey());
 
         if (entry == null) {
-            IgniteTxEntry<K, V> rmv = readMap.remove(e.txKey());
+            IgniteTxEntry rmv = readMap.remove(e.txKey());
 
             if (rmv != null) {
                 e.cached(rmv.cached(), rmv.keyBytes());
@@ -365,7 +365,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
         assert false;
         return null;
     }
@@ -381,17 +381,17 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry<K, V>> allEntries() {
+    @Override public Collection<IgniteTxEntry> allEntries() {
         return F.concat(false, writeEntries(), readEntries());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry<K, V>> writeEntries() {
+    @Override public Collection<IgniteTxEntry> writeEntries() {
         return writeMap.values();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry<K, V>> readEntries() {
+    @Override public Collection<IgniteTxEntry> readEntries() {
         return readMap.values();
     }
 
@@ -431,11 +431,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
-            for (IgniteTxEntry<K, V> txEntry : writeMap.values()) {
+            for (IgniteTxEntry txEntry : writeMap.values()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
                 while (true) {
-                    GridCacheEntryEx<K, V> Entry = txEntry.cached();
+                    GridCacheEntryEx Entry = txEntry.cached();
 
                     assert Entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
@@ -474,7 +474,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     long topVer = topologyVersion();
 
                     // Node that for near transactions we grab all entries.
-                    for (IgniteTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {
+                    for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
                         GridCacheContext<K, V> cacheCtx = txEntry.context();
 
                         boolean replicate = cacheCtx.isDrEnabled();
@@ -482,7 +482,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         try {
                             while (true) {
                                 try {
-                                    GridCacheEntryEx<K, V> cached = txEntry.cached();
+                                    GridCacheEntryEx cached = txEntry.cached();
 
                                     if (cached == null)
                                         txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()), null);
@@ -768,7 +768,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      *
      * @param e Transaction entry.
      */
-    protected void addExplicit(IgniteTxEntry<K, V> e) {
+    protected void addExplicit(IgniteTxEntry e) {
         if (e.explicitVersion() != null) {
             if (explicitVers == null)
                 explicitVers = new LinkedList<>();

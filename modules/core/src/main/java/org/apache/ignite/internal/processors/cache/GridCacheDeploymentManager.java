@@ -255,7 +255,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
                     K k = e.getKey();
 
-                    GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());
+                    GridCacheEntryEx entry = cache.peekEx(e.getKey());
 
                     if (entry == null)
                         return false;

@@ -200,17 +200,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key bytes. */
-    private static final IgniteClosure tx2keyBytes = new C1<IgniteTxEntry, byte[]>() {
-        @Nullable @Override public byte[] apply(IgniteTxEntry e) {
-            return e.keyBytes();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
     /** Transaction entry to key. */
     private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, Object>() {
         @Override public Object apply(GridCacheEntryEx e) {
@@ -300,14 +289,12 @@ public class GridCacheUtils {
     /**
      * @param ctx Cache context.
      * @param meta Meta name.
-     * @param <K> Key type.
-     * @param <V> Value type.
      * @return Filter for entries with meta.
      */
-    public static <K, V> IgnitePredicate<K> keyHasMeta(final GridCacheContext<K, V> ctx, final String meta) {
-        return new P1<K>() {
-            @Override public boolean apply(K k) {
-                GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
+    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final String meta) {
+        return new P1<KeyCacheObject>() {
+            @Override public boolean apply(KeyCacheObject k) {
+                GridCacheEntryEx e = ctx.cache().peekEx(k);
 
                 return e != null && e.hasMeta(meta);
             }
@@ -774,63 +761,55 @@ public class GridCacheUtils {
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, K> tx2key() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, K>)tx2key;
+    public static <K, V> IgniteClosure<IgniteTxEntry, K> tx2key() {
+        return (IgniteClosure<IgniteTxEntry, K>)tx2key;
     }
 
     /**
      * @return Closure that converts tx entry collection to key collection.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>> txCol2Key() {
-        return (IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>>)txCol2key;
-    }
-
-    /**
-     * @return Closure that converts tx entry to key.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, byte[]> tx2keyBytes() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, byte[]>)tx2keyBytes;
+    public static <K, V> IgniteClosure<Collection<IgniteTxEntry>, Collection<K>> txCol2Key() {
+        return (IgniteClosure<Collection<IgniteTxEntry>, Collection<K>>)txCol2key;
     }
 
     /**
      * @return Converts transaction entry to cache entry.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
+    public static <K, V> IgniteClosure<IgniteTxEntry, GridCacheEntryEx> tx2entry() {
+        return (IgniteClosure<IgniteTxEntry, GridCacheEntryEx>)tx2entry;
     }
 
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
 
     /**
      * @return Closure that converts entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntryEx<K, V>, K> entry2Key() {
-        return (IgniteClosure<GridCacheEntryEx<K, V>, K>)entry2key;
+    public static <K, V> IgniteClosure<GridCacheEntryEx, K> entry2Key() {
+        return (IgniteClosure<GridCacheEntryEx, K>)entry2key;
     }
 
     /**
      * @return Closure that converts entry info to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntryInfo<K, V>, K> info2Key() {
-        return (IgniteClosure<GridCacheEntryInfo<K, V>, K>)info2key;
+    public static <K, V> IgniteClosure<GridCacheEntryInfo, K> info2Key() {
+        return (IgniteClosure<GridCacheEntryInfo, K>)info2key;
     }
 
     /**
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> reads() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry> reads() {
         return READ_FILTER;
     }
 
@@ -838,7 +817,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> writes() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
     }
 
@@ -1669,7 +1648,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 
@@ -1794,5 +1773,27 @@ public class GridCacheUtils {
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
         return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
+    }
+
+    /**
+     * @param cacheObj Cache object.
+     * @param ctx Cache context.
+     * @return Cache object value.
+     */
+    @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx) {
+        return cacheObj != null ? cacheObj.<T>value(ctx) : null;
+    }
+
+    /**
+     * @param val Value.
+     * @param cacheObj Cache object.
+     * @param ctx Cache context.
+     * @return Cache object value.
+     */
+    @Nullable public static <T> T value(@Nullable T val, @Nullable CacheObject cacheObj, GridCacheContext ctx) {
+        if (val != null)
+            return val;
+
+        return cacheObj != null ? cacheObj.<T>value(ctx) : null;
     }
 }

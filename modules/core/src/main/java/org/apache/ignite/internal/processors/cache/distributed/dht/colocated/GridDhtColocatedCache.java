@@ -157,7 +157,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
@@ -199,7 +199,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryExSafe(K key, long topVer) {
+    @Override protected GridCacheEntryEx entryExSafe(K key, long topVer) {
         try {
             return ctx.affinity().localNode(key, topVer) ? entryEx(key) : null;
         }
@@ -251,7 +251,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 if (key == null)
                     throw new NullPointerException("Null key.");
 
-                GridCacheEntryEx<K, V> entry = null;
+                GridCacheEntryEx entry = null;
 
                 while (true) {
                     try {
@@ -515,7 +515,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Collection<K> locKeys = new LinkedList<>();
 
             for (K key : keys) {
-                GridCacheMvccCandidate<K> lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
+                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
 
                 if (lock != null) {
                     long topVer = lock.topologyVersion();
@@ -540,7 +540,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             req.version(ver);
                         }
 
-                        GridCacheEntryEx<K, V> entry = peekEx(key);
+                        GridCacheEntryEx entry = peekEx(key);
 
                         byte[] keyBytes = entry != null ? entry.getOrMarshalKeyBytes() : CU.marshal(ctx.shared(), key);
 
