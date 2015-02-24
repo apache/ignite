@@ -392,6 +392,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> query(Query qry) {
         A.notNull(qry, "qry");
 
@@ -399,6 +400,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             validate(qry);
+
+            if (qry instanceof ContinuousQuery)
+                return queryContinuous((ContinuousQuery<K,V>)qry, false);
 
             if (qry instanceof SqlQuery) {
                 SqlQuery p = (SqlQuery)qry;
@@ -472,11 +476,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @throws CacheException If query indexing disabled for sql query.
      */
     private void validate(Query qry) {
-        if (!(qry instanceof ScanQuery) && !ctx.config().isQueryIndexEnabled())
+        if (!ctx.config().isQueryIndexEnabled() && !(qry instanceof ScanQuery) && !(qry instanceof ContinuousQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> localQuery(Query qry) {
         A.notNull(qry, "qry");
 
@@ -484,6 +489,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             validate(qry);
+
+            if (qry instanceof ContinuousQuery)
+                return queryContinuous((ContinuousQuery<K,V>)qry, true);
 
             if (qry instanceof SqlQuery)
                 return doLocalQuery((SqlQuery)qry);
