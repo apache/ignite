@@ -24,6 +24,9 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -42,6 +45,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  *
  */
 public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    
     /** */
     public static final TestLocalStore<Integer, Integer> LOCAL_STORE_1 = new TestLocalStore<>();
 
@@ -74,6 +80,12 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         cfg.setCacheConfiguration(cacheCfg, cacheBackupCfg);
 
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(spi);
+
         return cfg;
     }
 
@@ -82,6 +94,10 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         super.afterTest();
 
         stopAllGrids();
+
+        LOCAL_STORE_1.clear();
+        LOCAL_STORE_2.clear();
+        LOCAL_STORE_3.clear();
     }
 
     private CacheConfiguration cache(String gridName, String cacheName, int backups) {
@@ -151,6 +167,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             ignite1.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event event) {
                     startPartExchange.countDown();
+
                     eventOcr.set(true);
 
                     return true;
@@ -174,7 +191,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      */
     private void waitExpirePartition(CountDownLatch startPartExchange, AtomicBoolean eventOcr) throws Exception {
         if (getCacheMode() != REPLICATED) {
-            assert startPartExchange.await(1, TimeUnit.SECONDS);
+            assert startPartExchange.await(2, TimeUnit.SECONDS);
 
             while (true) {
                 if (eventOcr.get()) {
@@ -309,6 +326,13 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
             for (Object key : keys)
                 map.remove(key);
+        }
+
+        /**
+         * Clear store.
+         */
+        public void clear(){
+            map.clear();
         }
     }
 }
