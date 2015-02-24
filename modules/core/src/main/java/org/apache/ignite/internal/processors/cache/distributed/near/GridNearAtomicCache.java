@@ -317,9 +317,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         long ttl = req.nearTtl(i);
                         long expireTime = req.nearExpireTime(i);
 
-                        if (ttl != -1L && expireTime == -1L)
-                            expireTime = CU.toExpireTime(ttl);
-
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,

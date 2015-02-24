@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -70,6 +69,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /** Workers count. */
     private final LongAdder workersCnt = new LongAdder();
+
+    /** SecurityContext map. */
+    private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -162,31 +164,32 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        GridSecurityContext subjCtx = null;
+        SecurityContext subjCtx = null;
 
-        try {
-            subjCtx = authenticate(req);
+        if (ctx.security().enabled()) {
+            try {
+                subjCtx = authenticate(req);
 
-            authorize(req, subjCtx);
-        }
-        catch (GridSecurityException e) {
-            assert subjCtx != null;
+                authorize(req, subjCtx);
+            }
+            catch (GridSecurityException e) {
+                assert subjCtx != null;
 
-            GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+                GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            if (ctx.secureSession().enabled()) {
                 try {
-                    res.sessionTokenBytes(updateSessionToken(req, subjCtx));
+                    updateSession(req, subjCtx);
+                    res.sessionTokenBytes(new byte[0]);
                 }
                 catch (IgniteCheckedException e1) {
                     U.warn(log, "Cannot update response session token: " + e1.getMessage());
                 }
-            }
 
-            return new GridFinishedFuture<>(ctx, res);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                return new GridFinishedFuture<>(ctx, res);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
         }
 
         interceptRequest(req);
@@ -199,7 +202,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(ctx,
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
-        final GridSecurityContext subjCtx0 = subjCtx;
+        final SecurityContext subjCtx0 = subjCtx;
 
         return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
@@ -219,9 +222,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.secureSession().enabled()) {
+                if (ctx.security().enabled()) {
                     try {
-                        res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
+                        updateSession(req, subjCtx0);
+                        res.sessionTokenBytes(new byte[0]);
                     }
                     catch (IgniteCheckedException e) {
                         U.warn(log, "Cannot update response session token: " + e.getMessage());
@@ -457,20 +461,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws IgniteCheckedException If authentication failed.
      */
-    private GridSecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
+    private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         UUID clientId = req.clientId();
+        SecurityContext secCtx = clientId == null ? null : sesMap.get(clientId);
 
-        byte[] sesTok = req.sessionToken();
-
-        // Validate session.
-        if (sesTok != null) {
-            // Session is still valid.
-            GridSecureSession ses = ctx.secureSession().validateSession(REMOTE_CLIENT, clientId, sesTok, null);
-
-            if (ses != null)
-                // Session is still valid.
-                return ses.authenticationSubjectContext();
-        }
+        if (secCtx != null)
+            return secCtx;
 
         // Authenticate client if invalid session.
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -501,7 +497,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.credentials(cred);
 
-        GridSecurityContext subjCtx = ctx.security().authenticate(authCtx);
+        SecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
         if (subjCtx == null) {
             if (req.credentials() == null)
@@ -514,22 +510,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Update session token to actual state.
-     *
-     * @param req Grid est request.
-     * @param subjCtx Authentication subject context.
-     * @return Valid session token.
-     * @throws IgniteCheckedException If session token update process failed.
+     * Update session.
+     * @param req REST request.
+     * @param sCtx Security context.
      */
-    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws IgniteCheckedException {
-        // Update token from request to actual state.
-        byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
-
-        // Validate token has been created.
-        if (sesTok == null)
-            throw new IgniteCheckedException("Cannot create session token (is secure session SPI set?).");
-
-        return sesTok;
+    private void updateSession(GridRestRequest req, SecurityContext sCtx) throws IgniteCheckedException {
+        if (sCtx != null) {
+            UUID id = req.clientId();
+            sesMap.put(id, sCtx);
+        }
     }
 
     /**
@@ -537,7 +526,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param sCtx Security context.
      * @throws GridSecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, GridSecurityContext sCtx) throws GridSecurityException {
+    private void authorize(GridRestRequest req, SecurityContext sCtx) throws GridSecurityException {
         GridSecurityPermission perm = null;
         String name = null;
 

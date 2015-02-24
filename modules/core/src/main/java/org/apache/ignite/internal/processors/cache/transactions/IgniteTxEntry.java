@@ -785,63 +785,68 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-// TODO IGNITE-51.
-//        out.writeBoolean(depEnabled);
-//
-//        if (depEnabled) {
-//            U.writeByteArray(out, keyBytes);
-//            U.writeByteArray(out, transformClosBytes);
-//            U.writeByteArray(out, filterBytes);
-//        }
-//        else {
-//            out.writeObject(key);
-//            U.writeCollection(out, entryProcessorsCol);
-//            U.writeArray(out, filters);
-//        }
-//
-//        out.writeInt(cacheId);
-//
-//        val.writeTo(out);
-//
-//        out.writeLong(ttl);
-//        out.writeLong(conflictExpireTime);
-//
-//        CU.writeVersion(out, explicitVer);
-//        out.writeBoolean(grpLock);
-//        CU.writeVersion(out, conflictVer);
-//
-//        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
+        out.writeBoolean(depEnabled);
+
+        if (depEnabled) {
+            U.writeByteArray(out, keyBytes);
+            U.writeByteArray(out, transformClosBytes);
+            U.writeByteArray(out, filterBytes);
+        }
+        else {
+            out.writeObject(key);
+            U.writeCollection(out, entryProcessorsCol);
+            U.writeArray(out, filters);
+        }
+
+        out.writeInt(cacheId);
+
+        val.writeTo(out);
+
+        out.writeLong(ttl);
+
+        CU.writeVersion(out, explicitVer);
+        out.writeBoolean(grpLock);
+
+        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
+            out.writeBoolean(true);
+            out.writeLong(conflictExpireTime);
+        }
+        else
+            out.writeBoolean(false);
+
+        CU.writeVersion(out, conflictVer);
+
+        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-// TODO IGNITE-51.
-//        depEnabled = in.readBoolean();
-//
-//        if (depEnabled) {
-//            keyBytes = U.readByteArray(in);
-//            transformClosBytes = U.readByteArray(in);
-//            filterBytes = U.readByteArray(in);
-//        }
-//        else {
-//            key = (K)in.readObject();
-//            entryProcessorsCol = U.readCollection(in);
-//            filters = GridCacheUtils.readEntryFilterArray(in);
-//        }
-//
-//        cacheId = in.readInt();
-//
-//        val.readFrom(in);
-//
-//        ttl = in.readLong();
-//        conflictExpireTime = in.readLong();
-//
-//        explicitVer = CU.readVersion(in);
-//        grpLock = in.readBoolean();
-//        conflictVer = CU.readVersion(in);
-//
-//        expiryPlc = (ExpiryPolicy)in.readObject();
+        depEnabled = in.readBoolean();
+
+        if (depEnabled) {
+            keyBytes = U.readByteArray(in);
+            transformClosBytes = U.readByteArray(in);
+            filterBytes = U.readByteArray(in);
+        }
+        else {
+            key = (K)in.readObject();
+            entryProcessorsCol = U.readCollection(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
+        }
+
+        cacheId = in.readInt();
+
+        val.readFrom(in);
+
+        ttl = in.readLong();
+        conflictExpireTime = in.readLong();
+
+        explicitVer = CU.readVersion(in);
+        grpLock = in.readBoolean();
+        conflictVer = CU.readVersion(in);
+
+        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -742,7 +742,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CacheObject val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    // Deal with DR conflicts.
+                                    // Deal with conflicts.
                                     GridCacheVersion explicitVer = txEntry.conflictVersion() != null ?
                                         txEntry.conflictVersion() : writeVersion();
 
@@ -763,46 +763,43 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         }
                                     }
 
-                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve();
+                                    boolean conflictNeedResolve = cacheCtx.conflictNeedResolve();
 
-                                    if (drNeedResolve) {
-// TODO IGNITE-51.
-//                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext>
-//                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
-//                                                txEntry.conflictExpireTime(), explicitVer, cached);
-//
-//                                        assert drRes != null;
-//
-//                                        GridCacheVersionConflictContext conflictCtx = drRes.get2();
-//
-//                                        if (conflictCtx.isUseOld())
-//                                            op = NOOP;
-//                                        else if (conflictCtx.isUseNew()) {
-//                                            txEntry.ttl(conflictCtx.ttl());
-//
-//                                            if (conflictCtx.newEntry().dataCenterId() != cctx.dataCenterId())
-//                                                txEntry.conflictExpireTime(conflictCtx.expireTime());
-//                                            else
-//                                                txEntry.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
-//                                        }
-//                                        else {
-//                                            assert conflictCtx.isMerge();
-//
-//                                            op = drRes.get1();
-//                                            val = conflictCtx.mergeValue();
-//                                            valBytes = null;
-//                                            explicitVer = writeVersion();
-//
-//                                            txEntry.ttl(conflictCtx.ttl());
-//                                            txEntry.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
-//                                        }
+                                    GridCacheVersionConflictContext<K, V> conflictCtx = null;
+
+                                    if (conflictNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
+                                            conflictRes = conflictResolve(op, txEntry, val, valBytes, explicitVer,
+                                                cached);
+
+                                        assert conflictRes != null;
+
+                                        conflictCtx = conflictRes.get2();
+
+                                        if (conflictCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
+                                        else {
+                                            assert conflictCtx.isMerge();
+
+                                            op = conflictRes.get1();
+                                            val = conflictCtx.mergeValue();
+                                            valBytes = null;
+                                            explicitVer = writeVersion();
+
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    if (sndTransformedVals || drNeedResolve) {
-                                        assert sndTransformedVals && cacheCtx.isReplicated() || drNeedResolve;
+                                    if (sndTransformedVals || conflictNeedResolve) {
+                                        assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
 
                                         txEntry.value(val, true, false);
                                         txEntry.op(op);
@@ -906,8 +903,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
-                                        if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
-                                            cached.updateTtl(null, txEntry.ttl());
+                                        if (conflictCtx == null || !conflictCtx.isUseOld()) {
+                                            if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
+                                                cached.updateTtl(null, txEntry.ttl());
+                                        }
 
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring NOOP entry when committing: " + txEntry);
@@ -3301,8 +3300,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         IgniteTxEntry e = entry(key);
 
-        if (e != null)
+        if (e != null) {
             e.expiry(expiryPlc);
+            e.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
+        }
     }
 
     /**

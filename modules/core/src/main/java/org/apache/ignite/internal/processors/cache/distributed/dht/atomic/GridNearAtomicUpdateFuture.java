@@ -520,35 +520,39 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             K key = F.first(keys);
 
             Object val;
-            long drTtl;
-            long drExpireTime;
-            GridCacheVersion drVer;
+            GridCacheVersion conflictVer;
+            long conflictTtl;
+            long conflictExpireTime;
 
             if (vals != null) {
+                // Regular PUT.
                 val = F.first(vals);
-                drTtl = -1;
-                drExpireTime = -1;
-                drVer = null;
+                conflictVer = null;
+                conflictTtl = CU.TTL_NOT_CHANGED;
+                conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
             }
             else if (conflictPutVals != null) {
-                GridCacheDrInfo<V> drPutVal =  F.first(conflictPutVals);
+                // Conflict PUT.
+                GridCacheDrInfo<V> conflictPutVal =  F.first(conflictPutVals);
 
-                val = drPutVal.value();
-                drTtl = drPutVal.ttl();
-                drExpireTime = drPutVal.expireTime();
-                drVer = drPutVal.version();
+                val = conflictPutVal.value();
+                conflictVer = conflictPutVal.version();
+                conflictTtl = conflictPutVal.ttl();
+                conflictExpireTime = conflictPutVal.expireTime();
             }
             else if (conflictRmvVals != null) {
+                // Conflict REMOVE.
                 val = null;
-                drTtl = -1;
-                drExpireTime = -1;
-                drVer = F.first(conflictRmvVals);
+                conflictVer = F.first(conflictRmvVals);
+                conflictTtl = CU.TTL_NOT_CHANGED;
+                conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
             }
             else {
+                // Regular REMOVE.
                 val = null;
-                drTtl = -1;
-                drExpireTime = -1;
-                drVer = null;
+                conflictVer = null;
+                conflictTtl = CU.TTL_NOT_CHANGED;
+                conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
             }
 
             // We still can get here if user pass map with single element.
@@ -599,7 +603,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 subjId,
                 taskNameHash);
 
-            req.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, true);
+            req.addUpdateEntry(key, val, conflictTtl, conflictExpireTime, conflictVer, true);
 
             single = true;
 
@@ -614,15 +618,15 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         if (vals != null)
             it = vals.iterator();
 
-        Iterator<GridCacheDrInfo<V>> drPutValsIt = null;
+        Iterator<GridCacheDrInfo<V>> conflictPutValsIt = null;
 
         if (conflictPutVals != null)
-            drPutValsIt = conflictPutVals.iterator();
+            conflictPutValsIt = conflictPutVals.iterator();
 
-        Iterator<GridCacheVersion> drRmvValsIt = null;
+        Iterator<GridCacheVersion> conflictRmvValsIt = null;
 
         if (conflictRmvVals != null)
-            drRmvValsIt = conflictRmvVals.iterator();
+            conflictRmvValsIt = conflictRmvVals.iterator();
 
         Map<UUID, GridNearAtomicUpdateRequest<K, V>> pendingMappings = new HashMap<>(topNodes.size(), 1.0f);
 
@@ -643,15 +647,15 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 }
 
                 Object val;
-                long drTtl;
-                long drExpireTime;
-                GridCacheVersion drVer;
+                GridCacheVersion conflictVer;
+                long conflictTtl;
+                long conflictExpireTime;
 
                 if (vals != null) {
                     val = it.next();
-                    drTtl = -1;
-                    drExpireTime = -1;
-                    drVer = null;
+                    conflictVer = null;
+                    conflictTtl = CU.TTL_NOT_CHANGED;
+                    conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
 
                     if (val == null) {
                         NullPointerException err = new NullPointerException("Null value.");
@@ -662,24 +666,24 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     }
                 }
                 else if (conflictPutVals != null) {
-                    GridCacheDrInfo<V> drPutVal =  drPutValsIt.next();
+                    GridCacheDrInfo<V> conflictPutVal =  conflictPutValsIt.next();
 
-                    val = drPutVal.value();
-                    drTtl = drPutVal.ttl();
-                    drExpireTime = drPutVal.expireTime();
-                    drVer = drPutVal.version();
+                    val = conflictPutVal.value();
+                    conflictVer = conflictPutVal.version();
+                    conflictTtl =  conflictPutVal.ttl();
+                    conflictExpireTime = conflictPutVal.expireTime();
                 }
                 else if (conflictRmvVals != null) {
                     val = null;
-                    drTtl = -1;
-                    drExpireTime = -1;
-                    drVer = drRmvValsIt.next();
+                    conflictVer = conflictRmvValsIt.next();
+                    conflictTtl = CU.TTL_NOT_CHANGED;
+                    conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
                 }
                 else {
                     val = null;
-                    drTtl = -1;
-                    drExpireTime = -1;
-                    drVer = null;
+                    conflictVer = null;
+                    conflictTtl = CU.TTL_NOT_CHANGED;
+                    conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
                 }
 
                 if (val == null && op != GridCacheOperation.DELETE)
@@ -727,7 +731,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             "Invalid mapping state [old=" + old + ", remap=" + remap + ']';
                     }
 
-                    mapped.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, i == 0);
+                    mapped.addUpdateEntry(key, val, conflictTtl, conflictExpireTime, conflictVer, i == 0);
 
                     i++;
                 }

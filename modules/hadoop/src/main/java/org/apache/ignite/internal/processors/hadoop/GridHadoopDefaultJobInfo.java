@@ -101,8 +101,9 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
 
             return (GridHadoopJob)constructor.newInstance(jobId, this, log);
         }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
+        // NB: java.lang.NoClassDefFoundError may be thrown from Class#getConstructor() call.
+        catch (Throwable t) {
+            throw new IgniteCheckedException(t);
         }
     }
 
