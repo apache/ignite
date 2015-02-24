@@ -104,7 +104,9 @@ public class GridHadoopClientProtocol implements ClientProtocol {
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));
 
-            assert status != null;
+            if (status == null) {
+                throw new IOException("Null status obtained on attempt to submit Hadoop job " + jobId);
+            }
 
             return processStatus(status);
         }
