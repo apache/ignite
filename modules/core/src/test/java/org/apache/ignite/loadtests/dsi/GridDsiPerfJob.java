@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.dsi;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -90,7 +89,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     @Override public Object execute() {
-        ClusterNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
 
         T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 

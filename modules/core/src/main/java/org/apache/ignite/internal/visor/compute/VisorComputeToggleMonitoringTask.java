@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -26,6 +25,7 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
@@ -75,7 +75,7 @@ public class VisorComputeToggleMonitoringTask extends
             if (checkExplicitTaskMonitoring(ignite))
                 return true;
             else {
-                ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
+                ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                 VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 

@@ -21,12 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.math.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * This example demonstrates how to use continuation feature of Ignite by
@@ -122,7 +124,7 @@ public final class ComputeFibonacciContinuationExample {
                     return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                 // Node-local storage.
-                ClusterNodeLocalMap<Long, IgniteFuture<BigInteger>> locMap = ignite.cluster().nodeLocalMap();
+                ConcurrentMap<Long, IgniteFuture<BigInteger>> locMap = ignite.cluster().nodeLocalMap();
 
                 // Check if value is cached in node-local-map first.
                 fut1 = locMap.get(n - 1);
@@ -136,14 +138,14 @@ public final class ComputeFibonacciContinuationExample {
                 if (fut1 == null) {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 1);
 
-                    fut1 = locMap.addIfAbsent(n - 1, compute.<BigInteger>future());
+                    fut1 = F.addIfAbsent(locMap, n - 1, compute.<BigInteger>future());
                 }
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut2 == null) {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 2);
 
-                    fut2 = locMap.addIfAbsent(n - 2, compute.<BigInteger>future());
+                    fut2 = F.addIfAbsent(locMap, n - 2, compute.<BigInteger>future());
                 }
 
                 // If futures are not done, then wait asynchronously for the result
