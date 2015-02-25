@@ -161,7 +161,7 @@ public class GridRestResponse implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(successStatus);
-        IgniteByteUtils.writeByteArray(out, sesTokBytes);
+        U.writeByteArray(out, sesTokBytes);
         U.writeString(out, sesTokStr);
         U.writeString(out, err);
         out.writeObject(obj);
@@ -170,7 +170,7 @@ public class GridRestResponse implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         successStatus = in.readInt();
-        sesTokBytes = IgniteByteUtils.readByteArray(in);
+        sesTokBytes = U.readByteArray(in);
         sesTokStr = U.readString(in);
         err = U.readString(in);
         obj = in.readObject();

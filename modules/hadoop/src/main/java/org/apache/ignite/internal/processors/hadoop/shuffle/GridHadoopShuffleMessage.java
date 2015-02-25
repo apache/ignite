@@ -202,7 +202,7 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
         out.writeLong(msgId);
         out.writeInt(reducer);
         out.writeInt(off);
-        IgniteByteUtils.writeByteArray(out, buf);
+        U.writeByteArray(out, buf);
     }
 
     /** {@inheritDoc} */
@@ -213,7 +213,7 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
         msgId = in.readLong();
         reducer = in.readInt();
         off = in.readInt();
-        buf = IgniteByteUtils.readByteArray(in);
+        buf = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */

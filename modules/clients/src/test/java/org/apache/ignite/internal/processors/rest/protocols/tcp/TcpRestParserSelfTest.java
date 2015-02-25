@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -121,9 +121,9 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
                 ByteBuffer fake = ByteBuffer.allocate(21);
 
                 fake.put(IGNITE_REQ_FLAG);
-                fake.put(IgniteByteUtils.intToBytes(-5));
-                fake.put(IgniteByteUtils.longToBytes(0));
-                fake.put(IgniteByteUtils.longToBytes(0));
+                fake.put(U.intToBytes(-5));
+                fake.put(U.longToBytes(0));
+                fake.put(U.longToBytes(0));
 
                 fake.flip();
 
@@ -326,7 +326,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
             assertNotNull(req);
-            assertEquals(IgniteByteUtils.bytesToShort(new byte[]{5, 0}, 0), req.version());
+            assertEquals(U.bytesToShort(new byte[]{5, 0}, 0), req.version());
         }
     }
 
@@ -371,8 +371,8 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
         slice.put(IGNITE_REQ_FLAG);
         slice.putInt(res.remaining() - 5);
         slice.putLong(msg.requestId());
-        slice.put(IgniteByteUtils.uuidToBytes(msg.clientId()));
-        slice.put(IgniteByteUtils.uuidToBytes(msg.destinationId()));
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
         return res;
     }

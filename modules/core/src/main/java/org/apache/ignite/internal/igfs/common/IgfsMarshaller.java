@@ -47,9 +47,9 @@ public class IgfsMarshaller {
 
         byte[] hdr = new byte[HEADER_SIZE];
 
-        IgniteByteUtils.longToBytes(reqId, hdr, 0);
+        U.longToBytes(reqId, hdr, 0);
 
-        IgniteByteUtils.intToBytes(cmd.ordinal(), hdr, 8);
+        U.intToBytes(cmd.ordinal(), hdr, 8);
 
         return hdr;
     }
@@ -66,9 +66,9 @@ public class IgfsMarshaller {
 
         Arrays.fill(hdr, (byte)0);
 
-        IgniteByteUtils.longToBytes(reqId, hdr, 0);
+        U.longToBytes(reqId, hdr, 0);
 
-        IgniteByteUtils.intToBytes(cmd.ordinal(), hdr, 8);
+        U.intToBytes(cmd.ordinal(), hdr, 8);
 
         return hdr;
     }
@@ -152,10 +152,10 @@ public class IgfsMarshaller {
 
                     IgfsStreamControlRequest req = (IgfsStreamControlRequest)msg;
 
-                    IgniteByteUtils.longToBytes(req.streamId(), hdr, 12);
+                    U.longToBytes(req.streamId(), hdr, 12);
 
                     if (msg.command() == READ_BLOCK)
-                        IgniteByteUtils.intToBytes(req.length(), hdr, 20);
+                        U.intToBytes(req.length(), hdr, 20);
 
                     out.write(hdr);
 
@@ -269,10 +269,10 @@ public class IgfsMarshaller {
                 case WRITE_BLOCK: {
                     IgfsStreamControlRequest req = new IgfsStreamControlRequest();
 
-                    long streamId = IgniteByteUtils.bytesToLong(hdr, 12);
+                    long streamId = U.bytesToLong(hdr, 12);
 
                     req.streamId(streamId);
-                    req.length(IgniteByteUtils.bytesToInt(hdr, 20));
+                    req.length(U.bytesToInt(hdr, 20));
 
                     if (cmd == READ_BLOCK)
                         req.position(in.readLong());

@@ -64,14 +64,14 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        IgniteByteUtils.writeByteArray(out, addr.getAddress());
+        U.writeByteArray(out, addr.getAddress());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        addr = InetAddress.getByAddress(IgniteByteUtils.readByteArray(in));
+        addr = InetAddress.getByAddress(U.readByteArray(in));
     }
 
     /** {@inheritDoc} */

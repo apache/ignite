@@ -136,7 +136,7 @@ class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        IgniteByteUtils.writeByteArray(out, src);
+        U.writeByteArray(out, src);
 
         out.writeInt(depMode.ordinal());
 
@@ -148,7 +148,7 @@ class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        src = IgniteByteUtils.readByteArray(in);
+        src = U.readByteArray(in);
 
         depMode = DeploymentMode.fromOrdinal(in.readInt());
 

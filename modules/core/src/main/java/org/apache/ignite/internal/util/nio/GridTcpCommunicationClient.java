@@ -521,7 +521,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             assert off == 0;
             assert resBuf.length >= resOff + len + 4;
 
-            IgniteByteUtils.intToBytes(len, resBuf, resOff);
+            U.intToBytes(len, resBuf, resOff);
 
             U.arrayCopy(b, off, resBuf, resOff + 4, len);
         }

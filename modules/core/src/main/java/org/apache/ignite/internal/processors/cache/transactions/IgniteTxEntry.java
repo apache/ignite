@@ -838,9 +838,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         out.writeBoolean(depEnabled);
 
         if (depEnabled) {
-            IgniteByteUtils.writeByteArray(out, keyBytes);
-            IgniteByteUtils.writeByteArray(out, transformClosBytes);
-            IgniteByteUtils.writeByteArray(out, filterBytes);
+            U.writeByteArray(out, keyBytes);
+            U.writeByteArray(out, transformClosBytes);
+            U.writeByteArray(out, filterBytes);
         }
         else {
             out.writeObject(key);
@@ -875,9 +875,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         depEnabled = in.readBoolean();
 
         if (depEnabled) {
-            keyBytes = IgniteByteUtils.readByteArray(in);
-            transformClosBytes = IgniteByteUtils.readByteArray(in);
-            filterBytes = IgniteByteUtils.readByteArray(in);
+            keyBytes = U.readByteArray(in);
+            transformClosBytes = U.readByteArray(in);
+            filterBytes = U.readByteArray(in);
         }
         else {
             key = (K)in.readObject();
@@ -1092,12 +1092,12 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
             if (hasWriteVal) {
                 if (valBytesSent)
-                    IgniteByteUtils.writeByteArray(out, valBytes);
+                    U.writeByteArray(out, valBytes);
                 else {
                     if (val != null && val instanceof byte[]) {
                         out.writeBoolean(true);
 
-                        IgniteByteUtils.writeByteArray(out, (byte[]) val);
+                        U.writeByteArray(out, (byte[]) val);
                     }
                     else {
                         out.writeBoolean(false);
@@ -1122,9 +1122,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
             if (hasWriteVal) {
                 if (valBytesSent)
-                    valBytes = IgniteByteUtils.readByteArray(in);
+                    valBytes = U.readByteArray(in);
                 else
-                    val = in.readBoolean() ? (V) IgniteByteUtils.readByteArray(in) : (V)in.readObject();
+                    val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
             }
 
             op = fromOrdinal(in.readInt());

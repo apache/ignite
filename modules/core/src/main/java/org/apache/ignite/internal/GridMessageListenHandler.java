@@ -167,8 +167,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         out.writeBoolean(depEnabled);
 
         if (depEnabled) {
-            IgniteByteUtils.writeByteArray(out, topicBytes);
-            IgniteByteUtils.writeByteArray(out, predBytes);
+            U.writeByteArray(out, topicBytes);
+            U.writeByteArray(out, predBytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
@@ -183,8 +183,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         depEnabled = in.readBoolean();
 
         if (depEnabled) {
-            topicBytes = IgniteByteUtils.readByteArray(in);
-            predBytes = IgniteByteUtils.readByteArray(in);
+            topicBytes = U.readByteArray(in);
+            predBytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfoBean)in.readObject();
         }

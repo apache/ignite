@@ -295,7 +295,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
                 byte[] nodeHashBytes = marshaller.marshal(nodeHash);
 
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
-                out.write(IgniteByteUtils.intToBytes(part), 0, 4); // Avoid IOException.
+                out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
 
                 d.reset();
 

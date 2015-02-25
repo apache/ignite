@@ -397,8 +397,8 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
 
             byte[] hdr = IgfsMarshaller.createHeader(-1, IgfsIpcCommand.WRITE_BLOCK);
 
-            IgniteByteUtils.longToBytes(req.streamId(), hdr, 12);
-            IgniteByteUtils.intToBytes(req.length(), hdr, 20);
+            U.longToBytes(req.streamId(), hdr, 12);
+            U.intToBytes(req.length(), hdr, 20);
 
             synchronized (this) {
                 out.write(hdr);
@@ -479,7 +479,7 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
                 while (!Thread.currentThread().isInterrupted()) {
                     dis.readFully(hdr);
 
-                    long reqId = IgniteByteUtils.bytesToLong(hdr, 0);
+                    long reqId = U.bytesToLong(hdr, 0);
 
                     // We don't wait for write responses, therefore reqId is -1.
                     if (reqId == -1) {
@@ -513,7 +513,7 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
                         }
                         else {
                             try {
-                                IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(IgniteByteUtils.bytesToInt(hdr, 8));
+                                IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(U.bytesToInt(hdr, 8));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Received IGFS response [reqId=" + reqId + ", cmd=" + cmd + ']');
@@ -534,7 +534,7 @@ public class IgfsHadoopIpcIo implements IgfsHadoopIo {
                                         IgfsControlResponse.throwError(errCode, errMsg);
                                     }
 
-                                    int blockLen = IgniteByteUtils.bytesToInt(msgHdr, 5);
+                                    int blockLen = U.bytesToInt(msgHdr, 5);
 
                                     int readLen = Math.min(blockLen, fut.outputLength());
 
