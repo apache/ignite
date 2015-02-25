@@ -709,17 +709,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             metricsProvider,
             locNodeVer);
 
-        try {
-            Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
-                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
-                    locNode.discoveryPort());
+        Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
+            U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
+                locNode.discoveryPort());
 
-            if (extAddrs != null)
-                locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
-        }
+        if (extAddrs != null)
+            locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
 
         locNode.setAttributes(locNodeAttrs);
 
@@ -2874,7 +2869,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
                                     ", err=" + e + ']', e);
 
-                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']', 
+                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
 
                             if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {

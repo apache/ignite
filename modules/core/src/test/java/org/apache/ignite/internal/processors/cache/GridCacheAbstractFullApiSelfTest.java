@@ -3659,7 +3659,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             });
 
             CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.remove("key" + i));
                 }

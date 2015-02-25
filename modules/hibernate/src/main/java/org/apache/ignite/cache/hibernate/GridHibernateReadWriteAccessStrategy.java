@@ -125,7 +125,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null)
                 unlock(ctx, key);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -197,9 +197,8 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
      *
      * @param ctx Transaction context.
      * @param key Key.
-     * @throws IgniteCheckedException If failed.
      */
-    private void unlock(TxContext ctx, Object key) throws IgniteCheckedException {
+    private void unlock(TxContext ctx, Object key) {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 

@@ -92,7 +92,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      */
     public void testWithNoFailoverClosure() throws Exception {
         final IgniteRunnable r = new GridAbsClosureX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 CNT.incrementAndGet();
 
                 throw new ComputeExecutionRejectedException("Expected error.");

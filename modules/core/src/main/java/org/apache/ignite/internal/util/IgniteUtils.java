@@ -8406,13 +8406,13 @@ public abstract class IgniteUtils {
      * @param addrs Addresses.
      * @param port Port.
      * @return Resolved socket addresses.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteSpiException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
         AddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
-    ) throws IgniteCheckedException {
+    ) throws IgniteSpiException {
         assert addrRslvr != null;
 
         Collection<InetSocketAddress> extAddrs = new HashSet<>();

@@ -104,7 +104,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
             IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws IgniteCheckedException {
+                @Override public Void call() {
                     Ignite ignite = grid(0);
 
                     IgniteQueue<Integer> queue = ignite.queue(queueName,
