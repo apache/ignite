@@ -990,6 +990,9 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
                 log.debug("Message has been added to queue: " + msg);
         }
 
+        /**
+         * @param msg Message.
+         */
         protected abstract void processMessage(TcpDiscoveryAbstractMessage msg);
 
         /**

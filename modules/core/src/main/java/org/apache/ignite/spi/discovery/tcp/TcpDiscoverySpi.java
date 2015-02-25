@@ -1028,7 +1028,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
             }
         }
@@ -1240,6 +1240,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** {@inheritDoc} */
     @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator nodeAuth) {
         this.nodeAuth = nodeAuth;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendCustomEvent(Serializable evt) {
+        msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt));
     }
 
     /**
@@ -1714,11 +1719,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(type, topVer, node, top, hist);
+            lsnr.onDiscovery(type, topVer, node, top, hist, null);
         }
         else if (log.isDebugEnabled())
             log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
@@ -2562,6 +2567,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             else if (msg instanceof TcpDiscoveryDiscardMessage)
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
+
+            else if (msg instanceof TcpDiscoveryCustomEventMessage)
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
@@ -4429,6 +4437,29 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
         }
+
+        /**
+         * @param msg Message.
+         */
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+            if (msg.creatorNodeId().equals(getLocalNodeId())) {
+                if (msg.senderNodeId() != null)
+                    return;
+
+                msg.senderNodeId(getLocalNodeId());
+            }
+
+            DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+
+            TcpDiscoverySpiState spiState = spiStateCopy();
+
+            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
+                lsnr.onDiscovery(EVT_DISCOVERY_CUSTOM_EVT, msg.topologyVersion(), ring.node(msg.creatorNodeId()), null,
+                    null, msg.message());
+
+            if (ring.hasRemoteNodes())
+                sendMessageAcrossRing(msg);
+        }
     }
 
     /**
@@ -4596,7 +4627,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
                     }
 
-                    if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
+                    if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?) " +

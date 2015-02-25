@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery;
 import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -37,7 +38,13 @@ public interface DiscoverySpiListener {
      * @param topSnapshot Topology snapshot after event has been occurred (e.g. if event is
      *      {@code EVT_NODE_JOINED}, then joined node will be in snapshot).
      * @param topHist Topology snapshots history.
+     * @param data Data for custom event.
      */
-    public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
-        @Nullable Map<Long, Collection<ClusterNode>> topHist);
+    public void onDiscovery(
+        int type,
+        long topVer,
+        ClusterNode node,
+        Collection<ClusterNode> topSnapshot,
+        @Nullable Map<Long, Collection<ClusterNode>> topHist,
+        @Nullable Serializable data);
 }

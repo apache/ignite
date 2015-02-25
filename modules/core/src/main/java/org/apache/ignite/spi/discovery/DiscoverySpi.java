@@ -22,6 +22,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -137,4 +138,10 @@ public interface DiscoverySpi extends IgniteSpi {
      *         does not support this method.
      */
     public long getGridStartTime();
+
+    /**
+     * Sends custom message across the ring.
+     * @param evt Event.
+     */
+    public void sendCustomEvent(Serializable evt);
 }
