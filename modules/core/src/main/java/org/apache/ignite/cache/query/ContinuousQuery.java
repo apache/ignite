@@ -29,7 +29,7 @@ import javax.cache.event.*;
  * the node that executed the query and local listener will be notified.
  * <p>
  * Additionally, you can execute initial query to get currently existing data.
- * Query can be of any type (SQL, TEXT or SCAN) and can be set via {@link #setInitialPredicate(Query)}
+ * Query can be of any type (SQL, TEXT or SCAN) and can be set via {@link #setInitialQuery(Query)}
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
@@ -62,7 +62,7 @@ import javax.cache.event.*;
  * ContinuousQuery qry = Query.continuous();
  *
  * // Initial iteration query will return all persons with salary above 1000.
- * qry.setInitialPredicate(Query.scan(new IgniteBiPredicate&lt;UUID, Person&gt;() {
+ * qry.setInitialQuery(Query.scan(new IgniteBiPredicate&lt;UUID, Person&gt;() {
  *     &#64;Override public boolean apply(UUID id, Person p) {
  *         return p.getSalary() &gt; 1000;
  *     }
@@ -124,8 +124,8 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      */
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
-    /** Initial filter. */
-    private Query initFilter;
+    /** Initial query. */
+    private Query initQry;
 
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;
@@ -149,11 +149,11 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * which allows to iterate through entries which already existed at the
      * time continuous query is executed.
      *
-     * @param initFilter Initial query.
+     * @param initQuery Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialPredicate(Query initFilter) {
-        this.initFilter = initFilter;
+    public ContinuousQuery<K, V> setInitialQuery(Query initQuery) {
+        this.initQry = initQuery;
 
         return this;
     }
@@ -163,8 +163,8 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Initial query.
      */
-    public Query getInitialPredicate() {
-        return initFilter;
+    public Query getInitialQuery() {
+        return initQry;
     }
 
     /**
