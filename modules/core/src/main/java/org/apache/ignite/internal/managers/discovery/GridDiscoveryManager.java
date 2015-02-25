@@ -206,7 +206,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
-        getSpi().setNodeAttributes(ctx.sealNodeAttributes(), ver);
+        getSpi().setNodeAttributes(ctx.nodeAttributes(), ver);
     }
 
     /** {@inheritDoc} */

@@ -2507,9 +2507,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <V, T> IgniteAtomicStamped<V, T> atomicStamped(String name,
-        @Nullable V initVal,
-        @Nullable T initStamp,
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
         boolean create)
     {
         guard();

@@ -278,7 +278,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>(150);
 
-
     /** */
     private IgniteEx grid;
 
@@ -868,9 +867,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> sealNodeAttributes() {
-        attrs = Collections.unmodifiableMap(attrs);
-
+    @Override public Map<String, Object> nodeAttributes() {
         return attrs;
     }
 

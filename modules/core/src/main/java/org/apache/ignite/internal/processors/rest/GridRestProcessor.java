@@ -180,13 +180,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-                try {
-                    updateSession(req, subjCtx);
-                    res.sessionTokenBytes(ZERO_BYTES);
-                }
-                catch (Exception e1) {
-                    U.warn(log, "Cannot update response session token: " + e1.getMessage());
-                }
+                updateSession(req, subjCtx);
+                res.sessionTokenBytes(ZERO_BYTES);
 
                 return new GridFinishedFuture<>(ctx, res);
             }
@@ -226,13 +221,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 assert res != null;
 
                 if (ctx.security().enabled()) {
-                    try {
-                        updateSession(req, subjCtx0);
-                        res.sessionTokenBytes(ZERO_BYTES);
-                    }
-                    catch (Exception e) {
-                        U.warn(log, "Cannot update response session token: " + e.getMessage());
-                    }
+                    updateSession(req, subjCtx0);
+                    res.sessionTokenBytes(ZERO_BYTES);
                 }
 
                 interceptResponse(res, req);

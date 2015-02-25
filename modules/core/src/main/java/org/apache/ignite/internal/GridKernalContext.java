@@ -534,7 +534,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public void addNodeAttributes(Map<String, String> attrs);
 
     /**
-     * Seal node attributes for modification.
+     * @return Node attributes.
      */
-    public Map<String, Object> sealNodeAttributes();
+    public Map<String, Object> nodeAttributes();
 }
