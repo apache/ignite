@@ -488,6 +488,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> it = cctx.swap().iterator(id, false);
 
+            boolean isLocStore = cctx.store().isLocalStore();
+
             if (it != null) {
                 // We can safely remove these values because no entries will be created for evicted partition.
                 while (it.hasNext()) {
@@ -498,6 +500,9 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                     K key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
 
                     cctx.swap().remove(key, keyBytes);
+
+                    if (isLocStore)
+                        cctx.store().removeFromStore(null, key);
                 }
             }
         }
@@ -531,7 +536,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
-        boolean locStore = cctx.store().isLocalStore();
+        boolean isLocStore = cctx.store().isLocalStore();
 
         for (Iterator<GridDhtCacheEntry<K, V>> it = map.values().iterator(); it.hasNext();) {
             GridDhtCacheEntry<K, V> cached = it.next();
@@ -540,7 +545,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                 if (cached.clearInternal(clearVer, swap)) {
                     it.remove();
 
-                    if (locStore)
+                    if (isLocStore)
                         cctx.store().removeFromStore(null, cached.key());
 
                     if (!cached.isInternal()) {

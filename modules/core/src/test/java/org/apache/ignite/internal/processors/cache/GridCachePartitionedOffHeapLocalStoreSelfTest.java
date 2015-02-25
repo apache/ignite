@@ -26,11 +26,11 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCacheTxPartitionedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
+public class GridCachePartitionedOffHeapLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
     /**
      *
      */
-    public GridCacheTxPartitionedLocalStoreSelfTest() {
+    public GridCachePartitionedOffHeapLocalStoreSelfTest() {
         super();
     }
 
@@ -41,11 +41,16 @@ public class GridCacheTxPartitionedLocalStoreSelfTest extends GridCacheAbstractL
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode getAtomicMode() {
-        return TRANSACTIONAL;
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheMode getCacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isOffHeapTiredMode() {
+        return true;
     }
 }

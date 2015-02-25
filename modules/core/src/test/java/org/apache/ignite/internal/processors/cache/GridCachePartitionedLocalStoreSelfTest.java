@@ -35,7 +35,7 @@ public class GridCachePartitionedLocalStoreSelfTest extends GridCacheAbstractLoc
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode getDisrtMode() {
+    @Override protected CacheDistributionMode getDistributionMode() {
         return PARTITIONED_ONLY;
     }
 

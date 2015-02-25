@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
@@ -37,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -100,13 +102,16 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         LOCAL_STORE_3.clear();
     }
 
+    /**
+     * 
+     */
     private CacheConfiguration cache(String gridName, String cacheName, int backups) {
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDisrtMode());
+        cacheCfg.setDistributionMode(getDistributionMode());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
 
@@ -120,6 +125,11 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
+        cacheCfg.setOffHeapMaxMemory(0);
+        cacheCfg.setSwapEnabled(true);
+
+        if (isOffHeapTiredMode())
+            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
 
         return cacheCfg;
     }
@@ -127,7 +137,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDisrtMode();
+    protected abstract CacheDistributionMode getDistributionMode();
 
     /**
      * @return Cache atomicity mode.
@@ -138,6 +148,13 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Cache mode.
      */
     protected abstract CacheMode getCacheMode();
+
+    /**
+     * @return Cache memory mode.
+     */
+    protected boolean isOffHeapTiredMode() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -152,57 +169,47 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         IgniteCache<Object, Object> cache = ignite1.jcache(null);
 
+        // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        for (int i = 0; i < KEYS; i++)
-            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i);
+        checkLocalStore(ignite1, LOCAL_STORE_1);
 
-        final CountDownLatch startPartExchange = new CountDownLatch(1);
-        final AtomicBoolean eventOcr = new AtomicBoolean(true);
+        final CountDownLatch partExchanged = new CountDownLatch(1);
+
+        final int[] leftPartition = new int[1];
 
         if (getCacheMode() != REPLICATED) {
             ignite1.events().localListen(new IgnitePredicate<Event>() {
+                private AtomicInteger eventCnt = new AtomicInteger(0);
+                
                 @Override public boolean apply(Event event) {
-                    startPartExchange.countDown();
-
-                    eventOcr.set(true);
-
+                    if (leftPartition[0] - eventCnt.incrementAndGet() == 0)
+                        partExchanged.countDown();
+                                            
                     return true;
                 }
-            }, EventType.EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
         }
 
         Ignite ignite2 = startGrid(2);
 
+        // Partition count which must be transferred to 2'nd node.
+        leftPartition[0] = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+
         assertEquals(Ignition.allGrids().size(), 2);
 
         // Wait when partition unloaded.
-        waitExpirePartition(startPartExchange, eventOcr);
+        if (getCacheMode() != REPLICATED)
+            assert partExchanged.await(2, TimeUnit.SECONDS);
 
         checkLocalStore(ignite1, LOCAL_STORE_1);
         checkLocalStore(ignite2, LOCAL_STORE_2);
     }
 
     /**
-     * Wait when partition unloaded.
+     * @throws Exception If failed.
      */
-    private void waitExpirePartition(CountDownLatch startPartExchange, AtomicBoolean eventOcr) throws Exception {
-        if (getCacheMode() != REPLICATED) {
-            assert startPartExchange.await(2, TimeUnit.SECONDS);
-
-            while (true) {
-                if (eventOcr.get()) {
-                    eventOcr.set(false);
-
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                else
-                    break;
-            }
-        }
-    }
-
     public void testBackupNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -238,6 +245,59 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         assertEquals(Ignition.allGrids().size(), 2);
 
         checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSwap() throws Exception {
+        Ignite ignite1 = startGrid(1);
+
+        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+
+        // Populate cache and check that local store has all value.
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        checkLocalStore(ignite1, LOCAL_STORE_1);
+
+        // Push entry to swap.
+        for (int i = 0; i < KEYS; i++)
+            cache.localEvict(Lists.newArrayList(i));
+
+        for (int i = 0; i < KEYS; i++)
+            assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
+
+        final CountDownLatch partExchanged = new CountDownLatch(1);
+
+        final int[] leftPartition = new int[1];
+
+        if (getCacheMode() != REPLICATED) {
+            ignite1.events().localListen(new IgnitePredicate<Event>() {
+                private AtomicInteger eventCnt = new AtomicInteger(0);
+
+                @Override public boolean apply(Event event) {
+                    if (leftPartition[0] - eventCnt.incrementAndGet() == 0)
+                        partExchanged.countDown();
+
+                    return true;
+                }
+            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
+        }
+
+        Ignite ignite2 = startGrid(2);
+
+        // Partition count which must be transferred to 2'nd node.
+        leftPartition[0] = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+
+        assertEquals(Ignition.allGrids().size(), 2);
+
+        // Wait when partition unloaded.
+        if (getCacheMode() != REPLICATED)
+            assert partExchanged.await(2, TimeUnit.SECONDS);
+
+        checkLocalStore(ignite1, LOCAL_STORE_1);
+        checkLocalStore(ignite2, LOCAL_STORE_2);
     }
 
     /**
