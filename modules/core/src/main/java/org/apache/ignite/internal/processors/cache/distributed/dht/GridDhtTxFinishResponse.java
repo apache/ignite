@@ -142,12 +142,18 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (writer.state()) {
             case 5:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeBoolean("checkCommitted", checkCommitted))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeByteArray("errBytes", errBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
@@ -170,7 +176,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (reader.state()) {
             case 5:
-                errBytes = reader.readByteArray("errBytes");
+                checkCommitted = reader.readBoolean("checkCommitted");
 
                 if (!reader.isLastRead())
                     return false;
@@ -178,6 +184,14 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
                 reader.incrementState();
 
             case 6:
+                errBytes = reader.readByteArray("errBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -197,6 +211,6 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 }
