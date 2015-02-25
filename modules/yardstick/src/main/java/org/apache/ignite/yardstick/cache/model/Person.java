@@ -19,8 +19,6 @@ package org.apache.ignite.yardstick.cache.model;
 
 import org.apache.ignite.cache.query.annotations.*;
 
-import org.apache.ignite.cache.query.annotations.*;
-
 import java.io.*;
 
 /**
