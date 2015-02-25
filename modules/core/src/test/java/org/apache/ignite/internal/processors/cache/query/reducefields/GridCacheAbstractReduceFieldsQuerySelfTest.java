@@ -21,10 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -89,6 +88,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setDistributionMode(distributionMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setPreloadMode(SYNC);
+        cache.setQueryIndexEnabled(true);
+        cache.setIndexedTypes();
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);

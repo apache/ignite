@@ -25,6 +25,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -53,8 +54,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 import static org.junit.Assert.*;
 
 /**
@@ -138,7 +139,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 Integer.class, ObjectValue.class,
                 String.class, ObjectValueOther.class,
                 Integer.class, ArrayObject.class,
-                Key.class, GridCacheQueryTestValue.class
+                Key.class, GridCacheQueryTestValue.class,
+                UUID.class, Person.class,
+                IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
             );
 
             // Explicitly set number of backups equal to number of grids.
@@ -177,13 +180,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cache.put(1, "value");
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache.put("key", "value");
+        try {
+            cache.put("key", "value");
 
-                return null;
-            }
-        }, CacheException.class, null);
+            fail();
+        }
+        catch (CacheException e) {
+            // No-op.
+        }
     }
 
     /**

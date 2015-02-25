@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -43,11 +41,14 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setIndexedTypes(
+            String.class, Integer.class
+        );
 
         cfg.setCacheConfiguration(cache);
 
@@ -75,7 +76,7 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
      */
     public void testQuery() throws Exception {
         Collection<Cache.Entry<Object, Object>> res = grid().jcache(null)
-            .query(new SqlQuery("select _VAL from Integer")).getAll();
+            .query(new SqlQuery("Integer", "from Integer")).getAll();
 
         assert res != null;
         assert res.isEmpty();

@@ -20,11 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -33,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -64,6 +59,9 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         ccfg.setQueryIndexEnabled(true);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setIndexedTypes(
+            Integer.class, Person.class
+        );
 
         c.setCacheConfiguration(ccfg);
 
@@ -99,7 +97,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
                     QueryCursor<Cache.Entry<Integer, Person>> qry =
-                        cache.query(new SqlQuery("age >= 0").setType("Person"));
+                        cache.query(new SqlQuery("Person", "age >= 0"));
 
                     int cnt = 0;
 

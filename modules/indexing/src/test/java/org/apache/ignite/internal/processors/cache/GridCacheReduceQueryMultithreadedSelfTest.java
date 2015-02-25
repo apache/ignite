@@ -68,6 +68,10 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
+        cfg.setIndexedTypes(
+            String.class, Integer.class
+        );
+
         return cfg;
     }
 

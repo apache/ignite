@@ -95,6 +95,30 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setPreloadMode(SYNC);
 
+        List<Class<?>> indexedTypes = new ArrayList<>(F.<Class<?>>asList(
+            String.class, Organization.class
+        ));
+
+        if (CACHE_COMPLEX_KEYS.equals(name)) {
+            indexedTypes.addAll(F.<Class<?>>asList(
+                PersonKey.class, Person.class
+            ));
+        }
+        else {
+            indexedTypes.addAll(F.<Class<?>>asList(
+                CacheAffinityKey.class, Person.class
+            ));
+        }
+
+        if (!CACHE_NO_PRIMITIVES.equals(name)) {
+            indexedTypes.addAll(F.<Class<?>>asList(
+                String.class, String.class,
+                Integer.class, Integer.class
+            ));
+        }
+
+        cache.setIndexedTypes(indexedTypes.toArray(new Class[indexedTypes.size()]));
+
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
 

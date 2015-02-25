@@ -118,7 +118,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
-        assert cache.size() == PUT_CNT;
+        cache.loadCache(null);
+
+        assertEquals(PUT_CNT, cache.size());
 
         Collection<Cache.Entry<Integer, ValueObject>> res =
             cache.query(new SqlQuery(ValueObject.class, "val >= 0")).getAll();

@@ -434,7 +434,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * Cache key.
      */
-    private static class CacheKey implements Externalizable {
+    public static class CacheKey implements Externalizable {
         /** Key. */
         private int key;
 
@@ -505,7 +505,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * Cache value..
      */
-    private static class CacheValue implements Externalizable {
+    public static class CacheValue implements Externalizable {
         /** Value. */
         @QuerySqlField
         private String val;

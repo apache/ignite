@@ -61,6 +61,11 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         checkQuery(cache);
     }
 
+    /** {@inheritDoc} */
+    @Override protected Class<?>[] indexedTypes() {
+        return new Class<?>[]{Integer.class, CacheValue.class};
+    }
+
     /**
      * @throws Exception If failed.
      */

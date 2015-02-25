@@ -87,7 +87,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration createCache(String name, CacheMode mode) {
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
@@ -97,6 +97,18 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         cc.setEvictNearSynchronized(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
+
+        if (mode == CacheMode.PARTITIONED)
+            cc.setIndexedTypes(
+                Integer.class, FactPurchase.class
+            );
+        else if (mode == CacheMode.REPLICATED)
+            cc.setIndexedTypes(
+                Integer.class, DimProduct.class,
+                Integer.class, DimStore.class
+            );
+        else
+            throw new IllegalStateException("mode: " + mode);
 
         return cc;
     }
