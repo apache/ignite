@@ -213,6 +213,25 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
     }
 
+    /**
+     * @param nodeId Sender.
+     * @param res Result.
+     */
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+        if (!isDone())
+            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
+                if (isMini(fut)) {
+                    MiniFuture f = (MiniFuture)fut;
+
+                    if (f.futureId().equals(res.miniId())) {
+                        assert f.node().id().equals(nodeId);
+
+                        f.onResult(res);
+                    }
+                }
+            }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if ((initialized() || err != null)) {
@@ -348,7 +367,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (!F.isEmpty(backups)) {
                 assert backups.size() == 1;
 
-                UUID backup = F.first(backups);
+                UUID backupId = F.first(backups);
+
+                ClusterNode backup = ctx.discovery().node(backupId);
+
+                // Nothing to do if backup has left the grid.
+                if (backup == null)
+                    return;
 
                 MiniFuture mini = new MiniFuture(backup);
 
@@ -512,7 +537,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private GridDistributedTxMapping<K, V> m;
 
         /** Backup check flag. */
-        private UUID backupId;
+        private ClusterNode backup;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -531,12 +556,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         }
 
         /**
-         * @param backupId Backup ID to check.
+         * @param backup Backup to check.
          */
-        MiniFuture(UUID backupId) {
+        MiniFuture(ClusterNode backup) {
             super(cctx.kernalContext());
 
-            this.backupId = backupId;
+            this.backup = backup;
         }
 
         /**
@@ -586,7 +611,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param res Result callback.
          */
         void onResult(GridNearTxFinishResponse<K, V> res) {
-            assert backupId == null;
+            assert backup == null;
 
             if (res.error() != null)
                 onDone(res.error());
@@ -598,7 +623,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param res Response.
          */
         void onResult(GridDhtTxFinishResponse<K, V> res) {
-            assert backupId != null;
+            assert backup != null;
 
             if (res.error() != null)
                 onDone(res.error());

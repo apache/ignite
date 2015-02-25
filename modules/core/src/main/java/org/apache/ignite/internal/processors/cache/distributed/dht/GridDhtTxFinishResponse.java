@@ -46,6 +46,9 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     /** Serialized error. */
     private byte[] errBytes;
 
+    /** Flag indicating if this is a check-committed response. */
+    private boolean checkCommitted;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -78,6 +81,27 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
      */
     public Throwable error() {
         return err;
+    }
+
+    /**
+     * @param err Error for check committed backup requests.
+     */
+    public void error(Throwable err) {
+        this.err = err;
+    }
+
+    /**
+     * @return Check committed flag.
+     */
+    public boolean checkCommitted() {
+        return checkCommitted;
+    }
+
+    /**
+     * @param checkCommitted Check committed flag.
+     */
+    public void checkCommitted(boolean checkCommitted) {
+        this.checkCommitted = checkCommitted;
     }
 
     /** {@inheritDoc} */

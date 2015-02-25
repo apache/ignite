@@ -409,17 +409,32 @@ public class IgniteTxHandler<K, V> {
         assert nodeId != null;
         assert res != null;
 
-        GridDhtTxFinishFuture<K, V> fut = (GridDhtTxFinishFuture<K, V>)ctx.mvcc().<IgniteInternalTx>future(res.xid(),
-            res.futureId());
+        if (res.checkCommitted()) {
+            GridNearTxFinishFuture<K, V> fut = (GridNearTxFinishFuture<K, V>)ctx.mvcc().<IgniteInternalTx>future(
+                res.xid(), res.futureId());
 
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received response for unknown future (will ignore): " + res);
 
-            return;
+                return;
+            }
+
+            fut.onResult(nodeId, res);
         }
+        else {
+            GridDhtTxFinishFuture<K, V> fut = (GridDhtTxFinishFuture<K, V>)ctx.mvcc().<IgniteInternalTx>future(
+                res.xid(), res.futureId());
 
-        fut.onResult(nodeId, res);
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received response for unknown future (will ignore): " + res);
+
+                return;
+            }
+
+            fut.onResult(nodeId, res);
+        }
     }
 
     /**
@@ -854,9 +869,15 @@ public class IgniteTxHandler<K, V> {
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest<K, V> req, boolean committed) {
         if (req.replyRequired()) {
-            GridCacheMessage<K, V> res = new GridDhtTxFinishResponse<>(req.version(), req.futureId(), req.miniId());
+            GridDhtTxFinishResponse<K, V> res = new GridDhtTxFinishResponse<>(req.version(), req.futureId(), req.miniId());
 
+            if (req.checkCommitted()) {
+                res.checkCommitted(true);
 
+                if (!committed)
+                    res.error(new IgniteTxRollbackCheckedException("Failed to commit transaction (transaction has been " +
+                        "rolled back on backup node): " + req.version()));
+            }
 
             try {
                 ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
