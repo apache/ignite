@@ -181,8 +181,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         checkLocalStore(ignite1, LOCAL_STORE_1);
 
-        final CountDownLatch partExchanged = new CountDownLatch(1);
-
         final AtomicInteger evtCnt = new AtomicInteger(0);
 
         if (getCacheMode() != REPLICATED) {
@@ -197,22 +195,20 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         final Ignite ignite2 = startGrid(2);
 
-        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                // Partition count which must be transferred to 2'nd node.
-                int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+        if (getCacheMode() != REPLICATED) {
+            boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    // Partition count which must be transferred to 2'nd node.
+                    int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
 
-                return evtCnt.get() >= parts;
-            }
-        }, 5000);
+                    return evtCnt.get() >= parts;
+                }
+            }, 5000);
 
-        assertTrue(wait);
+            assertTrue(wait);
+        }
 
         assertEquals(Ignition.allGrids().size(), 2);
-
-        // Wait when partition unloaded.
-        if (getCacheMode() != REPLICATED)
-            assert partExchanged.await(2, TimeUnit.SECONDS);
 
         checkLocalStore(ignite1, LOCAL_STORE_1);
         checkLocalStore(ignite2, LOCAL_STORE_2);
@@ -279,8 +275,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = 0; i < KEYS; i++)
             assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
-        final CountDownLatch partExchanged = new CountDownLatch(1);
-
         final AtomicInteger evtCnt = new AtomicInteger(0);
 
         if (getCacheMode() != REPLICATED) {
@@ -295,22 +289,20 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         final Ignite ignite2 = startGrid(2);
 
-        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                // Partition count which must be transferred to 2'nd node.
-                int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+        if (getCacheMode() != REPLICATED) {
+            boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    // Partition count which must be transferred to 2'nd node.
+                    int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
 
-                return evtCnt.get() >= parts;
-            }
-        }, 5000);
+                    return evtCnt.get() >= parts;
+                }
+            }, 5000);
 
-        assertTrue(wait);
+            assertTrue(wait);
+        }
 
         assertEquals(Ignition.allGrids().size(), 2);
-
-        // Wait when partition unloaded.
-        if (getCacheMode() != REPLICATED)
-            assert partExchanged.await(2, TimeUnit.SECONDS);
 
         checkLocalStore(ignite1, LOCAL_STORE_1);
         checkLocalStore(ignite2, LOCAL_STORE_2);
