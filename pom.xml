@@ -592,62 +592,56 @@
                                     <!--<copyrightMessage>rat.copyrightMessage</copyrightMessage>-->
                                     <excludes>
                                         <exclude>work/**</exclude>
+                                        <exclude>**/target/**</exclude>
                                         <exclude>**/*.jks</exclude>
                                         <exclude>**/*.pem</exclude>
-                                        <exclude>**/*.m4</exclude>
+                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
                                         <exclude>**/*.log</exclude>
-                                        <exclude>**/*.sln</exclude>
-                                        <exclude>**/*.h</exclude>
                                         <exclude>**/*.pfx</exclude>
                                         <exclude>**/*.dylib</exclude>
                                         <exclude>**/*.gar</exclude>
                                         <exclude>**/*.guess</exclude>
                                         <exclude>**/licenses/*.txt</exclude>
-                                        <exclude>**/target/**/*</exclude>
                                         <exclude>**/*.timestamp</exclude>
                                         <exclude>**/*.iml</exclude>
                                         <exclude>**/*.md</exclude>
-                                        <exclude>**/Makefile.am</exclude>
-                                        <exclude>**/Makefile.in</exclude>
-                                        <exclude>**/Makefile</exclude>
                                         <exclude>**/pom-installed.xml</exclude>
                                         <!--special excludes-->
                                         <exclude>**/com/romix/scala/**</exclude>
                                         <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
                                         <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude>
                                         <exclude>**/org/pcollections/**</exclude>
-                                        <!--<exclude>**/org/jetbrains/annotations/**</exclude>-->
+                                        <exclude>**/org/jetbrains/annotations/**</exclude>
                                         <exclude>**/org/jdk8/backport/</exclude>
                                         <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <!--core-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude>
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude>
                                         <exclude>src/test/config/start-nodes.ini</exclude>
-                                        <!--urideploy-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude>
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
-                                        <!--hadoop-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude>
                                         <!--shmem-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
+                                        <exclude>ipc/shmem/Makefile.am</exclude>
+                                        <exclude>ipc/shmem/Makefile.in</exclude>
+                                        <exclude>ipc/shmem/Makefile</exclude>
+                                        <exclude>ipc/shmem/compile</exclude>
+                                        <exclude>ipc/shmem/config.sub</exclude><!--own license-->
+                                        <exclude>ipc/shmem/configure</exclude>
+                                        <exclude>ipc/shmem/configure.ac</exclude>
                                         <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
-                                        <exclude>ipc/shmem/install-sh</exclude>
+                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude>
                                         <exclude>ipc/shmem/include/Makefile</exclude>
+                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
+                                        <exclude>ipc/shmem/install-sh</exclude>
                                         <exclude>ipc/shmem/depcomp</exclude>
                                         <exclude>ipc/shmem/config.status</exclude>
                                         <exclude>ipc/shmem/libtool</exclude>
                                         <exclude>ipc/shmem/missing</exclude>
-                                        <exclude>ipc/shmem/configure</exclude>
                                         <exclude>ipc/shmem/stamp-h1</exclude>
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude>
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude>
-                                        <exclude>ipc/shmem/compile</exclude>
-                                        <exclude>ipc/shmem/configure.ac</exclude>
-                                        <exclude>ipc/shmem/config.sub</exclude><!--own license-->
                                     </excludes>
                                 </configuration>
                             </execution>
