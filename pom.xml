@@ -524,15 +524,14 @@
                                         <exclude>**/*.pem</exclude>
                                         <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
                                         <exclude>**/*.log</exclude>
-                                        <exclude>**/*.pfx</exclude>
-                                        <exclude>**/*.dylib</exclude>
-                                        <exclude>**/*.gar</exclude>
-                                        <exclude>**/*.guess</exclude>
+                                        <exclude>**/*.dylib</exclude><!--bin-files-->
+                                        <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude>
                                         <exclude>**/*.timestamp</exclude>
                                         <exclude>**/*.iml</exclude>
                                         <exclude>**/*.md</exclude>
                                         <exclude>**/pom-installed.xml</exclude>
+                                        <exclude>**/keystore/*.pfx</exclude>
                                         <!--special excludes-->
                                         <exclude>**/com/romix/scala/**</exclude>
                                         <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
@@ -541,19 +540,20 @@
                                         <exclude>**/org/jetbrains/annotations/**</exclude>
                                         <exclude>**/org/jdk8/backport/</exclude>
                                         <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude>
-                                        <exclude>src/test/resources/log/ignite.log.tst</exclude>
-                                        <exclude>src/test/config/start-nodes.ini</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude>
+                                        <exclude>**/test/resources/log/ignite.log.tst</exclude>
+                                        <exclude>**/test/config/start-nodes.ini</exclude>
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.empty</exclude>
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
+                                        <exclude>**/hadoop/books/*.txt</exclude>
+                                        <exclude>**/javax.cache.spi.CachingProvider</exclude>
+                                        <exclude>**/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.am</exclude>
                                         <exclude>ipc/shmem/**/Makefile.in</exclude>
                                         <exclude>ipc/shmem/**/Makefile</exclude>
                                         <exclude>ipc/shmem/compile</exclude>
+                                        <exclude>ipc/shmem/config.guess</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.sub</exclude><!--own license-->
                                         <exclude>ipc/shmem/configure</exclude>
                                         <exclude>ipc/shmem/configure.ac</exclude>
