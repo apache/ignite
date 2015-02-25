@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -487,14 +488,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeByteArray(out, bytes);
+            IgniteByteUtils.writeByteArray(out, bytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            bytes = U.readByteArray(in);
+            bytes = IgniteByteUtils.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
         }

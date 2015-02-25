@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
@@ -175,12 +176,12 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
         out.writeBoolean(b);
 
         if (b) {
-            U.writeByteArray(out, keyBytes);
+            IgniteByteUtils.writeByteArray(out, keyBytes);
 
             if (newValBytes != null && !newValBytes.isNull()) {
                 out.writeBoolean(true);
                 out.writeBoolean(newValBytes.isPlain());
-                U.writeByteArray(out, newValBytes.get());
+                IgniteByteUtils.writeByteArray(out, newValBytes.get());
             }
             else
                 out.writeBoolean(false);
@@ -188,7 +189,7 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
             if (oldValBytes != null && !oldValBytes.isNull()) {
                 out.writeBoolean(true);
                 out.writeBoolean(oldValBytes.isPlain());
-                U.writeByteArray(out, oldValBytes.get());
+                IgniteByteUtils.writeByteArray(out, oldValBytes.get());
             }
             else
                 out.writeBoolean(false);
@@ -209,13 +210,13 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
         boolean b = in.readBoolean();
 
         if (b) {
-            keyBytes = U.readByteArray(in);
+            keyBytes = IgniteByteUtils.readByteArray(in);
 
             if (in.readBoolean())
-                newValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
+                newValBytes = in.readBoolean() ? plain(IgniteByteUtils.readByteArray(in)) : marshaled(IgniteByteUtils.readByteArray(in));
 
             if (in.readBoolean())
-                oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
+                oldValBytes = in.readBoolean() ? plain(IgniteByteUtils.readByteArray(in)) : marshaled(IgniteByteUtils.readByteArray(in));
 
             cacheName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();

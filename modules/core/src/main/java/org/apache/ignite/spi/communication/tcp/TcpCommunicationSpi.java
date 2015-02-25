@@ -305,7 +305,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     assert ses.accepted();
 
                     if (msg instanceof NodeIdMessage)
-                        sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes, 0);
+                        sndId = IgniteByteUtils.bytesToUuid(((NodeIdMessage) msg).nodeIdBytes, 0);
                     else {
                         assert msg instanceof HandshakeMessage : msg;
 
@@ -2215,7 +2215,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         i += read;
                     }
 
-                    UUID rmtNodeId0 = U.bytesToUuid(buf.array(), 1);
+                    UUID rmtNodeId0 = IgniteByteUtils.bytesToUuid(buf.array(), 1);
 
                     if (!rmtNodeId.equals(rmtNodeId0))
                         throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
@@ -2986,7 +2986,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
 
                 // First 4 bytes are for length.
-                UUID id = U.bytesToUuid(b, 1);
+                UUID id = IgniteByteUtils.bytesToUuid(b, 1);
 
                 if (!rmtNodeId.equals(id))
                     throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
@@ -3085,7 +3085,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             buf.put(HANDSHAKE_MSG_TYPE);
 
-            byte[] bytes = U.uuidToBytes(nodeId);
+            byte[] bytes = IgniteByteUtils.uuidToBytes(nodeId);
 
             assert bytes.length == 16 : bytes.length;
 
@@ -3107,7 +3107,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             buf.get(nodeIdBytes);
 
-            nodeId = U.bytesToUuid(nodeIdBytes, 0);
+            nodeId = IgniteByteUtils.bytesToUuid(nodeIdBytes, 0);
 
             rcvCnt = buf.getLong();
 
@@ -3225,7 +3225,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param nodeId Node ID.
          */
         private NodeIdMessage(UUID nodeId) {
-            nodeIdBytes = U.uuidToBytes(nodeId);
+            nodeIdBytes = IgniteByteUtils.uuidToBytes(nodeId);
 
             nodeIdBytesWithType = new byte[nodeIdBytes.length + 1];
 

@@ -1435,7 +1435,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             out.writeBoolean(b);
 
             if (b) {
-                U.writeByteArray(out, prjPredBytes);
+                IgniteByteUtils.writeByteArray(out, prjPredBytes);
                 U.writeString(out, clsName);
                 out.writeObject(depInfo);
             }
@@ -1454,7 +1454,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             boolean b = in.readBoolean();
 
             if (b) {
-                prjPredBytes = U.readByteArray(in);
+                prjPredBytes = IgniteByteUtils.readByteArray(in);
                 clsName = U.readString(in);
                 depInfo = (GridDeploymentInfo)in.readObject();
             }

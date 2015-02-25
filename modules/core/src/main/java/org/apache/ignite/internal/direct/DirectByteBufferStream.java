@@ -524,7 +524,7 @@ public class DirectByteBufferStream {
      * @param val Value
      */
     public void writeUuid(UUID val) {
-        writeByteArray(val != null ? U.uuidToBytes(val) : null);
+        writeByteArray(val != null ? IgniteByteUtils.uuidToBytes(val) : null);
     }
 
     /**
@@ -892,7 +892,7 @@ public class DirectByteBufferStream {
     public UUID readUuid() {
         byte[] arr = readByteArray();
 
-        return arr != null ? U.bytesToUuid(arr, 0) : null;
+        return arr != null ? IgniteByteUtils.bytesToUuid(arr, 0) : null;
     }
 
     /**

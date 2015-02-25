@@ -17,6 +17,7 @@
 
 package org.apache.ignite.loadtests.communication;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -95,7 +96,7 @@ class GridTestMessage implements Message, Externalizable {
         out.writeLong(field1);
         out.writeLong(field2);
         U.writeString(out, str);
-        U.writeByteArray(out, bytes);
+        IgniteByteUtils.writeByteArray(out, bytes);
     }
 
     /** {@inheritDoc} */
@@ -104,7 +105,7 @@ class GridTestMessage implements Message, Externalizable {
         field1 = in.readLong();
         field2 = in.readLong();
         str = U.readString(in);
-        bytes = U.readByteArray(in);
+        bytes = IgniteByteUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */

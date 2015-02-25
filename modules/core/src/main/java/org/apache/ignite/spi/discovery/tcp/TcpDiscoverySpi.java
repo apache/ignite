@@ -4601,7 +4601,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
                     }
 
-                    if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
+                    if (!IgniteByteUtils.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?) " +

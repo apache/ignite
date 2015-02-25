@@ -91,7 +91,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         assert list.size() == 4;
 
-        assert Arrays.equals(list.array(), U.intToBytes(num));
+        assert Arrays.equals(list.array(), IgniteByteUtils.intToBytes(num));
 
         int num2 = 2;
 
@@ -105,8 +105,8 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         byte[] arr2 = new byte[8];
 
-        U.arrayCopy(U.intToBytes(num), 0, arr2, 0, 4);
-        U.arrayCopy(U.intToBytes(num3), 0, arr2, 4, 4);
+        U.arrayCopy(IgniteByteUtils.intToBytes(num), 0, arr2, 0, 4);
+        U.arrayCopy(IgniteByteUtils.intToBytes(num3), 0, arr2, 4, 4);
 
         assert Arrays.equals(list.array(), arr2);
 

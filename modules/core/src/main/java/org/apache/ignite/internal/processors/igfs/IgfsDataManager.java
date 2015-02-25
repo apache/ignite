@@ -1637,13 +1637,13 @@ public class IgfsDataManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(start);
-            U.writeByteArray(out, data);
+            IgniteByteUtils.writeByteArray(out, data);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException {
             start = in.readInt();
-            data = U.readByteArray(in);
+            data = IgniteByteUtils.readByteArray(in);
         }
 
         /** {@inheritDoc} */

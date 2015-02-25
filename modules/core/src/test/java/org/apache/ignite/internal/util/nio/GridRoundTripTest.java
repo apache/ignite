@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import junit.framework.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -180,7 +181,7 @@ public class GridRoundTripTest extends TestCase {
             tmp.write(symbol);
         }
 
-        int length = U.bytesToInt(tmp.toByteArray(), 0);
+        int length = IgniteByteUtils.bytesToInt(tmp.toByteArray(), 0);
 
         tmp.reset();
 
@@ -205,7 +206,7 @@ public class GridRoundTripTest extends TestCase {
      * @throws IOException If error occurs.
      */
     private static void writeMessage(OutputStream out, byte[] msg) throws IOException {
-        out.write(U.intToBytes(msg.length));
+        out.write(IgniteByteUtils.intToBytes(msg.length));
         out.write(msg);
     }
 

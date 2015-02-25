@@ -121,7 +121,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testByteArray2String() throws Exception {
         assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[] {10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
+            IgniteByteUtils.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
     }
 
     /**
@@ -474,7 +474,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             UUID id = UUID.randomUUID();
 
-            byte[] bytes = IgniteUtils.uuidToBytes(id);
+            byte[] bytes = IgniteByteUtils.uuidToBytes(id);
             BigInteger n = new BigInteger(bytes);
 
             assert n.shiftRight(Long.SIZE).longValue() == id.getMostSignificantBits();
@@ -487,8 +487,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     public void testReadByteArray() {
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
+        assertTrue(Arrays.equals(new byte[0], IgniteByteUtils.readByteArray(ByteBuffer.allocate(0))));
+        assertTrue(Arrays.equals(new byte[0], IgniteByteUtils.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
 
         Random rnd = new Random();
 
@@ -496,9 +496,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         rnd.nextBytes(bytes);
 
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes), ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.wrap(bytes))));
+        assertTrue(Arrays.equals(bytes, IgniteByteUtils.readByteArray(ByteBuffer.wrap(bytes))));
+        assertTrue(Arrays.equals(bytes, IgniteByteUtils.readByteArray(ByteBuffer.wrap(bytes), ByteBuffer.allocate(0))));
+        assertTrue(Arrays.equals(bytes, IgniteByteUtils.readByteArray(ByteBuffer.allocate(0), ByteBuffer.wrap(bytes))));
 
         for (int i = 0; i < 1000; i++) {
             int n = rnd.nextInt(100);
@@ -519,7 +519,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             bufs[bufs.length - 1] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(n);
 
-            assertTrue(Arrays.equals(bytes, U.readByteArray(bufs)));
+            assertTrue(Arrays.equals(bytes, IgniteByteUtils.readByteArray(bufs)));
         }
     }
 
@@ -544,7 +544,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 bufs[j] = ByteBuffer.wrap(bytes);
             }
 
-            assertEquals(U.hashCode(bufs), Arrays.hashCode(U.readByteArray(bufs)));
+            assertEquals(U.hashCode(bufs), Arrays.hashCode(IgniteByteUtils.readByteArray(bufs)));
         }
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -135,7 +136,7 @@ class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeByteArray(out, src);
+        IgniteByteUtils.writeByteArray(out, src);
 
         out.writeInt(depMode.ordinal());
 
@@ -147,7 +148,7 @@ class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        src = U.readByteArray(in);
+        src = IgniteByteUtils.readByteArray(in);
 
         depMode = DeploymentMode.fromOrdinal(in.readInt());
 

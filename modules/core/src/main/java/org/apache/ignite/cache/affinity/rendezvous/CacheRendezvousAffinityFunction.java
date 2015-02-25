@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -294,7 +295,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
                 byte[] nodeHashBytes = marshaller.marshal(nodeHash);
 
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
-                out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
+                out.write(IgniteByteUtils.intToBytes(part), 0, 4); // Avoid IOException.
 
                 d.reset();
 
