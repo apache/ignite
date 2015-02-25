@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -596,6 +597,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets DHT affinity nodes.
+     *
+     * @param ctx Cache context.
+     * @param topOrder Maximum allowed node order.
+     * @return Affinity nodes.
+     */
+    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
+        return affinityNodes(ctx, topOrder.topologyVersion());
+    }
+
+    /**
      * Checks if given node has specified cache started and the local DHT storage is enabled.
      *
      * @param ctx Cache context.
@@ -1089,7 +1101,7 @@ public class GridCacheUtils {
         if (ctx.config().getCacheMode() == LOCAL)
             return F.asMap(ctx.localNode(), (Collection<K>)keys);
 
-        long topVer = ctx.discovery().topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
 
         if (CU.affinityNodes(ctx, topVer).isEmpty())
             return Collections.emptyMap();

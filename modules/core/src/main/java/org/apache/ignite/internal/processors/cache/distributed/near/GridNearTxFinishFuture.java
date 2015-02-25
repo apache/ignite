@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -222,7 +223,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             if (super.onDone(tx, th != null ? th : err)) {
                 if (error() instanceof IgniteTxHeuristicCheckedException) {
-                    long topVer = this.tx.topologyVersion();
+                    AffinityTopologyVersion topVer = this.tx.topologyVersion();
 
                     for (IgniteTxEntry<K, V> e : this.tx.writeMap().values()) {
                         GridCacheContext<K, V> cacheCtx = e.context();

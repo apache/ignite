@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.swapspace.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
@@ -479,7 +480,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         cache.map().incrementSize(e);
 
         if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), -1, false);
+            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE,
+                false);
 
             if (part != null)
                 part.incrementPublicSize();
@@ -497,7 +499,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         cache.map().decrementSize(e);
 
         if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), -1, false);
+            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE,
+                false);
 
             if (part != null)
                 part.decrementPublicSize();
@@ -1506,10 +1509,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if mapped.
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
-    public boolean dhtMap(UUID nearNodeId, long topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
+    public boolean dhtMap(UUID nearNodeId, AffinityTopologyVersion topVer, GridDhtCacheEntry<K, V> entry, IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearMap) throws GridCacheEntryRemovedException {
-        assert topVer != -1;
+        assert !topVer.equals(AffinityTopologyVersion.NONE);
 
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
 

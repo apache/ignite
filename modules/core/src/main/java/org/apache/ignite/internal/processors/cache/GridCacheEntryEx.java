@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -274,7 +275,7 @@ public interface GridCacheEntryEx<K, V> {
      *
      * @return Checks if value is valid.
      */
-    public boolean valid(long topVer);
+    public boolean valid(AffinityTopologyVersion topVer);
 
     /**
      * @return {@code True} if partition is in valid.
@@ -361,7 +362,7 @@ public interface GridCacheEntryEx<K, V> {
         long ttl,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
@@ -397,7 +398,7 @@ public interface GridCacheEntryEx<K, V> {
         boolean retval,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
@@ -612,7 +613,7 @@ public interface GridCacheEntryEx<K, V> {
     @Nullable public V peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
@@ -684,7 +685,8 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public boolean initialValue(V val, @Nullable byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, long topVer, GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if current version is <tt>0</tt> using swap entry data.

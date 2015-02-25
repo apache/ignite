@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local.atomic;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -75,7 +76,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
-            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
+            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash,
                 V val, @Nullable GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
                 return new GridLocalCacheEntry<K, V>(ctx, key, hash, val, next, ttl, hdrId);
             }
@@ -1531,7 +1532,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         for (GridCacheEntryEx<K, V> entry : locked)
             UNSAFE.monitorExit(entry);
 
-        long topVer = ctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridCacheEntryEx<K, V> entry : locked)
             ctx.evicts().touch(entry, topVer);

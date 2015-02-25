@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -120,7 +121,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-                GridDhtPartitionExchangeId exchId = exchangeId(n.id(), e.topologyVersion(), e.type());
+                GridDhtPartitionExchangeId exchId = exchangeId(n.id(), new AffinityTopologyVersion(e.topologyVersion()),
+                    e.type());
 
                 GridDhtPartitionsExchangeFuture<K, V> exchFut = exchangeFuture(exchId, e);
 
@@ -198,7 +200,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         assert startTime > 0;
 
-        final long startTopVer = loc.order();
+        final AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(loc.order());
 
         GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
@@ -207,7 +209,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         assert discoEvt != null;
 
-        assert discoEvt.topologyVersion() == startTopVer;
+        assert discoEvt.topologyVersion() == startTopVer.topologyVersion();
 
         GridDhtPartitionsExchangeFuture<K, V> fut = exchangeFuture(exchId, discoEvt);
 
@@ -320,7 +322,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      * @return Topology version.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return lastInitializedFuture.exchangeId().topologyVersion();
     }
 
@@ -487,7 +489,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes)
         throws IgniteCheckedException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
+        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, AffinityTopologyVersion.NONE);
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
@@ -543,7 +545,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param evt Event type.
      * @return Activity future ID.
      */
-    private GridDhtPartitionExchangeId exchangeId(UUID nodeId, long topVer, int evt) {
+    private GridDhtPartitionExchangeId exchangeId(UUID nodeId, AffinityTopologyVersion topVer, int evt) {
         return new GridDhtPartitionExchangeId(nodeId, evt, topVer);
     }
 
@@ -576,7 +578,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (exchFuts0 != null) {
             for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts0.values()) {
-                if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
+                if (fut.exchangeId().topologyVersion().topologyVersion() < exchFut.exchangeId().topologyVersion().topologyVersion() - 10)
                     fut.cleanUp();
             }
         }
@@ -959,14 +961,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 @Override public int compare(
                     GridDhtPartitionsExchangeFuture<K, V> f1,
                     GridDhtPartitionsExchangeFuture<K, V> f2) {
-                    long t1 = f1.exchangeId().topologyVersion();
-                    long t2 = f2.exchangeId().topologyVersion();
+                    AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
+                    AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
 
-                    assert t1 > 0;
-                    assert t2 > 0;
+                    assert t1.topologyVersion() > 0;
+                    assert t2.topologyVersion() > 0;
 
                     // Reverse order.
-                    return t1 < t2 ? 1 : t1 == t2 ? 0 : -1;
+                    int cmp = t1.compareTo(t2);
+
+                    return cmp < 0 ? 1 : cmp == 0 ? 0 : -1;
                 }
             }, /*not strict*/false);
         }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -467,7 +468,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param topVer Topology version.
      * @return Cache entry.
      */
-    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, long topVer) {
+    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, AffinityTopologyVersion topVer) {
         return cacheCtx.cache().entryEx(key.key(), topVer);
     }
 
@@ -672,7 +673,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             try {
                 cctx.tm().txContext(this);
 
-                long topVer = topologyVersion();
+                AffinityTopologyVersion topVer = topologyVersion();
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -1138,7 +1139,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         Collection<K> lockKeys = null;
 
-        long topVer = topologyVersion();
+        AffinityTopologyVersion topVer = topologyVersion();
 
         // In this loop we cover only read-committed or optimistic transactions.
         // Transactions that are pessimistic and not read-committed are covered

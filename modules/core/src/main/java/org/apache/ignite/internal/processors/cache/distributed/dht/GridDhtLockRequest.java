@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -68,7 +69,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     private byte[] ownedBytes;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Subject ID. */
     private UUID subjId;
@@ -120,7 +121,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion lockVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
         boolean isRead,
         TransactionIsolation isolation,
@@ -194,7 +195,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -400,7 +401,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeLong("topVer", topVer))
+                if (!topVer.writeTo(writer))
                     return false;
 
                 writer.incrementState();
@@ -486,7 +487,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 reader.incrementState();
 
             case 30:
-                topVer = reader.readLong("topVer");
+                topVer = AffinityTopologyVersion.readFrom(reader);
 
                 if (!reader.isLastRead())
                     return false;

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -184,7 +185,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     private AtomicReference<GridFutureAdapter<IgniteInternalTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
-    private AtomicLong topVer = new AtomicLong(-1);
+    private AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>(AffinityTopologyVersion.NONE);
 
     /** Mutex. */
     private final Lock lock = new ReentrantLock();
@@ -361,7 +362,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      * @return Flag indicating whether near cache should be updated.
      */
-    protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+    protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, AffinityTopologyVersion topVer) {
         return false;
     }
 
@@ -488,18 +489,18 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public long topologyVersion() {
-        long res = topVer.get();
+    @Override public AffinityTopologyVersion topologyVersion() {
+        AffinityTopologyVersion res = topVer.get();
 
-        if (res == -1)
+        if (res.equals(AffinityTopologyVersion.NONE))
             return cctx.exchange().topologyVersion();
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public long topologyVersion(long topVer) {
-        this.topVer.compareAndSet(-1, topVer);
+    @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer.compareAndSet(AffinityTopologyVersion.NONE, topVer);
 
         return this.topVer.get();
     }
@@ -1707,7 +1708,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public long topologyVersion() {
+        @Override public AffinityTopologyVersion topologyVersion() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1717,7 +1718,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public long topologyVersion(long topVer) {
+        @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

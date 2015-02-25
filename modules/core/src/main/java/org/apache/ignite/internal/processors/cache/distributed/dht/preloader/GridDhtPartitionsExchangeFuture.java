@@ -24,6 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -47,7 +48,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  * Future for exchanging partition maps.
  */
-public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
+public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {
     /** */
     private static final long serialVersionUID = 0L;
@@ -216,7 +217,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         log = cctx.logger(getClass());
 
         // Grab all nodes with order of equal or less than last joined node.
-        oldestNode.set(CU.oldest(cctx, exchId.topologyVersion()));
+        oldestNode.set(CU.oldest(cctx, exchId.topologyVersion().topologyVersion()));
 
         assert oldestNode.get() != null;
 
@@ -432,7 +433,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 }
 
                 // Grab all alive remote nodes with order of equal or less than last joined node.
-                rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx, exchId.topologyVersion()));
+                rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx, exchId.topologyVersion().topologyVersion()));
 
                 rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
@@ -444,7 +445,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     // If received any messages, process them.
                     onReceive(m.getKey(), m.getValue());
 
-                long topVer = exchId.topologyVersion();
+                AffinityTopologyVersion topVer = exchId.topologyVersion();
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
@@ -485,7 +486,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                     GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
 
-                    assert topVer == top.topologyVersion() :
+                    assert topVer.equals(top.topologyVersion()) :
                         "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
 
                     top.beforeExchange(exchId);
@@ -632,11 +633,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Long res, Throwable err) {
+    @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
         if (err == null) {
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                 if (!cacheCtx.isLocal())
-                    cacheCtx.affinity().cleanUpCache(res - 10);
+                    cacheCtx.affinity().cleanUpCache(res.topologyVersion() - 10);
             }
         }
 
@@ -827,7 +828,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         if (log.isDebugEnabled())
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
-        assert exchId.topologyVersion() == msg.topologyVersion();
+        assert exchId.topologyVersion().equals(msg.topologyVersion());
 
         initFut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> t) {
@@ -915,7 +916,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             boolean set = false;
 
-                            ClusterNode newOldest = CU.oldest(cctx, exchId.topologyVersion());
+                            ClusterNode newOldest = CU.oldest(cctx, exchId.topologyVersion().topologyVersion());
 
                             // If local node is now oldest.
                             if (newOldest.id().equals(cctx.localNodeId())) {

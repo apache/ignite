@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -246,7 +247,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
     /**
      * @return Last recorded topology version.
      */
-    public long topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * @return Flag indicating whether transaction is implicit with only one key.
@@ -266,7 +267,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * @param topVer Topology version.
      * @return Recorded topology version.
      */
-    public long topologyVersion(long topVer);
+    public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer);
 
     /**
      * @return {@code True} if transaction is empty.

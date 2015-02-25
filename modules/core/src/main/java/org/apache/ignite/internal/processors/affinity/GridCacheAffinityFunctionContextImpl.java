@@ -38,7 +38,7 @@ public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFuncti
     private DiscoveryEvent discoEvt;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Number of backups to assign. */
     private int backups;
@@ -48,7 +48,7 @@ public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFuncti
      * @param topVer Topology version.
      */
     public GridCacheAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
-        DiscoveryEvent discoEvt, long topVer, int backups) {
+        DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;
         this.discoEvt = discoEvt;
@@ -67,7 +67,7 @@ public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFuncti
     }
 
     /** {@inheritDoc} */
-    @Override public long currentTopologyVersion() {
+    @Override public AffinityTopologyVersion currentTopologyVersion() {
         return topVer;
     }
 

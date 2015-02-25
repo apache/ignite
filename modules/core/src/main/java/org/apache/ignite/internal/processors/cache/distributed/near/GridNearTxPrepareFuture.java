@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
@@ -338,7 +339,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
 
-                        tx.topologyVersion(snapshot.topologyVersion());
+                        tx.topologyVersion(new AffinityTopologyVersion(snapshot.topologyVersion()));
                         tx.topologySnapshot(snapshot);
 
                         // Make sure to add future before calling prepare.
@@ -364,8 +365,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     topFut.syncNotify(false);
 
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
+                    topFut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             prepare();
                         }
                     });
@@ -463,9 +464,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert snapshot != null;
 
-        long topVer = snapshot.topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
 
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -548,7 +549,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private void preparePessimistic() {
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping<K, V>> mappings = new HashMap<>();
 
-        long topVer = tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx.topologyVersion();
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -752,7 +753,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     private GridDistributedTxMapping<K, V> map(
         IgniteTxEntry<K, V> entry,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridDistributedTxMapping<K, V> cur,
         boolean waitLock
     ) throws IgniteCheckedException {

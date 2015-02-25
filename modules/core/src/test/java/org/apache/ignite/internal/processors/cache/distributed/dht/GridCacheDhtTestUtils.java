@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -68,9 +69,9 @@ public class GridCacheDhtTestUtils {
         GridDhtPartitionTopology<Integer,String> top = dht.topology();
 
         for (int i = 0; i < keyCnt; i++) {
-            cacheMap.putEntry(-1, i, "value" + i, 0);
+            cacheMap.putEntry(AffinityTopologyVersion.NONE, i, "value" + i, 0);
 
-            dht.preloader().request(Collections.singleton(i), -1);
+            dht.preloader().request(Collections.singleton(i), AffinityTopologyVersion.NONE);
 
             GridDhtLocalPartition part = top.localPartition(aff.partition(i), false);
 

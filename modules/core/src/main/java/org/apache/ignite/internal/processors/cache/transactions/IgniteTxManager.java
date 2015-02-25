@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -496,7 +497,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
+    public IgniteInternalFuture<Boolean> finishTxs(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new GridCompoundFuture<>(context().kernalContext(),
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
@@ -514,7 +515,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             // values pending to be overwritten by prepared transaction.
 
             if (tx.concurrency() == PESSIMISTIC) {
-                if (tx.topologyVersion() > 0 && tx.topologyVersion() < topVer)
+                if (tx.topologyVersion().compareTo(AffinityTopologyVersion.ZERO) > 0
+                    && tx.topologyVersion().compareTo(topVer) < 0)
                     // For PESSIMISTIC mode we must wait for all uncompleted txs
                     // as we do not know in advance which keys will participate in tx.
                     res.add(tx.finishFuture());
@@ -523,10 +525,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 // For OPTIMISTIC mode we wait only for txs in PREPARING state that
                 // have keys for given partitions.
                 TransactionState state = tx.state();
-                long txTopVer = tx.topologyVersion();
+                AffinityTopologyVersion txTopVer = tx.topologyVersion();
 
                 if ((state == PREPARING || state == PREPARED || state == COMMITTING)
-                    && txTopVer > 0 && txTopVer < topVer) {
+                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0) {
                     res.add(tx.finishFuture());
                 }
             }

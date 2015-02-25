@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -132,7 +133,8 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 cache.get(key);
 
-                IgniteInternalFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
+                IgniteInternalFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(
+                    new AffinityTopologyVersion(GRID_CNT + 1));
 
                 fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> e) {
@@ -155,7 +157,8 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /**
-     * Tests method {@link GridCacheMvccManager#finishLocks(org.apache.ignite.lang.IgnitePredicate, long)}.
+     * Tests method {@link GridCacheMvccManager#finishLocks(org.apache.ignite.lang.IgnitePredicate,
+     * AffinityTopologyVersion)}.
      *
      * @throws Exception If failed.
      */
@@ -195,10 +198,11 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             GridCacheAdapter<String, Integer> internal = grid.internalCache();
 
-            IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
+            IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key),
+                new AffinityTopologyVersion(2));
 
             IgniteInternalFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
-                Collections.singletonList(key), 2);
+                Collections.singletonList(key), new AffinityTopologyVersion(2));
 
             assert !nearFut.isDone();
             assert !dhtFut.isDone();
@@ -231,7 +235,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         info("Start time: " + start);
 
-        IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+        IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(new AffinityTopologyVersion(GRID_CNT + 1));
 
         assert fut != null;
 
@@ -291,7 +295,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             info("Start time: " + start);
 
-            IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+            IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(new AffinityTopologyVersion(GRID_CNT + 1));
 
             assert fut != null;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.swapspace.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -173,7 +174,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Number of swap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int swapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int swapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!swapEnabled)
@@ -196,7 +197,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Number of offheap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int offheapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int offheapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -1515,7 +1516,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Swap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, long topVer)
+    public Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -1545,7 +1546,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Offheap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, long topVer)
+    public Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;

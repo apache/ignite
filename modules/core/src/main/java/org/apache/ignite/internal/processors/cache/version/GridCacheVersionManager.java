@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -166,8 +167,8 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
      * @param topVer Topology version for which new version should be obtained.
      * @return Next version based on given topology version.
      */
-    public GridCacheVersion next(long topVer) {
-        return next(topVer, true, false);
+    public GridCacheVersion next(AffinityTopologyVersion topVer) {
+        return next(topVer.topologyVersion(), true, false);
     }
 
     /**
@@ -184,8 +185,8 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
      *
      * @return Next version for cache store operations.
      */
-    public GridCacheVersion nextForLoad(long topVer) {
-        return next(topVer, true, true);
+    public GridCacheVersion nextForLoad(AffinityTopologyVersion topVer) {
+        return next(topVer.topologyVersion(), true, true);
     }
 
     /**

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -133,7 +134,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 List<Collection<ClusterNode>> mappings = new ArrayList<>(nodeCnt);
 
                 for (int i = 0; i < nodeCnt; i++) {
-                    Collection<ClusterNode> nodes = topology(i).nodes(p, -1);
+                    Collection<ClusterNode> nodes = topology(i).nodes(p, AffinityTopologyVersion.NONE);
                     List<ClusterNode> owners = topology(i).owners(p);
 
                     int size = backups + 1;

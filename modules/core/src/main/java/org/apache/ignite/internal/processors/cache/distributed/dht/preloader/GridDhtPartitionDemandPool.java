@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -208,8 +209,8 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                @Override public void apply(IgniteInternalFuture<Long> t) {
+            exchFut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
             });
@@ -292,7 +293,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Picked owners.
      */
-    private Collection<ClusterNode> pickedOwners(int p, long topVer) {
+    private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
         Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
         int affCnt = affNodes.size();
@@ -318,7 +319,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Nodes owning this partition.
      */
-    private Collection<ClusterNode> remoteOwners(int p, long topVer) {
+    private Collection<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
         return F.view(cctx.dht().topology().owners(p, topVer), F.remoteNodes(cctx.nodeId()));
     }
 
@@ -357,8 +358,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> f) {
+                    exchFut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
                     });
@@ -481,7 +482,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code False} if partition has become invalid during preloading.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
+        private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, AffinityTopologyVersion topVer)
             throws IgniteCheckedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
@@ -569,7 +570,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
-        private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
+        private Set<Integer> demandFromNode(ClusterNode node, final AffinityTopologyVersion topVer, GridDhtPartitionDemandMessage<K, V> d,
             GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, IgniteCheckedException {
             GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
 
@@ -978,13 +979,13 @@ public class GridDhtPartitionDemandPool<K, V> {
         int partCnt = cctx.affinity().partitions();
 
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
-            exchFut.exchangeId().topologyVersion() == top.topologyVersion() :
+            exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
                 ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments<K, V> assigns = new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
-        long topVer = assigns.topologyVersion();
+        AffinityTopologyVersion topVer = assigns.topologyVersion();
 
         for (int p = 0; p < partCnt; p++) {
             if (cctx.shared().exchange().hasPendingExchange()) {

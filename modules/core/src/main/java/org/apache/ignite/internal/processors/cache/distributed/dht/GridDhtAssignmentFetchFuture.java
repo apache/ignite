@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.future.*;
@@ -48,7 +49,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     private Queue<ClusterNode> availableNodes;
 
     /** Topology version. */
-    private final long topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Pending node from which response is being awaited. */
     private ClusterNode pendingNode;
@@ -57,7 +58,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param ctx Cache context.
      * @param availableNodes Available nodes.
      */
-    public GridDhtAssignmentFetchFuture(GridCacheContext<K, V> ctx, long topVer, Collection<ClusterNode> availableNodes) {
+    public GridDhtAssignmentFetchFuture(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, Collection<ClusterNode> availableNodes) {
         super(ctx.kernalContext());
 
         this.ctx = ctx;
@@ -85,7 +86,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param res Reponse.
      */
     public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
-        if (res.topologyVersion() != topVer) {
+        if (!res.topologyVersion().equals(topVer)) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
                     "[node=" + node + ", res=" + res + ", topVer=" + topVer + ']');

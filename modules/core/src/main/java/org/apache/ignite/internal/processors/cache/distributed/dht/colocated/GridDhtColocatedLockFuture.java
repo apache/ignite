@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -295,7 +296,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(topSnapshot.get().topologyVersion());
+                cand.topologyVersion(new AffinityTopologyVersion(topSnapshot.get().topologyVersion()));
             }
         }
         else {
@@ -314,7 +315,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(topSnapshot.get().topologyVersion());
+                cand.topologyVersion(new AffinityTopologyVersion(topSnapshot.get().topologyVersion()));
             }
             else
                 cand = cand.reenter();
@@ -562,7 +563,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     GridDiscoveryTopologySnapshot snapshot = fut.topologySnapshot();
 
                     if (tx != null) {
-                        tx.topologyVersion(snapshot.topologyVersion());
+                        tx.topologyVersion(new AffinityTopologyVersion(snapshot.topologyVersion()));
                         tx.topologySnapshot(snapshot);
                     }
 
@@ -573,8 +574,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     markInitialized();
                 }
                 else {
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             mapOnTopology();
                         }
                     });
@@ -602,9 +603,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             assert snapshot != null;
 
-            final long topVer = snapshot.topologyVersion();
+            final AffinityTopologyVersion topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
 
-            assert topVer > 0;
+            assert topVer.topologyVersion() > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
                 onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
@@ -870,7 +871,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param topVer Topology version to lock on.
      * @param mappings Optional collection of mappings to proceed locking.
      */
-    private void lockLocally(final Collection<K> keys, long topVer,
+    private void lockLocally(final Collection<K> keys, AffinityTopologyVersion topVer,
         @Nullable final Deque<GridNearLockMapping<K, V>> mappings) {
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
@@ -947,7 +948,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return {@code True} if all keys were mapped locally, {@code false} if full mapping should be performed.
      * @throws IgniteCheckedException If key cannot be added to mapping.
      */
-    private boolean mapAsPrimary(Collection<? extends K> keys, long topVer) throws IgniteCheckedException {
+    private boolean mapAsPrimary(Collection<? extends K> keys, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         // Assign keys to primary nodes.
         Collection<K> distributedKeys = new ArrayList<>(keys.size());
 
@@ -992,7 +993,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return {@code True} if transaction accesses key that was explicitly locked before.
      * @throws IgniteCheckedException If lock is externally held and transaction is explicit.
      */
-    private boolean addLocalKey(K key, long topVer, Collection<K> distributedKeys) throws IgniteCheckedException {
+    private boolean addLocalKey(K key, AffinityTopologyVersion topVer, Collection<K> distributedKeys) throws IgniteCheckedException {
         GridDistributedCacheEntry<K, V> entry = cctx.colocated().entryExx(key, topVer, false);
 
         assert !entry.detached();
@@ -1022,7 +1023,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @throws IgniteCheckedException If mapping failed.
      */
     private GridNearLockMapping<K, V> map(K key, @Nullable GridNearLockMapping<K, V> mapping,
-        long topVer) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);

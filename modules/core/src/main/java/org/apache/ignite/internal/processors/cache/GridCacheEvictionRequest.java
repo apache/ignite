@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -50,7 +52,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     private byte[] entriesBytes;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -65,10 +67,10 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
      * @param size Size.
      * @param topVer Topology version.
      */
-    GridCacheEvictionRequest(int cacheId, long futId, int size, long topVer) {
+    GridCacheEvictionRequest(int cacheId, long futId, int size, @NotNull AffinityTopologyVersion topVer) {
         assert futId > 0;
         assert size > 0;
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         this.cacheId = cacheId;
         this.futId = futId;
@@ -116,7 +118,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -167,7 +169,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("topVer", topVer))
+                if (!topVer.writeTo(writer))
                     return false;
 
                 writer.incrementState();
@@ -205,7 +207,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 reader.incrementState();
 
             case 5:
-                topVer = reader.readLong("topVer");
+                topVer = AffinityTopologyVersion.readFrom(reader);
 
                 if (!reader.isLastRead())
                     return false;

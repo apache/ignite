@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -750,7 +751,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         // Swap and offheap are disabled for near cache.
         if (modes.primary || modes.backup) {
-            long topVer = ctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
             GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
@@ -797,7 +798,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             V val = null;
 
             if (!ctx.isLocal()) {
-                long topVer = ctx.affinity().affinityTopologyVersion();
+                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
                 int part = ctx.affinity().partition(key);
 
@@ -905,7 +906,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             GridCacheEntryEx<K, V> e = peekEx(key);
 
             if (e != null)
-                return e.peek(heap, offheap, swap, -1, plc);
+                return e.peek(heap, offheap, swap, AffinityTopologyVersion.NONE, plc);
         }
 
         if (offheap || swap) {
@@ -1277,7 +1278,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Entry key.
      * @return Entry (never {@code null}).
      */
-    public GridCacheEntryEx<K, V> entryEx(K key, long topVer) {
+    public GridCacheEntryEx<K, V> entryEx(K key, AffinityTopologyVersion topVer) {
         GridCacheEntryEx<K, V> e = entry0(key, topVer, true, false);
 
         assert e != null;
@@ -1292,7 +1293,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param touch Flag to touch created entry (only if entry was actually created).
      * @return Entry or <tt>null</tt>.
      */
-    @Nullable private GridCacheEntryEx<K, V> entry0(K key, long topVer, boolean create, boolean touch) {
+    @Nullable private GridCacheEntryEx<K, V> entry0(K key, AffinityTopologyVersion topVer, boolean create, boolean touch) {
         GridTriple<GridCacheMapEntry<K, V>> t = map.putEntryIfObsoleteOrAbsent(topVer, key, null,
             ctx.config().getDefaultTimeToLive(), create);
 
@@ -1767,7 +1768,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         @Nullable UUID subjId, String taskName) {
         ctx.denyOnFlag(READ);
 
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         if (!F.isEmpty(keys)) {
             final String uid = CU.uuid(); // Get meta UUID for this thread.
@@ -1915,7 +1916,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Key.
      * @return Entry.
      */
-    @Nullable protected GridCacheEntryEx<K, V> entryExSafe(K key, long topVer) {
+    @Nullable protected GridCacheEntryEx<K, V> entryExSafe(K key, AffinityTopologyVersion topVer) {
         return entryEx(key);
     }
 
@@ -2129,7 +2130,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             try {
                 assert keys != null;
 
-                final long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+                final AffinityTopologyVersion topVer = tx == null
+                    ? ctx.affinity().affinityTopologyVersion()
+                    : tx.topologyVersion();
 
                 final Map<K, V> map = new GridLeanMap<>(keys.size());
 
@@ -3772,7 +3775,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             validateCacheKey(key);
 
         try {
-            GridCacheEntryEx<K, V> e = entry0(key, ctx.discovery().topologyVersion(), false, false);
+            GridCacheEntryEx<K, V> e = entry0(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion()),
+                false, false);
 
             if (e == null)
                 return false;
@@ -3868,7 +3872,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args)
         throws IgniteCheckedException {
         final boolean replicate = ctx.isDrEnabled();
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -3925,7 +3929,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         V val,
         GridCacheVersion ver,
         @Nullable IgniteBiPredicate<K, V> p,
-        long topVer,
+        AffinityTopologyVersion topVer,
         boolean replicate,
         long ttl) {
         if (p != null && !p.apply(key, val))
@@ -4081,7 +4085,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         throws IgniteCheckedException
     {
         final boolean replicate = ctx.isDrEnabled();
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
@@ -4231,7 +4235,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         // Swap and offheap are disabled for near cache.
         if (modes.primary || modes.backup) {
-            long topVer = ctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
             GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
@@ -5159,7 +5163,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        long topVer = ctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.portableEnabled())
             key = (K)ctx.marshalToPortable(key);

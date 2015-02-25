@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -113,7 +114,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private final ExpiryPolicy expiryPlc;
 
     /** Future map topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
     /** Optional filter. */
     private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
@@ -261,7 +262,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -444,8 +445,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                    @Override public void apply(IgniteInternalFuture<Long> t) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
                 });
@@ -453,7 +454,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
-            topVer = snapshot.topologyVersion();
+            topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
 
             mapTime = U.currentTimeMillis();
 
@@ -498,7 +499,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
 
-        long topVer = topSnapshot.topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(topSnapshot.topologyVersion());
 
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
@@ -592,7 +593,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 futVer,
                 fastMap,
                 updVer,
-                topSnapshot.topologyVersion(),
+                topVer,
                 syncMode,
                 op,
                 retval,
@@ -712,7 +713,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             futVer,
                             fastMap,
                             updVer,
-                            topSnapshot.topologyVersion(),
+                            topVer,
                             syncMode,
                             op,
                             retval,
@@ -762,7 +763,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param fastMap Flag indicating whether mapping is performed for fast-circuit update.
      * @return Collection of nodes to which key is mapped.
      */
-    private Collection<ClusterNode> mapKey(K key, long topVer, boolean fastMap) {
+    private Collection<ClusterNode> mapKey(K key, AffinityTopologyVersion topVer, boolean fastMap) {
         GridCacheAffinityManager<K, V> affMgr = cctx.affinity();
 
         // If we can send updates in parallel - do it.

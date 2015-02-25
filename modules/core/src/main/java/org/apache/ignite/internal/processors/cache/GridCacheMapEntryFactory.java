@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -34,6 +35,6 @@ public interface GridCacheMapEntryFactory<K, V> {
      * @param hdrId Header id.
      * @return New cache entry.
      */
-    public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash, V val,
-        @Nullable GridCacheMapEntry<K, V> next, long ttl, int hdrId);
+    public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash,
+        V val, @Nullable GridCacheMapEntry<K, V> next, long ttl, int hdrId);
 }

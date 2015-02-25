@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -168,7 +169,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * Initializes future.
      */
     public void init() {
-        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         map(keys, Collections.<ClusterNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
@@ -278,7 +279,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      */
     private void map(Collection<? extends K> keys,
         Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped,
-        final long topVer) {
+        final AffinityTopologyVersion topVer) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
@@ -347,9 +348,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             remapKeys.add(key);
                     }
 
-                    long updTopVer = ctx.discovery().topologyVersion();
+                    AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
 
-                    assert updTopVer > topVer : "Got invalid partitions for local node but topology version did " +
+                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
                         ", invalidParts=" + invalidParts + ']';
 
@@ -421,7 +422,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @return Map.
      */
     private Map<K, GridCacheVersion> map(K key, Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings,
-        long topVer, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, Map<K, GridCacheVersion> savedVers) {
+        AffinityTopologyVersion topVer, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, Map<K, GridCacheVersion> savedVers) {
         final GridNearCacheAdapter<K, V> near = cache();
 
         // Allow to get cached value from the local node.
@@ -603,7 +604,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         Collection<K> keys,
         Collection<GridCacheEntryInfo<K, V>> infos,
         Map<K, GridCacheVersion> savedVers,
-        long topVer) {
+        AffinityTopologyVersion topVer) {
         boolean empty = F.isEmpty(keys);
 
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
@@ -688,7 +689,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         private Map<K, GridCacheVersion> savedVers;
 
         /** Topology version on which this future was mapped. */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -703,7 +704,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
          * @param savedVers Saved entry versions.
          * @param topVer Topology version.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, Map<K, GridCacheVersion> savedVers, long topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, Map<K, GridCacheVersion> savedVers,
+            @NotNull AffinityTopologyVersion topVer) {
             super(cctx.kernalContext());
 
             this.node = node;
@@ -751,9 +753,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            long updTopVer = ctx.discovery().topologyVersion();
+            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
 
-            if (updTopVer > topVer) {
+            if (updTopVer.compareTo(topVer) > 0) {
                 // Remap.
                 map(keys.keySet(), F.t(node, keys), updTopVer);
 
@@ -762,7 +764,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             else {
                 final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
 
-                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                ctx.discovery().topologyFuture(topVer.topologyVersion() + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> longIgniteFuture) {
                         if (timeout.finish()) {
                             ctx.timeout().removeTimeoutObject(timeout);
@@ -794,11 +796,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
             // Remap invalid partitions.
             if (!F.isEmpty(invalidParts)) {
-                long rmtTopVer = res.topologyVersion();
+                AffinityTopologyVersion rmtTopVer = res.topologyVersion();
 
-                assert rmtTopVer != 0;
+                assert rmtTopVer.topologyVersion() != 0;
 
-                if (rmtTopVer <= topVer) {
+                if (rmtTopVer.compareTo(topVer) <= 0) {
                     // Fail the whole get future.
                     onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                         "invalid partitions but remote topology version does not differ from local) " +
@@ -812,7 +814,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
 
                 topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
@@ -823,7 +825,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             @Override public boolean apply(K key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), readyTopVer);
+                        }), F.t(node, keys), new AffinityTopologyVersion(readyTopVer));
 
                         // It is critical to call onDone after adding futures to compound list.
                         onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedVers, topVer));
@@ -847,7 +849,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             private AtomicBoolean finished = new AtomicBoolean();
 
             /** Topology version to wait. */
-            private long topVer;
+            private AffinityTopologyVersion topVer;
 
             /** Exception cause. */
             private IgniteCheckedException e;
@@ -856,7 +858,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
              * @param timeout Timeout.
              * @param topVer Topology version timeout was created on.
              */
-            private RemapTimeoutObject(long timeout, long topVer, IgniteCheckedException e) {
+            private RemapTimeoutObject(long timeout, @NotNull AffinityTopologyVersion topVer, IgniteCheckedException e) {
                 super(timeout);
 
                 this.topVer = topVer;
@@ -867,7 +869,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             @Override public void onTimeout() {
                 if (finish())
                     // Fail the whole get future.
-                    onDone(new IgniteCheckedException("Failed to wait for topology version to change: " + (topVer + 1), e));
+                    onDone(new IgniteCheckedException("Failed to wait for topology version to change: "
+                        + (topVer.topologyVersion() + 1), e));
                 // else remap happened concurrently.
             }
 

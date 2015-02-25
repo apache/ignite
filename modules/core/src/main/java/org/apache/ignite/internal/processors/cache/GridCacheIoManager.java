@@ -106,7 +106,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
 
             long locTopVer = cctx.discovery().topologyVersion();
-            long rmtTopVer = cacheMsg.topologyVersion();
+            long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 
             if (locTopVer < rmtTopVer) {
                 if (log.isDebugEnabled())

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -357,7 +358,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
+    private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -408,7 +409,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
         if (!cctx.isLocal()) {
             while (true) {
-                long topVer = cctx.topologyVersionFuture().get();
+                AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
                 Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
 
@@ -446,14 +447,14 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         throw e;
                 }
 
-                if (cctx.topologyVersionFuture().get() == topVer)
+                if (topVer.equals(cctx.topologyVersionFuture().get()))
                     break;
             }
         }
         else {
             blockSet(id);
 
-            cctx.dataStructures().removeSetData(id, 0);
+            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
         }
     }
 
@@ -641,7 +642,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         private IgniteUuid setId;
 
         /** */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * Required by {@link Externalizable}.
@@ -655,7 +656,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, long topVer) {
+        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;
@@ -687,14 +688,14 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             U.writeGridUuid(out, setId);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             setId = U.readGridUuid(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
 
         /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -298,7 +299,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
         return true;
     }
 
@@ -434,10 +435,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId, UUID affNodeId,
-        @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
-        boolean evt, boolean metrics, long topVer, IgnitePredicate<Cache.Entry<K, V>>[] filter, GridDrType drType,
-        long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
+    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId,
+        UUID affNodeId, @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
+        boolean evt, boolean metrics, AffinityTopologyVersion topVer, IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        GridDrType drType, long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName)
+        throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult<>(true, rawPut(val, ttl));
     }
@@ -499,9 +501,9 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId,
-        UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
-        String taskName)
+        UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics,
+        AffinityTopologyVersion topVer, IgnitePredicate<Cache.Entry<K, V>>[] filter, GridDrType drType,
+        @Nullable GridCacheVersion drVer, UUID subjId, String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
@@ -630,7 +632,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public boolean initialValue(V val, @Nullable byte[] valBytes, GridCacheVersion ver, long ttl,
-        long expireTime, boolean preload, long topVer, GridDrType drType) throws IgniteCheckedException,
+        long expireTime, boolean preload, AffinityTopologyVersion topVer, GridDrType drType) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         assert false; return false;
     }
@@ -838,7 +840,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Nullable @Override public V peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
     {
         return null;

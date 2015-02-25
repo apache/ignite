@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.*;
@@ -74,7 +75,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private AtomicInteger topCntr = new AtomicInteger(1);
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Future ID. */
     private IgniteUuid futId = IgniteUuid.randomUuid();
@@ -91,11 +92,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param keys Keys.
      * @param preloader Preloader.
      */
-    public GridDhtForceKeysFuture(GridCacheContext<K, V> cctx, long topVer, Collection<? extends K> keys,
-        GridDhtPreloader<K, V> preloader) {
+    public GridDhtForceKeysFuture(GridCacheContext<K, V> cctx, @NotNull AffinityTopologyVersion topVer,
+        Collection<? extends K> keys, GridDhtPreloader<K, V> preloader) {
         super(cctx.kernalContext());
 
-        assert topVer != 0 : topVer;
+        assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
 
         this.cctx = cctx;
@@ -495,7 +496,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             for (GridCacheEntryInfo<K, V> info : res.forcedInfos()) {
                 int p = cctx.affinity().partition(info.key());
 
-                GridDhtLocalPartition<K, V> locPart = top.localPartition(p, -1, false);
+                GridDhtLocalPartition<K, V> locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
                     GridCacheEntryEx<K, V> entry = cctx.dht().entryEx(info.key());

@@ -250,7 +250,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
      */
     private Collection<ClusterNode> nodes(CacheAffinityFunction aff, int part, Collection<ClusterNode> nodes) {
         List<List<ClusterNode>> assignment = aff.assignPartitions(
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, 1, BACKUP_CNT));
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, new AffinityTopologyVersion(1),
+                BACKUP_CNT));
 
         return assignment.get(part);
     }

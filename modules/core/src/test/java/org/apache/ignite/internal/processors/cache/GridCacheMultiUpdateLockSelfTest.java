@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
@@ -112,12 +113,12 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
             GridDhtCacheAdapter cache = nearEnabled ? cctx.near().dht() : cctx.colocated();
 
-            long topVer = cache.beginMultiUpdate();
+            AffinityTopologyVersion topVer = cache.beginMultiUpdate();
 
             IgniteInternalFuture<?> startFut;
 
             try {
-                assertEquals(3, topVer);
+                assertEquals(3, topVer.topologyVersion());
 
                 final AtomicBoolean started = new AtomicBoolean();
 

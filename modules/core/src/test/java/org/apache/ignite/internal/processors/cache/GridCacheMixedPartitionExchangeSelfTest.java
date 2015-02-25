@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -129,9 +130,9 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             fut.get();
 
-            long topVer = grid(0).cluster().topologyVersion();
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
 
-            assertEquals(29, topVer);
+            assertEquals(29, topVer.topologyVersion());
 
             // Check all grids have all exchange futures completed.
             for (int i = 0; i < 4; i++) {
@@ -139,10 +140,10 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                 GridCacheContext<Object, Object> cctx = grid.internalCache(null).context();
 
-                IgniteInternalFuture<Long> verFut = cctx.affinity().affinityReadyFuture(topVer);
+                IgniteInternalFuture<AffinityTopologyVersion> verFut = cctx.affinity().affinityReadyFuture(topVer);
 
-                assertEquals((Long)topVer, verFut.get());
-                assertEquals((Long)topVer, cctx.topologyVersionFuture().get());
+                assertEquals(topVer, verFut.get());
+                assertEquals(topVer, cctx.topologyVersionFuture().get());
             }
         }
         finally {

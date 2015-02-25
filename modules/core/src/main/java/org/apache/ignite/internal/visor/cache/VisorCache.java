@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -153,7 +154,7 @@ public class VisorCache implements Serializable {
 
                     int sz = part.size();
 
-                    if (part.primary(-1)) // Pass -1 as topology version in order not to wait for topology version.
+                    if (part.primary(AffinityTopologyVersion.NONE)) // Pass -1 as topology version in order not to wait for topology version.
                         pps.add(new IgnitePair<>(p, sz));
                     else
                         bps.add(new IgnitePair<>(p, sz));

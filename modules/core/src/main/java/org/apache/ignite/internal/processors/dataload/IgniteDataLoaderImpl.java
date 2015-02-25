@@ -1399,7 +1399,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             GridCacheContext<K, V> cctx = internalCache.context();
 
-            long topVer = cctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
             GridCacheVersion ver = cctx.versions().next(topVer);
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -53,7 +54,7 @@ public interface GridDhtPartitionTopology<K, V> {
      *
      * @return Topology version.
      */
-    public long topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * Gets a future that will be completed when partition exchange map for this
@@ -88,7 +89,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create)
+    @Nullable public GridDhtLocalPartition<K, V> localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -127,7 +128,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<ClusterNode> nodes(int p, long topVer);
+    public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -140,7 +141,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param topVer Topology version.
      * @return Collection of all nodes who {@code own} this partition.
      */
-    public List<ClusterNode> owners(int p, long topVer);
+    public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -159,7 +160,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param e Entry added to cache.
      * @return Local partition.
      */
-    public GridDhtLocalPartition<K, V> onAdded(long topVer, GridDhtCacheEntry<K, V> e);
+    public GridDhtLocalPartition<K, V> onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry<K, V> e);
 
     /**
      * @param e Entry removed from cache.

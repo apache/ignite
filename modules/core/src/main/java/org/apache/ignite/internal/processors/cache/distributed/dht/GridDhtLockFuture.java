@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -66,7 +67,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private GridCacheVersion nearLockVer;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Thread. */
     private long threadId;
@@ -154,7 +155,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridCacheContext<K, V> cctx,
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
         long timeout,
@@ -166,7 +167,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;

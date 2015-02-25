@@ -113,7 +113,8 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
                 node);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
+                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                    backups));
 
             info("Assigned.");
 
@@ -136,7 +137,8 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             DiscoveryEvent discoEvt = new DiscoveryEvent(rmv, "", EventType.EVT_NODE_LEFT, rmv);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
+                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                    backups));
 
             info("Assigned.");
 
@@ -208,7 +210,8 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             info("======================================");
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, i, backups));
+                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                    backups));
 
             verifyAssignment(assignment, backups, parts, nodes.size());
 

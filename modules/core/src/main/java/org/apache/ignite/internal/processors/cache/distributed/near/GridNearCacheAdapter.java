@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -69,7 +70,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
+            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash,
                 V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
@@ -113,7 +114,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx<K, V> entryEx(K key, long topVer) {
+    @Override public GridCacheEntryEx<K, V> entryEx(K key, AffinityTopologyVersion topVer) {
         GridNearCacheEntry<K, V> entry = null;
 
         while (true) {
@@ -136,7 +137,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param topVer Topology version.
      * @return Entry.
      */
-    public GridNearCacheEntry<K, V> entryExx(K key, long topVer) {
+    public GridNearCacheEntry<K, V> entryExx(K key, AffinityTopologyVersion topVer) {
         return (GridNearCacheEntry<K, V>)entryEx(key, topVer);
     }
 
@@ -373,7 +374,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable final IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<Cache.Entry<K, V>> entries =
             F.flatCollections(

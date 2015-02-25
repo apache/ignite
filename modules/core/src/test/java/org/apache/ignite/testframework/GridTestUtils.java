@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -901,7 +902,7 @@ public final class GridTestUtils {
                 boolean wait = false;
 
                 for (int p = 0; p < affinity(cache).partitions(); p++) {
-                    Collection<ClusterNode> nodes = top.nodes(p, -1);
+                    Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +

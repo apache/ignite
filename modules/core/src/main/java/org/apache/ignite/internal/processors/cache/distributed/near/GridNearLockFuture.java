@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -296,7 +297,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable private GridCacheMvccCandidate<K> addEntry(long topVer, GridNearCacheEntry<K, V> entry, UUID dhtNodeId)
+    @Nullable private GridCacheMvccCandidate<K> addEntry(AffinityTopologyVersion topVer, GridNearCacheEntry<K, V> entry, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         // Check if lock acquisition is timed out.
         if (timedOut)
@@ -690,7 +691,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                     GridDiscoveryTopologySnapshot snapshot = fut.topologySnapshot();
 
                     if (tx != null) {
-                        tx.topologyVersion(snapshot.topologyVersion());
+                        tx.topologyVersion(new AffinityTopologyVersion(snapshot.topologyVersion()));
                         tx.topologySnapshot(snapshot);
                     }
 
@@ -701,8 +702,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                     markInitialized();
                 }
                 else {
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             mapOnTopology();
                         }
                     });
@@ -730,9 +731,9 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
             assert snapshot != null;
 
-            long topVer = snapshot.topologyVersion();
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
 
-            assert topVer > 0;
+            assert topVer.topologyVersion() > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
                 onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all " +
@@ -1151,7 +1152,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @throws IgniteCheckedException If mapping for key failed.
      */
     private GridNearLockMapping<K, V> map(K key, @Nullable GridNearLockMapping<K, V> mapping,
-        long topVer) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
@@ -1345,7 +1346,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                 int i = 0;
 
-                long topVer = topSnapshot.get().topologyVersion();
+                AffinityTopologyVersion topVer = new AffinityTopologyVersion(topSnapshot.get().topologyVersion());
 
                 for (K k : keys) {
                     while (true) {

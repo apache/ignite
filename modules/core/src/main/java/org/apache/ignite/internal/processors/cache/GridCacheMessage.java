@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -163,8 +164,8 @@ public abstract class GridCacheMessage<K, V> implements Message {
      *
      * @return Topology version.
      */
-    public long topologyVersion() {
-        return -1;
+    public AffinityTopologyVersion topologyVersion() {
+        return AffinityTopologyVersion.NONE;
     }
 
     /**

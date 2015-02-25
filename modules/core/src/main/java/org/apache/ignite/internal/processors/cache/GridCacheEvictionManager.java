@@ -26,6 +26,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -347,10 +348,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 return;
             }
 
-            long topVer = lockTopology();
+            AffinityTopologyVersion topVer = lockTopology();
 
             try {
-                if (topVer != req.topologyVersion()) {
+                if (!topVer.equals(req.topologyVersion())) {
                     if (log.isDebugEnabled())
                         log.debug("Topology version is different [locTopVer=" + topVer +
                             ", rmtTopVer=" + req.topologyVersion() + ']');
@@ -498,7 +499,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p,
+                    AffinityTopologyVersion.NONE, false);
 
                 assert part != null;
 
@@ -525,7 +527,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
+                    false);
 
                 if (part != null && part.reserve()) {
                     part.lock();
@@ -561,7 +564,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
+                    false);
 
                 if (part != null) {
                     part.unlock();
@@ -582,14 +586,14 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      *
      * @return Topology version after lock.
      */
-    private long lockTopology() {
+    private AffinityTopologyVersion lockTopology() {
         if (!cctx.isNear()) {
             cctx.dht().topology().readLock();
 
             return cctx.dht().topology().topologyVersion();
         }
 
-        return 0;
+        return AffinityTopologyVersion.ZERO;
     }
 
     /**
@@ -738,7 +742,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param e Entry for eviction policy notification.
      * @param topVer Topology version.
      */
-    public void touch(GridCacheEntryEx<K, V> e, long topVer) {
+    public void touch(GridCacheEntryEx<K, V> e, AffinityTopologyVersion topVer) {
         if (e.detached() || e.isInternal())
             return;
 
@@ -1092,7 +1096,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                                 }
 
                                 try {
-                                    long topVer = lockTopology();
+                                    AffinityTopologyVersion topVer = lockTopology();
 
                                     try {
                                         onFutureCompleted((EvictionFuture)f, topVer);
@@ -1124,7 +1128,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param fut Completed eviction future.
      * @param topVer Topology version on future complete.
      */
-    private void onFutureCompleted(EvictionFuture fut, long topVer) {
+    private void onFutureCompleted(EvictionFuture fut, AffinityTopologyVersion topVer) {
         if (!busyLock.enterBusy())
             return;
 
@@ -1151,7 +1155,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             }
 
             // Check if topology version is different.
-            if (fut.topologyVersion() != topVer) {
+            if (!fut.topologyVersion().equals(topVer)) {
                 if (log.isDebugEnabled())
                     log.debug("Topology has changed, all entries will be touched: " + fut);
 
@@ -1264,7 +1268,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     @SuppressWarnings( {"IfMayBeConditional"})
     private IgniteBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> remoteNodes(GridCacheEntryEx<K, V> entry,
-        long topVer)
+        AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         assert entry != null;
 
@@ -1422,7 +1426,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primary(loc, it.next(), evt.topologyVersion()))
+                        if (!cctx.affinity().primary(loc, it.next(), new AffinityTopologyVersion(evt.topologyVersion())))
                             it.remove();
                     }
 
@@ -1434,7 +1438,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         if (!evts.isEmpty())
                             break;
 
-                        if (part.primary(evt.topologyVersion()) && primaryParts.add(part.id())) {
+                        if (part.primary(new AffinityTopologyVersion(evt.topologyVersion()))
+                            && primaryParts.add(part.id())) {
                             if (log.isDebugEnabled())
                                 log.debug("Touching partition entries: " + part);
 
@@ -1562,7 +1567,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         private GridTimeoutObject timeoutObj;
 
         /** Topology version future is processed on. */
-        private long topVer;
+        private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
         /**
          * @param ctx Context.
@@ -1793,7 +1798,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @return Topology version.
          */
-        long topologyVersion() {
+        AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
 

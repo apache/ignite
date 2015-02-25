@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -215,8 +216,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        ((IgniteKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
-        ((IgniteKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
+        ((IgniteKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), new AffinityTopologyVersion(2)).get();
+        ((IgniteKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), new AffinityTopologyVersion(2)).get();
 
         IgniteCache<Integer, String> cache1 = g1.jcache(null);
         IgniteCache<Integer, String> cache2 = g2.jcache(null);

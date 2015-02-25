@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -183,7 +184,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         List<K> keys = req.nearKeys();
 
         if (keys != null) {
-            long topVer = ctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
             for (K key : keys) {
                 while (true) {
@@ -440,7 +441,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
-    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, long topVer) {
+    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, AffinityTopologyVersion topVer) {
         return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
     }
 
@@ -451,7 +452,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if attempt was made to evict the entry.
      */
-    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer, long topVer) {
+    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer, AffinityTopologyVersion topVer) {
         assert e != null;
         assert obsoleteVer != null;
 
@@ -490,7 +491,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     try {
                         GridCacheMvccCandidate<K> cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
 
-                        long topVer = -1;
+                        AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
                         if (cand != null) {
                             assert cand.nearLocal() : "Got non-near-local candidate in near cache: " + cand;
@@ -498,7 +499,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             ver = cand.version();
 
                             if (map == null) {
-                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion().topologyVersion());
 
                                 if (F.isEmpty(affNodes))
                                     return;
@@ -550,9 +551,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             }
                         }
 
-                        assert topVer != -1 || cand == null;
+                        assert !topVer.equals(AffinityTopologyVersion.NONE) || cand == null;
 
-                        if (topVer == -1)
+                        if (topVer.equals(AffinityTopologyVersion.NONE))
                             topVer = ctx.affinity().affinityTopologyVersion();
 
                         ctx.evicts().touch(entry, topVer);
@@ -616,7 +617,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (cand != null) {
                                 if (map == null) {
-                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion().topologyVersion());
 
                                     if (F.isEmpty(affNodes))
                                         return;
