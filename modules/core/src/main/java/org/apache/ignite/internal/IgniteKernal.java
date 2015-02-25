@@ -682,7 +682,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             scheduler = new IgniteSchedulerImpl(ctx);
 
-            startProcessor(ctx, rsrcProc);
+            startProcessor(rsrcProc);
 
             // Inject resources into lifecycle beans.
             if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
@@ -698,65 +698,65 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
+            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
 
-            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg));
+            startProcessor(new IgnitePluginProcessor(ctx, cfg));
 
             // Off-heap processor has no dependencies.
-            startProcessor(ctx, new GridOffHeapProcessor(ctx));
+            startProcessor(new GridOffHeapProcessor(ctx));
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.
-            startProcessor(ctx, new GridClosureProcessor(ctx));
+            startProcessor(new GridClosureProcessor(ctx));
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridPortProcessor(ctx));
-            startProcessor(ctx, new GridJobMetricsProcessor(ctx));
+            startProcessor(new GridPortProcessor(ctx));
+            startProcessor(new GridJobMetricsProcessor(ctx));
 
             // Timeout processor needs to be started before managers,
             // as managers may depend on it.
-            startProcessor(ctx, new GridTimeoutProcessor(ctx));
+            startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx));
+            startProcessor(createComponent(GridSecurityProcessor.class, ctx));
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, new GridIoManager(ctx));
-            startManager(ctx, new GridCheckpointManager(ctx));
+            startManager(new GridIoManager(ctx));
+            startManager(new GridCheckpointManager(ctx));
 
-            startManager(ctx, new GridEventStorageManager(ctx));
-            startManager(ctx, new GridDeploymentManager(ctx));
-            startManager(ctx, new GridLoadBalancerManager(ctx));
-            startManager(ctx, new GridFailoverManager(ctx));
-            startManager(ctx, new GridCollisionManager(ctx));
-            startManager(ctx, new GridSwapSpaceManager(ctx));
-            startManager(ctx, new GridIndexingManager(ctx));
+            startManager(new GridEventStorageManager(ctx));
+            startManager(new GridDeploymentManager(ctx));
+            startManager(new GridLoadBalancerManager(ctx));
+            startManager(new GridFailoverManager(ctx));
+            startManager(new GridCollisionManager(ctx));
+            startManager(new GridSwapSpaceManager(ctx));
+            startManager(new GridIndexingManager(ctx));
 
-            ackSecurity(ctx);
+            ackSecurity();
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            startProcessor(ctx, new GridClockSyncProcessor(ctx));
-            startProcessor(ctx, new GridAffinityProcessor(ctx));
-            startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx));
-            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx));
-            startProcessor(ctx, new GridQueryProcessor(ctx));
-            startProcessor(ctx, new GridCacheProcessor(ctx));
-            startProcessor(ctx, new GridTaskSessionProcessor(ctx));
-            startProcessor(ctx, new GridJobProcessor(ctx));
-            startProcessor(ctx, new GridTaskProcessor(ctx));
-            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx));
-            startProcessor(ctx, new GridRestProcessor(ctx));
-            startProcessor(ctx, new GridDataLoaderProcessor(ctx));
-            startProcessor(ctx, new GridStreamProcessor(ctx));
-            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())));
-            startProcessor(ctx, new GridContinuousProcessor(ctx));
-            startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
+            startProcessor(new GridClockSyncProcessor(ctx));
+            startProcessor(new GridAffinityProcessor(ctx));
+            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+            startProcessor(createComponent(GridPortableProcessor.class, ctx));
+            startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new GridCacheProcessor(ctx));
+            startProcessor(new GridTaskSessionProcessor(ctx));
+            startProcessor(new GridJobProcessor(ctx));
+            startProcessor(new GridTaskProcessor(ctx));
+            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+            startProcessor(new GridRestProcessor(ctx));
+            startProcessor(new GridDataLoaderProcessor(ctx));
+            startProcessor(new GridStreamProcessor(ctx));
+            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())));
+            startProcessor(new GridContinuousProcessor(ctx));
+            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
-            startProcessor(ctx, new GridServiceProcessor(ctx));
-            startProcessor(ctx, new DataStructuresProcessor(ctx));
+            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor(new DataStructuresProcessor(ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -771,7 +771,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(ctx, new GridDiscoveryManager(ctx));
+                startManager(new GridDiscoveryManager(ctx));
             }
             finally {
                 gw.writeUnlock();
@@ -781,7 +781,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkPhysicalRam();
 
             // Suggest configuration optimizations.
-            suggestOptimizations(ctx, cfg);
+            suggestOptimizations(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -1061,10 +1061,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Context.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridKernalContext ctx, IgniteConfiguration cfg) {
+    private void suggestOptimizations(IgniteConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
@@ -1366,12 +1365,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Kernal context.
      * @param mgr Manager to start.
      * @throws IgniteCheckedException Throw in case of any errors.
      */
-    private void startManager(GridKernalContextImpl ctx, GridManager mgr)
-        throws IgniteCheckedException {
+    private void startManager(GridManager mgr) throws IgniteCheckedException {
         mgr.addSpiAttributes();
 
         // Set all node attributes into discovery manager,
@@ -1393,12 +1390,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Kernal context.
      * @param proc Processor to start.
      * @throws IgniteCheckedException Thrown in case of any error.
      */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc)
-        throws IgniteCheckedException {
+    private void startProcessor(GridProcessor proc) throws IgniteCheckedException {
         ctx.add(proc);
 
         try {
@@ -1412,10 +1407,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Add helper.
      *
-     * @param ctx Context.
      * @param helper Helper.
      */
-    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+    private void addHelper(Object helper) {
         ctx.addHelper(helper);
     }
 
@@ -2062,10 +2056,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * Prints security status.
-     *
-     * @param ctx Kernal context.
      */
-    private void ackSecurity(GridKernalContext ctx) {
+    private void ackSecurity() {
         assert log != null;
 
         if (log.isInfoEnabled())
@@ -2515,9 +2507,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
-        @Nullable T initVal,
-        @Nullable S initStamp,
+    @Nullable @Override public <V, T> IgniteAtomicStamped<V, T> atomicStamped(String name,
+        @Nullable V initVal,
+        @Nullable T initStamp,
         boolean create)
     {
         guard();
