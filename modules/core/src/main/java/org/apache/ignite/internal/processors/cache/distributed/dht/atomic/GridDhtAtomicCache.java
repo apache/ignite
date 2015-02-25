@@ -1693,9 +1693,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
                     req.topologyVersion());
 
-                byte[] newValBytes = req.valueBytes(i);
-
-                Object writeVal = req.writeValue(i);
+                Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
 
                 Collection<UUID> readers = null;
                 Collection<UUID> filteredReaders = null;
@@ -1711,7 +1709,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     locNodeId,
                     op,
                     writeVal,
-                    newValBytes,
+                    null,
                     req.invokeArguments(),
                     primary && writeThrough(),
                     req.returnValue(),
@@ -1742,10 +1740,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (conflictCtx == null)
                             newConflictVer = null;
-                        else if (conflictCtx.isMerge()) {
+                        else if (conflictCtx.isMerge())
                             newConflictVer = null; // Conflict version is discarded in case of merge.
-                            newValBytes = null; // Value has been changed.
-                        }
 
                         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
@@ -1755,7 +1751,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (!readersOnly) {
                             dhtFut.addWriteEntry(entry,
                                 updRes.newValue(),
-                                newValBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime(),
@@ -1766,7 +1761,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 updRes.newValue(),
-                                newValBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime());
@@ -1783,21 +1777,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
                             GridCacheVersionConflictContext ctx = updRes.conflictResolveResult();
 
-                            if (ctx != null && ctx.isMerge())
-                                newValBytes = null;
-
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue()) {
                                 res.addNearValue(i,
                                     updRes.newValue(),
-                                    newValBytes,
                                     updRes.newTtl(),
                                     updRes.conflictExpireTime());
                             }
                             else
                                 res.addNearTtl(i, updRes.newTtl(), updRes.conflictExpireTime());
 
-                            if (updRes.newValue() != null || newValBytes != null) {
+                            if (updRes.newValue() != null) {
                                 IgniteInternalFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
 
                                 assert f == null : f;
@@ -2024,18 +2014,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     if (dhtFut != null) {
-                        GridCacheValueBytes valBytesTuple = op == DELETE ? GridCacheValueBytes.nil():
-                            entry.valueBytes();
-
-                        byte[] valBytes = valBytesTuple.getIfMarshaled();
-
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             entryProcessorMap == null ? null : entryProcessorMap.get(entry.key());
 
                         if (!batchRes.readersOnly())
                             dhtFut.addWriteEntry(entry,
                                 writeVal,
-                                valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE,
@@ -2045,7 +2029,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 writeVal,
-                                valBytes,
                                 entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE);
@@ -2057,13 +2040,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 int idx = firstEntryIdx + i;
 
                                 if (req.operation() == TRANSFORM) {
-                                    GridCacheValueBytes valBytesTuple = entry.valueBytes();
-
-                                    byte[] valBytes = valBytesTuple.getIfMarshaled();
-
                                     res.addNearValue(idx,
                                         writeVal,
-                                        valBytes,
                                         updRes.newTtl(),
                                         CU.EXPIRE_TIME_CALCULATE);
                                 }
@@ -2477,13 +2455,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         entry = entryExx(key);
 
                         CacheObject val = req.value(i);
-                        byte[] valBytes = req.valueBytes(i);
                         EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
 
                         GridCacheOperation op = entryProcessor != null ? TRANSFORM :
-                            (val != null || valBytes != null) ?
-                                UPDATE :
-                                DELETE;
+                            (val != null) ? UPDATE : DELETE;
 
                         long ttl = req.ttl(i);
                         long expireTime = req.conflictExpireTime(i);
@@ -2494,7 +2469,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             nodeId,
                             op,
                             op == TRANSFORM ? entryProcessor : val,
-                            valBytes,
+                            null,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,

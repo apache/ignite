@@ -594,7 +594,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 subjId,
                 taskNameHash);
 
-            req.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, true);
+            req.addUpdateEntry(cacheKey,
+                val,
+                conflictTtl,
+                conflictExpireTime,
+                conflictVer,
+                true);
 
             single = true;
 

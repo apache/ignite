@@ -121,11 +121,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
 
     /** {@inheritDoc} */
     @Nullable @Override public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
-        return null;
+        return new KeyCacheObjectImpl(obj);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(@Nullable Object obj) {
-        return null;
+        return new CacheObjectImpl(obj);
     }
 }

@@ -1767,6 +1767,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
+        if (obj instanceof CacheObject)
+            return (CacheObject)obj;
+
         return portable().toCacheObject(obj);
     }
 
@@ -1775,7 +1778,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
+        if (obj instanceof KeyCacheObject)
+            return (KeyCacheObject)obj;
+
         return portable().toCacheKeyObject(obj);
+    }
+
+    // TODO IGNITE-51.
+    public boolean copyOnGet() {
+        return false;
     }
 
     /**

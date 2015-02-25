@@ -296,6 +296,7 @@ public class GridAffinityAssignmentCache {
      * @return Partition.
      */
     public int partition(Object key) {
+        // TODO IGNITE-51.
         if (ctx.portableEnabled()) {
             try {
                 key = ctx.marshalToPortable(key);

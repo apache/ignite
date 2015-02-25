@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -45,11 +44,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /** Failed keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<KeyCacheObject> failedKeys;
-
-    /** Serialized failed keys. */
-    private byte[] failedKeysBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> failedKeys;
 
     /** Update error. */
     @GridDirectTransient
@@ -60,12 +56,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<KeyCacheObject> nearEvicted;
-
-    /** Evicted reader key bytes. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearEvictedBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> nearEvicted;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -138,20 +130,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      * Adds near evicted key..
      *
      * @param key Evicted key.
-     * @param bytes Bytes of evicted key.
      */
-    public void addNearEvicted(KeyCacheObject key, @Nullable byte[] bytes) {
+    public void addNearEvicted(KeyCacheObject key) {
         if (nearEvicted == null)
             nearEvicted = new ArrayList<>();
 
         nearEvicted.add(key);
-
-        if (bytes != null) {
-            if (nearEvictedBytes == null)
-                nearEvictedBytes = new ArrayList<>();
-
-            nearEvictedBytes.add(bytes);
-        }
     }
 
     /** {@inheritDoc}
@@ -159,22 +143,22 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        failedKeysBytes = ctx.marshaller().marshal(failedKeys);
-        errBytes = ctx.marshaller().marshal(err);
+        prepareMarshalCacheObjects(failedKeys, ctx);
 
-        if (nearEvictedBytes == null)
-            nearEvictedBytes = marshalCollection(nearEvicted, ctx);
+        prepareMarshalCacheObjects(nearEvicted, ctx);
+
+        errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        failedKeys = ctx.marshaller().unmarshal(failedKeysBytes, ldr);
-        err = ctx.marshaller().unmarshal(errBytes, ldr);
+        finishUnmarshalCacheObjects(failedKeys, ctx, ldr);
 
-        if (nearEvicted == null && nearEvictedBytes != null)
-            nearEvicted = unmarshalCollection(nearEvictedBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(nearEvicted, ctx, ldr);
+
+        err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -199,7 +183,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
+                if (!writer.writeCollection("failedKeys", failedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -211,7 +195,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -241,7 +225,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 4:
-                failedKeysBytes = reader.readByteArray("failedKeysBytes");
+                failedKeys = reader.readCollection("failedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +241,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 6:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageCollectionItemType.BYTE_ARR);
+                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

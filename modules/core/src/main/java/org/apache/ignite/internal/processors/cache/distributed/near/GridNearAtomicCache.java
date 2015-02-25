@@ -143,21 +143,17 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
 
             CacheObject val = null;
-            byte[] valBytes = null;
 
             if (F.contains(nearValsIdxs, i)) {
                 val = res.nearValue(nearValIdx);
-                valBytes = res.nearValueBytes(nearValIdx);
 
                 nearValIdx++;
             }
             else {
                 assert req.operation() != TRANSFORM;
 
-                if (req.operation() != DELETE) {
+                if (req.operation() != DELETE)
                     val = req.value(i);
-                    valBytes = req.valueBytes(i);
-                }
             }
 
             long ttl = res.nearTtl(i);
@@ -170,7 +166,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 processNearAtomicUpdateResponse(ver,
                     key,
                     val,
-                    valBytes,
+                    null,
                     ttl,
                     expireTime,
                     req.nodeId(),
@@ -293,7 +289,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         GridCacheEntryEx entry = peekEx(key);
 
                         if (entry == null) {
-                            res.addNearEvicted(key, req.nearKeyBytes(i));
+                            res.addNearEvicted(key);
 
                             break;
                         }
@@ -306,13 +302,10 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         }
 
                         CacheObject val = req.nearValue(i);
-                        byte[] valBytes = req.nearValueBytes(i);
                         EntryProcessor<Object, Object, Object> entryProcessor = req.nearEntryProcessor(i);
 
                         GridCacheOperation op = entryProcessor != null ? TRANSFORM :
-                            (val != null || valBytes != null) ?
-                                UPDATE :
-                                DELETE;
+                            (val != null) ? UPDATE : DELETE;
 
                         long ttl = req.nearTtl(i);
                         long expireTime = req.nearExpireTime(i);
@@ -323,7 +316,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             op,
                             op == TRANSFORM ? entryProcessor : val,
-                            valBytes,
+                            null,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,

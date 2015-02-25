@@ -65,19 +65,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** Failed keys. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(KeyCacheObject.class)
     private volatile Collection<KeyCacheObject> failedKeys;
-
-    /** Serialized failed keys. */
-    private byte[] failedKeysBytes;
 
     /** Keys that should be remapped. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<KeyCacheObject> remapKeys;
-
-    /** Serialized keys that should be remapped. */
-    private byte[] remapKeysBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> remapKeys;
 
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @GridDirectCollection(int.class)
@@ -89,13 +83,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(CacheObject.class)
     private List<CacheObject> nearVals;
-
-    /** Serialized values generated on primary node which should be put to originating node's near cache. */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheValueBytes.class)
-    private List<GridCacheValueBytes> nearValBytes;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
     private GridCacheVersion nearVer;
@@ -181,7 +170,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @param remapKeys Remap keys.
      */
-    public void remapKeys(Collection<KeyCacheObject> remapKeys) {
+    public void remapKeys(List<KeyCacheObject> remapKeys) {
         this.remapKeys = remapKeys;
     }
 
@@ -197,18 +186,15 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      *
      * @param keyIdx Key index.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */
     public void addNearValue(int keyIdx,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         long ttl,
         long expireTime) {
         if (nearValsIdxs == null) {
             nearValsIdxs = new ArrayList<>();
-            nearValBytes = new ArrayList<>();
             nearVals = new ArrayList<>();
         }
 
@@ -216,7 +202,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         nearValsIdxs.add(keyIdx);
         nearVals.add(val);
-        nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
     }
 
     /**
@@ -328,21 +313,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     }
 
     /**
-     * @param idx Index.
-     * @return Serialized value generated on primary node which should be put to originating node's near cache.
-     */
-    @Nullable public byte[] nearValueBytes(int idx) {
-        if (nearValBytes != null) {
-            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
-
-            if (valBytes0 != null && !valBytes0.isPlain())
-                return valBytes0.get();
-        }
-
-        return null;
-    }
-
-    /**
      * Adds key to collection of failed keys.
      *
      * @param key Key to add.
@@ -409,13 +379,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         if (retVal != null)
             retValBytes = ctx.marshaller().marshal(retVal);
 
-        if (failedKeys != null)
-            failedKeysBytes = ctx.marshaller().marshal(failedKeys);
+        prepareMarshalCacheObjects(failedKeys, ctx);
 
-        if (remapKeys != null)
-            remapKeysBytes = ctx.marshaller().marshal(remapKeys);
+        prepareMarshalCacheObjects(remapKeys, ctx);
 
-        nearValBytes = marshalValuesCollection(nearVals, ctx);
+        prepareMarshalCacheObjects(nearVals, ctx);
     }
 
     /** {@inheritDoc} */
@@ -428,13 +396,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         if (retValBytes != null)
             retVal = ctx.marshaller().unmarshal(retValBytes, ldr);
 
-        if (failedKeysBytes != null)
-            failedKeys = ctx.marshaller().unmarshal(failedKeysBytes, ldr);
+        finishUnmarshalCacheObjects(failedKeys, ctx, ldr);
 
-        if (remapKeysBytes != null)
-            remapKeys = ctx.marshaller().unmarshal(remapKeysBytes, ldr);
+        finishUnmarshalCacheObjects(remapKeys, ctx, ldr);
 
-        nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(nearVals, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -459,7 +425,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
+                if (!writer.writeCollection("failedKeys", failedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -489,7 +455,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("nearValBytes", nearValBytes, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -507,7 +473,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("remapKeysBytes", remapKeysBytes))
+                if (!writer.writeCollection("remapKeys", remapKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -543,7 +509,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 4:
-                failedKeysBytes = reader.readByteArray("failedKeysBytes");
+                failedKeys = reader.readCollection("failedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -583,7 +549,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 9:
-                nearValBytes = reader.readCollection("nearValBytes", MessageCollectionItemType.MSG);
+                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -607,7 +573,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 12:
-                remapKeysBytes = reader.readByteArray("remapKeysBytes");
+                remapKeys = reader.readCollection("remapKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

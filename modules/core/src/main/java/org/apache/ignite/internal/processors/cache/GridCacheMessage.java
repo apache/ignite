@@ -575,6 +575,76 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @param col Collection.
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    protected final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+        GridCacheSharedContext ctx) throws IgniteCheckedException {
+        if (col == null)
+            return;
+
+        int size = col.size();
+
+        for (int i = 0 ; i < size; i++)
+            col.get(i).prepareMarshal(ctx);
+    }
+
+    /**
+     * @param col Collection.
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void prepareMarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
+        GridCacheSharedContext ctx) throws IgniteCheckedException {
+        if (col == null)
+            return;
+
+        for (CacheObject obj : col)
+            obj.prepareMarshal(ctx);
+    }
+
+    /**
+     * @param col Collection.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    protected final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+        GridCacheSharedContext ctx,
+        ClassLoader ldr)
+        throws IgniteCheckedException
+    {
+        if (col == null)
+            return;
+
+        int size = col.size();
+
+        for (int i = 0 ; i < size; i++)
+            col.get(i).finishUnmarshal(ctx, ldr);
+    }
+
+    /**
+     * @param col Collection.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
+        GridCacheSharedContext ctx,
+        ClassLoader ldr)
+        throws IgniteCheckedException
+    {
+        if (col == null)
+            return;
+
+        for (CacheObject obj : col)
+            obj.finishUnmarshal(ctx, ldr);
+    }
+
+    /**
      * @param byteCol Collection to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.

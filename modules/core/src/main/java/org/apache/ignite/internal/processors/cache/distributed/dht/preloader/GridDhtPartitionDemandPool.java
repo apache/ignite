@@ -690,7 +690,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         }
 
                         // Preload.
-                        for (Map.Entry<Integer, Collection<GridCacheEntryInfo>> e : supply.infos().entrySet()) {
+                        for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
                             int p = e.getKey();
 
                             if (cctx.affinity().localNode(p, topVer)) {
@@ -710,7 +710,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         Collection<Integer> invalidParts = new GridLeanSet<>();
 
                                         // Loop through all received entries and try to preload them.
-                                        for (GridCacheEntryInfo entry : e.getValue()) {
+                                        for (GridCacheEntryInfo entry : e.getValue().infos()) {
                                             if (!invalidParts.contains(p)) {
                                                 if (!part.preloadingPermitted(entry.key(), entry.version())) {
                                                     if (log.isDebugEnabled())

@@ -207,7 +207,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     /**
      * @param entry Entry to map.
      * @param val Value to write.
-     * @param valBytes Value bytes.
      * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
@@ -215,7 +214,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      */
     public void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
@@ -254,9 +252,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 }
 
                 updateReq.addWriteValue(entry.key(),
-                    entry.keyBytes(),
                     val,
-                    valBytes,
                     entryProcessor,
                     ttl,
                     conflictExpireTime,
@@ -269,7 +265,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
@@ -277,7 +272,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     public void addNearWriteEntries(Iterable<UUID> readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime) {
@@ -318,9 +312,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
             nearReadersEntries.put(entry.key(), entry);
 
             updateReq.addNearWriteValue(entry.key(),
-                entry.keyBytes(),
                 val,
-                valBytes,
                 entryProcessor,
                 ttl,
                 expireTime);

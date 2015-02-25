@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 /**
  *
  */
-public interface CacheObject {
+public interface CacheObject extends Message {
     /**
      * @param ctx Context.
      * @return Value.
@@ -34,4 +36,8 @@ public interface CacheObject {
      * @return Field value.
      */
     @Nullable public <T> T getField(String name);
+
+    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException;
+
+    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 }

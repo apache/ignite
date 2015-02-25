@@ -20,43 +20,29 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Externalizable {
+public class GridCacheEntryInfo implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache key. */
     @GridToStringInclude
-    @GridDirectTransient
     private KeyCacheObject key;
 
     /** Cache ID. */
     private int cacheId;
 
-    /** Key bytes. */
-    private byte[] keyBytes;
-
-    /** Key bytes sent. */
-    private boolean keyBytesSent;
-
     /** Cache value. */
-    @GridDirectTransient
     private CacheObject val;
-
-    /** Value bytes. */
-    private byte[] valBytes;
-
-    /** Value bytes sent. */
-    private boolean valBytesSent;
 
     /** Time to live. */
     private long ttl;
@@ -68,10 +54,12 @@ public class GridCacheEntryInfo implements Externalizable {
     private GridCacheVersion ver;
 
     /** New flag. */
+    @GridDirectTransient
     private boolean isNew;
 
     /** Deleted flag. */
-    private transient boolean deleted;
+    @GridDirectTransient
+    private boolean deleted;
 
     /**
      * @return Cache ID.
@@ -185,14 +173,149 @@ public class GridCacheEntryInfo implements Externalizable {
         this.deleted = deleted;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO IGNITE-51: field 'remaining'.
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("expireTime", expireTime))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeLong("ttl", ttl))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("ver", ver))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO IGNITE-51: field 'remaining'.
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                expireTime = reader.readLong("expireTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                ver = reader.readMessage("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 91;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 6;
+    }
+
     /**
      * @param ctx Context.
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val == null && valBytes != null)
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+// TODO IGNITE-51
+//        if (val == null && valBytes != null)
+//            val = ctx.marshaller().unmarshal(valBytes, ldr);
+    }
+
+    /**
+     * @return Marshalled size.
+     */
+    public int marshalledSize() {
+        // TODO IGNITE-51.
+        return 0;
     }
 
     /**
@@ -200,6 +323,9 @@ public class GridCacheEntryInfo implements Externalizable {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        key.prepareMarshal(ctx);
+
+        val.prepareMarshal(ctx);
 // TODO IGNITE-51
 //        boolean depEnabled = ctx.gridDeploy().enabled();
 //
@@ -224,13 +350,17 @@ public class GridCacheEntryInfo implements Externalizable {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        Marshaller mrsh = ctx.marshaller();
+        key.finishUnmarshal(ctx.shared(), clsLdr);
 
-        if (key == null)
-            key = mrsh.unmarshal(keyBytes, clsLdr);
-
-        if (ctx.isUnmarshalValues() && val == null && valBytes != null)
-            val = mrsh.unmarshal(valBytes, clsLdr);
+        val.finishUnmarshal(ctx.shared(), clsLdr);
+// TODO IGNITE-51
+//        Marshaller mrsh = ctx.marshaller();
+//
+//        if (key == null)
+//            key = mrsh.unmarshal(keyBytes, clsLdr);
+//
+//        if (ctx.isUnmarshalValues() && val == null && valBytes != null)
+//            val = mrsh.unmarshal(valBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -312,9 +442,11 @@ public class GridCacheEntryInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheEntryInfo.class, this,
-            "isNull", val == null,
-            "keyBytesSize", (keyBytes == null ? "null" : Integer.toString(keyBytes.length)),
-            "valBytesSize", (valBytes == null ? "null" : Integer.toString(valBytes.length)));
+        return S.toString(GridCacheEntryInfo.class, this);
+
+//        return S.toString(GridCacheEntryInfo.class, this,
+//            "isNull", val == null,
+//            "keyBytesSize", (keyBytes == null ? "null" : Integer.toString(keyBytes.length)),
+//            "valBytesSize", (valBytes == null ? "null" : Integer.toString(valBytes.length)));
     }
 }
