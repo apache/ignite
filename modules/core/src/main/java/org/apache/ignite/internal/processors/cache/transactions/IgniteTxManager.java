@@ -335,7 +335,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      *      {@code false} otherwise.
      */
     public boolean isCompleted(IgniteInternalTx<K, V> tx) {
-        return completedVers.containsKey(tx.xidVersion());
+        return completedVers.containsKey(tx.writeVersion());
     }
 
     /**
@@ -936,36 +936,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     }
 
     /**
-     * Gets committed transactions starting from the given version (inclusive). // TODO: GG-4011: why inclusive?
-     *
-     * @param min Start (or minimum) version.
-     * @return Committed transactions starting from the given version (non-inclusive).
-     */
-    public Collection<GridCacheVersion> committedVersions(GridCacheVersion min) {
-        ConcurrentNavigableMap<GridCacheVersion, Boolean> tail
-            = completedVers.tailMap(min, true);
-
-        return F.isEmpty(tail) ? Collections.<GridCacheVersion>emptyList() : copyOf(tail, true);
-    }
-
-    /**
-     * Gets rolledback transactions starting from the given version (inclusive). // TODO: GG-4011: why inclusive?
-     *
-     * @param min Start (or minimum) version.
-     * @return Committed transactions starting from the given version (non-inclusive).
-     */
-    public Collection<GridCacheVersion> rolledbackVersions(GridCacheVersion min) {
-        ConcurrentNavigableMap<GridCacheVersion, Boolean> tail
-            = completedVers.tailMap(min, true);
-
-        return F.isEmpty(tail) ? Collections.<GridCacheVersion>emptyList() : copyOf(tail, false);
-    }
-
-    /**
      * @param tx Tx to remove.
      */
     public void removeCommittedTx(IgniteInternalTx<K, V> tx) {
-        completedVers.remove(tx.xidVersion(), true);
+        completedVers.remove(tx.writeVersion(), true);
     }
 
     /**
@@ -973,7 +947,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @return If transaction was not already present in committed set.
      */
     public boolean addCommittedTx(IgniteInternalTx<K, V> tx) {
-        return addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
+        return addCommittedTx(tx.writeVersion(), tx.nearXidVersion());
     }
 
     /**
@@ -1084,7 +1058,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
          * so we don't do it here.
          */
 
-        Boolean committed = completedVers.get(tx.xidVersion());
+        Boolean committed = completedVers.get(tx.writeVersion());
 
         // 1. Make sure that committed version has been recorded.
         if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {

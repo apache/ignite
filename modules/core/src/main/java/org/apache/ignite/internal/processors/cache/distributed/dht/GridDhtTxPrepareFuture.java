@@ -789,9 +789,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             return;
 
         try {
-            // We are holding transaction-level locks for entries here, so we can get next write version.
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
-
             onEntriesLocked();
 
             {
@@ -809,6 +806,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         map(tx.entry(read.txKey()), futDhtMap, futNearMap);
                 }
             }
+
+            // We are holding transaction-level locks for entries here, so we can get next write version.
+            if (tx.onePhaseCommit())
+                tx.writeVersion(tx.nearXidVersion());
+            else
+                tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             if (isDone())
                 return;
