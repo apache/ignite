@@ -572,7 +572,7 @@
 
     <profiles>
         <profile>
-            <id>rat-check</id>
+            <id>rat-license-check</id>
             <build>
                 <plugins>
                     <plugin>
@@ -592,13 +592,9 @@
                                     <!--<copyrightMessage>rat.copyrightMessage</copyrightMessage>-->
                                     <excludes>
                                         <exclude>work/**</exclude>
-                                        <exclude>**/*.txt</exclude>
                                         <exclude>**/*.jks</exclude>
                                         <exclude>**/*.pem</exclude>
                                         <exclude>**/*.m4</exclude>
-                                        <exclude>**/*.ac</exclude>
-                                        <exclude>**/*.sub</exclude>
-                                        <exclude>**/*.csproj</exclude>
                                         <exclude>**/*.log</exclude>
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.h</exclude>
@@ -611,20 +607,18 @@
                                         <exclude>**/*.timestamp</exclude>
                                         <exclude>**/*.iml</exclude>
                                         <exclude>**/*.md</exclude>
-                                        <exclude>**/Makefile.am</exclude><!--am-->
-                                        <exclude>**/Makefile.in</exclude><!--am-->
-                                        <exclude>**/Makefile</exclude><!--am-->
+                                        <exclude>**/Makefile.am</exclude>
+                                        <exclude>**/Makefile.in</exclude>
+                                        <exclude>**/Makefile</exclude>
+                                        <exclude>**/pom-installed.xml</exclude>
                                         <!--special excludes-->
                                         <exclude>**/com/romix/scala/**</exclude>
                                         <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
                                         <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude>
-                                        <exclude>**/org/jetbrains/annotations/**</exclude>
+                                        <exclude>**/org/pcollections/**</exclude>
+                                        <!--<exclude>**/org/jetbrains/annotations/**</exclude>-->
                                         <exclude>**/org/jdk8/backport/</exclude>
                                         <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>**/ipc/shmem/*.sh</exclude>
-                                        <exclude>**/keystore/generate.sh</exclude>
-                                        <exclude>**/pom-installed.xml</exclude>
-                                        <exclude>**/optimized-classnames*.properties</exclude>
                                         <!--core-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude>
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude>
@@ -637,7 +631,8 @@
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude>
                                         <!--shmem-->
-                                        <exclude>**/igniteshmem/.libs/*</exclude>
+                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
+                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
                                         <exclude>ipc/shmem/install-sh</exclude>
                                         <exclude>ipc/shmem/include/Makefile</exclude>
                                         <exclude>ipc/shmem/depcomp</exclude>
@@ -651,6 +646,8 @@
                                         <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
                                         <exclude>ipc/shmem/igniteshmem/.deps/*</exclude>
                                         <exclude>ipc/shmem/compile</exclude>
+                                        <exclude>ipc/shmem/configure.ac</exclude>
+                                        <exclude>ipc/shmem/config.sub</exclude><!--own license-->
                                     </excludes>
                                 </configuration>
                             </execution>
