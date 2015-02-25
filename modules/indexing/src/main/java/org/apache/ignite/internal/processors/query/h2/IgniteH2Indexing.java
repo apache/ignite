@@ -55,6 +55,7 @@ import org.h2.value.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.Cache;
 import java.io.*;
 import java.lang.reflect.*;
@@ -681,7 +682,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
-            return new GridEmptyCloseableIterator<>();
+            throw new CacheException("Failed to find SQL table for type: " + type.name());
 
         setFilters(filters);
 
@@ -707,7 +708,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         TableDescriptor tblDesc = tableDescriptor(type, space);
 
         if (tblDesc == null)
-            return new QueryCursorImpl<>(Collections.<Cache.Entry<K,V>>emptyIterator());
+            throw new CacheException("Failed to find SQL table for type: " + type);
 
         String qry;
 

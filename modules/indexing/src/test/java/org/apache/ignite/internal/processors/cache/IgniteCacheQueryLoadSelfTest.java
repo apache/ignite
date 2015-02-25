@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
@@ -73,6 +72,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setIndexedTypes(
+            Integer.class, ValueObject.class
+        );
 
         cfg.setCacheConfiguration(ccfg);
 

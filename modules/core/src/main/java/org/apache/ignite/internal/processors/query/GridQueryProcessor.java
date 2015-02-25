@@ -407,7 +407,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeDescriptor type = typesByName.get(new TypeName(space, resType));
 
             if (type == null || !type.registered())
-                return new GridEmptyCloseableIterator<>();
+                throw new CacheException("Failed to find SQL table for type: " + resType);
 
             return idx.query(space, clause, params, type, filters);
         }
@@ -485,7 +485,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
 
             if (typeDesc == null || !typeDesc.registered())
-                return new GridEmptyCloseableIterator<>();
+                throw new CacheException("Failed to find SQL table for type: " + type);
 
             final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
                 idx.backupFilter());
@@ -663,7 +663,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeDescriptor type = typesByName.get(new TypeName(space, resType));
 
             if (type == null || !type.registered())
-                return new GridEmptyCloseableIterator<>();
+                throw new CacheException("Failed to find SQL table for type: " + resType);
 
             return idx.queryText(space, clause, type, filters);
         }
@@ -1141,11 +1141,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets type for space and type name.
+     * Gets type descriptor for space and type name.
      *
      * @param space Space name.
      * @param typeName Type name.
-     * @return Type.
+     * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws IgniteCheckedException {
