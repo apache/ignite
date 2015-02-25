@@ -83,7 +83,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheFuture<?>>> futs = newMap();
 
     /** Pending atomic futures. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<KeyCacheObject, ?>> atomicFuts =
+    private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
 
     /** Near to DHT version mapping. */
@@ -315,7 +315,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @param fut Future.
      */
-    public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<KeyCacheObject, ?> fut) {
+    public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null;
@@ -324,7 +324,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Collection of pending atomic futures.
      */
-    public Collection<GridCacheAtomicFuture<KeyCacheObject, ?>> atomicFutures() {
+    public Collection<GridCacheAtomicFuture<?>> atomicFutures() {
         return atomicFuts.values();
     }
 

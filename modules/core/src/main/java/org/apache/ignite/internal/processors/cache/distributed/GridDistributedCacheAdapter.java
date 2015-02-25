@@ -68,7 +68,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
+    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
     }
 
@@ -76,7 +76,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
         Collection<? extends K> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> tx,
+        IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
@@ -92,7 +92,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
+        IgniteTxLocalEx tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
         return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, -1L, filter);
@@ -112,7 +112,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      */
     protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
@@ -124,7 +124,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param key Key to remove.
      * @param ver Version to remove.
      */
-    public void removeVersionedEntry(K key, GridCacheVersion ver) {
+    public void removeVersionedEntry(KeyCacheObject key, GridCacheVersion ver) {
         GridCacheEntryEx entry = peekEx(key);
 
         if (entry == null)
@@ -276,27 +276,27 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
-                    dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
+                try (IgniteDataLoader<KeyCacheObject, Object> dataLdr = ignite.dataLoader(cacheName)) {
+                    dataLdr.updater(GridDataLoadCacheUpdaters.<KeyCacheObject, Object>batched());
 
-                    for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                            for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                            for (GridDhtCacheEntry o : locPart.entries()) {
                                 if (!o.obsoleteOrDeleted())
                                     dataLdr.removeData(o.key());
                             }
                         }
                     }
 
-                    Iterator<Cache.Entry<K, V>> it = dht.context().swap().offheapIterator(true, false, topVer);
+                    Iterator<KeyCacheObject> it = dht.context().swap().offHeapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next().getKey());
+                        dataLdr.removeData(it.next());
 
-                    it = dht.context().swap().swapIterator(true, false, topVer);
+                    it = dht.context().swap().swapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next().getKey());
+                        dataLdr.removeData(it.next());
                 }
             }
             finally {

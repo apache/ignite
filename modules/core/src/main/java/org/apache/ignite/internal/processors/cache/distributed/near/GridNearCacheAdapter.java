@@ -282,7 +282,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         if (keyCheck)
             validateCacheKeys(keys);
 
-        IgniteTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (IgniteTxLocalEx<K, V>)tx : null;
+        IgniteTxLocalEx txx = (tx != null && tx.local()) ? (IgniteTxLocalEx)tx : null;
 
         final IgniteCacheExpiryPolicy expiry = expiryPolicy(expiryPlc);
 

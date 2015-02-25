@@ -992,17 +992,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      * @param tx Committed transaction.
      */
-    public <K, V> void onTxCommitted(IgniteInternalTx<K, V> tx) {
+    public <K, V> void onTxCommitted(IgniteInternalTx tx) {
         if (dsCacheCtx == null)
             return;
 
         if (!dsCacheCtx.isDht() && tx.internal() && (!dsCacheCtx.isColocated() || dsCacheCtx.isReplicated())) {
-            Collection<IgniteTxEntry<K, V>> entries = tx.writeEntries();
+            Collection<IgniteTxEntry> entries = tx.writeEntries();
 
             if (log.isDebugEnabled())
                 log.debug("Committed entries: " + entries);
 
-            for (IgniteTxEntry<K, V> entry : entries) {
+            for (IgniteTxEntry entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
                 if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();

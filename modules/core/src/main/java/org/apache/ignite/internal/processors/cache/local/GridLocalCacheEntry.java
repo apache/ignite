@@ -28,7 +28,7 @@ import static org.apache.ignite.events.EventType.*;
  * Cache entry for local caches.
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
-public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
+public class GridLocalCacheEntry extends GridCacheMapEntry {
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
@@ -38,8 +38,14 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param ttl  Time to live.
      * @param hdrId Header id.
      */
-    public GridLocalCacheEntry(GridCacheContext<K, V> ctx, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridLocalCacheEntry(GridCacheContext ctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, key, hash, val, next, ttl, hdrId);
     }
 
@@ -71,7 +77,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
         GridCacheMvccCandidate cand;
         GridCacheMvccCandidate owner;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {
@@ -80,7 +86,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
-                mvcc = new GridCacheMvcc<>(cctx);
+                mvcc = new GridCacheMvcc(cctx);
 
                 mvccExtras(mvcc);
             }
@@ -254,8 +260,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
-                    GridLocalCacheEntry<K, V> e =
-                        (GridLocalCacheEntry<K, V>)cctx.cache().peekEx(cand.key());
+                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx.cache().peekEx(cand.key());
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.
@@ -293,7 +298,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {
@@ -342,7 +347,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
         GridCacheMvccCandidate doomed;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {

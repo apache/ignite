@@ -566,7 +566,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         TransactionIsolation isolation,
         boolean invalidate,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<Object, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * Post constructor initialization for subclasses.

@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.*;
  * Near cache entry.
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
-public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** */
     private static final int NEAR_SIZE_OVERHEAD = 36;
 
@@ -62,8 +62,14 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    public GridNearCacheEntry(GridCacheContext<K, V> ctx, K key, int hash, V val, GridCacheMapEntry<K, V> next,
-        long ttl, int hdrId) {
+    public GridNearCacheEntry(GridCacheContext ctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, key, hash, val, next, ttl, hdrId);
 
         part = ctx.affinity().partition(key);
@@ -118,10 +124,10 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      */
     public boolean initializeFromDht(long topVer) throws GridCacheEntryRemovedException {
         while (true) {
-            GridDhtCacheEntry<K, V> entry = cctx.near().dht().peekExx(key);
+            GridDhtCacheEntry entry = cctx.near().dht().peekExx(key);
 
             if (entry != null) {
-                GridCacheEntryInfo<K, V> e = entry.info();
+                GridCacheEntryInfo e = entry.info();
 
                 if (e != null) {
                     GridCacheVersion enqueueVer = null;
@@ -132,10 +138,10 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                             if (isNew() || !valid(topVer)) {
                                 // Version does not change for load ops.
-                                update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                                update(e.value(), null, e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
                                 if (cctx.deferredDelete()) {
-                                    boolean deleted = val == null && valBytes == null;
+                                    boolean deleted = val == null;
 
                                     if (deleted != deletedUnlocked()) {
                                         deletedUnlocked(deleted);
@@ -179,18 +185,19 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"RedundantTypeArguments"})
-    public boolean resetFromPrimary(V val, byte[] valBytes, GridCacheVersion ver, GridCacheVersion dhtVer,
+    public boolean resetFromPrimary(CacheObject val, byte[] valBytes, GridCacheVersion ver, GridCacheVersion dhtVer,
         UUID primaryNodeId) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
 
-        if (valBytes != null && val == null && !cctx.config().isStoreValueBytes()) {
-            GridCacheVersion curDhtVer = dhtVersion();
-
-            if (!F.eq(dhtVer, curDhtVer))
-                val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
-        }
+// TODO IGNITE-51.
+//        if (valBytes != null && val == null && !cctx.config().isStoreValueBytes()) {
+//            GridCacheVersion curDhtVer = dhtVersion();
+//
+//            if (!F.eq(dhtVer, curDhtVer))
+//                val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
+//        }
 
         synchronized (this) {
             checkObsolete();
@@ -220,8 +227,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param primaryNodeId Primary node ID.
      */
-    public void updateOrEvict(GridCacheVersion dhtVer, @Nullable V val, @Nullable byte[] valBytes, long expireTime,
-        long ttl, UUID primaryNodeId) {
+    public void updateOrEvict(GridCacheVersion dhtVer,
+        @Nullable CacheObject val,
+        @Nullable byte[] valBytes,
+        long expireTime,
+        long ttl,
+        UUID primaryNodeId)
+    {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -261,26 +273,27 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Tuple with version and value of this entry.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue()
+    @Nullable public synchronized GridTuple3<GridCacheVersion, CacheObject, byte[]> versionedValue()
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
         if (dhtVer == null)
             return null;
         else {
-            V val0 = null;
+            CacheObject val0 = null;
             byte[] valBytes0 = null;
 
-            GridCacheValueBytes valBytesTuple = valueBytes();
-
-            if (!valBytesTuple.isNull()) {
-                if (valBytesTuple.isPlain())
-                    val0 = (V)valBytesTuple.get();
-                else
-                    valBytes0 = valBytesTuple.get();
-            }
-            else
-                val0 = val;
+// TODO IGNITE-51.
+//            GridCacheValueBytes valBytesTuple = valueBytes();
+//
+//            if (!valBytesTuple.isNull()) {
+//                if (valBytesTuple.isPlain())
+//                    val0 = (V)valBytesTuple.get();
+//                else
+//                    valBytes0 = valBytesTuple.get();
+//            }
+//            else
+//                val0 = val;
 
             return F.t(dhtVer, val0, valBytes0);
         }
@@ -312,17 +325,19 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(IgniteInternalTx tx, K key, boolean reload,
+    @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
         UUID subjId, String taskName) throws IgniteCheckedException {
-        return cctx.near().loadAsync(tx,
-            F.asList(key),
-            reload,
-            /*force primary*/false,
-            subjId,
-            taskName,
-            true,
-            null,
-            false).get().get(key);
+        return null.
+// TODO IGNTIE-51.
+//        return cctx.near().loadAsync(tx,
+//            F.asList(key),
+//            reload,
+//            /*force primary*/false,
+//            subjId,
+//            taskName,
+//            true,
+//            null,
+//            false).get().get(key);
     }
 
     /**
@@ -343,14 +358,24 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable IgniteInternalTx tx, UUID primaryNodeId, V val, byte[] valBytes,
-        GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
-        boolean evt, long topVer, UUID subjId)
+    public boolean loadedValue(@Nullable IgniteInternalTx tx,
+        UUID primaryNodeId,
+        CacheObject val,
+        byte[] valBytes,
+        GridCacheVersion ver,
+        GridCacheVersion dhtVer,
+        @Nullable GridCacheVersion expVer,
+        long ttl,
+        long expireTime,
+        boolean evt,
+        long topVer,
+        UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
-        if (valBytes != null && val == null && (isNewLocked() || !valid))
-            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
+// TODO IGNITE-51.
+//        if (valBytes != null && val == null && (isNewLocked() || !valid))
+//            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
         GridCacheVersion enqueueVer = null;
 
@@ -363,7 +388,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 boolean ret = false;
 
-                V old = this.val;
+                CacheObject old = this.val;
                 boolean hasVal = hasValueUnlocked();
 
                 if (isNew() || !valid || expVer == null || expVer.equals(this.dhtVer)) {
@@ -404,13 +429,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(V val, byte[] valBytes, long expireTime,
-        GridCacheVersion ver, V old) throws IgniteCheckedException {
+    @Override protected void updateIndex(CacheObject val, byte[] valBytes, long expireTime,
+        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(V val) {
+    @Override protected void clearIndex(CacheObject val) {
         // No-op.
     }
 
@@ -459,7 +484,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheMvccCandidate owner;
         GridCacheMvccCandidate cand;
 
-        V val;
+        CacheObject val;
 
         UUID locId = cctx.nodeId();
 
@@ -469,7 +494,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
-                mvcc = new GridCacheMvcc<>(cctx);
+                mvcc = new GridCacheMvcc(cctx);
 
                 mvccExtras(mvcc);
             }
@@ -539,7 +564,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
-        V val;
+        CacheObject val;
 
         UUID locId = cctx.nodeId();
 

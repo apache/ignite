@@ -479,7 +479,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         cache.map().incrementSize(e);
 
         if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), -1, false);
+            GridDhtLocalPartition part = topology().localPartition(e.partition(), -1, false);
 
             if (part != null)
                 part.incrementPublicSize();
@@ -497,7 +497,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         cache.map().decrementSize(e);
 
         if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition<K, V> part = topology().localPartition(e.partition(), -1, false);
+            GridDhtLocalPartition part = topology().localPartition(e.partition(), -1, false);
 
             if (part != null)
                 part.decrementPublicSize();
@@ -972,8 +972,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<Cache.Entry<Object, Object>>[] noPeekArray() {
-        return noPeekArr;
+    @SuppressWarnings("unchecked")
+    public <K, V> IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
+        return (IgnitePredicate<Cache.Entry<K, V>>[])((IgnitePredicate[])noPeekArr);
     }
 
     /**

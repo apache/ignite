@@ -1322,7 +1322,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> offHeapKeyIterator() {
+    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, long topVer) {
         // TODO IGNITE-51.
         return null;
     }
@@ -1330,7 +1330,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> swapKeyIterator() {
+    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer) {
         // TODO IGNITE-51.
         return null;
     }
