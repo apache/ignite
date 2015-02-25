@@ -591,50 +591,6 @@
                                     <!--<addLicenseHeaders>forced</addLicenseHeaders>-->
                                     <!--<copyrightMessage>rat.copyrightMessage</copyrightMessage>-->
                                     <excludes>
-                                        <exclude>*.log</exclude>
-                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude>
-                                        <exclude>**/licenses/*.txt</exclude>
-                                        <exclude>work/**/*</exclude>
-                                        <exclude>**/target/**/*</exclude>
-                                        <exclude>**/*.timestamp</exclude>
-                                        <exclude>**/*.iml</exclude>
-                                        <!--core-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--Copyright (c) 2009 Stanford University-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude>
-                                        <exclude>src/test/resources/log/ignite.log.tst</exclude>
-                                        <exclude>src/test/config/start-nodes.ini</exclude>
-                                        <!--urideploy-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
-                                        <!--hadoop-->
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude>
-                                        <!--clients-->
-                                        <exclude>**/*.md</exclude>
-                                        <!--root-->
-                                        <exclude>**/igniteshmem/.libs/*</exclude>
-                                        <exclude>ipc/shmem/install-sh</exclude>
-                                        <exclude>ipc/shmem/include/Makefile</exclude>
-                                        <exclude>ipc/shmem/depcomp</exclude>
-                                        <exclude>ipc/shmem/config.status</exclude>
-                                        <exclude>ipc/shmem/libtool</exclude>
-                                        <exclude>ipc/shmem/missing</exclude>
-                                        <exclude>ipc/shmem/configure</exclude>
-                                        <exclude>ipc/shmem/stamp-h1</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.libs/libigniteshmem.lai</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.libs/libigniteshmem.la</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/Makefile</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.deps/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo</exclude>
-                                        <exclude>ipc/shmem/compile</exclude>
-
-                                        <exclude>**/Makefile.am</exclude><!--am-->
-                                        <exclude>**/Makefile.in</exclude><!--am-->
-                                        <exclude>**/Makefile</exclude><!--am-->
-                                        <!--copy-paste-->
                                         <exclude>work/**</exclude>
                                         <exclude>**/*.txt</exclude>
                                         <exclude>**/*.jks</exclude>
@@ -648,27 +604,53 @@
                                         <exclude>**/*.h</exclude>
                                         <exclude>**/*.pfx</exclude>
                                         <exclude>**/*.dylib</exclude>
-                                        <exclude>**/*.ini</exclude>
                                         <exclude>**/*.gar</exclude>
-                                        <exclude>**/*.tst</exclude>
-                                        <exclude>**/*.brokenxml</exclude>
-                                        <exclude>**/*.empty</exclude>
-                                        <exclude>**/*.incorrefs</exclude>
                                         <exclude>**/*.guess</exclude>
+                                        <exclude>**/licenses/*.txt</exclude>
+                                        <exclude>**/target/**/*</exclude>
+                                        <exclude>**/*.timestamp</exclude>
+                                        <exclude>**/*.iml</exclude>
+                                        <exclude>**/*.md</exclude>
+                                        <exclude>**/Makefile.am</exclude><!--am-->
+                                        <exclude>**/Makefile.in</exclude><!--am-->
+                                        <exclude>**/Makefile</exclude><!--am-->
                                         <!--special excludes-->
                                         <exclude>**/com/romix/scala/**</exclude>
-                                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
-                                        <exclude>**/internal/util/snaptree/SnapTreeMap.java</exclude>
-                                        <exclude>**/internal/util/snaptree/CopyOnWriteManager.java</exclude>
-                                        <exclude>**/internal/util/snaptree/Epoch.java</exclude>
-                                        <exclude>**/internal/util/snaptree/EpochNode.java</exclude>
+                                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
+                                        <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude>
                                         <exclude>**/org/jetbrains/annotations/**</exclude>
-                                        <exclude>**/org/jdk8/backport/**</exclude>
+                                        <exclude>**/org/jdk8/backport/</exclude>
                                         <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                                         <exclude>**/ipc/shmem/*.sh</exclude>
                                         <exclude>**/keystore/generate.sh</exclude>
                                         <exclude>**/pom-installed.xml</exclude>
                                         <exclude>**/optimized-classnames*.properties</exclude>
+                                        <!--core-->
+                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude>
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude>
+                                        <exclude>src/test/config/start-nodes.ini</exclude>
+                                        <!--urideploy-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude>
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
+                                        <!--hadoop-->
+                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
+                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude>
+                                        <!--shmem-->
+                                        <exclude>**/igniteshmem/.libs/*</exclude>
+                                        <exclude>ipc/shmem/install-sh</exclude>
+                                        <exclude>ipc/shmem/include/Makefile</exclude>
+                                        <exclude>ipc/shmem/depcomp</exclude>
+                                        <exclude>ipc/shmem/config.status</exclude>
+                                        <exclude>ipc/shmem/libtool</exclude>
+                                        <exclude>ipc/shmem/missing</exclude>
+                                        <exclude>ipc/shmem/configure</exclude>
+                                        <exclude>ipc/shmem/stamp-h1</exclude>
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude>
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude>
+                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
+                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude>
+                                        <exclude>ipc/shmem/compile</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
