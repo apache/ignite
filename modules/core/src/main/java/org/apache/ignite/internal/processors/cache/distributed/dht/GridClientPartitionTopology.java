@@ -254,7 +254,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create)
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, long topVer, boolean create)
         throws GridDhtInvalidPartitionException {
         if (!create)
             return null;
@@ -264,29 +264,29 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> localPartition(K key, boolean create) {
+    @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
         return localPartition(1, -1, create);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridDhtLocalPartition<K, V>> localPartitions() {
+    @Override public List<GridDhtLocalPartition> localPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions() {
+    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> onAdded(long topVer, GridDhtCacheEntry<K, V> e) {
+    @Override public GridDhtLocalPartition onAdded(long topVer, GridDhtCacheEntry e) {
         assert false : "Entry should not be added to client topology: " + e;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onRemoved(GridDhtCacheEntry<K, V> e) {
+    @Override public void onRemoved(GridDhtCacheEntry e) {
         assert false : "Entry should not be removed from client topology: " + e;
     }
 
@@ -709,14 +709,14 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean own(GridDhtLocalPartition<K, V> part) {
+    @Override public boolean own(GridDhtLocalPartition part) {
         assert false : "Client topology should never own a partition: " + part;
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
+    @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
         lock.writeLock().lock();

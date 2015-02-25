@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Local transaction API.
  */
-public interface IgniteTxRemoteEx<K, V> extends IgniteInternalTx {
+public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
      * @return Remote thread ID.
      */

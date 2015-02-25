@@ -141,7 +141,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param grpLockKey Collection of group lock keys if this is a group-lock transaction.
      */
     public GridNearTxRemote(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext ctx,
         UUID nodeId,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
@@ -276,12 +276,12 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     private boolean addEntry(IgniteTxEntry entry) throws IgniteCheckedException {
         checkInternal(entry.txKey());
 
-        GridCacheContext<K, V> cacheCtx = entry.context();
+        GridCacheContext cacheCtx = entry.context();
 
         if (!cacheCtx.isNear())
             cacheCtx = cacheCtx.dht().near().context();
 
-        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(entry.key());
+        GridNearCacheEntry cached = cacheCtx.near().peekExx(entry.key());
 
         if (cached == null) {
             evicted.add(entry.txKey());
@@ -292,14 +292,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             cached.unswap();
 
             try {
-                if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
+                if (cached.peek(GLOBAL, CU.empty()) == null && cached.evictInternal(false, xidVer, null)) {
                     evicted.add(entry.txKey());
 
                     return false;
                 }
                 else {
                     // Initialize cache entry.
-                    entry.cached(cached, entry.keyBytes());
+                    entry.cached(cached, null);
 
                     writeMap.put(entry.txKey(), entry);
 
@@ -329,17 +329,17 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @return {@code True} if entry has been enlisted.
      */
     public boolean addEntry(
-        GridCacheContext<K, V> cacheCtx,
+        GridCacheContext cacheCtx,
         IgniteTxKey key,
         byte[] keyBytes,
         GridCacheOperation op,
-        V val,
+        CacheObject val,
         byte[] valBytes,
         @Nullable GridCacheVersion drVer
     ) throws IgniteCheckedException {
         checkInternal(key);
 
-        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(key.key());
+        GridNearCacheEntry cached = cacheCtx.near().peekExx(key.key());
 
         try {
             if (cached == null) {
@@ -350,7 +350,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             else {
                 cached.unswap();
 
-                if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
+                if (cached.peek(GLOBAL, CU.empty()) == null && cached.evictInternal(false, xidVer, null)) {
                     cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);
@@ -358,7 +358,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                     return false;
                 }
                 else {
-                    IgniteTxEntry txEntry = new IgniteTxEntry<>(cacheCtx,
+                    IgniteTxEntry txEntry = new IgniteTxEntry(cacheCtx,
                         this,
                         op,
                         val,
@@ -366,9 +366,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         cached,
                         drVer);
-
-                    txEntry.keyBytes(keyBytes);
-                    txEntry.valueBytes(valBytes);
+// TODO IGNITE-51.
+//                    txEntry.keyBytes(keyBytes);
+//                    txEntry.valueBytes(valBytes);
 
                     writeMap.put(key, txEntry);
 

@@ -75,7 +75,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private final GridCacheOperation op;
 
     /** Keys */
-    private Collection<Object> keys;
+    private Collection<?> keys;
 
     /** Values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -86,7 +86,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
     /** Conflict put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<GridCacheDrInfo<Object>> conflictPutVals;
+    private Collection<GridCacheDrInfo<?>> conflictPutVals;
 
     /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -184,10 +184,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         GridDhtAtomicCache cache,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        Collection<Object> keys,
+        Collection<?> keys,
         @Nullable Collection<?> vals,
         @Nullable Object[] invokeArgs,
-        @Nullable Collection<GridCacheDrInfo<Object>> conflictPutVals,
+        @Nullable Collection<GridCacheDrInfo<?>> conflictPutVals,
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
@@ -258,7 +258,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Object> keys() {
+    @Override public Collection<?> keys() {
         return keys;
     }
 
@@ -526,7 +526,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             }
             else if (conflictPutVals != null) {
                 // Conflict PUT.
-                GridCacheDrInfo<Object> conflictPutVal =  F.first(conflictPutVals);
+                GridCacheDrInfo<?> conflictPutVal =  F.first(conflictPutVals);
 
                 val = conflictPutVal.value();
                 conflictVer = conflictPutVal.version();
@@ -609,7 +609,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (vals != null)
             it = vals.iterator();
 
-        Iterator<GridCacheDrInfo<Object>> conflictPutValsIt = null;
+        Iterator<GridCacheDrInfo<?>> conflictPutValsIt = null;
 
         if (conflictPutVals != null)
             conflictPutValsIt = conflictPutVals.iterator();
@@ -657,7 +657,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     }
                 }
                 else if (conflictPutVals != null) {
-                    GridCacheDrInfo<Object> conflictPutVal =  conflictPutValsIt.next();
+                    GridCacheDrInfo<?> conflictPutVal =  conflictPutValsIt.next();
 
                     val = conflictPutVal.value();
                     conflictVer = conflictPutVal.version();

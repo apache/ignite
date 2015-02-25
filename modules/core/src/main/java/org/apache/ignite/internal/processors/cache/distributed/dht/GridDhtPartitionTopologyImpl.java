@@ -52,7 +52,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     private final IgniteLogger log;
 
     /** */
-    private final ConcurrentMap<Integer, GridDhtLocalPartition<K, V>> locParts =
+    private final ConcurrentMap<Integer, GridDhtLocalPartition> locParts =
         new ConcurrentHashMap8<>();
 
     /** Node to partition map. */
@@ -112,8 +112,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         boolean changed = false;
 
         // Synchronously wait for all renting partitions to complete.
-        for (Iterator<GridDhtLocalPartition<K, V>> it = locParts.values().iterator(); it.hasNext();) {
-            GridDhtLocalPartition<K, V> p = it.next();
+        for (Iterator<GridDhtLocalPartition> it = locParts.values().iterator(); it.hasNext();) {
+            GridDhtLocalPartition p = it.next();
 
             GridDhtPartitionState state = p.state();
 
@@ -251,7 +251,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                         assert exchId.isJoined();
 
                         try {
-                            GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, true, false);
+                            GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);
 
                             assert locPart != null;
 
@@ -278,7 +278,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                                 try {
                                     // This will make sure that all non-existing partitions
                                     // will be created in MOVING state.
-                                    GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, true, false);
+                                    GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);
 
                                     updateLocal(p, loc.id(), locPart.state(), updateSeq);
                                 }
@@ -308,7 +308,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 // If preloader is disabled, then we simply clear out
                 // the partitions this node is not responsible for.
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, false, false);
+                    GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
                     boolean belongs = cctx.affinity().localNode(p, topVer);
 
@@ -381,7 +381,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             long updateSeq = this.updateSeq.incrementAndGet();
 
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, false, false);
+                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
                 if (cctx.affinity().localNode(p, topVer)) {
                     // This partition will be created during next topology event,
@@ -449,7 +449,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create)
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, long topVer, boolean create)
         throws GridDhtInvalidPartitionException {
         return localPartition(p, topVer, create, true);
     }
@@ -461,11 +461,11 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
      * @param updateSeq Update sequence.
      * @return Local partition.
      */
-    private GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create, boolean updateSeq) {
+    private GridDhtLocalPartition localPartition(int p, long topVer, boolean create, boolean updateSeq) {
         while (true) {
             boolean belongs = cctx.affinity().localNode(p, topVer);
 
-            GridDhtLocalPartition<K, V> loc = locParts.get(p);
+            GridDhtLocalPartition loc = locParts.get(p);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts.remove(p, loc);
@@ -488,8 +488,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 lock.writeLock().lock();
 
                 try {
-                    GridDhtLocalPartition<K, V> old = locParts.putIfAbsent(p,
-                        loc = new GridDhtLocalPartition<>(cctx, p));
+                    GridDhtLocalPartition old = locParts.putIfAbsent(p,
+                        loc = new GridDhtLocalPartition(cctx, p));
 
                     if (old != null)
                         loc = old;
@@ -511,22 +511,22 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> localPartition(K key, boolean create) {
+    @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
         return localPartition(cctx.affinity().partition(key), -1, create);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridDhtLocalPartition<K, V>> localPartitions() {
+    @Override public List<GridDhtLocalPartition> localPartitions() {
         return new LinkedList<>(locParts.values());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions() {
+    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return locParts.values();
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> onAdded(long topVer, GridDhtCacheEntry<K, V> e) {
+    @Override public GridDhtLocalPartition onAdded(long topVer, GridDhtCacheEntry e) {
         /*
          * Make sure not to acquire any locks here as this method
          * may be called from sensitive synchronization blocks.
@@ -535,7 +535,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
         int p = cctx.affinity().partition(e.key());
 
-        GridDhtLocalPartition<K, V> loc = localPartition(p, topVer, true);
+        GridDhtLocalPartition loc = localPartition(p, topVer, true);
 
         assert loc != null;
 
@@ -545,14 +545,14 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void onRemoved(GridDhtCacheEntry<K, V> e) {
+    @Override public void onRemoved(GridDhtCacheEntry e) {
         /*
          * Make sure not to acquire any locks here as this method
          * may be called from sensitive synchronization blocks.
          * ===================================================
          */
 
-        GridDhtLocalPartition<K, V> loc = localPartition(cctx.affinity().partition(e.key()), topologyVersion(), false);
+        GridDhtLocalPartition loc = localPartition(cctx.affinity().partition(e.key()), topologyVersion(), false);
 
         if (loc != null)
             loc.onRemoved(e);
@@ -904,7 +904,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
         UUID locId = cctx.nodeId();
 
-        for (GridDhtLocalPartition<K, V> part : locParts.values()) {
+        for (GridDhtLocalPartition part : locParts.values()) {
             GridDhtPartitionState state = part.state();
 
             if (state.active()) {
@@ -1064,7 +1064,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean own(GridDhtLocalPartition<K, V> part) {
+    @Override public boolean own(GridDhtLocalPartition part) {
         ClusterNode loc = cctx.localNode();
 
         lock.writeLock().lock();
@@ -1088,7 +1088,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
+    @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
         lock.writeLock().lock();

@@ -60,7 +60,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** Transaction. */
     @GridToStringExclude
-    private GridNearTxLocal<K, V> tx;
+    private GridNearTxLocal tx;
 
     /** Commit flag. */
     private boolean commit;
@@ -72,7 +72,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
 
     /** Node mappings. */
-    private ConcurrentMap<UUID, GridDistributedTxMapping<K, V>> mappings;
+    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -89,7 +89,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
+    public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
         assert cctx != null;
@@ -197,7 +197,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearTxFinishResponse res) {
         if (!isDone())
             for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -225,7 +225,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     long topVer = this.tx.topologyVersion();
 
                     for (IgniteTxEntry e : this.tx.writeMap().values()) {
-                        GridCacheContext<K, V> cacheCtx = e.context();
+                        GridCacheContext cacheCtx = e.context();
 
                         try {
                             if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
@@ -280,7 +280,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (tx.onePhaseCommit()) {
             // No need to send messages as transaction was already committed on remote node.
             // Finish local mapping only as we need send commit message to backups.
-            for (GridDistributedTxMapping<K, V> m : mappings.values()) {
+            for (GridDistributedTxMapping m : mappings.values()) {
                 if (m.node().isLocal()) {
                     IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
@@ -329,21 +329,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * @param mappings Mappings.
      */
-    private void finish(Iterable<GridDistributedTxMapping<K, V>> mappings) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings) {
         // Create mini futures.
-        for (GridDistributedTxMapping<K, V> m : mappings)
+        for (GridDistributedTxMapping m : mappings)
             finish(m);
     }
 
     /**
      * @param m Mapping.
      */
-    private void finish(GridDistributedTxMapping<K, V> m) {
+    private void finish(GridDistributedTxMapping m) {
         ClusterNode n = m.node();
 
         assert !m.empty();
 
-        GridNearTxFinishRequest<K, V> req = new GridNearTxFinishRequest<>(
+        GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
             tx.threadId(),
@@ -421,7 +421,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /** Keys. */
         @GridToStringInclude
-        private GridDistributedTxMapping<K, V> m;
+        private GridDistributedTxMapping m;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -433,7 +433,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param m Mapping.
          */
-        MiniFuture(GridDistributedTxMapping<K, V> m) {
+        MiniFuture(GridDistributedTxMapping m) {
             super(cctx.kernalContext());
 
             this.m = m;
@@ -456,7 +456,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Keys.
          */
-        public GridDistributedTxMapping<K, V> mapping() {
+        public GridDistributedTxMapping mapping() {
             return m;
         }
 
@@ -485,7 +485,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param res Result callback.
          */
-        void onResult(GridNearTxFinishResponse<K, V> res) {
+        void onResult(GridNearTxFinishResponse res) {
             if (res.error() != null)
                 onDone(res.error());
             else

@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.jetbrains.annotations.*;
 
@@ -116,5 +117,15 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject toCacheObject(@Nullable Object obj) {
+        return null;
     }
 }

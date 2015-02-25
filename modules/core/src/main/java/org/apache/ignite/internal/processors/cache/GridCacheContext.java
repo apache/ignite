@@ -917,7 +917,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache communication manager.
      */
-    public GridCacheIoManager<K, V> io() {
+    public GridCacheIoManager io() {
         return sharedCtx.io();
     }
 

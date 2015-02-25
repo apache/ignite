@@ -35,12 +35,12 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Local cache transaction.
  */
-class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
+class GridLocalTx extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Transaction future. */
-    private final AtomicReference<GridLocalTxFuture<K, V>> fut = new AtomicReference<>();
+    private final AtomicReference<GridLocalTxFuture> fut = new AtomicReference<>();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -59,7 +59,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
      * @param timeout Timeout.
      */
     GridLocalTx(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext ctx,
         boolean implicit,
         boolean implicitSingle,
         TransactionConcurrency concurrency,
@@ -75,7 +75,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        GridLocalTxFuture<K, V> fut = this.fut.get();
+        GridLocalTxFuture fut = this.fut.get();
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -156,7 +156,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        GridLocalTxFuture<K, V> fut = this.fut.get();
+        GridLocalTxFuture fut = this.fut.get();
 
         if (fut == null) {
             if (this.fut.compareAndSet(null, fut = new GridLocalTxFuture<>(cctx, this))) {

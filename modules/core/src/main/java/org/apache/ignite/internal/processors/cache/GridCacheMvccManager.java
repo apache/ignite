@@ -282,7 +282,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 ((GridFutureAdapter)future).onDone(e);
         }
 
-        for (GridCacheAtomicFuture<?, ?> future : atomicFuts.values())
+        for (GridCacheAtomicFuture<?> future : atomicFuts.values())
             ((GridFutureAdapter)future).onDone(e);
     }
 
@@ -960,7 +960,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
-        for (GridCacheAtomicFuture<KeyCacheObject, ?> fut : atomicFuts.values()) {
+        for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
             if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)
                 res.add((IgniteInternalFuture<Object>)fut);
         }

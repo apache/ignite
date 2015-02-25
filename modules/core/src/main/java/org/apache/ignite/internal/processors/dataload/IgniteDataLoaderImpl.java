@@ -1407,19 +1407,26 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             for (Map.Entry<K, V> e : entries) {
                 try {
-                    K key = e.getKey();
-                    V val = e.getValue();
+// TODO IGNITE-51.
+//                    K key = e.getKey();
+//                    V val = e.getValue();
+//
+//                    if (portable) {
+//                        key = (K)cctx.marshalToPortable(key);
+//                        val = (V)cctx.marshalToPortable(val);
+//                    }
 
-                    if (portable) {
-                        key = (K)cctx.marshalToPortable(key);
-                        val = (V)cctx.marshalToPortable(val);
-                    }
-
-                    GridCacheEntryEx<K, V> entry = internalCache.entryEx(key, topVer);
+                    GridCacheEntryEx entry = internalCache.entryEx(cctx.toCacheKeyObject(e.getKey()), topVer);
 
                     entry.unswap(true, false);
 
-                    entry.initialValue(val, null, ver, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, false, topVer,
+                    entry.initialValue(cctx.toCacheObject(e.getValue()),
+                        null,
+                        ver,
+                        CU.TTL_ETERNAL,
+                        CU.EXPIRE_TIME_ETERNAL,
+                        false,
+                        topVer,
                         GridDrType.DR_LOAD);
 
                     cctx.evicts().touch(entry, topVer);

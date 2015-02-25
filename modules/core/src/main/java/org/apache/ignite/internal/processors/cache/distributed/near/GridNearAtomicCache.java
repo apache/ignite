@@ -55,7 +55,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     private GridDhtCacheAdapter<K, V> dht;
 
     /** Remove queue. */
-    private GridCircularBuffer<T2<K, GridCacheVersion>> rmvQueue;
+    private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -77,8 +77,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
+            @Override public void apply(UUID nodeId, GridNearGetResponse res) {
                 processGetResponse(nodeId, res);
             }
         });
@@ -101,15 +101,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param res Update response.
      */
     public void processNearAtomicUpdateResponse(
-        GridNearAtomicUpdateRequest<K, V> req,
-        GridNearAtomicUpdateResponse<K, V> res
+        GridNearAtomicUpdateRequest req,
+        GridNearAtomicUpdateResponse res
     ) {
         /*
          * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
          * then check if value was generated on primary node, if not then use value sent in request.
          */
 
-        Collection<K> failed = res.failedKeys();
+        Collection<KeyCacheObject> failed = res.failedKeys();
         List<Integer> nearValsIdxs = res.nearValuesIndexes();
         List<Integer> skipped = res.skippedIndexes();
 
@@ -128,7 +128,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(skipped, i))
                 continue;
 
-            K key = req.keys().get(i);
+            KeyCacheObject key = req.keys().get(i);
 
             if (F.contains(failed, key))
                 continue;
@@ -142,7 +142,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 continue;
             }
 
-            V val = null;
+            CacheObject val = null;
             byte[] valBytes = null;
 
             if (F.contains(nearValsIdxs, i)) {
@@ -197,8 +197,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      */
     private void processNearAtomicUpdateResponse(
         GridCacheVersion ver,
-        K key,
-        @Nullable V val,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
         long ttl,
         long expireTime,
@@ -217,7 +217,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                     GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
 
-                    GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
+                    GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                         ver,
                         nodeId,
                         nodeId,
@@ -232,7 +232,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*metrics*/true,
                         /*primary*/false,
                         /*check version*/true,
-                        CU.<K, V>empty(),
+                        CU.empty(),
                         DR_NONE,
                         ttl,
                         expireTime,
@@ -271,21 +271,21 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      */
     public void processDhtAtomicUpdateRequest(
         UUID nodeId,
-        GridDhtAtomicUpdateRequest<K, V> req,
-        GridDhtAtomicUpdateResponse<K, V> res
+        GridDhtAtomicUpdateRequest req,
+        GridDhtAtomicUpdateResponse res
     ) {
         GridCacheVersion ver = req.writeVersion();
 
         assert ver != null;
 
-        Collection<K> backupKeys = req.keys();
+        Collection<KeyCacheObject> backupKeys = req.keys();
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < req.nearSize(); i++) {
-            K key = req.nearKey(i);
+            KeyCacheObject key = req.nearKey(i);
 
             try {
                 while (true) {
@@ -305,9 +305,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             break;
                         }
 
-                        V val = req.nearValue(i);
+                        CacheObject val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
-                        EntryProcessor<K, V, ?> entryProcessor = req.nearEntryProcessor(i);
+                        EntryProcessor<Object, Object, Object> entryProcessor = req.nearEntryProcessor(i);
 
                         GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                             (val != null || valBytes != null) ?
@@ -317,7 +317,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         long ttl = req.nearTtl(i);
                         long expireTime = req.nearExpireTime(i);
 
-                        GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
+                        GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
@@ -332,7 +332,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
-                            CU.<K, V>empty(),
+                            CU.empty(),
                             DR_NONE,
                             ttl,
                             expireTime,
@@ -659,7 +659,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
@@ -680,7 +680,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         assert entry.isNear();
 
         try {
-            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
+            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
 
             if (evicted != null)
                 removeVersionedEntry(evicted.get1(), evicted.get2());

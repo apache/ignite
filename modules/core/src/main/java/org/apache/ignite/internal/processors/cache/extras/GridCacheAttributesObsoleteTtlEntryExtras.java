@@ -72,12 +72,12 @@ public class GridCacheAttributesObsoleteTtlEntryExtras extends GridCacheEntryExt
             return this;
         }
         else
-            return new GridCacheObsoleteTtlEntryExtras<>(obsoleteVer, ttl, expireTime);
+            return new GridCacheObsoleteTtlEntryExtras(obsoleteVer, ttl, expireTime);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
-        return mvcc != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras<>(attrData, mvcc, obsoleteVer, ttl,
+        return mvcc != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras(attrData, mvcc, obsoleteVer, ttl,
             expireTime) : this;
     }
 
@@ -94,7 +94,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras extends GridCacheEntryExt
             return this;
         }
         else
-            return new GridCacheAttributesTtlEntryExtras<>(attrData, ttl, expireTime);
+            return new GridCacheAttributesTtlEntryExtras(attrData, ttl, expireTime);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class GridCacheAttributesObsoleteTtlEntryExtras extends GridCacheEntryExt
             return this;
         }
         else
-            return new GridCacheAttributesObsoleteEntryExtras<>(attrData, obsoleteVer);
+            return new GridCacheAttributesObsoleteEntryExtras(attrData, obsoleteVer);
     }
 
     /** {@inheritDoc} */

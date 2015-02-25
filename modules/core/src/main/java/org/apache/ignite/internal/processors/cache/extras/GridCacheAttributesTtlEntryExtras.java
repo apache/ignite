@@ -98,7 +98,7 @@ public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapt
             return this;
         }
         else
-            return new GridCacheAttributesEntryExtras<>(attrData);
+            return new GridCacheAttributesEntryExtras(attrData);
     }
 
     /** {@inheritDoc} */

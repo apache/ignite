@@ -15,25 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.jetbrains.annotations.*;
 
 /**
- * @param <K> Key type.
- * @param <V> Value type.
+ *
  */
-interface GridLocalLockCallback {
+public class KeyCacheObjectImpl implements KeyCacheObject {
+    /** */
+    private Object val;
+
     /**
-     * Called when entry lock ownership changes. This call
-     * happens outside of synchronization so external callbacks
-     * can be made from this call.
-     *
-     * @param entry Entry whose owner has changed.
-     * @param prev Previous candidate.
-     * @param owner Current candidate.
+     * @param val Value.
      */
-    public void onOwnerChanged(GridLocalCacheEntry entry,
-        GridCacheMvccCandidate prev,
-        GridCacheMvccCandidate owner);
+    public KeyCacheObjectImpl(Object val) {
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean internal() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(GridCacheContext ctx) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T getField(String name) {
+        return null;
+    }
 }

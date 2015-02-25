@@ -411,7 +411,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 col.add((IgniteTxEntry)in.readObject());
         }
 
-        return col == null ? Collections.<IgniteTxEntry<K,V>>emptyList() : col;
+        return col == null ? Collections.<IgniteTxEntry>emptyList() : col;
     }
 
     /** {@inheritDoc} */

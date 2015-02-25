@@ -84,7 +84,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param node Node.
      * @param res Reponse.
      */
-    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
         if (res.topologyVersion() != topVer) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
@@ -148,7 +148,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(ctx.cacheId(), topVer),
+                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(ctx.cacheId(), topVer),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.

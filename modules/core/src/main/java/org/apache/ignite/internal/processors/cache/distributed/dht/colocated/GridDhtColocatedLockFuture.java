@@ -99,14 +99,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
     /** Transaction. */
     @GridToStringExclude
-    private GridNearTxLocal<K, V> tx;
+    private GridNearTxLocal tx;
 
     /** Topology snapshot to operate on. */
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
         new AtomicReference<>();
 
     /** Map of current values. */
-    private Map<K, GridTuple3<GridCacheVersion, V, byte[]>> valMap;
+    private Map<KeyCacheObject, GridTuple3<GridCacheVersion, CacheObject, byte[]>> valMap;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
@@ -134,7 +134,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     public GridDhtColocatedLockFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
-        @Nullable GridNearTxLocal<K, V> tx,
+        @Nullable GridNearTxLocal tx,
         boolean read,
         boolean retval,
         long timeout,
@@ -264,13 +264,13 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      *      implicit transaction accesses locked entry.
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
-    @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry<K, V> entry) throws IgniteCheckedException {
+    @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
         GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, entry.key());
 
         if (inTx()) {
             IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
-            txEntry.cached(entry, txEntry.keyBytes());
+            txEntry.cached(entry, null);
 
             if (cand != null) {
                 if (!tx.implicit())
@@ -281,7 +281,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             }
             else {
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
-                cand = new GridCacheMvccCandidate<>(entry,
+                cand = new GridCacheMvccCandidate(entry,
                     cctx.localNodeId(),
                     null,
                     null,
@@ -300,7 +300,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         }
         else {
             if (cand == null) {
-                cand = new GridCacheMvccCandidate<>(entry,
+                cand = new GridCacheMvccCandidate(entry,
                     cctx.localNodeId(),
                     null,
                     null,
@@ -399,7 +399,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearLockResponse<K, V> res) {
+    void onResult(UUID nodeId, GridNearLockResponse res) {
         if (!isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
@@ -535,7 +535,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             // Continue mapping on the same topology version as it was before.
             topSnapshot.compareAndSet(null, snapshot);
 
-            map(keys);
+            // TODO IGNITE-51.
+            // map(keys);
 
             markInitialized();
 
@@ -568,7 +569,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                     topSnapshot.compareAndSet(null, snapshot);
 
-                    map(keys);
+                    // TODO IGNITE-51.
+                    // map(keys);
 
                     markInitialized();
                 }
@@ -590,13 +592,85 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     }
 
     /**
+     * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
+     * remote primary node.
+     *
+     * @param mappings Queue of mappings.
+     * @throws IgniteCheckedException If mapping can not be completed.
+     */
+    private void proceedMapping(final Deque<GridNearLockMapping> mappings)
+        throws IgniteCheckedException {
+        GridNearLockMapping map = mappings.poll();
+
+        // If there are no more mappings to process, complete the future.
+        if (map == null)
+            return;
+
+        final GridNearLockRequest req = map.request();
+        final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
+        final ClusterNode node = map.node();
+
+        if (filter != null && filter.length != 0)
+            req.filter((IgnitePredicate[])filter, cctx);
+
+        if (node.isLocal())
+            lockLocally(mappedKeys, req.topologyVersion(), mappings);
+        else {
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, mappings);
+
+            req.miniId(fut.futureId());
+
+            add(fut); // Append new future.
+
+            IgniteInternalFuture<?> txSync = null;
+
+            if (inTx())
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
+
+            if (txSync == null || txSync.isDone()) {
+                try {
+                    if (log.isDebugEnabled())
+                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
+
+                    cctx.io().send(node, req, cctx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException ex) {
+                    assert fut != null;
+
+                    fut.onResult(ex);
+                }
+            }
+            else {
+                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
+                        try {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
+
+                            cctx.io().send(node, req, cctx.ioPolicy());
+                        }
+                        catch (ClusterTopologyCheckedException ex) {
+                            assert fut != null;
+
+                            fut.onResult(ex);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onError(e);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    /**
      * Maps keys to nodes. Note that we can not simply group keys by nodes and send lock request as
      * such approach does not preserve order of lock acquisition. Instead, keys are split in continuous
      * groups belonging to one primary node and locks for these groups are acquired sequentially.
      *
      * @param keys Keys.
      */
-    private void map(Collection<? extends K> keys) {
+    private void map(Collection<KeyCacheObject> keys) {
         try {
             GridDiscoveryTopologySnapshot snapshot = topSnapshot.get();
 
@@ -616,13 +690,13 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (mapAsPrimary(keys, topVer))
                 return;
 
-            ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings = new ConcurrentLinkedDeque8<>();
+            ConcurrentLinkedDeque8<GridNearLockMapping> mappings = new ConcurrentLinkedDeque8<>();
 
             // Assign keys to primary nodes.
-            GridNearLockMapping<K, V> map = null;
+            GridNearLockMapping map = null;
 
-            for (K key : keys) {
-                GridNearLockMapping<K, V> updated = map(key, map, topVer);
+            for (KeyCacheObject key : keys) {
+                GridNearLockMapping updated = map(key, map, topVer);
 
                 // If new mapping was created, add to collection.
                 if (updated != map) {
@@ -648,27 +722,27 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             boolean hasRmtNodes = false;
 
             // Create mini futures.
-            for (Iterator<GridNearLockMapping<K, V>> iter = mappings.iterator(); iter.hasNext(); ) {
-                GridNearLockMapping<K, V> mapping = iter.next();
+            for (Iterator<GridNearLockMapping> iter = mappings.iterator(); iter.hasNext(); ) {
+                GridNearLockMapping mapping = iter.next();
 
                 ClusterNode node = mapping.node();
-                Collection<K> mappedKeys = mapping.mappedKeys();
+                Collection<KeyCacheObject> mappedKeys = mapping.mappedKeys();
 
                 boolean loc = node.equals(cctx.localNode());
 
                 assert !mappedKeys.isEmpty();
 
-                GridNearLockRequest<K, V> req = null;
+                GridNearLockRequest req = null;
 
-                Collection<K> distributedKeys = new ArrayList<>(mappedKeys.size());
+                Collection<KeyCacheObject> distributedKeys = new ArrayList<>(mappedKeys.size());
 
-                for (K key : mappedKeys) {
+                for (KeyCacheObject key : mappedKeys) {
                     boolean explicit;
 
-                    IgniteTxKey<K> txKey = cctx.txKey(key);
+                    IgniteTxKey txKey = cctx.txKey(key);
 
                     while (true) {
-                        GridDistributedCacheEntry<K, V> entry = null;
+                        GridDistributedCacheEntry entry = null;
 
                         try {
                             entry = cctx.colocated().entryExx(key, topVer, true);
@@ -687,8 +761,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             GridCacheMvccCandidate cand = addEntry(entry);
 
                             // Will either return value from dht cache or null if this is a miss.
-                            GridTuple3<GridCacheVersion, V, byte[]> val = entry.detached() ? null :
-                                ((GridDhtCacheEntry<K, V>)entry).versionedValue(topVer);
+                            GridTuple3<GridCacheVersion, CacheObject, byte[]> val = entry.detached() ? null :
+                                ((GridDhtCacheEntry)entry).versionedValue(topVer);
 
                             GridCacheVersion dhtVer = null;
 
@@ -700,7 +774,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             if (cand != null && !cand.reentry()) {
                                 if (req == null) {
-                                    req = new GridNearLockRequest<>(
+                                    req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
                                         cctx.nodeId(),
@@ -792,86 +866,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     }
 
     /**
-     * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
-     * remote primary node.
-     *
-     * @param mappings Queue of mappings.
-     * @throws IgniteCheckedException If mapping can not be completed.
-     */
-    private void proceedMapping(final Deque<GridNearLockMapping<K, V>> mappings)
-        throws IgniteCheckedException {
-        GridNearLockMapping<K, V> map = mappings.poll();
-
-        // If there are no more mappings to process, complete the future.
-        if (map == null)
-            return;
-
-        final GridNearLockRequest<K, V> req = map.request();
-        final Collection<K> mappedKeys = map.distributedKeys();
-        final ClusterNode node = map.node();
-
-        if (filter != null && filter.length != 0)
-            req.filter(filter, cctx);
-
-        if (node.isLocal())
-            lockLocally(mappedKeys, req.topologyVersion(), mappings);
-        else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys, mappings);
-
-            req.miniId(fut.futureId());
-
-            add(fut); // Append new future.
-
-            IgniteInternalFuture<?> txSync = null;
-
-            if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
-
-            if (txSync == null || txSync.isDone()) {
-                try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                    cctx.io().send(node, req, cctx.ioPolicy());
-                }
-                catch (ClusterTopologyCheckedException ex) {
-                    assert fut != null;
-
-                    fut.onResult(ex);
-                }
-            }
-            else {
-                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                            cctx.io().send(node, req, cctx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException ex) {
-                            assert fut != null;
-
-                            fut.onResult(ex);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onError(e);
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    /**
      * Locks given keys directly through dht cache.
      *
      * @param keys Collection of keys.
      * @param topVer Topology version to lock on.
      * @param mappings Optional collection of mappings to proceed locking.
      */
-    private void lockLocally(final Collection<K> keys, long topVer,
-        @Nullable final Deque<GridNearLockMapping<K, V>> mappings) {
+    private void lockLocally(final Collection<KeyCacheObject> keys, long topVer,
+        @Nullable final Deque<GridNearLockMapping> mappings) {
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
 
@@ -880,7 +882,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             threadId,
             lockVer,
             topVer,
-            keys,
+            // TODO IGNITE-51.
+            // keys,
+            null,
             read,
             timeout,
             accessTtl,
@@ -913,11 +917,11 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             ", mappedKeys=" + keys + ", fut=" + GridDhtColocatedLockFuture.this + ']');
 
                     if (inTx()) {
-                        for (K key : keys)
+                        for (KeyCacheObject key : keys)
                             tx.entry(cctx.txKey(key)).markLocked();
                     }
                     else {
-                        for (K key : keys)
+                        for (KeyCacheObject key : keys)
                             cctx.mvcc().markExplicitOwner(key, threadId);
                     }
 
@@ -947,14 +951,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return {@code True} if all keys were mapped locally, {@code false} if full mapping should be performed.
      * @throws IgniteCheckedException If key cannot be added to mapping.
      */
-    private boolean mapAsPrimary(Collection<? extends K> keys, long topVer) throws IgniteCheckedException {
+    private boolean mapAsPrimary(Collection<KeyCacheObject> keys, long topVer) throws IgniteCheckedException {
         // Assign keys to primary nodes.
-        Collection<K> distributedKeys = new ArrayList<>(keys.size());
+        Collection<KeyCacheObject> distributedKeys = new ArrayList<>(keys.size());
 
-        for (K key : keys) {
+        for (KeyCacheObject key : keys) {
             if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
-                for (K k : keys)
+                for (KeyCacheObject k : keys)
                     cctx.mvcc().removeExplicitLock(threadId, k, lockVer);
 
                 return false;
@@ -973,7 +977,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         if (!distributedKeys.isEmpty()) {
             if (tx != null) {
-                for (K key : distributedKeys)
+                for (KeyCacheObject key : distributedKeys)
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
             }
 
@@ -992,8 +996,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return {@code True} if transaction accesses key that was explicitly locked before.
      * @throws IgniteCheckedException If lock is externally held and transaction is explicit.
      */
-    private boolean addLocalKey(K key, long topVer, Collection<K> distributedKeys) throws IgniteCheckedException {
-        GridDistributedCacheEntry<K, V> entry = cctx.colocated().entryExx(key, topVer, false);
+    private boolean addLocalKey(KeyCacheObject key, long topVer, Collection<KeyCacheObject> distributedKeys)
+        throws IgniteCheckedException {
+        GridDistributedCacheEntry entry = cctx.colocated().entryExx(key, topVer, false);
 
         assert !entry.detached();
 
@@ -1021,7 +1026,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return Near lock mapping.
      * @throws IgniteCheckedException If mapping failed.
      */
-    private GridNearLockMapping<K, V> map(K key, @Nullable GridNearLockMapping<K, V> mapping,
+    private GridNearLockMapping map(KeyCacheObject key, @Nullable GridNearLockMapping mapping,
         long topVer) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
@@ -1036,7 +1041,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 " key) [key=" + key + ", primaryNodeId=" + primary.id() + ']');
 
         if (mapping == null || !primary.id().equals(mapping.node().id()))
-            mapping = new GridNearLockMapping<>(primary, key);
+            mapping = new GridNearLockMapping(primary, key);
         else
             mapping.addKey(key);
 
@@ -1097,11 +1102,11 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         /** Keys. */
         @GridToStringInclude
-        private Collection<K> keys;
+        private Collection<KeyCacheObject> keys;
 
         /** Mappings to proceed. */
         @GridToStringExclude
-        private Deque<GridNearLockMapping<K, V>> mappings;
+        private Deque<GridNearLockMapping> mappings;
 
         /** */
         private AtomicBoolean rcvRes = new AtomicBoolean(false);
@@ -1118,8 +1123,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
          * @param keys Keys.
          * @param mappings Mappings to proceed.
          */
-        MiniFuture(ClusterNode node, Collection<K> keys,
-            Deque<GridNearLockMapping<K, V>> mappings) {
+        MiniFuture(ClusterNode node,
+            Collection<KeyCacheObject> keys,
+            Deque<GridNearLockMapping> mappings) {
             super(cctx.kernalContext());
 
             this.node = node;
@@ -1144,7 +1150,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         /**
          * @return Keys.
          */
-        public Collection<K> keys() {
+        public Collection<KeyCacheObject> keys() {
             return keys;
         }
 
@@ -1188,7 +1194,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         /**
          * @param res Result callback.
          */
-        void onResult(GridNearLockResponse<K, V> res) {
+        void onResult(GridNearLockResponse res) {
             if (rcvRes.compareAndSet(false, true)) {
                 if (res.error() != null) {
                     if (log.isDebugEnabled())
@@ -1206,10 +1212,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                 int i = 0;
 
-                for (K k : keys) {
-                    GridTuple3<GridCacheVersion, V, byte[]> oldValTup = valMap.get(k);
+                for (KeyCacheObject k : keys) {
+                    GridTuple3<GridCacheVersion, CacheObject, byte[]> oldValTup = valMap.get(k);
 
-                    V newVal = res.value(i);
+                    CacheObject newVal = res.value(i);
                     byte[] newBytes = res.valueBytes(i);
 
                     GridCacheVersion dhtVer = res.dhtVersion(i);
@@ -1232,7 +1238,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                         txEntry.markLocked();
 
-                        GridDhtDetachedCacheEntry<K, V> entry = (GridDhtDetachedCacheEntry<K, V>)txEntry.cached();
+                        GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
                         try {
                             if (res.dhtVersion(i) == null) {

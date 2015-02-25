@@ -329,7 +329,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
-                        GridCacheEntryEx<Integer, Integer> entry = cache0.peekEx(key);
+                        GridCacheEntryEx entry = cache0.peekEx(key);
 
                         assertNotNull("Missing entry for key: " + key, entry);
                         assertEquals((Integer)(key < 100 ? -1 : key), entry.rawGetOrUnmarshal(false));

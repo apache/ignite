@@ -1019,7 +1019,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+            GridCacheEntryEx e = cache.peekEx(key);
 
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
@@ -1030,7 +1030,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 found = true;
 
                 if (wait) {
-                    final GridCacheEntryEx<Object, Object> e0 = e;
+                    final GridCacheEntryEx e0 = e;
 
                     GridTestUtils.waitForCondition(new PA() {
                         @Override public boolean apply() {

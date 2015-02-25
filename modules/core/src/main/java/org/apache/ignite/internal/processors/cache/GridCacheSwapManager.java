@@ -697,7 +697,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             assert ptr.get1() != null;
             assert ptr.get2() != null;
 
-            return new GridCacheOffheapSwapEntry<>(ptr.get1(), ptr.get2());
+            return new GridCacheOffheapSwapEntry(ptr.get1(), ptr.get2());
         }
 
         return readAndRemoveSwap(key, part, keyBytes);
@@ -1330,7 +1330,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer) {
+    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer)
+        throws IgniteCheckedException {
         // TODO IGNITE-51.
         return null;
     }

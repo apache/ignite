@@ -167,22 +167,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
-            new MessageHandler<GridDhtPartitionsSingleMessage<K, V>>() {
-                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
+            new MessageHandler<GridDhtPartitionsSingleMessage>() {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
                     processSinglePartitionUpdate(node, msg);
                 }
             });
 
         cctx.io().addHandler(0, GridDhtPartitionsFullMessage.class,
-            new MessageHandler<GridDhtPartitionsFullMessage<K, V>>() {
-                @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage<K, V> msg) {
+            new MessageHandler<GridDhtPartitionsFullMessage>() {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     processFullPartitionUpdate(node, msg);
                 }
             });
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
-            new MessageHandler<GridDhtPartitionsSingleRequest<K, V>>() {
-                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
+            new MessageHandler<GridDhtPartitionsSingleRequest>() {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
                     processSinglePartitionRequest(node, msg);
                 }
             });
@@ -487,7 +487,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes)
         throws IgniteCheckedException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
+        GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, -1);
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
@@ -513,7 +513,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private boolean sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id)
         throws IgniteCheckedException {
-        GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
+        GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id, cctx.versions().last());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
@@ -603,7 +603,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node.
      * @param msg Message.
      */
-    private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage<K, V> msg) {
+    private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         if (!enterBusy())
             return;
 
@@ -639,7 +639,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node ID.
      * @param msg Message.
      */
-    private void processSinglePartitionUpdate(ClusterNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
+    private void processSinglePartitionUpdate(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         if (!enterBusy())
             return;
 
@@ -677,7 +677,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node ID.
      * @param msg Message.
      */
-    private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
+    private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
         if (!enterBusy())
             return;
 

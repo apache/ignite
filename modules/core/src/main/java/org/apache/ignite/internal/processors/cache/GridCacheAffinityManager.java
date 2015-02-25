@@ -344,7 +344,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code true} if given key belongs to specified node.
      */
-    public boolean belongs(ClusterNode node, K key, long topVer) {
+    public boolean belongs(ClusterNode node, Object key, long topVer) {
         assert node != null;
 
         return belongs(node, partition(key), topVer);

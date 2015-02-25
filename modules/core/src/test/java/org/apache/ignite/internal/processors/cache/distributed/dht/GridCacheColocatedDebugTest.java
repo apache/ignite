@@ -317,11 +317,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(i)).internalCache();
 
                 for (Integer key : keys) {
-                    GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
-                        Collection<GridCacheMvccCandidate<Object>> locCands = entry.localCandidates();
-                        Collection<GridCacheMvccCandidate<Object>> rmtCands = entry.remoteMvccSnapshot();
+                        Collection<GridCacheMvccCandidate> locCands = entry.localCandidates();
+                        Collection<GridCacheMvccCandidate> rmtCands = entry.remoteMvccSnapshot();
 
                         assert locCands == null || locCands.isEmpty() : "Local candidates is not empty [idx=" + i +
                             ", entry=" + entry + ']';

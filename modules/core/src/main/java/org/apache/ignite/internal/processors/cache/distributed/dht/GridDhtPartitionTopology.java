@@ -88,7 +88,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int p, long topVer, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -98,19 +98,19 @@ public interface GridDhtPartitionTopology<K, V> {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition<K, V> localPartition(K key, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(Object key, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
      * @return All local partitions by copying them into another list.
      */
-    public List<GridDhtLocalPartition<K, V>> localPartitions();
+    public List<GridDhtLocalPartition> localPartitions();
 
     /**
      *
      * @return All current local partitions.
      */
-    public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions();
+    public Collection<GridDhtLocalPartition> currentLocalPartitions();
 
     /**
      * @return Local IDs.
@@ -159,12 +159,12 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param e Entry added to cache.
      * @return Local partition.
      */
-    public GridDhtLocalPartition<K, V> onAdded(long topVer, GridDhtCacheEntry<K, V> e);
+    public GridDhtLocalPartition onAdded(long topVer, GridDhtCacheEntry e);
 
     /**
      * @param e Entry removed from cache.
      */
-    public void onRemoved(GridDhtCacheEntry<K, V> e);
+    public void onRemoved(GridDhtCacheEntry e);
 
     /**
      * @param exchId Exchange ID.
@@ -185,12 +185,12 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param part Partition to own.
      * @return {@code True} if owned.
      */
-    public boolean own(GridDhtLocalPartition<K, V> part);
+    public boolean own(GridDhtLocalPartition part);
 
     /**
      * @param part Evicted partition.
      */
-    public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq);
+    public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
 
     /**
      * @param nodeId Node to get partitions for.

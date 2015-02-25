@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Transaction node mapping.
  */
-public class GridDistributedTxMapping<K, V> implements Externalizable {
+public class GridDistributedTxMapping implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -181,14 +181,14 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @return Reads.
      */
     public Collection<IgniteTxEntry> reads() {
-        return F.view(entries, CU.<K, V>reads());
+        return F.view(entries, CU.reads());
     }
 
     /**
      * @return Writes.
      */
     public Collection<IgniteTxEntry> writes() {
-        return F.view(entries, CU.<K, V>writes());
+        return F.view(entries, CU.writes());
     }
 
     /**
@@ -231,7 +231,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
         for (Iterator<IgniteTxEntry> it = c.iterator(); it.hasNext();) {
             IgniteTxEntry e = it.next();
 
-            GridCacheEntryEx<K,V> cached = e.cached();
+            GridCacheEntryEx cached = e.cached();
 
             if (U.containsIntArray(parts, cached.partition()))
                 it.remove();
@@ -241,7 +241,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @param keys Keys to evict readers for.
      */
-    public void evictReaders(@Nullable Collection<IgniteTxKey<K>> keys) {
+    public void evictReaders(@Nullable Collection<IgniteTxKey> keys) {
         if (keys == null || keys.isEmpty())
             return;
 
@@ -254,7 +254,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param keys Keys to evict readers for.
      * @param entries Entries to check.
      */
-    private void evictReaders(Collection<IgniteTxKey<K>> keys, @Nullable Collection<IgniteTxEntry> entries) {
+    private void evictReaders(Collection<IgniteTxKey> keys, @Nullable Collection<IgniteTxEntry> entries) {
         if (entries == null || entries.isEmpty())
             return;
 

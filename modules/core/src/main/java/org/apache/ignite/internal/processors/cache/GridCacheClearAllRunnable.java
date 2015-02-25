@@ -80,11 +80,11 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         if (!ctx.isNear()) {
             if (ctx.swap().offHeapEnabled()) {
                 if (ctx.config().isQueryIndexEnabled()) {
-                    for (Iterator<Map.Entry<K, V>> it = ctx.swap().lazyOffHeapIterator(); it.hasNext();) {
-                        Map.Entry<K, V> e = it.next();
+                    for (Iterator<KeyCacheObject> it = ctx.swap().offHeapKeyIterator(true, true, -1L); it.hasNext();) {
+                        KeyCacheObject key = it.next();
 
-                        if (owns(e.getKey()))
-                            clearEntry(cache.entryEx(e.getKey()));
+                        if (owns(key))
+                            clearEntry(cache.entryEx(key));
 
                     }
                 }
@@ -95,10 +95,10 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             if (ctx.isSwapOrOffheapEnabled()) {
                 if (ctx.swap().swapEnabled()) {
                     if (ctx.config().isQueryIndexEnabled()) {
-                        Iterator<Map.Entry<K, V>> it = null;
+                        Iterator<KeyCacheObject> it = null;
 
                         try {
-                            it = ctx.swap().lazySwapIterator();
+                            it = ctx.swap().swapKeyIterator(true, true, -1L);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to get iterator over swap.", e);
@@ -106,10 +106,10 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
                         if (it != null) {
                             while (it.hasNext()) {
-                                Map.Entry<K, V> e = it.next();
+                                KeyCacheObject key = it.next();
 
-                                if (owns(e.getKey()))
-                                    clearEntry(cache.entryEx(e.getKey()));
+                                if (owns(key))
+                                    clearEntry(cache.entryEx(key));
                             }
                         }
                     }
@@ -146,10 +146,10 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param key Key.
      * @return {@code True} in case this worker should process this key.
      */
-    protected boolean owns(K key) {
+    protected boolean owns(KeyCacheObject key) {
         assert key != null;
 
-        // Avoid hash code and remainder calculation in case ther is no actual split.
+        // Avoid hash code and remainder calculation in case there is no actual split.
         return totalCnt == 1 || key.hashCode() % totalCnt == id;
     }
 

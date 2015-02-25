@@ -378,6 +378,26 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         err.addSuppressed(e);
     }
 
+    /**
+     * Adds keys to collection of failed keys.
+     *
+     * @param keys Key to add.
+     * @param e Error cause.
+     * @param ctx Context.
+     */
+    public synchronized void addFailedKeys(Collection<Object> keys, Throwable e, GridCacheContext ctx) {
+        if (failedKeys == null)
+            failedKeys = new ArrayList<>(keys.size());
+
+        for (Object key : keys)
+            failedKeys.add(ctx.toCacheKeyObject(key));
+
+        if (err == null)
+            err = new IgniteCheckedException("Failed to update keys on primary node.");
+
+        err.addSuppressed(e);
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {

@@ -27,15 +27,15 @@ import java.util.*;
 /**
  * Empty cache map that will never store any entries.
  */
-public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
+public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     /** Empty triple. */
-    private final GridTriple<GridCacheMapEntry<K,V>> emptyTriple =
+    private final GridTriple<GridCacheMapEntry> emptyTriple =
         new GridTriple<>(null, null, null);
 
     /**
      * @param ctx Cache context.
      */
-    public GridNoStorageCacheMap(GridCacheContext<K, V> ctx) {
+    public GridNoStorageCacheMap(GridCacheContext ctx) {
         super(ctx, 0, 0.75f, 1);
     }
 
@@ -60,25 +60,29 @@ public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry<K, V> randomEntry() {
+    @Override public GridCacheMapEntry randomEntry() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry<K, V> getEntry(Object key) {
+    @Override public GridCacheMapEntry getEntry(Object key) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry<K, V> putEntry(long topVer, K key, @Nullable V val, long ttl) {
+    @Override public GridCacheMapEntry putEntry(long topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
         throw new AssertionError();
     }
 
     /** {@inheritDoc} */
-    @Override public GridTriple<GridCacheMapEntry<K, V>> putEntryIfObsoleteOrAbsent(long topVer, K key, @Nullable V val,
-        long ttl, boolean create) {
+    @Override public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(long topVer,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        long ttl,
+        boolean create)
+    {
         if (create) {
-            GridCacheMapEntry<K, V> entry = new GridDhtCacheEntry<>(ctx, topVer, key, hash(key.hashCode()), val,
+            GridCacheMapEntry entry = new GridDhtCacheEntry(ctx, topVer, key, hash(key.hashCode()), val,
                 null, 0, 0);
 
             return new GridTriple<>(entry, null, null);
@@ -88,7 +92,7 @@ public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m, long ttl) {
+    @Override public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
         throw new AssertionError();
     }
 
@@ -98,7 +102,7 @@ public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry<K, V> removeEntryIfObsolete(K key) {
+    @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
         throw new AssertionError();
     }
 

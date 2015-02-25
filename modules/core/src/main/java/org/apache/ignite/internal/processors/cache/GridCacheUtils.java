@@ -201,8 +201,8 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, Object>() {
-        @Override public Object apply(GridCacheEntryEx e) {
+    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, KeyCacheObject>() {
+        @Override public KeyCacheObject apply(GridCacheEntryEx e) {
             return e.key();
         }
 
@@ -304,23 +304,21 @@ public class GridCacheUtils {
     /**
      * @param err If {@code true}, then throw {@link GridCacheFilterFailedException},
      *      otherwise return {@code val} passed in.
-     * @param <T> Return type.
      * @return Always return {@code null}.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static <T> T failed(boolean err) throws GridCacheFilterFailedException {
-        return failed(err, (T)null);
+    @Nullable public static CacheObject failed(boolean err) throws GridCacheFilterFailedException {
+        return failed(err, null);
     }
 
     /**
      * @param err If {@code true}, then throw {@link GridCacheFilterFailedException},
      *      otherwise return {@code val} passed in.
      * @param val Value for which evaluation happened.
-     * @param <T> Return type.
      * @return Always return {@code val} passed in or throw exception.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static <T> T failed(boolean err, T val) throws GridCacheFilterFailedException {
+    @Nullable public static CacheObject failed(boolean err, CacheObject val) throws GridCacheFilterFailedException {
         if (err)
             throw new GridCacheFilterFailedException(val);
 
@@ -409,7 +407,7 @@ public class GridCacheUtils {
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridDhtLocalPartition<K, V>, GridDhtPartitionState> part2state() {
+    public static <K, V> IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
         return PART2STATE;
     }
 
@@ -417,7 +415,7 @@ public class GridCacheUtils {
      * @return Not evicted partitions.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgnitePredicate<GridDhtLocalPartition<K, V>> notEvicted() {
+    public static <K, V> IgnitePredicate<GridDhtLocalPartition> notEvicted() {
         return PART_NOT_EVICTED;
     }
 
@@ -793,8 +791,8 @@ public class GridCacheUtils {
      * @return Closure that converts entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntryEx, K> entry2Key() {
-        return (IgniteClosure<GridCacheEntryEx, K>)entry2key;
+    public static IgniteClosure<GridCacheEntryEx, KeyCacheObject> entry2Key() {
+        return entry2key;
     }
 
     /**

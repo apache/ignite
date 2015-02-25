@@ -1004,14 +1004,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             for (IgniteTxEntry entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
-                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
+                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key().internal()) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();
 
-                    if (entry.value() instanceof GridCacheCountDownLatchValue) {
+                    // TODO IGNITE-51.
+                    Object val0 = CU.value(entry.value(), entry.context());
+
+                    if (val0 instanceof GridCacheCountDownLatchValue) {
                         // Notify latch on changes.
                         GridCacheRemovable latch = dsMap.get(key);
 
-                        GridCacheCountDownLatchValue val = (GridCacheCountDownLatchValue)entry.value();
+                        GridCacheCountDownLatchValue val = (GridCacheCountDownLatchValue)val0;
 
                         if (latch instanceof GridCacheCountDownLatchEx) {
                             GridCacheCountDownLatchEx latch0 = (GridCacheCountDownLatchEx)latch;

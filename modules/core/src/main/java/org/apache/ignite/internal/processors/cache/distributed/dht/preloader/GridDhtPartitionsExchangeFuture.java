@@ -125,10 +125,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * Messages received on non-coordinator are stored in case if this node
      * becomes coordinator.
      */
-    private final Map<UUID, GridDhtPartitionsSingleMessage<K, V>> singleMsgs = new ConcurrentHashMap8<>();
+    private final Map<UUID, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
 
     /** Messages received from new coordinator. */
-    private final Map<UUID, GridDhtPartitionsFullMessage<K, V>> fullMsgs = new ConcurrentHashMap8<>();
+    private final Map<UUID, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -436,11 +436,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
-                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet())
+                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
                     // If received any messages, process them.
                     onReceive(m.getKey(), m.getValue());
 
-                for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet())
+                for (Map.Entry<UUID, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet())
                     // If received any messages, process them.
                     onReceive(m.getKey(), m.getValue());
 
@@ -551,7 +551,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) throws IgniteCheckedException {
-        GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
+        GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id, cctx.versions().last());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
@@ -571,7 +571,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id)
         throws IgniteCheckedException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, lastVer.get(),
+        GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(id,
+            lastVer.get(),
             id.topologyVersion());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
@@ -695,7 +696,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param nodeId Sender node id.
      * @param msg Single partition info.
      */
-    public void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage<K, V> msg) {
+    public void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage msg) {
         assert msg != null;
 
         assert msg.exchangeId().equals(exchId);
@@ -788,7 +789,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param nodeId Sender node ID.
      * @param msg Full partition info.
      */
-    public void onReceive(final UUID nodeId, final GridDhtPartitionsFullMessage<K, V> msg) {
+    public void onReceive(final UUID nodeId, final GridDhtPartitionsFullMessage msg) {
         assert msg != null;
 
         if (isDone()) {
@@ -847,7 +848,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      *
      * @param msg Partitions full messages.
      */
-    private void updatePartitionFullMap(GridDhtPartitionsFullMessage<K, V> msg) {
+    private void updatePartitionFullMap(GridDhtPartitionsFullMessage msg) {
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
 
@@ -865,7 +866,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      *
      * @param msg Partitions single message.
      */
-    private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage<K, V> msg) {
+    private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
         for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
@@ -952,10 +953,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             if (set) {
                                 // If received any messages, process them.
-                                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet())
+                                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
                                     onReceive(m.getKey(), m.getValue());
 
-                                for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet())
+                                for (Map.Entry<UUID, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet())
                                     onReceive(m.getKey(), m.getValue());
 
                                 // Reassign oldest node and resend.
@@ -1000,7 +1001,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             if (!remaining.isEmpty()) {
                 try {
                     cctx.io().safeSend(cctx.discovery().nodes(remaining),
-                        new GridDhtPartitionsSingleRequest<K, V>(exchId), SYSTEM_POOL, null);
+                        new GridDhtPartitionsSingleRequest(exchId), SYSTEM_POOL, null);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to request partitions from nodes [exchangeId=" + exchId +

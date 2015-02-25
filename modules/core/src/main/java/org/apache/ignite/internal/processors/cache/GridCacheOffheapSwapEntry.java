@@ -38,7 +38,7 @@ import sun.misc.*;
  *     <li>Key classloader UUID</li>
  * </ul>
  */
-public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
+public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -52,7 +52,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     private final GridCacheVersion ver;
 
     /** */
-    private V val;
+    private CacheObject val;
 
     /** */
     private final boolean valIsByteArr;
@@ -143,12 +143,12 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
+    @Override public CacheObject value() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void value(V val) {
+    @Override public void value(CacheObject val) {
         this.val = val;
     }
 

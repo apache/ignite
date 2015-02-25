@@ -139,7 +139,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param grpLockKey Group lock key if transaction is group-lock.
      */
     public GridDhtTxRemote(
-        GridCacheSharedContext<K, V> ctx,
+        GridCacheSharedContext ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -219,7 +219,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+    @Override protected boolean updateNearCache(GridCacheContext cacheCtx, KeyCacheObject key, long topVer) {
         if (!cacheCtx.isDht() || !isNearEnabled(cacheCtx) || cctx.localNodeId().equals(nearNodeId))
             return false;
 
@@ -231,7 +231,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
+    @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
         for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
@@ -256,15 +256,15 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     public void addWrite(IgniteTxEntry entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
-        GridCacheContext<K, V> cacheCtx = entry.context();
+        GridCacheContext cacheCtx = entry.context();
 
         try {
-            GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
+            GridDhtCacheEntry cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
 
             checkInternal(entry.txKey());
 
             // Initialize cache entry.
-            entry.cached(cached, entry.keyBytes());
+            entry.cached(cached, null);
 
             writeMap.put(entry.txKey(), entry);
 
@@ -285,22 +285,22 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
      */
-    public void addWrite(GridCacheContext<K, V> cacheCtx,
+    public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
-        IgniteTxKey<K> key,
+        IgniteTxKey key,
         byte[] keyBytes,
-        @Nullable V val,
+        @Nullable CacheObject val,
         @Nullable byte[] valBytes,
-        @Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors,
+        @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl) {
         checkInternal(key);
 
         if (isSystemInvalidate())
             return;
 
-        GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
+        GridDhtCacheEntry cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        IgniteTxEntry txEntry = new IgniteTxEntry<>(cacheCtx,
+        IgniteTxEntry txEntry = new IgniteTxEntry(cacheCtx,
             this,
             op,
             val,
@@ -309,8 +309,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null);
 
-        txEntry.keyBytes(keyBytes);
-        txEntry.valueBytes(valBytes);
+// TODO IGNITE-51.
+//        txEntry.keyBytes(keyBytes);
+//        txEntry.valueBytes(valBytes);
         txEntry.entryProcessors(entryProcessors);
 
         writeMap.put(key, txEntry);

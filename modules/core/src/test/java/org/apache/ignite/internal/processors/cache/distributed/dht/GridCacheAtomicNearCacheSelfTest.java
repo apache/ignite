@@ -697,7 +697,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         assertTrue(near.isNear());
 
-        GridCacheEntryEx<Integer, Integer> nearEntry = near.peekEx(key);
+        GridCacheEntryEx nearEntry = near.peekEx(key);
 
         if (expectNear) {
             assertNotNull("No near entry for: " + key + ", grid: " + ignite.name(), nearEntry);
@@ -709,7 +709,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
-        GridDhtCacheEntry<Integer, Integer> dhtEntry = (GridDhtCacheEntry<Integer, Integer>)dht.peekEx(key);
+        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
 
         boolean expectDht = near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
 

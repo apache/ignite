@@ -327,7 +327,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
         UUID subjId, String taskName) throws IgniteCheckedException {
-        return null.
+        return null;
 // TODO IGNTIE-51.
 //        return cctx.near().loadAsync(tx,
 //            F.asList(key),

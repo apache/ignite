@@ -870,7 +870,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
-        return putAsync(key, val, cctx.noPeekArray());
+        return putAsync(key, val, cctx.<K, V>noPeekArray());
     }
 
     /** {@inheritDoc} */
@@ -880,7 +880,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
-        return putxAsync(key, val, cctx.noPeekArray());
+        return putxAsync(key, val, cctx.<K, V>noPeekArray());
     }
 
     /** {@inheritDoc} */

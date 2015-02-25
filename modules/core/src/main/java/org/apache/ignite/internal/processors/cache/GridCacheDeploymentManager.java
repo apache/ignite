@@ -253,14 +253,15 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                  * @return {@code True} if entry should be undeployed.
                  */
                 private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
+                    // TODO IGNITE-51.
                     K k = e.getKey();
 
-                    GridCacheEntryEx entry = cache.peekEx(e.getKey());
+                    GridCacheEntryEx entry = cache.peekEx(cacheCtx.toCacheKeyObject(e.getKey()));
 
                     if (entry == null)
                         return false;
 
-                    V v;
+                    CacheObject v;
 
                     try {
                         v = entry.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());

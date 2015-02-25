@@ -586,7 +586,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
         long msgId,
-        LinkedHashMap<? extends K, Boolean> keys,
+        LinkedHashMap<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         boolean reload,
         long topVer,

@@ -50,7 +50,7 @@ public class GridCacheSharedContext<K, V> {
     private List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
     /** Cache transaction manager. */
-    private IgniteTxManager<K, V> txMgr;
+    private IgniteTxManager txMgr;
 
     /** Partition exchange manager. */
     private GridCachePartitionExchangeManager<K, V> exchMgr;
@@ -59,10 +59,10 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheVersionManager<K, V> verMgr;
 
     /** Lock manager. */
-    private GridCacheMvccManager<K, V> mvccMgr;
+    private GridCacheMvccManager mvccMgr;
 
     /** IO Manager. */
-    private GridCacheIoManager<K, V> ioMgr;
+    private GridCacheIoManager ioMgr;
 
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
@@ -83,12 +83,12 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
-        IgniteTxManager<K, V> txMgr,
+        IgniteTxManager txMgr,
         GridCacheVersionManager<K, V> verMgr,
-        GridCacheMvccManager<K, V> mvccMgr,
+        GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
-        GridCacheIoManager<K, V> ioMgr
+        GridCacheIoManager ioMgr
     ) {
         this.kernalCtx = kernalCtx;
         this.mvccMgr = add(mvccMgr);
@@ -240,7 +240,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Cache transaction manager.
      */
-    public IgniteTxManager<K, V> tm() {
+    public IgniteTxManager tm() {
         return txMgr;
     }
 
@@ -261,14 +261,14 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Lock manager.
      */
-    public GridCacheMvccManager<K, V> mvcc() {
+    public GridCacheMvccManager mvcc() {
         return mvccMgr;
     }
 
     /**
      * @return IO manager.
      */
-    public GridCacheIoManager<K, V> io() {
+    public GridCacheIoManager io() {
         return ioMgr;
     }
 

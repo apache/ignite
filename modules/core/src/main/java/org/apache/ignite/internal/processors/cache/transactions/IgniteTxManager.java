@@ -366,7 +366,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        GridNearTxLocal tx = new GridNearTxLocal<>(
+        GridNearTxLocal tx = new GridNearTxLocal(
             cctx,
             implicit,
             implicitSingle,

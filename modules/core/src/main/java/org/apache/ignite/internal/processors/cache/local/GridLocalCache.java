@@ -71,11 +71,18 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
+        map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
-                V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
-                return new GridLocalCacheEntry<>(ctx, key, hash, val, next, ttl, hdrId);
+            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+                long topVer,
+                KeyCacheObject key,
+                int hash,
+                CacheObject val,
+                GridCacheMapEntry next,
+                long ttl,
+                int hdrId)
+            {
+                return new GridLocalCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
             }
         });
     }
@@ -84,22 +91,22 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param key Key of entry.
      * @return Cache entry.
      */
-    @Nullable GridLocalCacheEntry<K, V> peekExx(K key) {
-        return (GridLocalCacheEntry<K,V>)peekEx(key);
+    @Nullable GridLocalCacheEntry peekExx(KeyCacheObject key) {
+        return (GridLocalCacheEntry)peekEx(key);
     }
 
     /**
      * @param key Key of entry.
      * @return Cache entry.
      */
-    GridLocalCacheEntry<K, V> entryExx(K key) {
-        return (GridLocalCacheEntry<K, V>)entryEx(key);
+    GridLocalCacheEntry entryExx(KeyCacheObject key) {
+        return (GridLocalCacheEntry)entryEx(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<? extends K> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> tx,
+        IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
@@ -112,7 +119,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        IgniteTxLocalEx<K, V> tx = ctx.tm().localTx();
+        IgniteTxLocalEx tx = ctx.tm().localTx();
 
         return lockAllAsync(keys, timeout, tx, filter);
     }
@@ -124,8 +131,10 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Filter.
      * @return Future.
      */
-    public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        @Nullable IgniteTxLocalEx tx,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -134,10 +143,10 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             for (K key : keys) {
                 while (true) {
-                    GridLocalCacheEntry<K, V> entry = null;
+                    GridLocalCacheEntry entry = null;
 
                     try {
-                        entry = entryExx(key);
+                        entry = entryExx(ctx.toCacheKeyObject(key));
 
                         if (!ctx.isAll(entry, filter)) {
                             fut.onFailed();
@@ -181,7 +190,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {
-            GridLocalCacheEntry<K, V> entry = peekExx(key);
+            GridLocalCacheEntry entry = peekExx(ctx.toCacheKeyObject(key));
 
             if (entry != null && ctx.isAll(entry, filter)) {
                 entry.releaseLocal();

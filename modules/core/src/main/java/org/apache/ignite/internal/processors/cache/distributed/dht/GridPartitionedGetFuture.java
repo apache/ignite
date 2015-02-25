@@ -281,7 +281,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings =
+        Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings =
             U.newHashMap(CU.affinityNodes(cctx, topVer).size());
 
         final int keysSize = keys.size();
@@ -299,8 +299,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 throw err;
             }
-
-            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
+// TODO IGNITE-51.
+//            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
         }
 
         if (isDone())
@@ -328,7 +328,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     cache().getDhtAsync(n.id(),
                         -1,
-                        mappedKeys,
+                        // TODO IGNITE-51
+                        // mappedKeys,
+                        null,
                         readThrough,
                         reload,
                         topVer,
@@ -355,7 +357,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         ", invalidParts=" + invalidParts + ']';
 
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    // TODO IGNITE-51
+                    // map(remapKeys, mappings, updTopVer);
                 }
 
                 // Add new future.
@@ -382,7 +385,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     futId,
                     fut.futureId(),
                     ver,
-                    mappedKeys,
+                    // TODO IGNITE-51
+                    // mappedKeys,
+                    null,
                     readThrough,
                     reload,
                     topVer,
@@ -428,11 +433,14 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         while (true) {
             GridCacheEntryEx entry = null;
 
+            // TODO IGNITE-51.
+            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+
             try {
                 if (!reload && allowLocRead) {
                     try {
-                        entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                            colocated.peekEx(key);
+                        entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(cacheKey) :
+                            colocated.peekEx(cacheKey);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -456,17 +464,18 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
                                 if (isNew && entry.markObsoleteIfEmpty(ver))
-                                    colocated.removeIfObsolete(key);
+                                    colocated.removeIfObsolete(cacheKey);
                             }
                             else {
                                 K key0 = key;
 
-                                if (cctx.portableEnabled()) {
-                                    v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
-                                    key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-                                }
-
-                                locVals.put(key0, v);
+// TODO IGNITE-51.
+//                                if (cctx.portableEnabled()) {
+//                                    v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
+//                                    key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+//                                }
+//
+//                                locVals.put(key0, v);
 
                                 return false;
                             }

@@ -280,7 +280,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(GridCacheEntryEx<?, ?> entry) throws Exception {
+    private int extrasSize(GridCacheEntryEx entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);

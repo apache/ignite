@@ -67,7 +67,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      * @param entry Entry to add.
      */
-    public void addTrackedEntry(GridCacheMapEntry<K, V> entry) {
+    public void addTrackedEntry(GridCacheMapEntry entry) {
         EntryWrapper<K, V> wrapper = new EntryWrapper<>(entry);
 
         pendingEntries.add(wrapper);
@@ -83,7 +83,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param entry Entry to remove.
      */
-    public void removeTrackedEntry(GridCacheMapEntry<K, V> entry) {
+    public void removeTrackedEntry(GridCacheMapEntry entry) {
         // Remove must be called while holding lock on entry before updating expire time.
         // No need to wake up waiting thread in this case.
         pendingEntries.remove(new EntryWrapper<>(entry));
@@ -168,12 +168,12 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
         private final long expireTime;
 
         /** Entry. */
-        private final GridCacheMapEntry<K, V> entry;
+        private final GridCacheMapEntry entry;
 
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheMapEntry<K, V> entry) {
+        private EntryWrapper(GridCacheMapEntry entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;

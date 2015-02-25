@@ -36,7 +36,7 @@ public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return Future keys.
      */
-    public Collection<Object> keys();
+    public Collection<?> keys();
 
     /**
      * Checks if timeout occurred.

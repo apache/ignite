@@ -499,7 +499,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
 
                 assert part != null;
 
@@ -526,7 +526,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
 
                 if (part != null && part.reserve()) {
                     part.lock();
@@ -562,7 +562,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
 
                 if (part != null) {
                     part.unlock();
@@ -1434,7 +1434,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     if (!evts.isEmpty())
                         continue;
 
-                    for (GridDhtLocalPartition<K, V> part : cctx.topology().localPartitions()) {
+                    for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
                         if (!evts.isEmpty())
                             break;
 

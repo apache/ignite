@@ -67,7 +67,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** Future. */
     @GridToStringExclude
-    private final AtomicReference<GridDhtTxPrepareFuture<K, V>> prepFut =
+    private final AtomicReference<GridDhtTxPrepareFuture> prepFut =
         new AtomicReference<>();
 
     /**
@@ -213,7 +213,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+    @Override protected boolean updateNearCache(GridCacheContext cacheCtx, KeyCacheObject key, long topVer) {
         return cacheCtx.isDht() && isNearEnabled(cacheCtx) && !cctx.localNodeId().equals(nearNodeId());
     }
 
@@ -246,11 +246,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
+    @Override @Nullable protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry cached,
         IgniteTxEntry entry, long topVer) {
         // Don't add local node as reader.
         if (!cctx.localNodeId().equals(nearNodeId)) {
-            GridCacheContext<K, V> cacheCtx = cached.context();
+            GridCacheContext cacheCtx = cached.context();
 
             while (true) {
                 try {
@@ -283,7 +283,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             return prepareAsync(
                 null,
                 null,
-                Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(),
+                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 0,
                 nearMiniId,
                 null,
@@ -293,7 +293,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         }
 
         // For pessimistic mode we don't distribute prepare request.
-        GridDhtTxPrepareFuture<K, V> fut = prepFut.get();
+        GridDhtTxPrepareFuture fut = prepFut.get();
 
         if (fut == null) {
             // Future must be created before any exception can be thrown.
@@ -301,7 +301,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 cctx,
                 this,
                 nearMiniId,
-                Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(),
+                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 true,
                 needReturnValue(),
                 null,
@@ -390,7 +390,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 needReturnValue(),
                 lastBackups,
                 completeCb))) {
-                GridDhtTxPrepareFuture<K, V> f = prepFut.get();
+                GridDhtTxPrepareFuture f = prepFut.get();
 
                 assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
                     "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
@@ -480,11 +480,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         if (pessimistic())
             prepareAsync();
 
-        final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
 
         cctx.mvcc().addFuture(fut);
 
-        GridDhtTxPrepareFuture<K, V> prep = prepFut.get();
+        GridDhtTxPrepareFuture prep = prepFut.get();
 
         if (prep != null) {
             if (prep.isDone()) {
@@ -560,7 +560,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture<K, V> fut) {
+    @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
         assert optimistic();
 
         prepFut.compareAndSet(fut, null);
@@ -568,9 +568,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        GridDhtTxPrepareFuture<K, V> prepFut = this.prepFut.get();
+        GridDhtTxPrepareFuture prepFut = this.prepFut.get();
 
-        final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
 
         cctx.mvcc().addFuture(fut);
 
@@ -651,7 +651,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 return;
             }
 
-            GridNearTxFinishResponse<K, V> res = new GridNearTxFinishResponse<>(nearXidVer, threadId, nearFinFutId,
+            GridNearTxFinishResponse res = new GridNearTxFinishResponse(nearXidVer, threadId, nearFinFutId,
                 nearFinMiniId, err);
 
             try {

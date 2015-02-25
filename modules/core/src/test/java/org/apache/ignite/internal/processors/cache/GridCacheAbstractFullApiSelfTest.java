@@ -2098,7 +2098,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     GridCacheContext<String, Integer> cctx = context(g);
 
-                    GridCacheEntryEx<String, Integer> entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
+                    GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
                         cctx.cache().peekEx(key);
 
                     if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
@@ -3091,7 +3091,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3124,7 +3124,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3157,7 +3157,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3194,7 +3194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());
@@ -3669,7 +3669,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 for (String key : keys) {
                     if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion())) {
-                        GridCacheEntryEx<String, Integer> e =
+                        GridCacheEntryEx e =
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
                         assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';

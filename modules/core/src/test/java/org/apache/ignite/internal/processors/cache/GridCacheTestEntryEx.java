@@ -35,12 +35,13 @@ import java.util.*;
 /**
  * Test entry.
  */
-public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter implements GridCacheEntryEx<K, V> {
+@SuppressWarnings("unchecked")
+public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements GridCacheEntryEx {
     /** Key. */
-    private K key;
+    private KeyCacheObject key;
 
     /** Val. */
-    private V val;
+    private CacheObject val;
 
     /** TTL. */
     private long ttl;
@@ -52,16 +53,16 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     private GridCacheVersion obsoleteVer = ver;
 
     /** MVCC. */
-    private GridCacheMvcc<K> mvcc;
+    private GridCacheMvcc mvcc;
 
     /**
      * @param ctx Context.
      * @param key Key.
      */
-    public GridCacheTestEntryEx(GridCacheContext<K, V> ctx, K key) {
-        mvcc = new GridCacheMvcc<>(ctx);
+    public GridCacheTestEntryEx(GridCacheContext ctx, Object key) {
+        mvcc = new GridCacheMvcc(ctx);
 
-        this.key = key;
+        this.key = ctx.toCacheKeyObject(key);
     }
 
     /**
@@ -69,11 +70,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param key Key.
      * @param val Value.
      */
-    public GridCacheTestEntryEx(GridCacheContext<K, V> ctx, K key, V val) {
-        mvcc = new GridCacheMvcc<>(ctx);
+    public GridCacheTestEntryEx(GridCacheContext ctx, Object key, Object val) {
+        mvcc = new GridCacheMvcc(ctx);
 
-        this.key = key;
-        this.val = val;
+        this.key = ctx.toCacheKeyObject(key);
+        this.val = ctx.toCacheObject(val);
     }
 
     /** {@inheritDoc} */
@@ -112,12 +113,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext<K, V> context() {
+    @Nullable @Override public GridCacheContext context() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EvictableEntry<K, V> wrapEviction() {
+    @Nullable @Override public EvictableEntry wrapEviction() {
         return null;
     }
 
@@ -140,7 +141,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @return New lock candidate if lock was added, or current owner if lock was reentered,
      *      or <tt>null</tt> if lock was owned by another thread and timeout is negative.
      */
-    @Nullable public GridCacheMvccCandidate<K> addLocal(
+    @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         long timeout,
@@ -168,7 +169,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
-    public GridCacheMvccCandidate<K> addRemote(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
+    public GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
         boolean ec, boolean tx) {
         return mvcc.addRemote(this, nodeId, null, threadId, ver, timeout, tx, true, false);
     }
@@ -183,7 +184,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
-    public GridCacheMvccCandidate<K> addNearLocal(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
+    public GridCacheMvccCandidate addNearLocal(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
         boolean tx) {
         return mvcc.addNearLocal(this, nodeId, null, threadId, ver, timeout, tx, true);
     }
@@ -206,7 +207,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param rolledbackVers Rolled back versions relative to base.
      * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> orderCompleted(GridCacheVersion baseVer,
+    @Nullable public GridCacheMvccCandidate orderCompleted(GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
         return mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
     }
@@ -231,7 +232,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param ver Lock version to acquire or set to ready.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyLocal(GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
         return mvcc.readyLocal(ver);
     }
 
@@ -243,7 +244,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param pending Pending versions.
      * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
+    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pending) {
         return mvcc.readyNearLocal(ver, mapped, committedVers, rolledbackVers, pending);
@@ -253,7 +254,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param cand Candidate to set to ready.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyLocal(GridCacheMvccCandidate<K> cand) {
+    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheMvccCandidate cand) {
         return mvcc.readyLocal(cand);
     }
 
@@ -261,7 +262,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * Local local release.
      * @return Removed lock candidate or <tt>null</tt> if candidate was not removed.
      */
-    @Nullable public GridCacheMvccCandidate<K> releaseLocal() {
+    @Nullable public GridCacheMvccCandidate releaseLocal() {
         return releaseLocal(Thread.currentThread().getId());
     }
 
@@ -271,7 +272,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
      * @param threadId ID of the thread.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> releaseLocal(long threadId) {
+    @Nullable public GridCacheMvccCandidate releaseLocal(long threadId) {
         return mvcc.releaseLocal(threadId);
     }
 
@@ -283,15 +284,13 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryInfo<K, V> info() {
-        GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
+    @Override public GridCacheEntryInfo info() {
+        GridCacheEntryInfo info = new GridCacheEntryInfo();
 
         info.key(key());
         info.value(val);
         info.ttl(ttl());
         info.expireTime(expireTime());
-        info.keyBytes(keyBytes());
-        info.valueBytes(valueBytes().getIfMarshaled());
         info.version(version());
 
         return info;
@@ -303,22 +302,22 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public K key() {
+    @Override public KeyCacheObject key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxKey<K> txKey() {
-        return new IgniteTxKey<>(key, 0);
+    @Override public IgniteTxKey txKey() {
+        return new IgniteTxKey(key, 0);
     }
 
     /** @inheritDoc */
-    @Override public V rawGet() {
+    @Override public CacheObject rawGet() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public V rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException {
+    @Override public CacheObject rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException {
         return val;
     }
 
@@ -328,8 +327,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V rawPut(V val, long ttl) {
-        V old = this.val;
+    @Override public CacheObject rawPut(CacheObject val, long ttl) {
+        CacheObject old = this.val;
 
         this.ttl = ttl;
         this.val = val;
@@ -338,22 +337,28 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public Cache.Entry<K, V> wrap() {
-        assert false; return null;
+    @Override public Cache.Entry wrap() {
+        assert false;
+
+        return null;
     }
 
     /** @inheritDoc */
-    @Override public Cache.Entry<K, V> wrapLazyValue() {
-        assert false; return null;
+    @Override public Cache.Entry wrapLazyValue() {
+        assert false;
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersionedEntryImpl<K, V> wrapVersioned() {
-        assert false; return null;
+    @Override public CacheVersionedEntryImpl wrapVersioned() {
+        assert false;
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException {
+    @Override public Cache.Entry wrapFilterLocked() {
         assert false; return null;
     }
 
@@ -375,31 +380,41 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** @inheritDoc */
     @Override public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer)
         throws IgniteCheckedException {
-        assert false; return false;
+        assert false;
+
+        return false;
     }
 
     /** @inheritDoc */
-    @Override public boolean invalidate(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    @Override public <K, V> boolean invalidate(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert false; return false;
+        assert false;
+
+        return false;
     }
 
     /** @inheritDoc */
-    @Override public boolean compact(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    @Override public <K, V> boolean compact(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert false;  return false;
+        assert false;
+
+        return false;
     }
 
     /** @inheritDoc */
-    @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
+    @Override public <K, V> boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        assert false; return false;
+        assert false;
+
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheBatchSwapEntry<K, V> evictInBatchInternal(GridCacheVersion obsoleteVer)
+    @Override public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer)
         throws IgniteCheckedException {
-        assert false; return null;
+        assert false;
+
+        return null;
     }
 
     /** @inheritDoc */
@@ -413,7 +428,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerGet(@Nullable IgniteInternalTx<K, V> tx,
+    @Override public CacheObject innerGet(@Nullable IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -429,21 +444,31 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerReload() {
+    @Override public CacheObject innerReload() {
         return val;
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId, UUID affNodeId,
-        @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
-        boolean evt, boolean metrics, long topVer, IgnitePredicate<Cache.Entry<K, V>>[] filter, GridDrType drType,
+    @Override public GridCacheUpdateTxResult innerSet(@Nullable IgniteInternalTx tx,
+        UUID evtNodeId,
+        UUID affNodeId,
+        @Nullable CacheObject val,
+        @Nullable byte[] valBytes,
+        boolean writeThrough,
+        boolean retval,
+        long ttl,
+        boolean evt,
+        boolean metrics,
+        long topVer,
+        IgnitePredicate<Cache.Entry<Object, Object>>[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
-        return new GridCacheUpdateTxResult<>(true, rawPut(val, ttl));
+        return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(GridCacheVersion ver,
+    @Override public GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> innerUpdateLocal(
+        GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
@@ -452,7 +477,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         boolean intercept,
         UUID subjId,
         String taskName)
@@ -461,7 +486,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
+    @Override public GridCacheUpdateAtomicResult innerUpdate(
         GridCacheVersion ver,
         UUID evtNodeId,
         UUID affNodeId,
@@ -476,7 +501,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
         GridDrType drType,
         long conflictTtl,
         long conflictExpireTime,
@@ -486,34 +511,37 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
-        return new GridCacheUpdateAtomicResult<>(true,
-            rawPut((V)val, 0),
-            (V)val,
-            null,
-            0L,
-            0L,
-            null,
-            null,
-            true);
+        assert false;
+
+        return null;
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId,
-        UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
+    @Override public GridCacheUpdateTxResult innerRemove(@Nullable IgniteInternalTx tx,
+        UUID evtNodeId,
+        UUID affNodeId,
+        boolean writeThrough,
+        boolean retval,
+        boolean evt,
+        boolean metrics,
+        long topVer,
+        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        GridDrType drType,
+        @Nullable GridCacheVersion drVer,
+        UUID subjId,
         String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
-        V old = val;
+        CacheObject old = val;
 
         val = null;
 
-        return new GridCacheUpdateTxResult<>(true, old);
+        return new GridCacheUpdateTxResult(true, old);
     }
 
     /** @inheritDoc */
-    @Override public boolean clear(GridCacheVersion ver, boolean readers,
+    @Override public <K, V> boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
@@ -525,18 +553,18 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) {
+    @Override public boolean tmLock(IgniteInternalTx tx, long timeout) {
         assert false; return false;
     }
 
     /** @inheritDoc */
-    @Override public void txUnlock(IgniteInternalTx<K, V> tx) {
+    @Override public void txUnlock(IgniteInternalTx tx) {
         assert false;
     }
 
     /** @inheritDoc */
     @Override public boolean removeLock(GridCacheVersion ver) {
-        GridCacheMvccCandidate<K> doomed = mvcc.candidate(ver);
+        GridCacheMvccCandidate doomed = mvcc.candidate(ver);
 
         mvcc.remove(ver);
 
@@ -596,32 +624,27 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V peek(GridCachePeekMode mode, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    @Override public <K, V> CacheObject peek(GridCachePeekMode mode, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return val;
     }
 
     /** @inheritDoc */
-    @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter, IgniteInternalTx<K, V> tx)
+    @Override public <K, V> GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter, IgniteInternalTx tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         return F.t(val);
     }
 
     /** @inheritDoc */
-    @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    @Override public <K, V> CacheObject peek(Collection<GridCachePeekMode> modes,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         return val;
     }
 
-    /** @inheritDoc */
-    @Override public V peekFailFast(GridCachePeekMode mode,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        assert false; return null;
-    }
-
     /** {@inheritDoc} */
-    @Override public V poke(V val) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        V old = this.val;
+    @Override public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        CacheObject old = this.val;
 
         this.val = val;
 
@@ -629,24 +652,35 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean initialValue(V val, @Nullable byte[] valBytes, GridCacheVersion ver, long ttl,
-        long expireTime, boolean preload, long topVer, GridDrType drType) throws IgniteCheckedException,
-        GridCacheEntryRemovedException {
-        assert false; return false;
+    @Override public boolean initialValue(CacheObject val,
+        @Nullable byte[] valBytes,
+        GridCacheVersion ver,
+        long ttl,
+        long expireTime,
+        boolean preload,
+        long topVer,
+        GridDrType drType)
+        throws IgniteCheckedException, GridCacheEntryRemovedException
+    {
+        assert false;
+
+        return false;
     }
 
     /** @inheritDoc */
-    @Override public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped) {
-        assert false; return false;
+    @Override public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped) {
+        assert false;
+
+        return false;
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException {
+    @Override public GridCacheVersionedEntryEx versionedEntry() throws IgniteCheckedException {
         return null;
     }
 
     /** @inheritDoc */
-    @Override public boolean versionedValue(V val, GridCacheVersion curVer, GridCacheVersion newVer) {
+    @Override public boolean versionedValue(CacheObject val, GridCacheVersion curVer, GridCacheVersion newVer) {
         assert false; return false;
     }
 
@@ -712,32 +746,32 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public Collection<GridCacheMvccCandidate<K>> localCandidates(GridCacheVersion... exclude) {
+    @Override public Collection<GridCacheMvccCandidate> localCandidates(GridCacheVersion... exclude) {
         return mvcc.localCandidates(exclude);
     }
 
     /** @inheritDoc */
-    public Collection<GridCacheMvccCandidate<K>> localCandidates(boolean reentries, GridCacheVersion... exclude) {
+    public Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
         return mvcc.localCandidates(reentries, exclude);
     }
 
     /** @inheritDoc */
-    @Override public Collection<GridCacheMvccCandidate<K>> remoteMvccSnapshot(GridCacheVersion... exclude) {
+    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
         return mvcc.remoteCandidates(exclude);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate<K> localCandidate(long threadId) throws GridCacheEntryRemovedException {
+    @Override public GridCacheMvccCandidate localCandidate(long threadId) throws GridCacheEntryRemovedException {
         return mvcc.localCandidate(threadId);
     }
 
     /** @inheritDoc */
-    @Override public GridCacheMvccCandidate<K> candidate(GridCacheVersion ver) {
+    @Override public GridCacheMvccCandidate candidate(GridCacheVersion ver) {
         return mvcc.candidate(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate<K> candidate(UUID nodeId, long threadId)
+    @Override public GridCacheMvccCandidate candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException {
         return mvcc.remoteCandidate(nodeId, threadId);
     }
@@ -745,12 +779,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /**
      * @return Any MVCC owner.
      */
-    public GridCacheMvccCandidate<K> anyOwner() {
+    public GridCacheMvccCandidate anyOwner() {
         return mvcc.anyOwner();
     }
 
     /** @inheritDoc */
-    @Override public GridCacheMvccCandidate<K> localOwner() {
+    @Override public GridCacheMvccCandidate localOwner() {
         return mvcc.localOwner();
     }
 
@@ -805,12 +839,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public V unswap() throws IgniteCheckedException {
+    @Override public CacheObject unswap() throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public V unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
+    @Override public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
         return null;
     }
 
@@ -835,7 +869,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V peek(boolean heap,
+    @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
         long topVer,

@@ -82,7 +82,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx<Object, Object> entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
 
         assert entry != null;
         assert entry.valueBytes().isNull();
@@ -103,7 +103,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx<Object, Object> entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
 
         assert entry != null;
         assert entry.valueBytes() != null;

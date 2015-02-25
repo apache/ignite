@@ -1186,6 +1186,25 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
+     *
+     * @param key Entry key.
+     * @return Entry or <tt>null</tt>.
+     */
+    // TODO IGNITE-51 (added for tests).
+    @Nullable public GridCacheEntryEx peekEx(Object key) {
+        return entry0(ctx.toCacheKeyObject(key), ctx.affinity().affinityTopologyVersion(), false, false);
+    }
+
+    /**
+     * @param key Entry key.
+     * @return Entry (never {@code null}).
+     */
+    // TODO IGNITE-51 (added for tests).
+    public GridCacheEntryEx entryEx(Object key) {
+        return entryEx(ctx.toCacheKeyObject(key), false);
+    }
+
+    /**
      * @param key Entry key.
      * @return Entry (never {@code null}).
      */
@@ -1650,7 +1669,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param vis Visitor.
      * @return Future.
      */
-    public IgniteInternalFuture<Object> readThroughAllAsync(final Collection<? extends KeyCacheObject> keys,
+    public IgniteInternalFuture<Object> readThroughAllAsync(final Collection<KeyCacheObject> keys,
         boolean reload,
         boolean skipVals,
         @Nullable final IgniteInternalTx tx,

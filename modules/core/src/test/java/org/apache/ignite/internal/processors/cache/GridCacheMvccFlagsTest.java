@@ -69,13 +69,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     public void testAllTrueFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry = new GridCacheTestEntryEx<>(cache.context(), "1");
+        GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
         UUID id = UUID.randomUUID();
 
         GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0, 0);
 
-        GridCacheMvccCandidate<String> c = new GridCacheMvccCandidate<>(
+        GridCacheMvccCandidate c = new GridCacheMvccCandidate(
             entry,
             id,
             id,
@@ -109,13 +109,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     public void testAllFalseFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheTestEntryEx<String, String> entry = new GridCacheTestEntryEx<>(cache.context(), "1");
+        GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
         UUID id = UUID.randomUUID();
 
         GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0, 0);
 
-        GridCacheMvccCandidate<String> c = new GridCacheMvccCandidate<>(
+        GridCacheMvccCandidate c = new GridCacheMvccCandidate(
             entry,
             id,
             id,

@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 /**
  * Cache communication manager.
  */
-public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -54,11 +54,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
 
     /** Handler registry. */
-    private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage<K, V>>>
+    private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
         clsHandlers = new ConcurrentHashMap8<>();
 
     /** Ordered handler registry. */
-    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>>> orderedHandlers =
+    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
         new ConcurrentHashMap8<>();
 
     /** Stopping flag. */
@@ -81,11 +81,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
 
-            final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
+            final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
             int msgIdx = cacheMsg.lookupIndex();
 
-            IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c = null;
+            IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
             if (msgIdx >= 0) {
                 IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
@@ -116,7 +116,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 if (!topFut.isDone()) {
-                    final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
+                    final IgniteBiInClosure<UUID, GridCacheMessage> c0 = c;
 
                     topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
@@ -184,8 +184,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param c Handler closure.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-    private void onMessage0(final UUID nodeId, final GridCacheMessage<K, V> cacheMsg,
-        final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+    private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
+        final IgniteBiInClosure<UUID, GridCacheMessage> c) {
         rw.readLock();
 
         try {
@@ -271,7 +271,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Cache message to get start future.
      * @return Preloader start future.
      */
-    private IgniteInternalFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
+    private IgniteInternalFuture<Object> startFuture(GridCacheMessage cacheMsg) {
         int cacheId = cacheMsg.cacheId();
 
         return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();
@@ -282,8 +282,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param msg Message.
      * @param c Closure.
      */
-    private void processMessage(UUID nodeId, GridCacheMessage<K, V> msg,
-        IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+    private void processMessage(UUID nodeId, GridCacheMessage msg,
+        IgniteBiInClosure<UUID, GridCacheMessage> c) {
         try {
             // Start clean.
             if (msg.transactional())
@@ -316,7 +316,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param destNodeId Destination node ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void onSend(GridCacheMessage<K, V> msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
+    private void onSend(GridCacheMessage msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
         if (msg.messageId() < 0)
             // Generate and set message ID.
             msg.messageId(idGen.incrementAndGet());
@@ -338,7 +338,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws ClusterTopologyCheckedException If receiver left.
      */
     @SuppressWarnings("unchecked")
-    public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
+    public void send(ClusterNode node, GridCacheMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
         onSend(msg, node.id());
@@ -385,7 +385,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws IgniteCheckedException If send failed.
      */
     @SuppressWarnings({"BusyWait", "unchecked"})
-    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg, GridIoPolicy plc,
+    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, GridIoPolicy plc,
         @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
@@ -496,7 +496,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
      */
-    public void send(UUID nodeId, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
+    public void send(UUID nodeId, GridCacheMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
@@ -514,7 +514,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param timeout Timeout to keep a message on receiving queue.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage<K, V> msg, GridIoPolicy plc,
+    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage msg, GridIoPolicy plc,
         long timeout) throws IgniteCheckedException {
         onSend(msg, node.id());
 
@@ -564,7 +564,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public void addHandler(
         int cacheId,
         Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
@@ -588,7 +588,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             ListenerKey key = new ListenerKey(cacheId, type);
 
             if (clsHandlers.putIfAbsent(key,
-                (IgniteBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
+                (IgniteBiInClosure<UUID, GridCacheMessage>)c) != null)
                 assert false : "Handler for class already registered [cacheId=" + cacheId + ", cls=" + type +
                     ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
@@ -630,10 +630,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
+    public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         if (orderedHandlers.putIfAbsent(topic, c) == null) {
             cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
-                (IgniteBiInClosure<UUID, GridCacheMessage<K, V>>)c));
+                (IgniteBiInClosure<UUID, GridCacheMessage>)c));
 
             if (log != null && log.isDebugEnabled())
                 log.debug("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
@@ -666,7 +666,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    private void unmarshall(UUID nodeId, GridCacheMessage<K, V> cacheMsg) throws IgniteCheckedException {
+    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) throws IgniteCheckedException {
         if (cctx.localNodeId().equals(nodeId))
             return;
 
@@ -715,12 +715,12 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     private class OrderedMessageListener implements GridMessageListener {
         /** */
-        private final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c;
+        private final IgniteBiInClosure<UUID, GridCacheMessage> c;
 
         /**
          * @param c Handler closure.
          */
-        OrderedMessageListener(IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
+        OrderedMessageListener(IgniteBiInClosure<UUID, GridCacheMessage> c) {
             this.c = c;
         }
 
@@ -730,7 +730,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');
 
-            final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
+            final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
             onMessage0(nodeId, cacheMsg, c);
         }

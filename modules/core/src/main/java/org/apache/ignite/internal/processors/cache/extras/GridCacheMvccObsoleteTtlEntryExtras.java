@@ -60,7 +60,7 @@ public class GridCacheMvccObsoleteTtlEntryExtras extends GridCacheEntryExtrasAda
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras attributesData(GridLeanMap<String, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras<>(attrData, mvcc, obsoleteVer, ttl,
+        return attrData != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras(attrData, mvcc, obsoleteVer, ttl,
             expireTime) : this;
     }
 
@@ -93,7 +93,7 @@ public class GridCacheMvccObsoleteTtlEntryExtras extends GridCacheEntryExtrasAda
             return this;
         }
         else
-            return new GridCacheMvccTtlEntryExtras<>(mvcc, ttl, expireTime);
+            return new GridCacheMvccTtlEntryExtras(mvcc, ttl, expireTime);
     }
 
     /** {@inheritDoc} */
@@ -115,7 +115,7 @@ public class GridCacheMvccObsoleteTtlEntryExtras extends GridCacheEntryExtrasAda
             return this;
         }
         else
-            return new GridCacheMvccObsoleteEntryExtras<>(mvcc, obsoleteVer);
+            return new GridCacheMvccObsoleteEntryExtras(mvcc, obsoleteVer);
     }
 
     /** {@inheritDoc} */

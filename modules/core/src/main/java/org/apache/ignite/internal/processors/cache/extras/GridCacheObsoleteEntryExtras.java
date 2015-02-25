@@ -47,7 +47,7 @@ public class GridCacheObsoleteEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
-        return mvcc != null ? new GridCacheMvccObsoleteEntryExtras<>(mvcc, obsoleteVer) : this;
+        return mvcc != null ? new GridCacheMvccObsoleteEntryExtras(mvcc, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */

@@ -38,7 +38,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
  * Replicated cache transaction future.
  */
 final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
-    implements GridCacheMvccFuture<K, V, IgniteInternalTx> {
+    implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,7 +54,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
 
     /** Cache transaction. */
     @GridToStringExclude // Need to exclude due to circular dependencies.
-    private GridLocalTx<K, V> tx;
+    private GridLocalTx tx;
 
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
@@ -82,7 +82,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
      */
     GridLocalTxFuture(
         GridCacheSharedContext<K, V> cctx,
-        GridLocalTx<K, V> tx) {
+        GridLocalTx tx) {
         super(cctx.kernalContext());
 
         assert cctx != null;
@@ -128,7 +128,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
     /**
      * @return Lock version.
      */
-    GridLocalTx<K, V> tx() {
+    GridLocalTx tx() {
         return tx;
     }
 
@@ -218,7 +218,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in checkLocks method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
                 }
             }
         }
@@ -239,7 +239,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
         for (IgniteTxEntry txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
-                    GridCacheEntryEx<K,V> cached = txEntry.cached();
+                    GridCacheEntryEx cached = txEntry.cached();
 
                     if (entry == null) {
                         onError(new IgniteTxRollbackCheckedException("Failed to find cache entry for " +
@@ -264,7 +264,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in onOwnerChanged method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
                 }
             }
         }
