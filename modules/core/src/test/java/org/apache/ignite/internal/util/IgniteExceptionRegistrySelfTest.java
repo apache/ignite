@@ -47,7 +47,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < expCnt; i++)
             registry.onException("Test " + i, new Exception("Test " + i));
 
-        Collection<IgniteExceptionRegistry.IgniteExceptionInfo> exceptions = registry.getErrors();
+        Collection<IgniteExceptionRegistry.ExceptionInfo> exceptions = registry.getErrors();
 
         assertEquals(expCnt, registry.getErrors().size());
         assertEquals(expCnt, registry.getErrors().size());
@@ -55,7 +55,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
 
         int i = expCnt - 1;
 
-        for (IgniteExceptionRegistry.IgniteExceptionInfo e : exceptions) {
+        for (IgniteExceptionRegistry.ExceptionInfo e : exceptions) {
             assertNotNull(e);
             assertEquals(e.message(), "Test " + i);
             assertEquals(e.threadId(), Thread.currentThread().getId());

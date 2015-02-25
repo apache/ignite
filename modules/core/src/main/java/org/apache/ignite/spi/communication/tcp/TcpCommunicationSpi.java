@@ -2352,9 +2352,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param msg Error message.
      * @param e Exception.
      */
-    private void onException(String msg, Exception e){
-        if (super.getSpiContext().exceptionRegistry() != null)
-            super.getSpiContext().exceptionRegistry().onException(msg, e);
+    private void onException(String msg, Exception e) {
+        getExceptionRegistry().onException(msg, e);
     }
 
     /** {@inheritDoc} */

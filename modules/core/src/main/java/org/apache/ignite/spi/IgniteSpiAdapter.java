@@ -215,6 +215,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return spiCtx;
     }
 
+    /**
+     * Gets Exception registry.
+     *
+     * @return Exception registry.
+     */
+    public IgniteExceptionRegistry getExceptionRegistry() {
+        return spiCtx.exceptionRegistry();
+    }
+
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return Collections.emptyMap();
@@ -716,7 +725,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public IgniteExceptionRegistry exceptionRegistry() {
-            return null;
+            return IgniteExceptionRegistry.DUMMY_REGISTRY;
         }
     }
 }

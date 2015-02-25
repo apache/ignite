@@ -1144,7 +1144,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']');
 
-                onException("Failed to ping node=" + node, e);
+                onException("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']', e);
                 // continue;
             }
         }
@@ -1453,7 +1453,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         log.debug("Failed to send join request message [addr=" + addr +
                             ", msg=" + ioe != null ? ioe.getMessage() : e.getMessage() + ']');
 
-                        onException("Failed to send join request message addr=" + addr, ioe);
+                        onException("Failed to send join request message [addr=" + addr +
+                            ", msg=" + ioe != null ? ioe.getMessage() : e.getMessage() + ']', ioe);
                     }
 
                     noResAddrs.add(addr);
@@ -1583,7 +1584,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     U.error(log, "Class cast exception on direct send: " + addr, e);
 
-                onException("Class cast exception on direct send.", e);
+                onException("Class cast exception on direct send: " + addr, e);
 
                 if (errs == null)
                     errs = new ArrayList<>();
@@ -1594,7 +1595,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.error("Exception on direct send: " + e.getMessage(), e);
 
-                onException("Exception on direct send.", e);
+                onException("Exception on direct send: " + e.getMessage(), e);
 
                 if (errs == null)
                     errs = new ArrayList<>();
@@ -1758,8 +1759,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param e Exception.
      */
     private void onException(String msg, Exception e){
-        if (super.getSpiContext().exceptionRegistry() != null)
-            super.getSpiContext().exceptionRegistry().onException(msg, e);
+        getExceptionRegistry().onException(msg, e);
     }
 
     /**
@@ -2750,7 +2750,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
 
-                                onException("Failed to connect to next node msg=" + msg, e);
+                                onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
                                 if (!openSock)
                                     break; // Don't retry if we can not establish connection.
@@ -2874,8 +2874,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
                                     ", err=" + e + ']', e);
 
-                            onException("Failed to send message to next node [next=" + next.id() + ", msg="
-                                + msg + ']', e);
+                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']', 
+                                e);
 
                             if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
                                 ackTimeout0 *= 2;
@@ -3040,7 +3040,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             log.debug("Failed to send loopback problem message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send loopback problem message to node=" + node, e);
+                        onException("Failed to send loopback problem message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3118,7 +3119,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                                onException("Failed to send unauthenticated message to node=" + node, e);
+                                onException("Failed to send unauthenticated message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
 
                             // Ignore join request.
@@ -3169,7 +3171,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
                                 ", err=" + e + ']');
 
-                        onException("Failed to authenticate node (will ignore join request). Node=" + node, e);
+                        onException("Failed to authenticate node (will ignore join request) [node=" + node +
+                            ", err=" + e + ']', e);
 
                         // Ignore join request.
                         return;
@@ -3206,7 +3209,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             log.debug("Failed to send hash ID resolver validation failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send hash ID resolver validation failed message to node=" + node, e);
+                        onException("Failed to send hash ID resolver validation failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3251,7 +3255,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                            onException("Failed to send version check failed message to node=" + node, e);
+                            onException("Failed to send version check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']', e);
                         }
 
                         // Ignore join request.
@@ -3307,7 +3312,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                            onException("Failed to send version check failed message to node=" + node, e);
+                            onException("Failed to send version check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']', e);
                         }
 
                         // Ignore join request.
@@ -3350,7 +3356,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             log.debug("Failed to send marshaller check failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send marshaller check failed message to node=" + node, e);
+                        onException("Failed to send marshaller check failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3589,7 +3596,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                                onException("Failed to send unauthenticated message to node=" + node, e);
+                                onException("Failed to send unauthenticated message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
 
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
@@ -3791,7 +3799,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         log.debug("Failed to register new node address [node=" + node +
                             ", err=" + e.getMessage() + ']');
 
-                    onException("Failed to register new node address " + node, e);
+                    onException("Failed to register new node address [node=" + node +
+                        ", err=" + e.getMessage() + ']', e);
                 }
             }
 
@@ -3966,7 +3975,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             log.debug("Failed to send verified node left message to leaving node [msg=" + msg +
                                 ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send verified node left message to leaving node, msg=" + msg, e);
+                        onException("Failed to send verified node left message to leaving node [msg=" + msg +
+                            ", err=" + e.getMessage() + ']', e);
                     }
                     finally {
                         forceSndPending = true;
@@ -4103,7 +4113,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 log.debug("Failed to unregister failed node address [node=" + node +
                                     ", err=" + e.getMessage() + ']');
 
-                            onException("Failed to unregister failed node address, node=" + node, e);
+                            onException("Failed to unregister failed node address [node=" + node +
+                                ", err=" + e.getMessage() + ']', e);
                         }
                     }
 
@@ -4688,6 +4699,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
+                    onException("Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+
                     if (e.hasCause(SocketTimeoutException.class))
                         LT.warn(log, null, "Socket operation timed out on handshake " +
                             "(consider increasing 'networkTimeout' configuration property) " +
@@ -4703,8 +4716,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     else if (e.hasCause(ObjectStreamException.class) ||
                         (!sock.isClosed() && !e.hasCause(IOException.class)))
                         LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
-
-                    onException("Caught exception on handshake. Sock=" + sock, e);
 
                     return;
                 }
@@ -4900,6 +4911,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             U.error(log, "Caught exception on message read [sock=" + sock +
                                 ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
 
+                        onException("Caught exception on message read [sock=" + sock +
+                            ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
+
                         if (isInterrupted() || sock.isClosed())
                             return;
 
@@ -4916,9 +4930,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (err)
                             LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ']');
-
-                        onException("Caught exception on message read [sock=" + sock +
-                            ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
 
                         return;
                     }

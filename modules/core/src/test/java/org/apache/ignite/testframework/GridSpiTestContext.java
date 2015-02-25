@@ -531,7 +531,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
-        return null;
+        return IgniteExceptionRegistry.DUMMY_REGISTRY;
     }
 
     /** {@inheritDoc} */
