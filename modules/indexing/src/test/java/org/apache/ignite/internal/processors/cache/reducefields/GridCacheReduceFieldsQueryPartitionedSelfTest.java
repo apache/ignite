@@ -15,23 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.reducefields;
+package org.apache.ignite.internal.processors.cache.reducefields;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
+
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Reduce fields queries tests for local cache.
+ * Reduce fields queries tests for partitioned cache.
  */
-public class GridCacheReduceFieldsQueryLocalSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
+public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return LOCAL;
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 3;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncludeBackups() throws Exception {
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery("select age from Person");
+
+        qry.includeBackups(true);
+
+        int sum = 0;
+
+        for (IgniteBiTuple<Integer, Integer> tuple : qry.execute(new AverageRemoteReducer()).get())
+            sum += tuple.get1();
+
+        // One backup, so sum is two times greater
+        assertEquals("Sum", 200, sum);
     }
 }

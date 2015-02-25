@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.query.reducefields.*;
+import org.apache.ignite.internal.processors.cache.reducefields.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.spi.communication.tcp.*;
 

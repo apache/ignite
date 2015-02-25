@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.reducefields;
+package org.apache.ignite.internal.processors.cache.reducefields;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
@@ -80,7 +80,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @return Cache.
      */
     private CacheConfiguration cache(@Nullable String name) {
-        CacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(cacheMode());
@@ -89,7 +89,10 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setPreloadMode(SYNC);
         cache.setQueryIndexEnabled(true);
-        cache.setIndexedTypes();
+        cache.setIndexedTypes(
+            String.class, Organization.class,
+            CacheAffinityKey.class, Person.class
+        );
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);

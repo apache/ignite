@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.reducefields;
+package org.apache.ignite.internal.processors.cache.reducefields;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Reduce fields queries tests for partitioned cache.
+ * Reduce fields queries tests for replicated cache.
  */
-public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFieldsQueryPartitionedSelfTest {
+public class GridCacheReduceFieldsQueryReplicatedSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected int gridCount() {
+        return 3;
     }
 }
