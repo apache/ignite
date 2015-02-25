@@ -224,7 +224,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode destNode, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode destNode, Message msg)
             throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
 

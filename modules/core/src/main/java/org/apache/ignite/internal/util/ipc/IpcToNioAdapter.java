@@ -148,7 +148,7 @@ public class IpcToNioAdapter<T> {
      * @param msg Buffer to send.
      * @return Send result.
      */
-    private GridNioFuture<?> send(MessageAdapter msg) {
+    private GridNioFuture<?> send(Message msg) {
         assert writeBuf.hasArray();
 
         try {
@@ -193,7 +193,7 @@ public class IpcToNioAdapter<T> {
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
             assert ses == IpcToNioAdapter.this.ses;
 
-            return send((MessageAdapter)msg);
+            return send((Message)msg);
         }
 
         /** {@inheritDoc} */

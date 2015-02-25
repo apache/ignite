@@ -259,7 +259,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
          * @param obj Message being  sent.
          * @param srcNodeId Sender node id.
          */
-        private void checkAwaitMessageType(MessageAdapter obj, UUID srcNodeId) {
+        private void checkAwaitMessageType(Message obj, UUID srcNodeId) {
             try {
                 GridIoMessage plainMsg = (GridIoMessage)obj;
 
@@ -277,7 +277,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, Message msg,
             IgniteRunnable msgC) {
             checkAwaitMessageType(msg, sndId);
 

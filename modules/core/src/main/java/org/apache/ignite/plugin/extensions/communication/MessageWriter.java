@@ -36,6 +36,14 @@ public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Writes message header.
+     *
+     * @param type Message type.
+     * @param fieldCnt Fields count.ß
+     */
+    public boolean writeHeader(byte type, byte fieldCnt);
+
+    /**
      * Writes {@code byte} value.
      *
      * @param name Field name.
@@ -222,7 +230,7 @@ public interface MessageWriter {
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(String name, MessageAdapter val);
+    public boolean writeMessage(String name, Message val);
 
     /**
      * Writes array of objects.
@@ -232,7 +240,7 @@ public interface MessageWriter {
      * @param itemType Array component type.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType);
+    public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType);
 
     /**
      * Writes collection.
@@ -242,7 +250,7 @@ public interface MessageWriter {
      * @param itemType Collection item type.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType);
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType);
 
     /**
      * Writes map.
@@ -253,18 +261,18 @@ public interface MessageWriter {
      * @param valType Map value type.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
-        MessageAdapter.Type valType);
+    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
+        MessageCollectionItemType valType);
 
     /**
-     * @return Whether type of current message is already written.
+     * @return Whether header of current message is already written.
      */
-    public boolean isTypeWritten();
+    public boolean isHeaderWritten();
 
     /**
-     * Callback called when type of the message is written.
+     * Callback called when header of the message is written.
      */
-    public void onTypeWritten();
+    public void onHeaderWritten();
 
     /**
      * Gets current message state.
