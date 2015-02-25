@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -164,21 +164,14 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @param idx Index.
-     * @return Affinity.
-     */
-    private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
-    }
-
-    /**
      * @param key Key.
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheConsistentHashAffinityFunction aff = affinity(0);
+        CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction) grid(0).jcache(null).
+            getConfiguration(CacheConfiguration.class).getAffinity();
 
-        return aff.nodes(aff.partition(key), grid(0).cluster().nodes(), 1);
+        return aff.assignPartition(aff.partition(key), new ArrayList<ClusterNode>(grid(0).cluster().nodes()), 1, null);
     }
 
     /**
