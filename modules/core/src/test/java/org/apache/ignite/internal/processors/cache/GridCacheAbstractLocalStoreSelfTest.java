@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    
+
     /** */
     public static final TestLocalStore<Integer, Integer> LOCAL_STORE_1 = new TestLocalStore<>();
 
@@ -119,10 +119,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
-        cacheCfg.setWriteBehindBatchSize(1);
-        cacheCfg.setWriteBehindFlushFrequency(1);
-        cacheCfg.setWriteBehindFlushSize(1);
         cacheCfg.setBackups(backups);
+
         return cacheCfg;
     }
 
