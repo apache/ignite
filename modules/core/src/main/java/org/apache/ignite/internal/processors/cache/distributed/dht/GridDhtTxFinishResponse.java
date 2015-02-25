@@ -41,10 +41,10 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
     /** Error. */
     @GridDirectTransient
-    private Throwable err;
+    private Throwable checkCommittedErr;
 
     /** Serialized error. */
-    private byte[] errBytes;
+    private byte[] checkCommittedErrBytes;
 
     /** Flag indicating if this is a check-committed response. */
     private boolean checkCommitted;
@@ -79,15 +79,15 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     /**
      * @return Error for check committed backup requests.
      */
-    public Throwable error() {
-        return err;
+    public Throwable checkCommittedError() {
+        return checkCommittedErr;
     }
 
     /**
-     * @param err Error for check committed backup requests.
+     * @param checkCommittedErr Error for check committed backup requests.
      */
-    public void error(Throwable err) {
-        this.err = err;
+    public void checkCommittedError(Throwable checkCommittedErr) {
+        this.checkCommittedErr = checkCommittedErr;
     }
 
     /**
@@ -108,8 +108,8 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (err != null)
-            errBytes = ctx.marshaller().marshal(err);
+        if (checkCommittedErr != null)
+            checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
     }
 
     /** {@inheritDoc} */
@@ -117,8 +117,8 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (checkCommittedErrBytes != null)
+            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +148,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray("checkCommittedErrBytes", checkCommittedErrBytes))
                     return false;
 
                 writer.incrementState();
@@ -184,7 +184,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
                 reader.incrementState();
 
             case 6:
-                errBytes = reader.readByteArray("errBytes");
+                checkCommittedErrBytes = reader.readByteArray("checkCommittedErrBytes");
 
                 if (!reader.isLastRead())
                     return false;

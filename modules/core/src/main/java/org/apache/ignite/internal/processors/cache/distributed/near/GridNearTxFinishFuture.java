@@ -398,6 +398,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     null,
                     0);
 
+                finishReq.checkCommitted(true);
+
                 try {
                     cctx.io().send(backup, finishReq, tx.ioPolicy());
                 }
@@ -575,7 +577,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @return Node ID.
          */
         public ClusterNode node() {
-            return m.node();
+            assert m != null || backup != null;
+
+            return m != null ? m.node() : backup;
         }
 
         /**
@@ -625,8 +629,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         void onResult(GridDhtTxFinishResponse<K, V> res) {
             assert backup != null;
 
-            if (res.error() != null)
-                onDone(res.error());
+            if (res.checkCommittedError() != null)
+                onDone(res.checkCommittedError());
             else
                 onDone(tx);
         }

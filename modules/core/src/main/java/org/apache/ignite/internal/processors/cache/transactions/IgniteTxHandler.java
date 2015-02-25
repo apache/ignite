@@ -736,6 +736,8 @@ public class IgniteTxHandler<K, V> {
             nearTx = null;
 
         if (req.checkCommitted()) {
+            assert dhtTx == null || dhtTx.onePhaseCommit() : "Invalid transaction: " + dhtTx;
+
             boolean committed = true;
 
             if (dhtTx == null) {
@@ -744,6 +746,8 @@ public class IgniteTxHandler<K, V> {
             }
 
             sendReply(nodeId, req, committed);
+
+            return;
         }
         else
             finish(nodeId, dhtTx, req);
@@ -875,8 +879,8 @@ public class IgniteTxHandler<K, V> {
                 res.checkCommitted(true);
 
                 if (!committed)
-                    res.error(new IgniteTxRollbackCheckedException("Failed to commit transaction (transaction has been " +
-                        "rolled back on backup node): " + req.version()));
+                    res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                        "(transaction has been rolled back on backup node): " + req.version()));
             }
 
             try {

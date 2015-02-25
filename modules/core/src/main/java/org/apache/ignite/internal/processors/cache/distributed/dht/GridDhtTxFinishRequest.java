@@ -192,6 +192,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /**
+     * @param checkCommitted Check committed flag.
+     */
+    public void checkCommitted(boolean checkCommitted) {
+        this.checkCommitted = checkCommitted;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
