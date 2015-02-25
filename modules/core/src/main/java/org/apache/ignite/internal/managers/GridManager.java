@@ -31,12 +31,11 @@ import java.util.*;
 @GridToStringExclude
 public interface GridManager extends GridComponent {
     /**
-     * Adds attributes from underlying SPI to map of all attributes.
+     * Adds attributes from underlying SPI to node attributes.
      *
-     * @param attrs Map of all attributes gotten from SPI's so far.
      * @throws IgniteCheckedException Wrapper for exception thrown by underlying SPI.
      */
-    public void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException;
+    public void addSpiAttributes() throws IgniteCheckedException;
 
     /**
      * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}

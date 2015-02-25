@@ -500,4 +500,41 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Get node attribute by name.
+     *
+     * @param key Attribute name.
+     * @return Attribute value.
+     */
+    public Object nodeAttribute(String key);
+
+    /**
+     * Check if node has specified attribute.
+     *
+     * @param key Attribute name.
+     * @return {@code true} If node has attribute with specified name.
+     */
+    public boolean hasNodeAttribute(String key);
+
+    /**
+     * Add attribute to node attributes.
+     *
+     * @param key Attribute name.
+     * @param val Attribute value.
+     * @return Previous attribute value associated with attribute name.
+     */
+    public Object addNodeAttribute(String key, Object val);
+
+    /**
+     * Add attributes to node attributes.
+     *
+     * @param attrs Attributes to add.
+     */
+    public void addNodeAttributes(Map<String, String> attrs);
+
+    /**
+     * Seal node attributes for modification.
+     */
+    public Map<String, Object> sealNodeAttributes();
 }

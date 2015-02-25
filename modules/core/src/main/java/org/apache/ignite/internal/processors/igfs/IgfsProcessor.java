@@ -98,6 +98,54 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
+
+        IgniteConfiguration gridCfg = ctx.config();
+
+        // Node doesn't have IGFS if it:
+        // is daemon;
+        // doesn't have configured IGFS;
+        // doesn't have configured caches.
+        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getIgfsConfiguration()) ||
+            F.isEmpty(gridCfg.getCacheConfiguration()))
+            return;
+
+        final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
+
+        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
+            @Override public void apply(CacheConfiguration c) {
+                cacheCfgs.put(c.getName(), c);
+            }
+        });
+
+        Collection<IgfsAttributes> attrVals = new ArrayList<>();
+
+        assert gridCfg.getIgfsConfiguration() != null;
+
+        for (IgfsConfiguration igfsCfg : gridCfg.getIgfsConfiguration()) {
+            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
+
+            if (cacheCfg == null)
+                continue; // No cache for the given IGFS configuration.
+
+            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
+
+            if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
+                // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
+                // Configuration will be validated later, while starting IgfsProcessor.
+                continue;
+
+            attrVals.add(new IgfsAttributes(
+                igfsCfg.getName(),
+                igfsCfg.getBlockSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                igfsCfg.getMetaCacheName(),
+                igfsCfg.getDataCacheName(),
+                igfsCfg.getDefaultMode(),
+                igfsCfg.getPathModes(),
+                igfsCfg.isFragmentizerEnabled()));
+        }
+
+        ctx.addNodeAttribute(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
     }
 
     /** {@inheritDoc} */
@@ -189,60 +237,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long len, IgfsRecordResolver recRslv) {
         return new IgfsJobImpl(job, igfsName, path, start, len, recRslv);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        super.addAttributes(attrs);
-
-        IgniteConfiguration gridCfg = ctx.config();
-
-        // Node doesn't have IGFS if it:
-        // is daemon;
-        // doesn't have configured IGFS;
-        // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getIgfsConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
-            return;
-
-        final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
-
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
-            @Override public void apply(CacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
-
-        Collection<IgfsAttributes> attrVals = new ArrayList<>();
-
-        assert gridCfg.getIgfsConfiguration() != null;
-
-        for (IgfsConfiguration igfsCfg : gridCfg.getIgfsConfiguration()) {
-            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
-
-            if (cacheCfg == null)
-                continue; // No cache for the given IGFS configuration.
-
-            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
-
-            if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
-                // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
-                // Configuration will be validated later, while starting IgfsProcessor.
-                continue;
-
-            attrVals.add(new IgfsAttributes(
-                igfsCfg.getName(),
-                igfsCfg.getBlockSize(),
-                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
-                igfsCfg.getMetaCacheName(),
-                igfsCfg.getDataCacheName(),
-                igfsCfg.getDefaultMode(),
-                igfsCfg.getPathModes(),
-                igfsCfg.isFragmentizerEnabled()));
-        }
-
-        attrs.put(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
     }
 
     /**

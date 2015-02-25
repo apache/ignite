@@ -306,7 +306,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             log.debug("Node version to set: " + ver);
         }
 
-        locNodeAttrs = attrs;
+        locNodeAttrs = new HashMap<>(attrs); // TODO: IGNITE-187 attrs is a sealed map, but modified in TcpDiscoverySpi.spiStart0()
         locNodeVer = ver;
     }
 

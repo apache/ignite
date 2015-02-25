@@ -55,6 +55,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
 
+    /** */
+    public static final byte[] ZERO_BYTES = new byte[0];
+
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -179,9 +182,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 try {
                     updateSession(req, subjCtx);
-                    res.sessionTokenBytes(new byte[0]);
+                    res.sessionTokenBytes(ZERO_BYTES);
                 }
-                catch (IgniteCheckedException e1) {
+                catch (Exception e1) {
                     U.warn(log, "Cannot update response session token: " + e1.getMessage());
                 }
 
@@ -225,9 +228,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 if (ctx.security().enabled()) {
                     try {
                         updateSession(req, subjCtx0);
-                        res.sessionTokenBytes(new byte[0]);
+                        res.sessionTokenBytes(ZERO_BYTES);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         U.warn(log, "Cannot update response session token: " + e.getMessage());
                     }
                 }
@@ -260,6 +263,25 @@ public class GridRestProcessor extends GridProcessorAdapter {
             // Start protocols.
             startTcpProtocol();
             startHttpProtocol();
+
+            for (GridRestProtocol proto : protos) {
+                Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
+
+                if (props != null) {
+                    for (IgniteBiTuple<String, Object> p : props) {
+                        String key = p.getKey();
+
+                        if (key == null)
+                            continue;
+
+                        if (ctx.hasNodeAttribute(key))
+                            throw new IgniteCheckedException(
+                                "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                        ctx.addNodeAttribute(key, p.getValue());
+                    }
+                }
+            }
         }
     }
 
@@ -304,28 +326,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("REST processor stopped.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
-        for (GridRestProtocol proto : protos) {
-            Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
-
-            if (props != null) {
-                for (IgniteBiTuple<String, Object> p : props) {
-                    String key = p.getKey();
-
-                    if (key == null)
-                        continue;
-
-                    if (attrs.containsKey(key))
-                        throw new IgniteCheckedException(
-                            "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
-
-                    attrs.put(key, p.getValue());
-                }
-            }
         }
     }
 
@@ -514,7 +514,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req REST request.
      * @param sCtx Security context.
      */
-    private void updateSession(GridRestRequest req, SecurityContext sCtx) throws IgniteCheckedException {
+    private void updateSession(GridRestRequest req, SecurityContext sCtx) {
         if (sCtx != null) {
             UUID id = req.clientId();
             sesMap.put(id, sCtx);

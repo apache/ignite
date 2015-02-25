@@ -55,14 +55,17 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-                super.setNodeAttributes(attrs, ver);
+                // Override node attributes in discovery spi.
+                Map<String, Object> overrideAttrs = new HashMap<>(attrs);
 
                 // Set unique mac addresses for every group of three nodes.
                 String macAddrs = "MOCK_MACS_" + (gridInstanceNum / 3);
 
-                attrs.put(IgniteNodeAttributes.ATTR_MACS, macAddrs);
+                overrideAttrs.put(IgniteNodeAttributes.ATTR_MACS, macAddrs);
 
                 gridInstanceNum++;
+
+                super.setNodeAttributes(overrideAttrs, ver);
             }
         };
 

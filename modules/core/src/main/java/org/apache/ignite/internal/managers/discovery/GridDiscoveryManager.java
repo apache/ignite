@@ -191,10 +191,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Sets local node attributes into discovery SPI.
      *
-     * @param attrs Attributes to set.
      * @param ver Version.
      */
-    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+    public void setNodeAttributes(IgniteProductVersion ver) {
         // TODO GG-7574 move to metrics processor?
         long totSysMemory = -1;
 
@@ -205,9 +204,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
-        getSpi().setNodeAttributes(attrs, ver);
+        getSpi().setNodeAttributes(ctx.sealNodeAttributes(), ver);
     }
 
     /** {@inheritDoc} */

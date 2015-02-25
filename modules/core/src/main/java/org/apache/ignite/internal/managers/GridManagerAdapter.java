@@ -130,7 +130,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
+    @Override public final void addSpiAttributes() throws IgniteCheckedException {
         for (T spi : spis) {
             // Inject all spi resources.
             ctx.resource().inject(spi);
@@ -143,7 +143,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                 if (retval != null) {
                     for (Map.Entry<String, Object> e : retval.entrySet()) {
-                        if (attrs.containsKey(e.getKey()))
+                        if (ctx.hasNodeAttribute(e.getKey()))
                             throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
                                 ", attr=" + e.getKey() + ']' +
                                 ". Attribute set by one SPI implementation has the same name (name collision) as " +
@@ -151,7 +151,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                                 "Please check your Ignite configuration and/or SPI implementation to avoid " +
                                 "attribute name collisions.");
 
-                        attrs.put(e.getKey(), e.getValue());
+                        ctx.addNodeAttribute(e.getKey(), e.getValue());
                     }
                 }
             }

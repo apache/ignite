@@ -51,15 +51,17 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         final int idx = cnt.getAndIncrement();
 
-        // Override node attributes in discovery spi.
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-                super.setNodeAttributes(attrs, ver);
+                // Override node attributes in discovery spi.
+                Map<String, Object> overrideAttrs = new HashMap<>(attrs);
 
                 if (idx % 2 == 0)
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
+                    overrideAttrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
                 else
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
+                    overrideAttrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
+
+                super.setNodeAttributes(overrideAttrs, ver);
             }
         };
 
