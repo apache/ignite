@@ -82,19 +82,30 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      * @throws Exception If failed.
      */
     public void testAffinityDeployUpdateTopology() throws Exception {
+        info("TEST: Start test testAffinityDeployUpdateTopology");
         Ignite g = randomGrid();
+
+        info("TEST: get random grid");
 
         final Integer affKey = 1;
 
+        info("TEST: try put key");
+
         // Store a cache key.
         g.jcache(CACHE_NAME).put(affKey, affKey.toString());
+
+        info("TEST: put key");
 
         String name = "serviceAffinityUpdateTopology";
 
         IgniteServices svcs = g.services().withAsync();
 
+        info("TEST: get ignite service");
+
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
+
+        info("TEST: deploy affinity singleton");
 
         IgniteFuture<?> fut = svcs.future();
 
