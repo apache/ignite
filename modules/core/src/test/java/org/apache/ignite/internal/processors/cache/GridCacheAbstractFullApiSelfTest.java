@@ -70,6 +70,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     };
 
+    /** Increment processor for invoke operations with IgniteEntryProcessor. */
+    public static final IgniteEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
+        new IgniteEntryProcessor<String, Integer, String>() {
+            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+                return INCR_PROCESSOR.process(e, args);
+            }
+        };
+
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -82,6 +90,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return String.valueOf(old);
         }
     };
+
+    /** Increment processor for invoke operations with IgniteEntryProcessor. */
+    public static final IgniteEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
+        new IgniteEntryProcessor<String, Integer, String>() {
+            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+                return RMV_PROCESSOR.process(e, args);
+            }
+        };
 
     /** Dflt grid. */
     protected Ignite dfltIgnite;
@@ -597,6 +613,89 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testTransformPessimisticRepeatableRead() throws Exception {
         checkTransform(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformOptimisticReadCommitted() throws Exception {
+        checkIgniteTransform(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformOptimisticRepeatableRead() throws Exception {
+        checkIgniteTransform(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformPessimisticReadCommitted() throws Exception {
+        checkIgniteTransform(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformPessimisticRepeatableRead() throws Exception {
+        checkIgniteTransform(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    private void checkIgniteTransform(TransactionConcurrency concurrency, TransactionIsolation isolation)
+        throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key2", 1);
+        cache.put("key3", 3);
+
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
+
+        try {
+            assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
+            assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
+            assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
+
+            if (tx != null)
+                tx.commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            throw e;
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", CachePeekMode.ONHEAP));
+
+        cache.remove("key1");
+        cache.put("key2", 1);
+        cache.put("key3", 3);
+
+        assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
+        assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
+        assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
+
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek("key3", CachePeekMode.ONHEAP));
     }
 
     /**
@@ -3560,7 +3659,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             });
 
             CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.remove("key" + i));
                 }

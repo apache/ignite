@@ -764,9 +764,8 @@ public final class X {
      * Synchronously waits for all futures in the collection.
      *
      * @param futs Futures to wait for.
-     * @throws IgniteCheckedException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws IgniteCheckedException {
+    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) {
         if (F.isEmpty(futs))
             return;
 

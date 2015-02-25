@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -160,7 +161,7 @@ public class GridMemcachedMessage implements GridClientMessage {
 
     /** {@inheritDoc} */
     @Override public void requestId(long reqId) {
-        U.intToBytes((int)reqId, opaque, 0);
+        U.intToBytes((int) reqId, opaque, 0);
     }
 
     /** {@inheritDoc} */

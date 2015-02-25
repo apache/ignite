@@ -126,7 +126,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0, true);
 
         grid(1).compute().run(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 assertNotNull(seq);
 
                 for (int i = 0; i < RETRIES; i++)

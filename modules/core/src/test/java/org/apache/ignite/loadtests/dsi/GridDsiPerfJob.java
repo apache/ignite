@@ -232,7 +232,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
         try {
             getId();
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -247,7 +247,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
         try {
             ses = (GridDsiSession)get(GridDsiSession.getCacheKey(terminalId));
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -300,9 +300,8 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
     /**
      * @return ID.
-     * @throws IgniteCheckedException If failed.
      */
-    private long getId() throws IgniteCheckedException {
+    private long getId() {
         IgniteAtomicSequence seq = ignite.atomicSequence("ID", 0, true);
 
         return seq.incrementAndGet();
@@ -311,9 +310,8 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @param o Object.
      * @param cacheKey Key.
-     * @throws IgniteCheckedException If failed.
      */
-    private void put(final Object o, Object cacheKey) throws IgniteCheckedException {
+    private void put(final Object o, Object cacheKey) {
         IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
         assert cache != null;
@@ -332,10 +330,9 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @param key Key.
      * @return Object.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private <T> Object get(Object key) throws IgniteCheckedException {
+    private <T> Object get(Object key) {
         return ignite.jcache(cacheName).get(key);
     }
 }

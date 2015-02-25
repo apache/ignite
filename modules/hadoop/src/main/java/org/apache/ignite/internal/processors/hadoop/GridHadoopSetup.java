@@ -45,9 +45,8 @@ public class GridHadoopSetup {
     /**
      * The main method.
      * @param ignore Params.
-     * @throws IOException If fails.
      */
-    public static void main(String[] ignore) throws IOException {
+    public static void main(String[] ignore) {
         X.println(
             "   __________  ________________ ",
             "  /  _/ ___/ |/ /  _/_  __/ __/ ",
