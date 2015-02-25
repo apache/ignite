@@ -24,8 +24,8 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -284,7 +284,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
 
-            byte[] concat = U.join(remainder, data, remainder2);
+            byte[] concat = IgniteByteUtils.join(remainder, data, remainder2);
 
             // Validate data stored in cache.
             for (int pos = 0, block = 0; pos < info.length(); block++) {

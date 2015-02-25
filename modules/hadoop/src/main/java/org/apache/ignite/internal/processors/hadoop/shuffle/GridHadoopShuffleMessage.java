@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -201,7 +202,7 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
         out.writeLong(msgId);
         out.writeInt(reducer);
         out.writeInt(off);
-        U.writeByteArray(out, buf);
+        IgniteByteUtils.writeByteArray(out, buf);
     }
 
     /** {@inheritDoc} */
@@ -212,7 +213,7 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
         msgId = in.readLong();
         reducer = in.readInt();
         off = in.readInt();
-        buf = U.readByteArray(in);
+        buf = IgniteByteUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */

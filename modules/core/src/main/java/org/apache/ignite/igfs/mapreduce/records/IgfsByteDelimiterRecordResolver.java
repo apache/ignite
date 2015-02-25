@@ -20,6 +20,7 @@ package org.apache.ignite.igfs.mapreduce.records;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -281,7 +282,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
             out.writeInt(delims.length);
 
             for (byte[] delim : delims)
-                U.writeByteArray(out, delim);
+                IgniteByteUtils.writeByteArray(out, delim);
         }
         else
             out.writeBoolean(false);
@@ -295,7 +296,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
             delims = new byte[len][];
 
             for (int i = 0; i < len; i++)
-                delims[i] = U.readByteArray(in);
+                delims[i] = IgniteByteUtils.readByteArray(in);
 
             maxDelimLen = maxDelimiterLength(delims);
         }

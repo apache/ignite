@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -87,12 +88,12 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeByteArray(out, sesTok);
+        IgniteByteUtils.writeByteArray(out, sesTok);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sesTok = U.readByteArray(in);
+        sesTok = IgniteByteUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */

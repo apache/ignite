@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.v2;
 
 import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.*;
 
 import java.io.*;
 
@@ -73,7 +73,7 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
         out.writeInt(id);
 
         out.writeUTF(clsName);
-        U.writeByteArray(out, bytes);
+        IgniteByteUtils.writeByteArray(out, bytes);
     }
 
     /**
@@ -96,7 +96,7 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
         id = in.readInt();
 
         clsName = in.readUTF();
-        bytes = U.readByteArray(in);
+        bytes = IgniteByteUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */

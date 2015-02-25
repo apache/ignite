@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -288,7 +289,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         out.writeBoolean(b);
 
         if (b) {
-            U.writeByteArray(out, filterBytes);
+            IgniteByteUtils.writeByteArray(out, filterBytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
@@ -303,7 +304,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         boolean b = in.readBoolean();
 
         if (b) {
-            filterBytes = U.readByteArray(in);
+            filterBytes = IgniteByteUtils.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
         }
@@ -391,7 +392,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             out.writeBoolean(b);
 
             if (b) {
-                U.writeByteArray(out, bytes);
+                IgniteByteUtils.writeByteArray(out, bytes);
                 U.writeString(out, cacheName);
                 out.writeObject(depInfo);
             }
@@ -404,7 +405,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             boolean b = in.readBoolean();
 
             if (b) {
-                bytes = U.readByteArray(in);
+                bytes = IgniteByteUtils.readByteArray(in);
                 cacheName = U.readString(in);
                 depInfo = (GridDeploymentInfo)in.readObject();
             }

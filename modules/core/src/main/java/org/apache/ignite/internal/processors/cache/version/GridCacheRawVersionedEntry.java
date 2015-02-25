@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
@@ -188,8 +189,8 @@ public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert keyBytes != null;
 
-        U.writeByteArray(out, keyBytes);
-        U.writeByteArray(out, valBytes);
+        IgniteByteUtils.writeByteArray(out, keyBytes);
+        IgniteByteUtils.writeByteArray(out, valBytes);
 
         out.writeLong(ttl);
 
@@ -201,8 +202,8 @@ public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        keyBytes = U.readByteArray(in);
-        valBytes = U.readByteArray(in);
+        keyBytes = IgniteByteUtils.readByteArray(in);
+        valBytes = IgniteByteUtils.readByteArray(in);
 
         ttl = in.readLong();
 

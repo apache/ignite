@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -789,9 +790,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //        out.writeBoolean(depEnabled);
 //
 //        if (depEnabled) {
-//            U.writeByteArray(out, keyBytes);
-//            U.writeByteArray(out, transformClosBytes);
-//            U.writeByteArray(out, filterBytes);
+//            IgniteByteUtils.writeByteArray(out, keyBytes);
+//            IgniteByteUtils.writeByteArray(out, transformClosBytes);
+//            IgniteByteUtils.writeByteArray(out, filterBytes);
 //        }
 //        else {
 //            out.writeObject(key);
@@ -827,9 +828,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //        depEnabled = in.readBoolean();
 //
 //        if (depEnabled) {
-//            keyBytes = U.readByteArray(in);
-//            transformClosBytes = U.readByteArray(in);
-//            filterBytes = U.readByteArray(in);
+//            keyBytes = IgniteByteUtils.readByteArray(in);
+//            transformClosBytes = IgniteByteUtils.readByteArray(in);
+//            filterBytes = IgniteByteUtils.readByteArray(in);
 //        }
 //        else {
 //            key = (K)in.readObject();
@@ -842,10 +843,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //        val.readFrom(in);
 //
 //        ttl = in.readLong();
-//        conflictExpireTime = in.readLong();
 //
 //        explicitVer = CU.readVersion(in);
 //        grpLock = in.readBoolean();
+//
+//        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
 //        conflictVer = CU.readVersion(in);
 //
 //        expiryPlc = (ExpiryPolicy)in.readObject();
@@ -1012,12 +1014,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //
 //            if (hasWriteVal) {
 //                if (valBytesSent)
-//                    U.writeByteArray(out, valBytes);
+//                    IgniteByteUtils.writeByteArray(out, valBytes);
 //                else {
 //                    if (val != null && val instanceof byte[]) {
 //                        out.writeBoolean(true);
 //
-//                        U.writeByteArray(out, (byte[])val);
+//                        IgniteByteUtils.writeByteArray(out, (byte[]) val);
 //                    }
 //                    else {
 //                        out.writeBoolean(false);
@@ -1043,9 +1045,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //
 //            if (hasWriteVal) {
 //                if (valBytesSent)
-//                    valBytes = U.readByteArray(in);
+//                    valBytes = IgniteByteUtils.readByteArray(in);
 //                else
-//                    val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+//                    val = in.readBoolean() ? (V) IgniteByteUtils.readByteArray(in) : (V)in.readObject();
 //            }
 //
 //            op = fromOrdinal(in.readInt());

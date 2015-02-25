@@ -18,6 +18,7 @@
 package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -220,7 +221,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         out.writeByte(minor);
         out.writeByte(maintenance);
         out.writeLong(revTs);
-        U.writeByteArray(out, revHash);
+        IgniteByteUtils.writeByteArray(out, revHash);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +230,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         minor = in.readByte();
         maintenance = in.readByte();
         revTs = in.readLong();
-        revHash = U.readByteArray(in);
+        revHash = IgniteByteUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */
@@ -277,7 +278,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
                 byte[] revHash = null;
 
                 if (match.group(9) != null)
-                    revHash = U.decodeHex(match.group(10).toCharArray());
+                    revHash = IgniteByteUtils.decodeHex(match.group(10).toCharArray());
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }

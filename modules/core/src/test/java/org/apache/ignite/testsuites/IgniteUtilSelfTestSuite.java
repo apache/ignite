@@ -51,6 +51,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
+        suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);

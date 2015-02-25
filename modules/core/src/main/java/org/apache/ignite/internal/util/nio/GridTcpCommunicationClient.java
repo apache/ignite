@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -520,7 +521,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             assert off == 0;
             assert resBuf.length >= resOff + len + 4;
 
-            U.intToBytes(len, resBuf, resOff);
+            IgniteByteUtils.intToBytes(len, resBuf, resOff);
 
             U.arrayCopy(b, off, resBuf, resOff + 4, len);
         }

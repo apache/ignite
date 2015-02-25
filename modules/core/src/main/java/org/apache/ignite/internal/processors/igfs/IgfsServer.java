@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
@@ -238,9 +239,9 @@ public class IgfsServer {
                 while (!Thread.currentThread().isInterrupted()) {
                     dis.readFully(hdr);
 
-                    final long reqId = U.bytesToLong(hdr, 0);
+                    final long reqId = IgniteByteUtils.bytesToLong(hdr, 0);
 
-                    int ordinal = U.bytesToInt(hdr, 8);
+                    int ordinal = IgniteByteUtils.bytesToInt(hdr, 8);
 
                     if (first) { // First message must be HANDSHAKE.
                         if (reqId != 0 || ordinal != IgfsIpcCommand.HANDSHAKE.ordinal()) {

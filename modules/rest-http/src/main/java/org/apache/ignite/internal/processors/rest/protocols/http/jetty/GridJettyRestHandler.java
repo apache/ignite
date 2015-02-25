@@ -22,6 +22,7 @@ import net.sf.json.processors.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.request.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -475,7 +476,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         try {
             if (sesTokStr != null)
-                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+                restReq.sessionToken(IgniteByteUtils.hexString2ByteArray(sesTokStr));
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.
