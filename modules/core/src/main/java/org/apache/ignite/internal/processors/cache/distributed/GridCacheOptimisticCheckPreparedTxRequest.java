@@ -222,7 +222,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 11;
     }
 
     /** {@inheritDoc} */

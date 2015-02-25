@@ -272,7 +272,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 25;
+        return 21;
     }
 
     /** {@inheritDoc} */

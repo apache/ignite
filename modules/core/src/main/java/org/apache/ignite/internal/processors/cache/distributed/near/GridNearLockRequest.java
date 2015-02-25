@@ -450,7 +450,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 reader.incrementState();
 
-            case 30:
+            case 25:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -494,7 +494,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 34;
+        return 29;
     }
 
     /** {@inheritDoc} */

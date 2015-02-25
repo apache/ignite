@@ -227,7 +227,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 writer.incrementState();
 
-            case 11:
+            case 9:
                 if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
@@ -239,13 +239,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 12:
                 if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -267,7 +267,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         switch (reader.state()) {
-            case 9:
+            case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -275,7 +275,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 reader.incrementState();
 
-            case 11:
+            case 9:
                 invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -291,7 +291,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 reader.incrementState();
 
-            case 13:
+            case 11:
                 nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -299,7 +299,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                 reader.incrementState();
 
-            case 14:
+            case 12:
                 preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -319,6 +319,6 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 13;
     }
 }

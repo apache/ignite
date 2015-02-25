@@ -371,7 +371,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
             return false;
 
         switch (reader.state()) {
-            case 22:
+            case 18:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
@@ -403,7 +403,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 reader.incrementState();
 
-            case 27:
+            case 22:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
@@ -447,7 +447,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 26;
     }
 
     /** {@inheritDoc} */

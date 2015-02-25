@@ -298,7 +298,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
                 if (!writer.writeCollection("valBytes", valBytes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -320,7 +320,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 6:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -336,7 +336,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
                 reader.incrementState();
 
-            case 10:
+            case 8:
                 valBytes = reader.readCollection("valBytes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -356,7 +356,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 9;
     }
 
     /** {@inheritDoc} */

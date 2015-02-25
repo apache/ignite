@@ -170,7 +170,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         }
 
         switch (writer.state()) {
-            case 11:
+            case 9:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
@@ -182,7 +182,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeObjectArray("mappedVers", mappedVers, MessageCollectionItemType.MSG))
                     return false;
 
@@ -193,6 +193,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -209,7 +210,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 9:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -225,7 +226,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 reader.incrementState();
 
-            case 13:
+            case 11:
                 mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -240,6 +241,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     return false;
 
                 reader.incrementState();
+
         }
 
         return true;
@@ -252,7 +254,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 13;
     }
 
     /** {@inheritDoc} */

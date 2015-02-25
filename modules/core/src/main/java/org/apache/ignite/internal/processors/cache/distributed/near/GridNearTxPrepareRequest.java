@@ -421,7 +421,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 33;
+        return 29;
     }
 
     /** {@inheritDoc} */

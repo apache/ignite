@@ -191,7 +191,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 6:
                 candsBytes = reader.readByteArray("candsBytes");
 
                 if (!reader.isLastRead())
@@ -219,7 +219,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 8;
     }
 
     /** {@inheritDoc} */

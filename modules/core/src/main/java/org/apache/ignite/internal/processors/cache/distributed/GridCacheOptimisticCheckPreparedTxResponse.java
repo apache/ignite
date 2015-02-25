@@ -169,7 +169,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 9;
     }
 
     /** {@inheritDoc} */

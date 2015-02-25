@@ -463,7 +463,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 writer.incrementState();
 
-            case 22:
+            case 18:
                 if (!writer.writeCollection("writesBytes", writesBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -589,7 +589,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 reader.incrementState();
 
-            case 22:
+            case 18:
                 writesBytes = reader.readCollection("writesBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -609,7 +609,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 19;
     }
 
     /** {@inheritDoc} */

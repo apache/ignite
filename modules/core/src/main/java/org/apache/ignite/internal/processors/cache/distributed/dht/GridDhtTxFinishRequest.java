@@ -236,6 +236,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 writer.incrementState();
 
+            case 18:
+                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                    return false;
+
+                writer.incrementState();
+
             case 19:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
@@ -282,6 +288,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (reader.state()) {
+            case 15:
+                checkCommitted = reader.readBoolean("checkCommitted");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 16:
                 byte isolationOrd;
 
@@ -362,6 +376,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 28;
+        return 24;
     }
 }

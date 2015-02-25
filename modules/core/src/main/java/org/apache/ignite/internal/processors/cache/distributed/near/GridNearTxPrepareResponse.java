@@ -292,7 +292,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
@@ -304,13 +304,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 writer.incrementState();
 
-            case 15:
+            case 13:
                 if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 14:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
 
@@ -356,7 +356,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 reader.incrementState();
 
-            case 13:
+            case 11:
                 invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -372,7 +372,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 reader.incrementState();
 
-            case 15:
+            case 13:
                 ownedValsBytes = reader.readCollection("ownedValsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -380,7 +380,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 reader.incrementState();
 
-            case 17:
+            case 14:
                 retValBytes = reader.readByteArray("retValBytes");
 
                 if (!reader.isLastRead())
@@ -400,7 +400,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 18;
+        return 15;
     }
 
     /** {@inheritDoc} */

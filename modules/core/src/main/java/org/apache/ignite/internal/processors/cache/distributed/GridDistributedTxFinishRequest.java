@@ -344,7 +344,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 15;
     }
 
     /** {@inheritDoc} */

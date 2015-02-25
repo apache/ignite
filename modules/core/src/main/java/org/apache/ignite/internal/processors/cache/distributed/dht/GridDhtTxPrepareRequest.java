@@ -520,6 +520,6 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 35;
+        return 31;
     }
 }

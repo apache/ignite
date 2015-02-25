@@ -173,6 +173,6 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 }
