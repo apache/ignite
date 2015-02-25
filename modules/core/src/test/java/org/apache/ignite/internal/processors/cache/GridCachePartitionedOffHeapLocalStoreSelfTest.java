@@ -50,7 +50,7 @@ public class GridCachePartitionedOffHeapLocalStoreSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isOffHeapTiredMode() {
+    @Override protected boolean isOffHeapTieredMode() {
         return true;
     }
 }
