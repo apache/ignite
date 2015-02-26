@@ -614,7 +614,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicate() throws Exception {
+    public void testInitialQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
@@ -659,7 +659,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicateAndUpdates() throws Exception {
+    public void testInitialQueryAndUpdates() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
