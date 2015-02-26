@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -138,14 +137,24 @@ public final class ComputeFibonacciContinuationExample {
                 if (fut1 == null) {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 1);
 
-                    fut1 = F.addIfAbsent(locMap, n - 1, compute.<BigInteger>future());
+                    ComputeTaskFuture<BigInteger> futVal = compute.future();
+                    
+                    fut1 = locMap.putIfAbsent(n - 1, futVal);
+                    
+                    if (fut1 == null)
+                        fut1 = futVal;
                 }
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut2 == null) {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 2);
 
-                    fut2 = F.addIfAbsent(locMap, n - 2, compute.<BigInteger>future());
+                    ComputeTaskFuture<BigInteger> futVal = compute.<BigInteger>future();
+                    
+                    fut2 = locMap.putIfAbsent(n - 2, futVal);
+                    
+                    if (fut2 == null)
+                        fut2 = futVal;
                 }
 
                 // If futures are not done, then wait asynchronously for the result
