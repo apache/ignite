@@ -53,7 +53,7 @@ public class IgniteSpiThreadFactory implements ThreadFactory {
     @Override public Thread newThread(final Runnable r) {
         return new IgniteSpiThread(gridName, threadName, log) {
             /** {@inheritDoc} */
-            @Override protected void body() throws InterruptedException {
+            @Override protected void body() {
                 r.run();
             }
         };

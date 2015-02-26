@@ -17,65 +17,50 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
 import java.io.*;
-import java.net.*;
 import java.util.*;
 
 /**
- * Message telling joining node that its authentication failed on coordinator.
+ * Wrapped for custom message.
  */
-public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Coordinator address. */
-    private InetAddress addr;
+    private Serializable msg;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public TcpDiscoveryAuthFailedMessage() {
+    public TcpDiscoveryCustomEventMessage() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param creatorNodeId Creator node ID.
-     * @param addr Coordinator address.
+     * @param creatorNodeId Creator node id.
      */
-    public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress addr) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg) {
         super(creatorNodeId);
 
-        this.addr = addr;
+        this.msg = msg;
     }
 
     /**
-     * @return Coordinator address.
+     * @return Message.
      */
-    public InetAddress address() {
-        return addr;
+    public Serializable message() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeByteArray(out, addr.getAddress());
+        out.writeObject(msg);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        addr = InetAddress.getByAddress(U.readByteArray(in));
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TcpDiscoveryAuthFailedMessage.class, this, "super", super.toString());
+        msg = (Serializable)in.readObject();
     }
 }

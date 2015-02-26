@@ -558,11 +558,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * @param workerNode Worker node.
      * @param keys Keys that are suspected to be absent
      * @return List of absent keys. If no keys are absent, the list is empty.
-     * @throws IgniteCheckedException If error occurs.
      */
-    private Collection<Integer> findAbsentKeys(Ignite workerNode,
-        Collection<Integer> keys) throws IgniteCheckedException {
-
+    private Collection<Integer> findAbsentKeys(Ignite workerNode, Collection<Integer> keys) {
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
         IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);

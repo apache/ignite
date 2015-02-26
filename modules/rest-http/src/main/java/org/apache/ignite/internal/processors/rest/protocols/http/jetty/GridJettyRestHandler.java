@@ -476,7 +476,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         try {
             if (sesTokStr != null)
-                restReq.sessionToken(IgniteByteUtils.hexString2ByteArray(sesTokStr));
+                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.

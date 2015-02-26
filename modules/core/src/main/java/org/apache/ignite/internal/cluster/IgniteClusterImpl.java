@@ -51,7 +51,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** Node local store. */
     @GridToStringExclude
-    private ClusterNodeLocalMap nodeLoc;
+    private ConcurrentMap nodeLoc;
 
     /**
      * Required by {@link Externalizable}.
@@ -101,7 +101,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
+    @Override public <K, V> ConcurrentMap<K, V> nodeLocalMap() {
         guard();
 
         try {

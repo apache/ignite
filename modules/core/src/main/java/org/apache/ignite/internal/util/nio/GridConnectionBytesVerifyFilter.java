@@ -105,7 +105,7 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
                 ses.addMeta(MAGIC_META_KEY, cnt + magicRead);
                 ses.addMeta(MAGIC_BUF_KEY, magicBuf);
             }
-            else if (IgniteByteUtils.bytesEqual(magicBuf, 0, U.IGNITE_HEADER, 0, U.IGNITE_HEADER.length)) {
+            else if (U.bytesEqual(magicBuf, 0, U.IGNITE_HEADER, 0, U.IGNITE_HEADER.length)) {
                 // Magic bytes read and equal to IGNITE_HEADER.
                 ses.removeMeta(MAGIC_BUF_KEY);
                 ses.addMeta(MAGIC_META_KEY, U.IGNITE_HEADER.length);

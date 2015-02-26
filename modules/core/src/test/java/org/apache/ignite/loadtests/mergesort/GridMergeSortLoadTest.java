@@ -106,9 +106,8 @@ public class GridMergeSortLoadTest {
      * @param g Grid to run sorting on.
      * @param size Size of the generated array, which we sort.
      * @return Sort execution time in milliseconds.
-     * @throws IgniteCheckedException If failed.
      */
-    private static long sort(Ignite g, int size) throws IgniteCheckedException {
+    private static long sort(Ignite g, int size) {
         int[] bigArr = generateRandomArray(size);
 
         X.println("Array is generated.");

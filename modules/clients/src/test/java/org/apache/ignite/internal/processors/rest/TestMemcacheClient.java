@@ -147,7 +147,7 @@ final class TestMemcacheClient {
                                 buf.write(b);
 
                                 if (i == 3) {
-                                    keyLength = IgniteByteUtils.bytesToShort(buf.toByteArray(), 0);
+                                    keyLength = U.bytesToShort(buf.toByteArray(), 0);
 
                                     buf.reset();
                                 }
@@ -158,7 +158,7 @@ final class TestMemcacheClient {
                                 buf.write(b);
 
                                 if (i == 7) {
-                                    success = IgniteByteUtils.bytesToShort(buf.toByteArray(), 0) == 0;
+                                    success = U.bytesToShort(buf.toByteArray(), 0) == 0;
 
                                     buf.reset();
                                 }
@@ -167,7 +167,7 @@ final class TestMemcacheClient {
                                 buf.write(b);
 
                                 if (i == 11) {
-                                    totalLength = IgniteByteUtils.bytesToInt(buf.toByteArray(), 0);
+                                    totalLength = U.bytesToInt(buf.toByteArray(), 0);
 
                                     buf.reset();
                                 }
@@ -176,7 +176,7 @@ final class TestMemcacheClient {
                                 buf.write(b);
 
                                 if (i == 15) {
-                                    opaque = IgniteByteUtils.bytesToInt(buf.toByteArray(), 0);
+                                    opaque = U.bytesToInt(buf.toByteArray(), 0);
 
                                     buf.reset();
                                 }
@@ -187,8 +187,8 @@ final class TestMemcacheClient {
                                 if (i == HDR_LEN + extrasLength - 1) {
                                     byte[] rawFlags = buf.toByteArray();
 
-                                    keyFlags = IgniteByteUtils.bytesToShort(rawFlags, 0);
-                                    valFlags = IgniteByteUtils.bytesToShort(rawFlags, 2);
+                                    keyFlags = U.bytesToShort(rawFlags, 0);
+                                    valFlags = U.bytesToShort(rawFlags, 2);
 
                                     buf.reset();
                                 }
@@ -414,12 +414,12 @@ final class TestMemcacheClient {
         packet[0] = (byte)0x80;
         packet[1] = cmd.operationCode();
 
-        IgniteByteUtils.shortToBytes((short) keyData.length(), packet, 2);
+        U.shortToBytes((short) keyData.length(), packet, 2);
 
         packet[4] = (byte)(extrasLength);
 
-        IgniteByteUtils.intToBytes(extrasLength + keyData.length() + valData.length(), packet, 8);
-        IgniteByteUtils.intToBytes(opaque, packet, 12);
+        U.intToBytes(extrasLength + keyData.length() + valData.length(), packet, 8);
+        U.intToBytes(opaque, packet, 12);
 
         if (extrasLength > 0) {
             if (extras != null) {
@@ -427,14 +427,14 @@ final class TestMemcacheClient {
 
                 for (Long extra : extras) {
                     if (extra != null)
-                        IgniteByteUtils.longToBytes(extra, packet, offset);
+                        U.longToBytes(extra, packet, offset);
 
                     offset += 8;
                 }
             }
             else {
-                IgniteByteUtils.shortToBytes(keyData.getFlags(), packet, HDR_LEN);
-                IgniteByteUtils.shortToBytes(valData.getFlags(), packet, HDR_LEN + 2);
+                U.shortToBytes(keyData.getFlags(), packet, HDR_LEN);
+                U.shortToBytes(valData.getFlags(), packet, HDR_LEN + 2);
             }
         }
 
@@ -644,17 +644,17 @@ final class TestMemcacheClient {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            bytes = IgniteByteUtils.intToBytes((Integer) obj);
+            bytes = U.intToBytes((Integer) obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            bytes = IgniteByteUtils.longToBytes((Long) obj);
+            bytes = U.longToBytes((Long) obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            bytes = IgniteByteUtils.longToBytes(((Date) obj).getTime());
+            bytes = U.longToBytes(((Date) obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -664,12 +664,12 @@ final class TestMemcacheClient {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            bytes = IgniteByteUtils.intToBytes(Float.floatToIntBits((Float) obj));
+            bytes = U.intToBytes(Float.floatToIntBits((Float) obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            bytes = IgniteByteUtils.longToBytes(Double.doubleToLongBits((Double) obj));
+            bytes = U.longToBytes(Double.doubleToLongBits((Double) obj));
 
             flags |= DOUBLE_FLAG;
         }
@@ -706,17 +706,17 @@ final class TestMemcacheClient {
             case BOOLEAN_FLAG:
                 return bytes[0] == '1';
             case INT_FLAG:
-                return IgniteByteUtils.bytesToInt(bytes, 0);
+                return U.bytesToInt(bytes, 0);
             case LONG_FLAG:
-                return IgniteByteUtils.bytesToLong(bytes, 0);
+                return U.bytesToLong(bytes, 0);
             case DATE_FLAG:
-                return new Date(IgniteByteUtils.bytesToLong(bytes, 0));
+                return new Date(U.bytesToLong(bytes, 0));
             case BYTE_FLAG:
                 return bytes[0];
             case FLOAT_FLAG:
-                return Float.intBitsToFloat(IgniteByteUtils.bytesToInt(bytes, 0));
+                return Float.intBitsToFloat(U.bytesToInt(bytes, 0));
             case DOUBLE_FLAG:
-                return Double.longBitsToDouble(IgniteByteUtils.bytesToLong(bytes, 0));
+                return Double.longBitsToDouble(U.bytesToLong(bytes, 0));
             case BYTE_ARR_FLAG:
                 return bytes;
             default:

@@ -239,9 +239,9 @@ public class IgfsServer {
                 while (!Thread.currentThread().isInterrupted()) {
                     dis.readFully(hdr);
 
-                    final long reqId = IgniteByteUtils.bytesToLong(hdr, 0);
+                    final long reqId = U.bytesToLong(hdr, 0);
 
-                    int ordinal = IgniteByteUtils.bytesToInt(hdr, 8);
+                    int ordinal = U.bytesToInt(hdr, 8);
 
                     if (first) { // First message must be HANDSHAKE.
                         if (reqId != 0 || ordinal != IgfsIpcCommand.HANDSHAKE.ordinal()) {

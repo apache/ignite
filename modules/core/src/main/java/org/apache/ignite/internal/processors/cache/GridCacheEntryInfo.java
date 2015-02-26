@@ -267,17 +267,17 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         out.writeBoolean(valBytesSent);
 
         if (keyBytesSent)
-            IgniteByteUtils.writeByteArray(out, keyBytes);
+            U.writeByteArray(out, keyBytes);
         else
             out.writeObject(key);
 
         if (valBytesSent)
-            IgniteByteUtils.writeByteArray(out, valBytes);
+            U.writeByteArray(out, valBytes);
         else {
             if (val != null && val instanceof byte[]) {
                 out.writeBoolean(true);
 
-                IgniteByteUtils.writeByteArray(out, (byte[]) val);
+                U.writeByteArray(out, (byte[]) val);
             }
             else {
                 out.writeBoolean(false);
@@ -313,14 +313,14 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         valBytesSent = in.readBoolean();
 
         if (keyBytesSent)
-            keyBytes = IgniteByteUtils.readByteArray(in);
+            keyBytes = U.readByteArray(in);
         else
             key = (K)in.readObject();
 
         if (valBytesSent)
-            valBytes = IgniteByteUtils.readByteArray(in);
+            valBytes = U.readByteArray(in);
         else
-            val = in.readBoolean() ? (V) IgniteByteUtils.readByteArray(in) : (V)in.readObject();
+            val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
 
         ttl = in.readLong();
 

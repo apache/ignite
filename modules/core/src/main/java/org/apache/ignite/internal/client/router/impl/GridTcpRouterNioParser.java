@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -68,8 +68,8 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
             res.put(IGNITE_REQ_FLAG);
             res.putInt(resp.body().length + 40);
             res.putLong(resp.requestId());
-            res.put(IgniteByteUtils.uuidToBytes(resp.clientId()));
-            res.put(IgniteByteUtils.uuidToBytes(resp.destinationId()));
+            res.put(U.uuidToBytes(resp.clientId()));
+            res.put(U.uuidToBytes(resp.destinationId()));
             res.put(resp.body());
 
             res.flip();
@@ -88,8 +88,8 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
             slice.put(IGNITE_REQ_FLAG);
             slice.putInt(res.remaining() - 5);
             slice.putLong(clientMsg.requestId());
-            slice.put(IgniteByteUtils.uuidToBytes(clientMsg.clientId()));
-            slice.put(IgniteByteUtils.uuidToBytes(clientMsg.destinationId()));
+            slice.put(U.uuidToBytes(clientMsg.clientId()));
+            slice.put(U.uuidToBytes(clientMsg.destinationId()));
 
             return res;
         }

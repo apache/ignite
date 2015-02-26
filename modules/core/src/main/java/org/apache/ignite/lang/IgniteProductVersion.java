@@ -221,7 +221,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         out.writeByte(minor);
         out.writeByte(maintenance);
         out.writeLong(revTs);
-        IgniteByteUtils.writeByteArray(out, revHash);
+        U.writeByteArray(out, revHash);
     }
 
     /** {@inheritDoc} */
@@ -230,7 +230,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         minor = in.readByte();
         maintenance = in.readByte();
         revTs = in.readLong();
-        revHash = IgniteByteUtils.readByteArray(in);
+        revHash = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */
@@ -278,7 +278,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
                 byte[] revHash = null;
 
                 if (match.group(9) != null)
-                    revHash = IgniteByteUtils.decodeHex(match.group(10).toCharArray());
+                    revHash = U.decodeHex(match.group(10).toCharArray());
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }

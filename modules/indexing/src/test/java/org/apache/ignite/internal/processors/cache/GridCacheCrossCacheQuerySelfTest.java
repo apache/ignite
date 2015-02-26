@@ -191,7 +191,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void fillCaches() throws IgniteCheckedException, InterruptedException {
+    private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
         GridCache<Integer, Object> dimCache = ((IgniteKernal)ignite).cache("replicated");

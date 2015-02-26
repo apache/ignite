@@ -171,8 +171,8 @@ public class GridTcpRestParser implements GridNioParser {
             buf.put(IGNITE_REQ_FLAG);
             buf.putInt(40 + body.length);
             buf.putLong(msg.requestId());
-            buf.put(IgniteByteUtils.uuidToBytes(msg.clientId()));
-            buf.put(IgniteByteUtils.uuidToBytes(msg.destinationId()));
+            buf.put(U.uuidToBytes(msg.clientId()));
+            buf.put(U.uuidToBytes(msg.destinationId()));
             buf.put(body);
 
             buf.flip();
@@ -189,8 +189,8 @@ public class GridTcpRestParser implements GridNioParser {
             slice.put(IGNITE_REQ_FLAG);
             slice.putInt(res.remaining() - 5);
             slice.putLong(msg.requestId());
-            slice.put(IgniteByteUtils.uuidToBytes(msg.clientId()));
-            slice.put(IgniteByteUtils.uuidToBytes(msg.destinationId()));
+            slice.put(U.uuidToBytes(msg.clientId()));
+            slice.put(U.uuidToBytes(msg.destinationId()));
 
             return res;
         }
@@ -227,7 +227,7 @@ public class GridTcpRestParser implements GridNioParser {
                 tmp.write(b);
 
                 if (i == 3) {
-                    req.keyLength(IgniteByteUtils.bytesToShort(tmp.toByteArray(), 0));
+                    req.keyLength(U.bytesToShort(tmp.toByteArray(), 0));
 
                     tmp.reset();
                 }
@@ -238,7 +238,7 @@ public class GridTcpRestParser implements GridNioParser {
                 tmp.write(b);
 
                 if (i == 11) {
-                    req.totalLength(IgniteByteUtils.bytesToInt(tmp.toByteArray(), 0));
+                    req.totalLength(U.bytesToInt(tmp.toByteArray(), 0));
 
                     tmp.reset();
                 }
@@ -370,7 +370,7 @@ public class GridTcpRestParser implements GridNioParser {
                 byte[] lenBytes = statefulRead(buf, tmp, 4);
 
                 if (lenBytes != null) {
-                    len = IgniteByteUtils.bytesToInt(lenBytes, 0);
+                    len = U.bytesToInt(lenBytes, 0);
 
                     if (len == 0)
                         return GridClientPingPacket.PING_MESSAGE;
@@ -609,8 +609,8 @@ public class GridTcpRestParser implements GridNioParser {
                     throw new IOException("Failed to parse incoming packet (flags required for command) [ses=" +
                         ses + ", opCode=" + Integer.toHexString(req.operationCode() & 0xFF) + ']');
 
-                keyFlags = IgniteByteUtils.bytesToShort(extras, 0);
-                valFlags = IgniteByteUtils.bytesToShort(extras, 2);
+                keyFlags = U.bytesToShort(extras, 0);
+                valFlags = U.bytesToShort(extras, 2);
             }
 
             if (req.key() != null) {
@@ -636,7 +636,7 @@ public class GridTcpRestParser implements GridNioParser {
                 throw new IOException("Failed to parse incoming packet (expiration value required for command) [ses=" +
                     ses + ", opCode=" + Integer.toHexString(req.operationCode() & 0xFF) + ']');
 
-            req.expiration(IgniteByteUtils.bytesToInt(extras, 4) & 0xFFFFFFFFL);
+            req.expiration(U.bytesToInt(extras, 4) & 0xFFFFFFFFL);
         }
 
         if (req.hasInitial()) {
@@ -644,7 +644,7 @@ public class GridTcpRestParser implements GridNioParser {
                 throw new IOException("Failed to parse incoming packet (initial value required for command) [ses=" +
                     ses + ", opCode=" + Integer.toHexString(req.operationCode() & 0xFF) + ']');
 
-            req.initial(IgniteByteUtils.bytesToLong(extras, 8));
+            req.initial(U.bytesToLong(extras, 8));
         }
 
         if (req.hasDelta()) {
@@ -652,7 +652,7 @@ public class GridTcpRestParser implements GridNioParser {
                 throw new IOException("Failed to parse incoming packet (delta value required for command) [ses=" +
                     ses + ", opCode=" + Integer.toHexString(req.operationCode() & 0xFF) + ']');
 
-            req.delta(IgniteByteUtils.bytesToLong(extras, 0));
+            req.delta(U.bytesToLong(extras, 0));
         }
 
         if (extras != null) {
@@ -700,17 +700,17 @@ public class GridTcpRestParser implements GridNioParser {
             case BOOLEAN_FLAG:
                 return bytes[0] == '1';
             case INT_FLAG:
-                return IgniteByteUtils.bytesToInt(bytes, 0);
+                return U.bytesToInt(bytes, 0);
             case LONG_FLAG:
-                return IgniteByteUtils.bytesToLong(bytes, 0);
+                return U.bytesToLong(bytes, 0);
             case DATE_FLAG:
-                return new Date(IgniteByteUtils.bytesToLong(bytes, 0));
+                return new Date(U.bytesToLong(bytes, 0));
             case BYTE_FLAG:
                 return bytes[0];
             case FLOAT_FLAG:
-                return Float.intBitsToFloat(IgniteByteUtils.bytesToInt(bytes, 0));
+                return Float.intBitsToFloat(U.bytesToInt(bytes, 0));
             case DOUBLE_FLAG:
-                return Double.longBitsToDouble(IgniteByteUtils.bytesToLong(bytes, 0));
+                return Double.longBitsToDouble(U.bytesToLong(bytes, 0));
             case BYTE_ARR_FLAG:
                 return bytes;
             default:
@@ -739,17 +739,17 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            data = IgniteByteUtils.intToBytes((Integer) obj);
+            data = U.intToBytes((Integer) obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            data = IgniteByteUtils.longToBytes((Long) obj);
+            data = U.longToBytes((Long) obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            data = IgniteByteUtils.longToBytes(((Date) obj).getTime());
+            data = U.longToBytes(((Date) obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -759,12 +759,12 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            data = IgniteByteUtils.intToBytes(Float.floatToIntBits((Float) obj));
+            data = U.intToBytes(Float.floatToIntBits((Float) obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            data = IgniteByteUtils.longToBytes(Double.doubleToLongBits((Double) obj));
+            data = U.longToBytes(Double.doubleToLongBits((Double) obj));
 
             flags |= DOUBLE_FLAG;
         }

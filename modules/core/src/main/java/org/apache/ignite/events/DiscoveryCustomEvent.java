@@ -15,35 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.mapper;
+package org.apache.ignite.events;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
- * Continuous mapper load test.
+ *
  */
-public class GridContinuousMapperLoadTest1 {
+public class DiscoveryCustomEvent extends DiscoveryEvent {
+    /** */
+    private Serializable data;
+
     /**
-     * Main method.
-     *
-     * @param args Parameters.
+     * Default constructor.
      */
-    public static void main(String[] args) {
-        try (Ignite g = G.start("examples/config/example-cache.xml")) {
-            int max = 30000;
+    public DiscoveryCustomEvent() {
+        type(EventType.EVT_DISCOVERY_CUSTOM_EVT);
+    }
 
-            IgniteDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
+    /**
+     * @return Data.
+     */
+    public Serializable data() {
+        return data;
+    }
 
-            for (int i = 0; i < max; i++)
-                ldr.addData(i, new TestObject(i, "Test object: " + i));
+    /**
+     * @param data New data.
+     */
+    public void data(Serializable data) {
+        this.data = data;
+    }
 
-            // Wait for loader to complete.
-            ldr.close(false);
-
-            X.println("Populated replicated cache.");
-
-            g.compute().execute(new GridContinuousMapperTask1(), max);
-        }
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DiscoveryCustomEvent.class, this, super.toString());
     }
 }

@@ -362,14 +362,14 @@ public class IgfsControlResponse extends IgfsMessage {
     public void writeExternal(ObjectOutput out) throws IOException {
         byte[] hdr = new byte[RES_HEADER_SIZE];
 
-        IgniteByteUtils.intToBytes(resType, hdr, 0);
+        U.intToBytes(resType, hdr, 0);
 
         int off = 4;
 
         hdr[off++] = err != null ? (byte)1 : (byte)0;
 
         if (resType == RES_TYPE_BYTE_ARRAY)
-            IgniteByteUtils.intToBytes(len, hdr, off);
+            U.intToBytes(len, hdr, off);
 
         out.write(hdr);
 
@@ -447,7 +447,7 @@ public class IgfsControlResponse extends IgfsMessage {
 
         in.readFully(hdr);
 
-        resType = IgniteByteUtils.bytesToInt(hdr, 0);
+        resType = U.bytesToInt(hdr, 0);
 
         boolean hasErr = hdr[4] != 0;
 

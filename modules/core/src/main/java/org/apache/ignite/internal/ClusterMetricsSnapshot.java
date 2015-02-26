@@ -1236,57 +1236,57 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     public static int serialize(byte[] data, int off, ClusterMetrics metrics) {
         int start = off;
 
-        off = IgniteByteUtils.intToBytes(metrics.getMaximumActiveJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentActiveJobs(), data, off);
-        off = IgniteByteUtils.floatToBytes(metrics.getAverageActiveJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getMaximumWaitingJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentWaitingJobs(), data, off);
-        off = IgniteByteUtils.floatToBytes(metrics.getAverageWaitingJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getMaximumRejectedJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentRejectedJobs(), data, off);
-        off = IgniteByteUtils.floatToBytes(metrics.getAverageRejectedJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getMaximumCancelledJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentCancelledJobs(), data, off);
-        off = IgniteByteUtils.floatToBytes(metrics.getAverageCancelledJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getTotalRejectedJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getTotalCancelledJobs(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getTotalExecutedJobs(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getMaximumJobWaitTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getCurrentJobWaitTime(), data, off);
-        off = IgniteByteUtils.doubleToBytes(metrics.getAverageJobWaitTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getMaximumJobExecuteTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getCurrentJobExecuteTime(), data, off);
-        off = IgniteByteUtils.doubleToBytes(metrics.getAverageJobExecuteTime(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getTotalExecutedTasks(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getCurrentIdleTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getTotalIdleTime(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getTotalCpus(), data, off);
-        off = IgniteByteUtils.doubleToBytes(metrics.getCurrentCpuLoad(), data, off);
-        off = IgniteByteUtils.doubleToBytes(metrics.getAverageCpuLoad(), data, off);
-        off = IgniteByteUtils.doubleToBytes(metrics.getCurrentGcCpuLoad(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getHeapMemoryInitialized(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getHeapMemoryUsed(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getHeapMemoryCommitted(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getHeapMemoryMaximum(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getHeapMemoryTotal(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNonHeapMemoryInitialized(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNonHeapMemoryUsed(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNonHeapMemoryCommitted(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNonHeapMemoryMaximum(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNonHeapMemoryTotal(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getStartTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getNodeStartTime(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getUpTime(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentThreadCount(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getMaximumThreadCount(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getTotalStartedThreadCount(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getCurrentDaemonThreadCount(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getLastDataVersion(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getSentMessagesCount(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getSentBytesCount(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getReceivedMessagesCount(), data, off);
-        off = IgniteByteUtils.longToBytes(metrics.getReceivedBytesCount(), data, off);
-        off = IgniteByteUtils.intToBytes(metrics.getOutboundMessagesQueueSize(), data, off);
+        off = U.intToBytes(metrics.getMaximumActiveJobs(), data, off);
+        off = U.intToBytes(metrics.getCurrentActiveJobs(), data, off);
+        off = U.floatToBytes(metrics.getAverageActiveJobs(), data, off);
+        off = U.intToBytes(metrics.getMaximumWaitingJobs(), data, off);
+        off = U.intToBytes(metrics.getCurrentWaitingJobs(), data, off);
+        off = U.floatToBytes(metrics.getAverageWaitingJobs(), data, off);
+        off = U.intToBytes(metrics.getMaximumRejectedJobs(), data, off);
+        off = U.intToBytes(metrics.getCurrentRejectedJobs(), data, off);
+        off = U.floatToBytes(metrics.getAverageRejectedJobs(), data, off);
+        off = U.intToBytes(metrics.getMaximumCancelledJobs(), data, off);
+        off = U.intToBytes(metrics.getCurrentCancelledJobs(), data, off);
+        off = U.floatToBytes(metrics.getAverageCancelledJobs(), data, off);
+        off = U.intToBytes(metrics.getTotalRejectedJobs(), data, off);
+        off = U.intToBytes(metrics.getTotalCancelledJobs(), data, off);
+        off = U.intToBytes(metrics.getTotalExecutedJobs(), data, off);
+        off = U.longToBytes(metrics.getMaximumJobWaitTime(), data, off);
+        off = U.longToBytes(metrics.getCurrentJobWaitTime(), data, off);
+        off = U.doubleToBytes(metrics.getAverageJobWaitTime(), data, off);
+        off = U.longToBytes(metrics.getMaximumJobExecuteTime(), data, off);
+        off = U.longToBytes(metrics.getCurrentJobExecuteTime(), data, off);
+        off = U.doubleToBytes(metrics.getAverageJobExecuteTime(), data, off);
+        off = U.intToBytes(metrics.getTotalExecutedTasks(), data, off);
+        off = U.longToBytes(metrics.getCurrentIdleTime(), data, off);
+        off = U.longToBytes(metrics.getTotalIdleTime(), data, off);
+        off = U.intToBytes(metrics.getTotalCpus(), data, off);
+        off = U.doubleToBytes(metrics.getCurrentCpuLoad(), data, off);
+        off = U.doubleToBytes(metrics.getAverageCpuLoad(), data, off);
+        off = U.doubleToBytes(metrics.getCurrentGcCpuLoad(), data, off);
+        off = U.longToBytes(metrics.getHeapMemoryInitialized(), data, off);
+        off = U.longToBytes(metrics.getHeapMemoryUsed(), data, off);
+        off = U.longToBytes(metrics.getHeapMemoryCommitted(), data, off);
+        off = U.longToBytes(metrics.getHeapMemoryMaximum(), data, off);
+        off = U.longToBytes(metrics.getHeapMemoryTotal(), data, off);
+        off = U.longToBytes(metrics.getNonHeapMemoryInitialized(), data, off);
+        off = U.longToBytes(metrics.getNonHeapMemoryUsed(), data, off);
+        off = U.longToBytes(metrics.getNonHeapMemoryCommitted(), data, off);
+        off = U.longToBytes(metrics.getNonHeapMemoryMaximum(), data, off);
+        off = U.longToBytes(metrics.getNonHeapMemoryTotal(), data, off);
+        off = U.longToBytes(metrics.getStartTime(), data, off);
+        off = U.longToBytes(metrics.getNodeStartTime(), data, off);
+        off = U.longToBytes(metrics.getUpTime(), data, off);
+        off = U.intToBytes(metrics.getCurrentThreadCount(), data, off);
+        off = U.intToBytes(metrics.getMaximumThreadCount(), data, off);
+        off = U.longToBytes(metrics.getTotalStartedThreadCount(), data, off);
+        off = U.intToBytes(metrics.getCurrentDaemonThreadCount(), data, off);
+        off = U.longToBytes(metrics.getLastDataVersion(), data, off);
+        off = U.intToBytes(metrics.getSentMessagesCount(), data, off);
+        off = U.longToBytes(metrics.getSentBytesCount(), data, off);
+        off = U.intToBytes(metrics.getReceivedMessagesCount(), data, off);
+        off = U.longToBytes(metrics.getReceivedBytesCount(), data, off);
+        off = U.intToBytes(metrics.getOutboundMessagesQueueSize(), data, off);
 
         assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
                 (off - start) + ']';
@@ -1308,207 +1308,207 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 
-        metrics.setMaximumActiveJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setMaximumActiveJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentActiveJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentActiveJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setAverageActiveJobs(IgniteByteUtils.bytesToFloat(data, off));
+        metrics.setAverageActiveJobs(U.bytesToFloat(data, off));
 
         off += 4;
 
-        metrics.setMaximumWaitingJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setMaximumWaitingJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentWaitingJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentWaitingJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setAverageWaitingJobs(IgniteByteUtils.bytesToFloat(data, off));
+        metrics.setAverageWaitingJobs(U.bytesToFloat(data, off));
 
         off += 4;
 
-        metrics.setMaximumRejectedJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setMaximumRejectedJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentRejectedJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentRejectedJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setAverageRejectedJobs(IgniteByteUtils.bytesToFloat(data, off));
+        metrics.setAverageRejectedJobs(U.bytesToFloat(data, off));
 
         off += 4;
 
-        metrics.setMaximumCancelledJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setMaximumCancelledJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentCancelledJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentCancelledJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setAverageCancelledJobs(IgniteByteUtils.bytesToFloat(data, off));
+        metrics.setAverageCancelledJobs(U.bytesToFloat(data, off));
 
         off += 4;
 
-        metrics.setTotalRejectedJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setTotalRejectedJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setTotalCancelledJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setTotalCancelledJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setTotalExecutedJobs(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setTotalExecutedJobs(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setMaximumJobWaitTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setMaximumJobWaitTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setCurrentJobWaitTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setCurrentJobWaitTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setAverageJobWaitTime(IgniteByteUtils.bytesToDouble(data, off));
+        metrics.setAverageJobWaitTime(U.bytesToDouble(data, off));
 
         off += 8;
 
-        metrics.setMaximumJobExecuteTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setMaximumJobExecuteTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setCurrentJobExecuteTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setCurrentJobExecuteTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setAverageJobExecuteTime(IgniteByteUtils.bytesToDouble(data, off));
+        metrics.setAverageJobExecuteTime(U.bytesToDouble(data, off));
 
         off += 8;
 
-        metrics.setTotalExecutedTasks(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setTotalExecutedTasks(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentIdleTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setCurrentIdleTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setTotalIdleTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setTotalIdleTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setAvailableProcessors(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setAvailableProcessors(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setCurrentCpuLoad(IgniteByteUtils.bytesToDouble(data, off));
+        metrics.setCurrentCpuLoad(U.bytesToDouble(data, off));
 
         off += 8;
 
-        metrics.setAverageCpuLoad(IgniteByteUtils.bytesToDouble(data, off));
+        metrics.setAverageCpuLoad(U.bytesToDouble(data, off));
 
         off += 8;
 
-        metrics.setCurrentGcCpuLoad(IgniteByteUtils.bytesToDouble(data, off));
+        metrics.setCurrentGcCpuLoad(U.bytesToDouble(data, off));
 
         off += 8;
 
-        metrics.setHeapMemoryInitialized(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setHeapMemoryInitialized(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setHeapMemoryUsed(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setHeapMemoryUsed(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setHeapMemoryCommitted(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setHeapMemoryCommitted(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setHeapMemoryMaximum(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setHeapMemoryMaximum(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setHeapMemoryTotal(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setHeapMemoryTotal(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNonHeapMemoryInitialized(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNonHeapMemoryInitialized(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNonHeapMemoryUsed(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNonHeapMemoryUsed(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNonHeapMemoryCommitted(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNonHeapMemoryCommitted(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNonHeapMemoryMaximum(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNonHeapMemoryMaximum(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNonHeapMemoryTotal(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNonHeapMemoryTotal(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setStartTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setStartTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setNodeStartTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setNodeStartTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setUpTime(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setUpTime(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setCurrentThreadCount(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentThreadCount(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setMaximumThreadCount(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setMaximumThreadCount(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setTotalStartedThreadCount(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setTotalStartedThreadCount(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setCurrentDaemonThreadCount(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setCurrentDaemonThreadCount(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setLastDataVersion(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setLastDataVersion(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setSentMessagesCount(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setSentMessagesCount(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setSentBytesCount(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setSentBytesCount(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setReceivedMessagesCount(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setReceivedMessagesCount(U.bytesToInt(data, off));
 
         off += 4;
 
-        metrics.setReceivedBytesCount(IgniteByteUtils.bytesToLong(data, off));
+        metrics.setReceivedBytesCount(U.bytesToLong(data, off));
 
         off += 8;
 
-        metrics.setOutboundMessagesQueueSize(IgniteByteUtils.bytesToInt(data, off));
+        metrics.setOutboundMessagesQueueSize(U.bytesToInt(data, off));
 
         off += 4;
 

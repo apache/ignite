@@ -488,14 +488,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            IgniteByteUtils.writeByteArray(out, bytes);
+            U.writeByteArray(out, bytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            bytes = IgniteByteUtils.readByteArray(in);
+            bytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
         }
