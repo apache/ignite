@@ -22,7 +22,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- *
+ * Custom event.
+ * TODO IGNITE-45 move to internal package
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** */
