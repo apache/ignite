@@ -149,11 +149,11 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * which allows to iterate through entries which already existed at the
      * time continuous query is executed.
      *
-     * @param initQuery Initial query.
+     * @param initQry Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialQuery(Query initQuery) {
-        this.initQry = initQuery;
+    public ContinuousQuery<K, V> setInitialQuery(Query initQry) {
+        this.initQry = initQry;
 
         return this;
     }
