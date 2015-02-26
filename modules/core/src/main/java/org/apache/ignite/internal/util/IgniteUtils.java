@@ -298,6 +298,7 @@ public abstract class IgniteUtils {
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
 
+    /** */
     private volatile static IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /**

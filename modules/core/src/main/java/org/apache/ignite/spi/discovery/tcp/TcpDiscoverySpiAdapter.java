@@ -1018,13 +1018,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         private int connInProgress;
 
         /** */
-        private boolean closed;
-
-        /** */
         private final ExecutorService executor;
 
         /** */
-        private final Queue<GridTuple3<InetSocketAddress, Socket, Exception>> queue = new LinkedList<>();
+        private final CompletionService<GridTuple3<InetSocketAddress, Socket, Exception>> completionSrvc;
 
         /**
          * @param addrs Addresses.
@@ -1033,19 +1030,19 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         public SocketMultiConnector(Collection<InetSocketAddress> addrs, final int retryCnt) {
             connInProgress = addrs.size();
 
-            executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+            executor = Executors.newFixedThreadPool(Math.min(1, addrs.size()));
+
+            completionSrvc = new ExecutorCompletionService<>(executor);
 
             for (final InetSocketAddress addr : addrs) {
-                executor.execute(new Runnable() {
-                    @Override public void run() {
+                completionSrvc.submit(new Callable<GridTuple3<InetSocketAddress, Socket, Exception>>() {
+                    @Override public GridTuple3<InetSocketAddress, Socket, Exception> call() {
                         Exception ex = null;
                         Socket sock = null;
 
                         for (int i = 0; i < retryCnt; i++) {
-                            synchronized (SocketMultiConnector.this) {
-                                if (closed)
-                                    return;
-                            }
+                            if (Thread.currentThread().isInterrupted())
+                                return null; // Executor is shutdown.
 
                             try {
                                 sock = openSocket(addr);
@@ -1057,16 +1054,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
                             }
                         }
 
-                        synchronized (SocketMultiConnector.this) {
-                            if (closed)
-                                U.closeQuiet(sock);
-                            else
-                                queue.add(new GridTuple3<>(addr, sock, ex));
-
-                            connInProgress--;
-
-                            SocketMultiConnector.this.notifyAll();
-                        }
+                        return new GridTuple3<>(addr, sock, ex);
                     }
                 });
             }
@@ -1075,26 +1063,20 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         /**
          *
          */
-        @Nullable public synchronized GridTuple3<InetSocketAddress, Socket, Exception> next() {
+        @Nullable public GridTuple3<InetSocketAddress, Socket, Exception> next() {
+            if (connInProgress == 0)
+                return null;
+
             try {
-                do {
-                    if (closed)
-                        return null;
+                connInProgress--;
 
-                    GridTuple3<InetSocketAddress, Socket, Exception> res = queue.poll();
-
-                    if (res != null)
-                        return res;
-
-                    if (connInProgress == 0)
-                        return null;
-
-                    wait();
-                }
-                while (true);
+                return completionSrvc.take().get();
             }
             catch (InterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+            catch (ExecutionException e) {
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -1102,19 +1084,30 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          *
          */
         public void close() {
-            synchronized (this) {
-                if (closed)
-                    return;
-
-                closed = true;
-
-                notifyAll();
-            }
-
             executor.shutdown();
 
-            for (GridTuple3<InetSocketAddress, Socket, Exception> tuple : queue)
-                U.closeQuiet(tuple.get2());
+            if (connInProgress > 0) {
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            for (int i = 0; i < connInProgress; i++) {
+                                try {
+                                    GridTuple3<InetSocketAddress, Socket, Exception> take = completionSrvc.take().get();
+
+                                    if (take != null)
+                                        IgniteUtils.closeQuiet(take.get2());
+                                }
+                                catch (ExecutionException ignored) {
+
+                                }
+                            }
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }).start();
+            }
         }
     }
 }
