@@ -18,7 +18,6 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.compute.ComputeJobContext
-import org.apache.ignite.internal.util.lang.GridFunc
 import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
 import org.apache.ignite.resources.JobContextResource
 import org.apache.ignite.scalar.scalar
@@ -122,14 +121,24 @@ class FibonacciClosure (
             if (fut1 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 
-                fut1 = GridFunc.addIfAbsent(store, n - 1, comp.future[BigInteger]())
+                val futVal = comp.future[BigInteger]()
+                
+                fut1 = store.putIfAbsent(n - 1, futVal)
+                
+                if (fut1 == null)
+                    fut1 = futVal
             }
 
             // If future is not cached in node-local store, cache it.
             if (fut2 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
 
-                fut2 = GridFunc.addIfAbsent(store, n - 2, comp.future[BigInteger]())
+                val futVal = comp.future[BigInteger]()
+                
+                fut2 = store.putIfAbsent(n - 2, futVal)
+                
+                if (fut2 == null)
+                    fut2 = futVal
             }
 
             // If futures are not done, then wait asynchronously for the result

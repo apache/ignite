@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -439,9 +440,9 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            g0.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
-            g1.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
-            g2.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
+            g0.events().localListen(lsnr, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
+            g1.events().localListen(lsnr, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
+            g2.events().localListen(lsnr, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
 
             ((IgniteKernal)g1).context().discovery().sendCustomEvent("a");
 
@@ -454,7 +455,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, EVT_DISCOVERY_CUSTOM_EVT);
+            }, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
         }
         finally {
             stopAllGrids();
