@@ -1013,7 +1013,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /**
      *
      */
-    protected class SocketMultiConnector {
+    protected class SocketMultiConnector implements AutoCloseable {
         /** */
         private int connInProgress;
 
@@ -1068,11 +1068,15 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
                 return null;
 
             try {
+                Future<GridTuple3<InetSocketAddress, Socket, Exception>> fut = completionSrvc.take();
+
                 connInProgress--;
 
-                return completionSrvc.take().get();
+                return fut.get();
             }
             catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
             catch (ExecutionException e) {
@@ -1080,33 +1084,43 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             }
         }
 
-        /**
-         *
-         */
-        public void close() {
-            executor.shutdown();
+        /** {@inheritDoc} */
+        @Override public void close() {
+            List<Runnable> unstartedTasks = executor.shutdownNow();
+
+            connInProgress -= unstartedTasks.size();
 
             if (connInProgress > 0) {
-                new Thread(new Runnable() {
+                Thread thread = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            for (int i = 0; i < connInProgress; i++) {
-                                try {
-                                    GridTuple3<InetSocketAddress, Socket, Exception> take = completionSrvc.take().get();
+                            executor.awaitTermination(5, TimeUnit.MINUTES);
 
-                                    if (take != null)
-                                        IgniteUtils.closeQuiet(take.get2());
+                            Future<GridTuple3<InetSocketAddress, Socket, Exception>> fut;
+
+                            while ((fut = completionSrvc.poll()) != null) {
+                                try {
+                                    GridTuple3<InetSocketAddress, Socket, Exception> tuple3 = fut.get();
+
+                                    if (tuple3 != null)
+                                        IgniteUtils.closeQuiet(tuple3.get2());
                                 }
-                                catch (ExecutionException ignored) {
+                                catch (ExecutionException ignore) {
 
                                 }
                             }
                         }
                         catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
                             throw new RuntimeException(e);
                         }
                     }
-                }).start();
+                });
+
+                thread.setDaemon(true);
+
+                thread.start();
             }
         }
     }
