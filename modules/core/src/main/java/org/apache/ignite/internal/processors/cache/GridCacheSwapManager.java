@@ -1560,9 +1560,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
         return new PartitionsIterator(parts) {
-            @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> partitionIterator(int part)
-                throws IgniteCheckedException
-            {
+            @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> partitionIterator(int part) {
                 return offheap.iterator(spaceName, part);
             }
         };

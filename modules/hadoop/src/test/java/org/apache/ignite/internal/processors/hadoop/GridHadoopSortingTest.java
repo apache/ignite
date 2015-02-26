@@ -182,8 +182,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 Text txt = new Text();
 
-                @Override public void initialize(InputSplit split, TaskAttemptContext ctx) throws IOException,
-                    InterruptedException {
+                @Override public void initialize(InputSplit split, TaskAttemptContext ctx) {
                     // No-op.
                 }
 
@@ -191,7 +190,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                     return ++cnt <= split.getLength();
                 }
 
-                @Override public Text getCurrentKey() throws IOException, InterruptedException {
+                @Override public Text getCurrentKey() {
                     txt.set(UUID.randomUUID().toString());
 
 //                    X.printerrln("___ read: " + txt);
@@ -199,7 +198,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                     return txt;
                 }
 
-                @Override public NullWritable getCurrentValue() throws IOException, InterruptedException {
+                @Override public NullWritable getCurrentValue() {
                     return NullWritable.get();
                 }
 
@@ -207,7 +206,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                     return (float)cnt / split.getLength();
                 }
 
-                @Override public void close() throws IOException {
+                @Override public void close() {
                     // No-op.
                 }
             };

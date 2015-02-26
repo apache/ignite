@@ -22,16 +22,16 @@ import org.hibernate.cache.spi.access.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Implementation of L2 cache access strategy delegating to {@link GridHibernateAccessStrategyAdapter}.
+ * Implementation of L2 cache access strategy delegating to {@link HibernateAccessStrategyAdapter}.
  */
-public abstract class GridHibernateAbstractRegionAccessStrategy implements RegionAccessStrategy {
+public abstract class HibernateAbstractRegionAccessStrategy implements RegionAccessStrategy {
     /** */
-    protected final GridHibernateAccessStrategyAdapter stgy;
+    protected final HibernateAccessStrategyAdapter stgy;
 
     /**
      * @param stgy Access strategy implementation.
      */
-    protected GridHibernateAbstractRegionAccessStrategy(GridHibernateAccessStrategyAdapter stgy) {
+    protected HibernateAbstractRegionAccessStrategy(HibernateAccessStrategyAdapter stgy) {
         this.stgy = stgy;
     }
 

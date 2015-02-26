@@ -458,7 +458,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
-                Collection<Object> evts) throws IgniteCheckedException {
+                Collection<Object> evts) {
                 String nextStage = ctx.nextStageName();
 
                 ctx.window().enqueueAll(evts);
