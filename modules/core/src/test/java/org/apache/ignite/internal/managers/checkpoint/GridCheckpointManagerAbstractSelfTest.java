@@ -318,7 +318,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val2, SESSION_SCOPE, 0);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert val1.equals(taskSes.loadCheckpoint(key1));
                     assert val2.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -329,7 +329,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, false);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert val1.equals(taskSes.loadCheckpoint(key1));
                     assert val2.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -339,7 +339,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, true);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert val2.equals(taskSes.loadCheckpoint(key1));
                     assert val1.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -351,7 +351,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             assert !taskSes.removeCheckpoint(key2);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert taskSes.loadCheckpoint(key1) == null;
                     assert taskSes.loadCheckpoint(key2) == null;
                 }
@@ -375,7 +375,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             }
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert taskSes.loadCheckpoint(key1) == null;
                     assert taskSes.loadCheckpoint(key2) == null;
                 }
@@ -502,7 +502,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             rmvLatch.countDown();
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert taskSes.loadCheckpoint(GLOBAL_KEY) == null;
                     assert taskSes.loadCheckpoint(SES_KEY) == null;
                 }
@@ -556,7 +556,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             // Test that checkpoints were saved properly.
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
                     assert SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -573,7 +573,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             // Test that checkpoints were not overwritten.
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
                     assert SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -589,7 +589,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             }
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assertEquals(SES_VAL_OVERWRITTEN, taskSes.loadCheckpoint(GLOBAL_KEY));
                     assertEquals(GLOBAL_VAL_OVERWRITTEN, taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -608,7 +608,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             assert !taskSes.removeCheckpoint(SES_KEY);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
+                @Override public void applyx() {
                     assert taskSes.loadCheckpoint(GLOBAL_KEY) == null;
                     assert taskSes.loadCheckpoint(SES_KEY) == null;
                 }

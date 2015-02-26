@@ -833,7 +833,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     sendTtlUpdate();
             }
 
-            @Override protected void onClose() throws IgniteCheckedException {
+            @Override protected void onClose() {
                 sendTtlUpdate();
             }
 

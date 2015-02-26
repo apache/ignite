@@ -36,10 +36,9 @@ class GridRoundRobinTestUtils {
      * @param allNodes Topology nodes.
      * @param orderedNodes Balancing nodes.
      * @param ses Task session.
-     * @throws IgniteCheckedException If balancer failed.
      */
     static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
-        List<UUID> orderedNodes, ComputeTaskSession ses) throws IgniteCheckedException {
+        List<UUID> orderedNodes, ComputeTaskSession ses) {
 
         ClusterNode firstNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
@@ -64,10 +63,9 @@ class GridRoundRobinTestUtils {
      * @param orderedNodes Balancing nodes.
      * @param ses1 First task session.
      * @param ses2 Second task session.
-     * @throws IgniteCheckedException If balancer failed.
      */
     static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
-        List<UUID> orderedNodes, ComputeTaskSession ses1, ComputeTaskSession ses2) throws IgniteCheckedException {
+        List<UUID> orderedNodes, ComputeTaskSession ses1, ComputeTaskSession ses2) {
 
         ClusterNode firstNode = spi.getBalancedNode(ses1, allNodes, new GridTestJob());
 
