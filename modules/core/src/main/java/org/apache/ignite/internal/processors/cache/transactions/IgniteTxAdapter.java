@@ -160,6 +160,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     private AtomicBoolean preparing = new AtomicBoolean();
 
     /** */
+    @GridToStringInclude
     private Set<Integer> invalidParts = new GridLeanSet<>();
 
     /**

@@ -83,6 +83,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     @GridToStringInclude
     private Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol;
 
+    /** Transient field for calculated entry processor value. */
+    private V entryProcessorCalcVal;
+
     /** Transform closure bytes. */
     @GridToStringExclude
     private byte[] transformClosBytes;
@@ -417,6 +420,20 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      */
     public void keyBytes(byte[] keyBytes) {
         initKeyBytes(keyBytes);
+    }
+
+    /**
+     * @return Entry processor calculated value.
+     */
+    public V entryProcessorCalculatedValue() {
+        return entryProcessorCalcVal;
+    }
+
+    /**
+     * @param entryProcessorCalcVal Entry processor calculated value.
+     */
+    public void entryProcessorCalculatedValue(V entryProcessorCalcVal) {
+        this.entryProcessorCalcVal = entryProcessorCalcVal;
     }
 
     /**
@@ -902,7 +919,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxEntry.class, this,
             "keyBytesSize", keyBytes == null ? "null" : Integer.toString(keyBytes.length),
-            "xidVer", tx == null ? "null" : tx.xidVersion());
+            "xidVer", tx == null ? "null" : tx.xidVersion(), "hc", System.identityHashCode(this));
     }
 
     /**

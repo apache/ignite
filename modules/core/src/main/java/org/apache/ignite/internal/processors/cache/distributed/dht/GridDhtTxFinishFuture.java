@@ -325,6 +325,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
+            req.writeVersion(tx.writeVersion());
+
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
 
@@ -371,8 +373,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.subjectId(),
                     tx.taskNameHash());
 
-                if (tx.onePhaseCommit())
-                    req.writeVersion(tx.writeVersion());
+                req.writeVersion(tx.writeVersion());
 
                 try {
                     cctx.io().send(nearMapping.node(), req, tx.ioPolicy());

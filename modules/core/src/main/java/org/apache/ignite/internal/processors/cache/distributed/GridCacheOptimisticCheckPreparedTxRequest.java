@@ -49,6 +49,9 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     /** System transaction flag. */
     private boolean sys;
 
+    /** Near check falg. */
+    private boolean nearCheck;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -62,8 +65,13 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx<K, V> tx, int txNum, IgniteUuid futId,
-        IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(
+        IgniteInternalTx<K, V> tx,
+        int txNum,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        boolean nearCheck
+    ) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();
@@ -72,6 +80,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         this.futId = futId;
         this.miniId = miniId;
         this.txNum = txNum;
+        this.nearCheck = nearCheck;
     }
 
     /**
@@ -109,6 +118,13 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         return sys;
     }
 
+    /**
+     * @return Near check flag.
+     */
+    public boolean nearCheck() {
+        return nearCheck;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -137,18 +153,24 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                if (!writer.writeBoolean("nearCheck", nearCheck))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 10:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
                 if (!writer.writeInt("txNum", txNum))
                     return false;
 
@@ -187,7 +209,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 reader.incrementState();
 
             case 8:
-                nearXidVer = reader.readMessage("nearXidVer");
+                nearCheck = reader.readBoolean("nearCheck");
 
                 if (!reader.isLastRead())
                     return false;
@@ -195,7 +217,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 reader.incrementState();
 
             case 9:
-                sys = reader.readBoolean("sys");
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,6 +225,14 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 reader.incrementState();
 
             case 10:
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
                 txNum = reader.readInt("txNum");
 
                 if (!reader.isLastRead())
@@ -222,7 +252,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

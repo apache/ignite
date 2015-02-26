@@ -294,7 +294,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
+                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
                     cached.unswap(true, retVal);
 
                     V val = cached.innerGet(
@@ -311,13 +311,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         null);
 
-                    if (retVal) {
+                    if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
                             K key = txEntry.key();
 
                             Object procRes = null;
                             Exception err = null;
-
 
                             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
@@ -335,6 +334,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                     break;
                                 }
                             }
+
+                            txEntry.entryProcessorCalculatedValue(val);
 
                             if (err != null || procRes != null)
                                 ret.addEntryProcessResult(key,
@@ -360,7 +361,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         ret.success(false);
                     }
                     else
-                        ret.success(txEntry.op() != GridCacheOperation.DELETE || cached.hasValue());
+                        ret.success(txEntry.op() != DELETE || cached.hasValue());
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1002,7 +1003,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private boolean map(
         IgniteTxEntry<K, V> entry,
         Map<UUID, GridDistributedTxMapping<K, V>> futDhtMap,
-        Map<UUID, GridDistributedTxMapping<K, V>> futNearMap) {
+        Map<UUID, GridDistributedTxMapping<K, V>> futNearMap
+    ) {
         if (entry.cached().isLocal())
             return false;
 
@@ -1069,13 +1071,30 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param locMap Exclude map.
      * @return {@code True} if mapped.
      */
-    private boolean map(IgniteTxEntry<K, V> entry, Iterable<ClusterNode> nodes,
-        Map<UUID, GridDistributedTxMapping<K, V>> globalMap, Map<UUID, GridDistributedTxMapping<K, V>> locMap) {
+    private boolean map(
+        IgniteTxEntry<K, V> entry,
+        Iterable<ClusterNode> nodes,
+        Map<UUID, GridDistributedTxMapping<K, V>> globalMap,
+        Map<UUID, GridDistributedTxMapping<K, V>> locMap
+    ) {
         boolean ret = false;
 
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 GridDistributedTxMapping<K, V> global = globalMap.get(n.id());
+
+                if (!F.isEmpty(entry.entryProcessors())) {
+                    GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
+                        entry.cached().partition());
+
+                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
+                        V procVal = entry.entryProcessorCalculatedValue();
+
+                        entry.op(procVal == null ? DELETE : UPDATE);
+                        entry.value(procVal, true, false);
+                        entry.entryProcessors(null);
+                    }
+                }
 
                 if (global == null)
                     globalMap.put(n.id(), global = new GridDistributedTxMapping<>(n));

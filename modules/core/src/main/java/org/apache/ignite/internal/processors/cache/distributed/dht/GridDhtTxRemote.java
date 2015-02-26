@@ -203,7 +203,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     /**
      * @return Near node ID.
      */
-    UUID nearNodeId() {
+    public UUID nearNodeId() {
         return nearNodeId;
     }
 

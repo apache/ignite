@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -155,7 +156,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                     GridCacheOptimisticCheckPreparedTxRequest<K, V>
                         req = new GridCacheOptimisticCheckPreparedTxRequest<>(tx,
-                        nodeTransactions(id), futureId(), fut.futureId());
+                        nodeTransactions(id), futureId(), fut.futureId(), false);
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -176,7 +177,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 add(fut);
 
                 GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
-                    tx, nodeTransactions(nodeId), futureId(), fut.futureId());
+                    tx, nodeTransactions(nodeId), futureId(), fut.futureId(), false);
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
@@ -188,6 +189,32 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                     fut.onError(e);
 
                     break;
+                }
+            }
+        }
+
+        // Specifically check originating near node.
+        if (tx instanceof GridDhtTxRemote) {
+            UUID nearNodeId = ((GridDhtTxRemote)tx).nearNodeId();
+
+            if (cctx.localNodeId().equals(nearNodeId))
+                add(cctx.tm().nearTxCommitted(tx.nearXidVersion()));
+            else {
+                MiniFuture fut = new MiniFuture(nearNodeId);
+
+                add(fut);
+
+                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
+                    tx, 1, futureId(), fut.futureId(), true);
+
+                try {
+                    cctx.io().send(nearNodeId, req, tx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException ignored) {
+                    fut.onNodeLeft();
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onError(e);
                 }
             }
         }
@@ -258,14 +285,11 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
-                if (f.nodeId().equals(nodeId)) {
+                if (f.nodeId().equals(nodeId))
                     f.onNodeLeft();
-
-                    return true;
-                }
             }
 
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -798,15 +798,14 @@ public class IgniteTxHandler<K, V> {
 
         try {
             if (req.commit() || req.isSystemInvalidate()) {
-                if (tx.commitVersion(req.commitVersion())) {
-                    tx.invalidate(req.isInvalidate());
-                    tx.systemInvalidate(req.isSystemInvalidate());
+                tx.commitVersion(req.commitVersion());
+                tx.invalidate(req.isInvalidate());
+                tx.systemInvalidate(req.isSystemInvalidate());
 
-                    // Complete remote candidates.
-                    tx.doneRemote(req.version());
+                // Complete remote candidates.
+                tx.doneRemote(req.version());
 
-                    tx.commit();
-                }
+                tx.commit();
             }
             else {
                 tx.doneRemote(req.version());
@@ -986,8 +985,14 @@ public class IgniteTxHandler<K, V> {
             // in prepare phase will get properly ordered as well.
             tx.prepare();
 
-            if (req.last())
+            if (req.last()) {
+                assert !F.isEmpty(req.transactionNodes()) :
+                    "Received last prepare request with empty transaction nodes: " + req;
+
+                tx.transactionNodes(req.transactionNodes());
+
                 tx.state(PREPARED);
+            }
 
             res.invalidPartitions(tx.invalidPartitions());
 
@@ -1085,20 +1090,69 @@ public class IgniteTxHandler<K, V> {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected void processCheckPreparedTxRequest(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest<K, V> req) {
+    protected void processCheckPreparedTxRequest(
+        final UUID nodeId,
+        final GridCacheOptimisticCheckPreparedTxRequest<K, V> req
+    ) {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 
-        boolean prepared = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+        if (req.nearCheck()) {
+            IgniteInternalFuture<Boolean> fut = ctx.tm().nearTxCommitted(req.nearXidVersion());
 
-        GridCacheOptimisticCheckPreparedTxResponse<K, V> res =
-            new GridCacheOptimisticCheckPreparedTxResponse<>(req.version(), req.futureId(), req.miniId(), prepared);
+            fut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                    try {
+                        boolean prepared = f.get();
 
+                        sendCheckPrepareTxResponse(nodeId,
+                            new GridCacheOptimisticCheckPreparedTxResponse<K, V>(
+                                req.version(),
+                                req.futureId(),
+                                req.miniId(),
+                                prepared),
+                            req.system());
+
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to wait for transaction check prepared future " +
+                            "(will send rolled back response): " + req.nearXidVersion(), e);
+
+                        sendCheckPrepareTxResponse(nodeId,
+                            new GridCacheOptimisticCheckPreparedTxResponse<K, V>(
+                                req.version(),
+                                req.futureId(),
+                                req.miniId(),
+                                false),
+                            req.system());
+                    }
+                }
+            });
+        }
+        else {
+            boolean prepared = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+
+            sendCheckPrepareTxResponse(nodeId,
+                new GridCacheOptimisticCheckPreparedTxResponse<K, V>(req.version(), req.futureId(), req.miniId(), prepared),
+                req.system());
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response to send.
+     * @param sys System pool flag.
+     */
+    private void sendCheckPrepareTxResponse(
+        UUID nodeId,
+        GridCacheOptimisticCheckPreparedTxResponse<K, V> res,
+        boolean sys
+    ) {
         try {
             if (log.isDebugEnabled())
                 log.debug("Sending check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+            ctx.io().send(nodeId, res, sys ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
