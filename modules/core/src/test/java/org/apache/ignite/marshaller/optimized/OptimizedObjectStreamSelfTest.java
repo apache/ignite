@@ -216,7 +216,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testRequireSerializable() throws Exception {
         try {
-            new OptimizedMarshaller(true, null, null, 0).marshal(new Object());
+            new OptimizedMarshaller(true).marshal(new Object());
 
             assert false : "Exception not thrown.";
         }
@@ -242,7 +242,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final OptimizedMarshaller marsh = new OptimizedMarshaller(false, null, null, 5);
+        final OptimizedMarshaller marsh = new OptimizedMarshaller();
+
+        marsh.setPoolSize(5);
 
         try {
             multithreaded(new Callable<Object>() {

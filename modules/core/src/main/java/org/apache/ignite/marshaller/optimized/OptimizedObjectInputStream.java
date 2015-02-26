@@ -143,7 +143,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 return handles.lookup(readInt());
 
             case OBJECT:
-                OptimizedClassDescriptor desc = OptimizedClassResolver.readClass(this, clsLdr);
+                int clsId = readInt();
+
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsId, clsLdr);
 
                 curCls = desc.describedClass();
 

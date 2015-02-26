@@ -156,7 +156,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         else {
             Class<?> cls = obj.getClass();
 
-            OptimizedClassDescriptor desc = classDescriptor(cls, obj);
+            OptimizedClassDescriptor desc = classDescriptor(cls);
 
             if (desc.excluded()) {
                 writeByte(NULL);
@@ -180,7 +180,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             if (obj0 != obj) {
                 obj = obj0;
 
-                desc = classDescriptor(obj.getClass(), obj);
+                desc = classDescriptor(obj.getClass());
             }
 
             if (handle >= 0) {
@@ -189,8 +189,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             }
             else {
                 writeByte(OBJECT);
-
-                OptimizedClassResolver.writeClass(this, desc);
 
                 desc.write(this, obj);
             }
@@ -762,7 +760,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /**
          * @param out Output stream.
-         * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
         private PutFieldImpl(OptimizedObjectOutputStream out) {

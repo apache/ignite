@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -29,8 +28,6 @@ import java.nio.charset.*;
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallable.*;
 
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
@@ -51,129 +48,65 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Class descriptors cache. */
-    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> CLS_DESC_CACHE =
+    /** Class descriptors by class. */
+    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> DESC_BY_CLS =
         new ConcurrentHashMap8<>(256);
 
-    /** Classes cache by name. */
-    private static final ConcurrentHashMap8<ClassLoader, ConcurrentHashMap8<String, Class<?>>> CLS_BY_NAME_CACHE =
-        new ConcurrentHashMap8<>();
+    /** Class descriptors by ID. */
+    private static final ConcurrentMap<Integer, OptimizedClassDescriptor> DESC_BY_ID =
+        new ConcurrentHashMap8<>(256);
 
     /**
-     * Suppresses default constructor, ensuring non-instantiability.
      */
     private OptimizedMarshallerUtils() {
         // No-op.
     }
 
     /**
-     * Gets class for given name and class loader.
-     *
-     * @param name Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class was not found.
-     */
-    static Class<?> forName(String name, ClassLoader ldr) throws ClassNotFoundException {
-        assert ldr != null;
-        assert name != null;
-
-        ConcurrentHashMap8<String, Class<?>> cache = CLS_BY_NAME_CACHE.get(ldr);
-
-        Class<?> cls = null;
-
-        if (cache == null) {
-            cache = new ConcurrentHashMap8<>();
-
-            ConcurrentHashMap8<String, Class<?>> old = CLS_BY_NAME_CACHE.putIfAbsent(ldr, cache);
-
-            if (old != null) {
-                cache = old;
-
-                cls = cache.get(name);
-            }
-        }
-        else
-            cls = cache.get(name);
-
-        if (cls == null) {
-            cls = Class.forName(name, true, ldr);
-
-            cache.put(name, cls);
-        }
-
-        return cls;
-    }
-
-    /**
      * Gets descriptor for provided class.
      *
      * @param cls Class.
-     * @param obj Object.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class<?> cls, @Nullable Object obj) throws IOException {
-        if (obj != null) {
-            if (obj instanceof OptimizedMarshallable) {
-                OptimizedMarshallable m = (OptimizedMarshallable)obj;
-
-                Object clsId = m.ggClassId();
-
-                if (clsId != null && !(clsId instanceof OptimizedClassDescriptor))
-                    throw new IOException("Method '" + obj.getClass().getName() + ".ggClassId() must return " +
-                        "the value of the field '" + CLS_ID_FIELD_NAME + "'.");
-
-                OptimizedClassDescriptor desc = (OptimizedClassDescriptor)clsId;
-
-                if (desc == null) {
-                    desc = new OptimizedClassDescriptor(cls);
-
-                    try {
-                        Field field = obj.getClass().getDeclaredField(CLS_ID_FIELD_NAME);
-
-                        field.setAccessible(true);
-
-                        Object o = field.get(null);
-
-                        if (o == null) {
-                            if ((field.getModifiers() & Modifier.STATIC) == 0)
-                                throw new IOException("Field '" + CLS_ID_FIELD_NAME + "' must be declared static: " +
-                                    obj.getClass().getName());
-
-                            field.set(null, desc);
-
-                            if (m.ggClassId() == null)
-                                throw new IOException( "Method '" + obj.getClass().getName() + ".ggClassId() must " +
-                                    "return the value of the field '" + CLS_ID_FIELD_NAME + "': "
-                                    + obj.getClass().getName());
-                        }
-                        else if (!(o instanceof OptimizedClassDescriptor))
-                            throw new IOException("Field '" + CLS_ID_FIELD_NAME + "' must be declared with " +
-                                "null value: " + obj.getClass().getName());
-                    }
-                    catch (NoSuchFieldException e) {
-                        throw new IOException("GridOptimizedMarshallable classes must have static field declared " +
-                            "[fieldName=" + CLS_ID_FIELD_NAME + ", cls=" + obj.getClass().getName() + ']', e);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IOException("Failed to set field '" + CLS_ID_FIELD_NAME + "' on '" +
-                            obj.getClass().getName() + "' class.", e);
-                    }
-                }
-
-                return desc;
-            }
-        }
-
-        OptimizedClassDescriptor desc = CLS_DESC_CACHE.get(cls);
+    static OptimizedClassDescriptor classDescriptor(Class<?> cls) throws IOException {
+        OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor existing = CLS_DESC_CACHE.putIfAbsent(cls,
-                desc = new OptimizedClassDescriptor(cls));
+            // TODO: IGNITE-141 - Put to cache.
 
-            if (existing != null)
-                desc = existing;
+            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc = new OptimizedClassDescriptor(cls));
+
+            if (old != null)
+                desc = old;
+        }
+
+        return desc;
+    }
+
+    /**
+     * Gets descriptor for provided ID.
+     *
+     * @param id ID.
+     * @param ldr Class loader.
+     * @return Descriptor.
+     * @throws IOException In case of error.
+     * @throws ClassNotFoundException If class was not found.
+     */
+    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr)
+        throws IOException, ClassNotFoundException {
+        OptimizedClassDescriptor desc = DESC_BY_ID.get(id);
+
+        if (desc == null) {
+            // TODO: IGNITE-141 - Get from cache.
+            String clsName = null;
+
+            Class<?> cls = Class.forName(clsName, true, ldr);
+
+            OptimizedClassDescriptor old = DESC_BY_ID.putIfAbsent(id, desc = new OptimizedClassDescriptor(cls));
+
+            if (old != null)
+                desc = old;
         }
 
         return desc;
@@ -185,11 +118,9 @@ class OptimizedMarshallerUtils {
      * @param ldr Undeployed class loader.
      */
     public static void onUndeploy(ClassLoader ldr) {
-        CLS_BY_NAME_CACHE.remove(ldr);
-
-        for (Class<?> cls : CLS_DESC_CACHE.keySet()) {
+        for (Class<?> cls : DESC_BY_CLS.keySet()) {
             if (ldr.equals(cls.getClassLoader()))
-                CLS_DESC_CACHE.remove(cls);
+                DESC_BY_CLS.remove(cls);
         }
     }
 
@@ -197,20 +128,8 @@ class OptimizedMarshallerUtils {
      * Intended for test purposes only.
      */
     public static void clearCache() {
-        CLS_BY_NAME_CACHE.clear();
-        CLS_DESC_CACHE.clear();
-    }
-
-    /**
-     *
-     */
-    public static void printMemoryStats() {
-        X.println(">>>");
-        X.println(">>> GridOptimizedMarshallerUtils memory stats:");
-        X.println(" Cache size: " + CLS_DESC_CACHE.size());
-
-        for (Map.Entry<Class<?>, OptimizedClassDescriptor> e : CLS_DESC_CACHE.entrySet())
-            X.println(" " + e.getKey() + " : " + e.getValue());
+        DESC_BY_CLS.clear();
+        DESC_BY_ID.clear();
     }
 
     /**

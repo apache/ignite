@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;

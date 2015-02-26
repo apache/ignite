@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.*;
@@ -37,7 +36,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
         OptimizedMarshaller m = new OptimizedMarshaller();
 
         m.setRequireSerializable(false);
-        m.setClassNames(F.asList(GoodMarshallable.class.getName(), NoMarshallable.class.getName()));
 
         return m;
     }
@@ -112,75 +110,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
 
         assertEquals("String", newObj.str);
         assertEquals(100, newObj.val);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGoodMarshallable() throws Exception {
-        GoodMarshallable obj = new GoodMarshallable("String", 100);
-
-        GoodMarshallable newObj = unmarshal(marshal(obj));
-
-        assertEquals("String", newObj.getString());
-        assertEquals(100, newObj.getInt());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testBadMarshallable() throws Exception {
-        BadMarshallable obj = new BadMarshallable("String", 100);
-
-        try {
-            System.out.println(unmarshal(marshal(obj)));
-
-            assert false;
-        }
-        catch (IgniteCheckedException e) {
-            assert e.getCause() instanceof IOException;
-            assert e.getCause().getMessage().contains("must return the value of the field");
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void checkPerformance() throws Exception {
-        final int cnt = 5_000_000;
-
-        for (int j = 0; j < 5; j++) {
-            long start = System.nanoTime();
-
-            for (int i = 0; i < cnt; i++) {
-                String s = "string-" + i;
-
-                NoMarshallable obj = new NoMarshallable(s, i);
-
-                NoMarshallable newObj = unmarshal(marshal(obj));
-
-                assertEquals(s, newObj.getString());
-            }
-
-            X.println("Marshalling NoMarshallable duration: " + ((System.nanoTime() - start) / 1_000_000) + "ms");
-        }
-
-
-        for (int j = 0; j < 5; j++) {
-            long start = System.nanoTime();
-
-            for (int i = 0; i < cnt; i++) {
-                String s = "string-" + i;
-
-                GoodMarshallable obj = new GoodMarshallable(s, i);
-
-                GoodMarshallable newObj = unmarshal(marshal(obj));
-
-                assertEquals(s, newObj.getString());
-            }
-
-            X.println("Marshalling Marshallable duration: " + ((System.nanoTime() - start) / 1_000_000) + "ms");
-        }
     }
 
     /**
@@ -348,105 +277,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
          */
         public void link(SelfLink link) {
             this.link = link;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class GoodMarshallable implements OptimizedMarshallable, Serializable {
-        /** Class ID required by {@link OptimizedMarshallable}. */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
-
-        /** */
-        private String str;
-
-        /** */
-        private int i;
-
-        /**
-         * @param str String.
-         * @param i Integer.
-         */
-        public GoodMarshallable(String str, int i) {
-            this.str = str;
-            this.i = i;
-        }
-
-        /**
-         * @return Int value.
-         */
-        private int getInt() {
-            return i;
-        }
-
-        /**
-         * @return String value
-         */
-        private String getString() {
-            return str;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class NoMarshallable implements Serializable {
-        /** */
-        private String str;
-
-        /** */
-        private int i;
-
-        /**
-         * @param str String.
-         * @param i Integer.
-         */
-        public NoMarshallable(String str, int i) {
-            this.str = str;
-            this.i = i;
-        }
-
-        /**
-         * @return Int value.
-         */
-        private int getInt() {
-            return i;
-        }
-
-        /**
-         * @return String value
-         */
-        private String getString() {
-            return str;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class BadMarshallable extends TestObject implements OptimizedMarshallable {
-        /** Class ID required by {@link OptimizedMarshallable}. */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
-
-        /**
-         * @param str String.
-         * @param i Integer.
-         */
-        private BadMarshallable(String str, int i) {
-            super(str, i);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return new Object();
         }
     }
 }

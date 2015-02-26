@@ -223,69 +223,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link OptimizedMarshaller#setClassNames(List)}.
-     *
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    public void testUserPreregisteredNames() throws IgniteCheckedException {
-        Object obj = new SomeSerializable(null);
-
-        // Clear caches.
-        ((Map)U.staticField(OptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
-        OptimizedClassResolver.userClasses(null, null);
-
-        Marshaller marsh = new OptimizedMarshaller();
-
-        int size1 = marsh.marshal(obj).length;
-
-        // Clear caches.
-        ((Map)U.staticField(OptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
-        OptimizedClassResolver.userClasses(null, null);
-
-        OptimizedMarshaller marshPreregistered = new OptimizedMarshaller();
-
-        marshPreregistered.setClassNames(Arrays.asList(SomeSerializable.class.getName()));
-
-        int size2 = marshPreregistered.marshal(obj).length;
-
-        assertTrue(size1 > size2);
-    }
-
-    /**
-     * Tests {@link OptimizedMarshaller#setClassNames(List)}.
-     *
-     * @throws IgniteCheckedException If marshalling failed.
-     * @throws IOException If an I/O error occurs.
-     */
-    public void testUserPreregisteredNamesPath() throws IgniteCheckedException, IOException {
-        Object obj = new SomeSerializable(null);
-
-        // Clear caches.
-        ((Map)U.staticField(OptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
-        OptimizedClassResolver.userClasses(null, null);
-
-        Marshaller marsh = new OptimizedMarshaller();
-
-        int size1 = marsh.marshal(obj).length;
-
-        // Clear caches.
-        ((Map)U.staticField(OptimizedMarshallerUtils.class, "CLS_DESC_CACHE")).clear();
-        OptimizedClassResolver.userClasses(null, null);
-
-        OptimizedMarshaller marshPreregistered = new OptimizedMarshaller();
-
-        File namesFile = File.createTempFile("gg-", null);
-
-        U.writeStringToFile(namesFile, SomeSerializable.class.getName(), "UTF-8");
-
-        marshPreregistered.setClassNamesPath(namesFile.getAbsolutePath());
-
-        int size2 = marshPreregistered.marshal(obj).length;
-
-        assertTrue(size1 > size2);
-    }
-
-    /**
      * Tests {@link Proxy}.
      *
      * @throws IgniteCheckedException If marshalling failed.

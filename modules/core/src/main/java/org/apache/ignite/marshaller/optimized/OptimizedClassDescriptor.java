@@ -132,12 +132,6 @@ class OptimizedClassDescriptor {
     /** Class. */
     private Class<?> cls;
 
-    /** Header. */
-    private Integer hdr;
-
-    /** ID. */
-    private Integer id;
-
     /** Short ID. */
     private Short shortId;
 
@@ -210,10 +204,6 @@ class OptimizedClassDescriptor {
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
-        T2<Integer, Integer> t = OptimizedClassResolver.writeClassData(cls);
-
-        hdr = t.get1();
-        id = t.get2();
         name = cls.getName();
 
         if (!excluded) {
@@ -576,20 +566,6 @@ class OptimizedClassDescriptor {
     }
 
     /**
-     * @return Header.
-     */
-    Integer header() {
-        return hdr;
-    }
-
-    /**
-     * @return ID.
-     */
-    Integer id() {
-        return id;
-    }
-
-    /**
      * @return Short ID.
      */
     Short shortId() {
@@ -660,6 +636,8 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
+        out.writeInt(cls.getName().hashCode());
+
         switch (type) {
             case TYPE_BYTE:
                 out.writeByte((Byte)obj);
@@ -802,7 +780,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                OptimizedClassResolver.writeClass(out, OptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
+                out.writeInt(((Class<?>)obj).getName().hashCode());
 
                 break;
 
@@ -921,7 +899,7 @@ class OptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return OptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
+                return null; // TODO: IGNITE-141
 
             case TYPE_EXTERNALIZABLE:
                 return in.readExternalizable(constructor, readResolveMtd);

@@ -19,15 +19,11 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
-import java.net.*;
-import java.util.*;
 
 /**
  * Optimized implementation of {@link org.apache.ignite.marshaller.Marshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.JdkMarshaller},
@@ -77,14 +73,14 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class OptimizedMarshaller extends AbstractMarshaller {
-    /** Whether or not to require an object to be serializable in order to be marshalled. */
-    private boolean requireSer = true;
-
     /** Default class loader. */
     private final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
+    /** Whether or not to require an object to be serializable in order to be marshalled. */
+    private boolean requireSer = true;
+
     /**
-     * Initializes marshaller not to enforce {@link Serializable} interface.
+     * Creates new marshaller will all defaults.
      *
      * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
@@ -95,116 +91,22 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * Initializes marshaller with given serialization flag. If {@code true},
-     * then objects will be required to implement {@link Serializable} in order
-     * to be serialize.
+     * Creates new marshaller providing whether it should
+     * require {@link Serializable} interface or not.
      *
-     * @param requireSer Flag to enforce {@link Serializable} interface or not. If {@code true},
-     *      then objects will be required to implement {@link Serializable} in order to be
-     *      marshalled, if {@code false}, then such requirement will be relaxed.
-     * @throws IgniteException If this marshaller is not supported on the current JVM.
+     * @param requireSer Whether to require {@link Serializable}.
      */
     public OptimizedMarshaller(boolean requireSer) {
-        this();
-
         this.requireSer = requireSer;
     }
 
     /**
-     * Initializes marshaller with given serialization flag. If {@code true},
-     * then objects will be required to implement {@link Serializable} in order
-     * to be serialize.
+     * Sets whether marshaller should require {@link Serializable} interface or not.
      *
-     * @param requireSer Flag to enforce {@link Serializable} interface or not. If {@code true},
-     *      then objects will be required to implement {@link Serializable} in order to be
-     *      marshalled, if {@code false}, then such requirement will be relaxed.
-     * @param clsNames User preregistered class names.
-     * @param clsNamesPath Path to a file with user preregistered class names.
-     * @param poolSize Object streams pool size.
-     * @throws IgniteCheckedException If an I/O error occurs while writing stream header.
-     * @throws IgniteException If this marshaller is not supported on the current JVM.
+     * @param requireSer Whether to require {@link Serializable}.
      */
-    public OptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
-        @Nullable String clsNamesPath, int poolSize) throws IgniteCheckedException {
-        this(requireSer);
-
-        setClassNames(clsNames);
-        setClassNamesPath(clsNamesPath);
-        setPoolSize(poolSize);
-    }
-
-    /**
-     * Adds provided class names for marshalling optimization.
-     * <p>
-     * <b>NOTE</b>: these collections of classes must be identical on all nodes and in the same order.
-     *
-     * @param clsNames User preregistered class names to add.
-     */
-    @SuppressWarnings("unchecked")
-    public void setClassNames(@Nullable List<String> clsNames) {
-        if (clsNames != null && !clsNames.isEmpty()) {
-            String[] clsNamesArr = clsNames.toArray(new String[clsNames.size()]);
-
-            Arrays.sort(clsNamesArr);
-
-            Map<String, Integer> name2id = U.newHashMap(clsNamesArr.length);
-            T3<String, Class<?>, OptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
-
-            int i = 0;
-
-            for (String name : clsNamesArr) {
-                name2id.put(name, i);
-                id2name[i++] = new T3<>(name, null, null);
-            }
-
-            OptimizedClassResolver.userClasses(name2id, id2name);
-        }
-    }
-
-    /**
-     * Specifies a name of the file which lists all class names to be optimized.
-     * The file path can either be absolute path, relative to {@code IGNITE_HOME},
-     * or specify a resource file on the class path.
-     * <p>
-     * The format of the file is class name per line, like this:
-     * <pre>
-     * ...
-     * com.example.Class1
-     * com.example.Class2
-     * ...
-     * </pre>
-     * <p>
-     * <b>NOTE</b>: this class list must be identical on all nodes and in the same order.
-     *
-     * @param path Path to a file with user preregistered class names.
-     * @throws IgniteCheckedException If an error occurs while writing stream header.
-     */
-    public void setClassNamesPath(@Nullable String path) throws IgniteCheckedException {
-        if (path == null)
-            return;
-
-        URL url = IgniteUtils.resolveIgniteUrl(path, false);
-
-        if (url == null)
-            throw new IgniteCheckedException("Failed to find resource for name: " + path);
-
-        List<String> clsNames;
-
-        try {
-            clsNames = new LinkedList<>();
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), OptimizedMarshallerUtils.UTF_8))) {
-                String clsName;
-
-                while ((clsName = reader.readLine()) != null)
-                    clsNames.add(clsName);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to read class names from path: " + path, e);
-        }
-
-        setClassNames(clsNames);
+    public void setRequireSerializable(boolean requireSer) {
+        this.requireSer = requireSer;
     }
 
     /**
@@ -224,24 +126,6 @@ public class OptimizedMarshaller extends AbstractMarshaller {
      */
     public void setPoolSize(int poolSize) {
         OptimizedObjectStreamRegistry.poolSize(poolSize);
-    }
-
-    /**
-     * @return Whether to enforce {@link Serializable} interface.
-     */
-    public boolean isRequireSerializable() {
-        return requireSer;
-    }
-
-    /**
-     * Sets flag to enforce {@link Serializable} interface or not.
-     *
-     * @param requireSer Flag to enforce {@link Serializable} interface or not. If {@code true},
-     *      then objects will be required to implement {@link Serializable} in order to be
-     *      marshalled, if {@code false}, then such requirement will be relaxed.
-     */
-    public void setRequireSerializable(boolean requireSer) {
-        this.requireSer = requireSer;
     }
 
     /** {@inheritDoc} */
