@@ -35,7 +35,7 @@ import org.hibernate.cache.spi.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
 
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -57,14 +57,14 @@ import org.hibernate.cache.spi.*;
  * values. For this reason, the query cache should always be used in conjunction with
  * the second-level cache for those entities expected to be cached as part of a query result cache
  */
-public class GridHibernateQueryResultsRegion extends GridHibernateGeneralDataRegion implements QueryResultsRegion {
+public class HibernateQueryResultsRegion extends HibernateGeneralDataRegion implements QueryResultsRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public GridHibernateQueryResultsRegion(GridHibernateRegionFactory factory, String name,
+    public HibernateQueryResultsRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, GridCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }

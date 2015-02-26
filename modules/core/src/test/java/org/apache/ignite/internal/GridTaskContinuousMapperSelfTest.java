@@ -133,11 +133,10 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
         /**
          * @param mapper Continuous mapper.
-         * @throws IgniteCheckedException Thrown if any exception occurs.
          */
         @SuppressWarnings("unused")
         @TaskContinuousMapperResource
-        private void setMapper(ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
+        private void setMapper(ComputeTaskContinuousMapper mapper) {
             this.mapper = mapper;
 
             mapper.send(new TestJob());

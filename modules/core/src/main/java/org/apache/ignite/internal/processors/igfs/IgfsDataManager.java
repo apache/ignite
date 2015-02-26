@@ -859,10 +859,8 @@ public class IgfsDataManager extends IgfsManager {
      * @param len Length.
      * @param maxLen Maximum allowed split length.
      * @param res Result collection to add regions to.
-     * @throws IgniteCheckedException If failed.
      */
-    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res)
-        throws IgniteCheckedException {
+    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res) {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 

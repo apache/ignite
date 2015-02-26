@@ -29,7 +29,7 @@ public class GridHadoopStartup {
     /**
      * @param args Arguments.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         G.start("config/hadoop/default-config.xml");
     }
 

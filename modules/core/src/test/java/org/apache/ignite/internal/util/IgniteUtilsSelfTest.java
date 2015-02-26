@@ -121,7 +121,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testByteArray2String() throws Exception {
         assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[] {10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
+            U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
     }
 
     /**
@@ -474,7 +474,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             UUID id = UUID.randomUUID();
 
-            byte[] bytes = IgniteUtils.uuidToBytes(id);
+            byte[] bytes = U.uuidToBytes(id);
             BigInteger n = new BigInteger(bytes);
 
             assert n.shiftRight(Long.SIZE).longValue() == id.getMostSignificantBits();
@@ -692,7 +692,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
 
     public void testMD5Calculation() throws Exception {
-        String md5 = IgniteUtils.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
+        String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
         assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }

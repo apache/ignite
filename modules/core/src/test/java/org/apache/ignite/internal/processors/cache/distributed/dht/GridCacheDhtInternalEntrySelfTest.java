@@ -149,18 +149,16 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
     /**
      * @param node Node.
      * @return Atomic long value.
-     * @throws IgniteCheckedException In case of error.
      */
-    private Object peekNear(ClusterNode node) throws IgniteCheckedException {
+    private Object peekNear(ClusterNode node) {
         return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.NEAR);
     }
 
     /**
      * @param node Node.
      * @return Atomic long value.
-     * @throws IgniteCheckedException In case of error.
      */
-    private Object peekDht(ClusterNode node) throws IgniteCheckedException {
+    private Object peekDht(ClusterNode node) {
         return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.BACKUP,
             CachePeekMode.PRIMARY);
     }

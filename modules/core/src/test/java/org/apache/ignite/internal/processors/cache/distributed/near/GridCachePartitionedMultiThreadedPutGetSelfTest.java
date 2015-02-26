@@ -177,7 +177,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {

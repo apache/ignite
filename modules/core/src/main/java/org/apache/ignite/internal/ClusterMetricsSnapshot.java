@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -1247,9 +1248,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         off = U.intToBytes(metrics.getMaximumCancelledJobs(), data, off);
         off = U.intToBytes(metrics.getCurrentCancelledJobs(), data, off);
         off = U.floatToBytes(metrics.getAverageCancelledJobs(), data, off);
-        off = U.intToBytes(metrics.getTotalRejectedJobs(), data , off);
-        off = U.intToBytes(metrics.getTotalCancelledJobs(), data , off);
-        off = U.intToBytes(metrics.getTotalExecutedJobs(), data , off);
+        off = U.intToBytes(metrics.getTotalRejectedJobs(), data, off);
+        off = U.intToBytes(metrics.getTotalCancelledJobs(), data, off);
+        off = U.intToBytes(metrics.getTotalExecutedJobs(), data, off);
         off = U.longToBytes(metrics.getMaximumJobWaitTime(), data, off);
         off = U.longToBytes(metrics.getCurrentJobWaitTime(), data, off);
         off = U.doubleToBytes(metrics.getAverageJobWaitTime(), data, off);
@@ -1258,7 +1259,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         off = U.doubleToBytes(metrics.getAverageJobExecuteTime(), data, off);
         off = U.intToBytes(metrics.getTotalExecutedTasks(), data, off);
         off = U.longToBytes(metrics.getCurrentIdleTime(), data, off);
-        off = U.longToBytes(metrics.getTotalIdleTime(), data , off);
+        off = U.longToBytes(metrics.getTotalIdleTime(), data, off);
         off = U.intToBytes(metrics.getTotalCpus(), data, off);
         off = U.doubleToBytes(metrics.getCurrentCpuLoad(), data, off);
         off = U.doubleToBytes(metrics.getAverageCpuLoad(), data, off);
