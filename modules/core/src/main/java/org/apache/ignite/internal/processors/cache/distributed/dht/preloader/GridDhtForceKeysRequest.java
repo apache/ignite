@@ -44,13 +44,9 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
-    /** Serialized keys. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> keyBytes;
-
     /** Keys to request. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(KeyCacheObject.class)
     private Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
@@ -117,13 +113,6 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     }
 
     /**
-     * @return Collection of serialized keys.
-     */
-    public Collection<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Keys.
      */
     public Collection<KeyCacheObject> keys() {
@@ -142,23 +131,21 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (keyBytes == null)
-            keyBytes = marshalCollection(keys, ctx);
+        prepareMarshalCacheObjects(keys, ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null)
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, ctx, ldr);
     }
 
     /**
      * @return Key count.
      */
     private int keyCount() {
-        return keyBytes == null ? keys.size() : keyBytes.size();
+        return keys.size();
     }
 
     /** {@inheritDoc} */
@@ -183,7 +170,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -225,7 +212,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
                 reader.incrementState();
 
             case 4:
-                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

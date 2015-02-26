@@ -120,7 +120,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
      * @return Entries.
      */
     public Collection<GridCacheEntryInfo> entries() {
-        return entries;
+        return entries != null ? entries : Collections.<GridCacheEntryInfo>emptyList();
     }
 
     /**

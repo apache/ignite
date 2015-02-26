@@ -217,6 +217,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache distribution mode. */
     private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
+    /** Default value for 'copyOnGet' flag. */
+    public static final boolean DFLT_COPY_ON_GET = true;
+
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
 
@@ -318,6 +321,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
+
+    /** */
+    private boolean cpOnGet = DFLT_COPY_ON_GET;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -1618,6 +1624,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
+    }
+
+    /**
+     * @return Copy on get flag.
+     */
+    public boolean isCopyOnGet() {
+        return cpOnGet;
+    }
+
+    /**
+     * @param cpOnGet Copy on get flag.
+     */
+    public void setCopyOnGet(boolean cpOnGet) {
+        this.cpOnGet = cpOnGet;
     }
 
     /** {@inheritDoc} */

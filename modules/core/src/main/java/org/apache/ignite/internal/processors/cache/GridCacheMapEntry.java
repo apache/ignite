@@ -338,7 +338,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public boolean isInternal() {
-        return key instanceof GridCacheInternal;
+        return key.internal();
     }
 
     /** {@inheritDoc} */

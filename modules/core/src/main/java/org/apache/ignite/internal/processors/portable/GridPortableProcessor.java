@@ -133,6 +133,7 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param obj Portable object to get field from.
+     * @param fieldName Field name.
      * @return Field value.
      */
     public Object field(Object obj, String fieldName);
@@ -153,8 +154,8 @@ public interface GridPortableProcessor extends GridProcessor {
     @Nullable public CacheObject toCacheObject(@Nullable Object obj);
 
     /**
-     * @param obj Object.
-     * @return Cache object.
+     * @param obj Key value.
+     * @return Cache key object.
      */
-    @Nullable public KeyCacheObject toCacheKeyObject(@Nullable Object obj);
+    public KeyCacheObject toCacheKeyObject(Object obj);
 }

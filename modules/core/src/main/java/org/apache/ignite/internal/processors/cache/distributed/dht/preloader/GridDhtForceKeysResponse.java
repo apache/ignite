@@ -42,22 +42,15 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> missedKeyBytes;
-
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<KeyCacheObject> missedKeys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> infos;
-
-    /** */
-    private byte[] infosBytes;
 
     /**
      * Required by {@link Externalizable}.
@@ -140,13 +133,12 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (missedKeys != null && missedKeyBytes == null)
-            missedKeyBytes = marshalCollection(missedKeys, ctx);
+        if (missedKeys != null)
+            prepareMarshalCacheObjects(missedKeys, ctx);
 
         if (infos != null) {
-            marshalInfos(infos, ctx);
-
-            infosBytes = ctx.marshaller().marshal(infos);
+            for (GridCacheEntryInfo info : infos)
+                info.marshal(ctx);
         }
     }
 
@@ -154,13 +146,14 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (missedKeys == null && missedKeyBytes != null)
-            missedKeys = unmarshalCollection(missedKeyBytes, ctx, ldr);
+        if (missedKeys != null)
+            finishUnmarshalCacheObjects(missedKeys, ctx, ldr);
 
-        if (infosBytes != null) {
-            infos = ctx.marshaller().unmarshal(infosBytes, ldr);
+        if (infos != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            unmarshalInfos(infos, ctx.cacheContext(cacheId()), ldr);
+            for (GridCacheEntryInfo info : infos)
+                info.unmarshal(cctx, ldr);
         }
     }
 
@@ -186,7 +179,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("infosBytes", infosBytes))
+                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -198,7 +191,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("missedKeys", missedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -228,7 +221,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 4:
-                infosBytes = reader.readByteArray("infosBytes");
+                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +237,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 6:
-                missedKeyBytes = reader.readCollection("missedKeyBytes", MessageCollectionItemType.BYTE_ARR);
+                missedKeys = reader.readCollection("missedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
