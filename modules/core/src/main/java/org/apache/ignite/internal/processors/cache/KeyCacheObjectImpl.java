@@ -34,10 +34,10 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private Object val;
+    protected Object val;
 
     /** */
-    private byte[] valBytes;
+    protected byte[] valBytes;
 
     /**
      *
@@ -48,11 +48,13 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
 
     /**
      * @param val Value.
+     * @param valBytes Value bytes.
      */
-    public KeyCacheObjectImpl(Object val) {
+    public KeyCacheObjectImpl(Object val, byte[] valBytes) {
         assert val != null;
 
         this.val = val;
+        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */
@@ -70,6 +72,11 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
     @Nullable @Override public <T> T getField(String name) {
         // TODO IGNITE-51.
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -156,10 +163,12 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
         return val.equals(other.val);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert false;
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         assert false;
     }

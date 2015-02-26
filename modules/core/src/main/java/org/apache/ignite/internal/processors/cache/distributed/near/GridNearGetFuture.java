@@ -335,7 +335,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         topVer,
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
-                        deserializePortable,
                         expiryPlc,
                         skipVals);
 

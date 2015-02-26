@@ -512,6 +512,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 93:
+                msg = new CacheInvokeDirectResult();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

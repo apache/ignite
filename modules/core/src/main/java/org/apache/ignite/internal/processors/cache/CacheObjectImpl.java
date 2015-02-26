@@ -34,10 +34,10 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private Object val;
+    protected Object val;
 
     /** */
-    private byte[] valBytes;
+    protected byte[] valBytes;
 
     /**
      *
@@ -48,14 +48,13 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
 
     /**
      * @param val Value.
+     * @param valBytes Value bytes.
      */
-    public CacheObjectImpl(Object val) {
-        assert val != null;
+    public CacheObjectImpl(Object val, byte[] valBytes) {
+        assert val != null || valBytes != null;
 
-        if (val instanceof byte[])
-            valBytes = (byte[])val;
-        else
-            this.val = val;
+        this.val = val;
+        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */
@@ -69,31 +68,33 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
     @Nullable @Override public <T> T value(GridCacheContext ctx) {
         if (val != null)
             return (T)val;
-        else
-            return (T)valBytes;
+
+        assert valBytes != null;
+
+        try {
+            val = ctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal object.", e);
+        }
+
+        return (T)val;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
+        if (!(val instanceof byte[]))
             valBytes = CU.marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert valBytes != null;
-
-        boolean byteArr = val != null;
-
-        if (byteArr)
-            val = null;
-        else
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+        assert val != null || valBytes != null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert valBytes != null;
+        assert val != null || valBytes != null;
 
         writer.setBuffer(buf);
 
@@ -104,16 +105,16 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
             writer.onHeaderWritten();
         }
 
+        boolean byteArr = val instanceof byte[];
+
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("valBytes", valBytes))
+                if (!writer.writeByteArray("valBytes", byteArr ? (byte[])val : valBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                boolean byteArr = val == null;
-
                 if (!writer.writeBoolean("byteArr", byteArr))
                     return false;
 
@@ -146,8 +147,11 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
                 if (!reader.isLastRead())
                     return false;
 
-                if (byteArr)
+                if (byteArr) {
                     val = valBytes;
+
+                    valBytes = null;
+                }
 
                 reader.incrementState();
 
@@ -180,12 +184,19 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
         return super.equals(obj);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert false;
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         assert false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+        return this;
     }
 
     /** {@inheritDoc} */

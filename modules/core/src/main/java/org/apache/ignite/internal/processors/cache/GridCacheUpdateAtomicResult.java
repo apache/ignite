@@ -57,7 +57,7 @@ public class GridCacheUpdateAtomicResult {
     private final boolean sndToDht;
 
     /** Value computed by entry processor. */
-    private EntryProcessorResult<?> res;
+    private CacheInvokeDirectResult res;
 
     /**
      * Constructor.
@@ -75,7 +75,7 @@ public class GridCacheUpdateAtomicResult {
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable CacheObject oldVal,
         @Nullable CacheObject newVal,
-        @Nullable EntryProcessorResult<?> res,
+        @Nullable CacheInvokeDirectResult res,
         long newTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
@@ -95,7 +95,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Value computed by the {@link EntryProcessor}.
      */
-    @Nullable public EntryProcessorResult<?> computedResult() {
+    @Nullable public CacheInvokeDirectResult computedResult() {
         return res;
     }
 

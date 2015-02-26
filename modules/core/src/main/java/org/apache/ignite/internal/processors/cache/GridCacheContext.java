@@ -1784,9 +1784,39 @@ public class GridCacheContext<K, V> implements Externalizable {
         return portable().toCacheKeyObject(obj);
     }
 
-    // TODO IGNITE-51.
-    public boolean copyOnGet() {
-        return false;
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param val Value.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param deserializePortable Deserialize portable flag.
+     */
+    @SuppressWarnings("unchecked")
+    public <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializePortable) {
+        assert key != null;
+        assert val != null;
+
+        if (!keepCacheObjects) {
+            Object key0 = key.value(this);
+            Object val0 = skipVals ? Boolean.TRUE : val.value(this);
+
+            if (portableEnabled() && deserializePortable) {
+                key0 = unwrapPortableIfNeeded(key0, false);
+
+                if (!skipVals)
+                    val0 = unwrapPortableIfNeeded(val0, false);
+            }
+
+            map.put((K1)key0, (V1)val0);
+        }
+        else
+            map.put((K1)key, (V1)(skipVals ? Boolean.TRUE : val));
     }
 
     /**

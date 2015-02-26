@@ -100,7 +100,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private volatile CachePartialUpdateCheckedException err;
 
     /** Operation result. */
-    private volatile GridCacheReturn<Object> opRes;
+    private volatile GridCacheReturn<?> opRes;
 
     /** Return value require flag. */
     private final boolean retval;
@@ -321,10 +321,17 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
         assert res == null || res instanceof GridCacheReturn;
 
         GridCacheReturn ret = (GridCacheReturn)res;
+
+        if (op != TRANSFORM) {
+            CacheObject val = (CacheObject)ret.value();
+
+            ret.value(CU.value(val, cctx));
+        }
 
         Object retval = res == null ? null : rawRetval ? ret : this.retval ? ret.value() : ret.success();
 
@@ -367,9 +374,17 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             if (res.error() != null)
                 onDone(addFailedKeys(res.failedKeys(), res.error()));
             else {
-                GridCacheReturn<Object> opRes0 = opRes = res.returnValue();
+                if (op == TRANSFORM) {
+                    if (res.returnValue() != null)
+                        addInvokeResults(res.returnValue());
 
-                onDone(opRes0);
+                    onDone(opRes);
+                }
+                else {
+                    GridCacheReturn<?> opRes0 = opRes = res.returnValue();
+
+                    onDone(opRes0);
+                }
             }
         }
         else {
@@ -869,18 +884,36 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     /**
      * @param ret Result from single node.
      */
-    private synchronized void addInvokeResults(GridCacheReturn<Object> ret) {
+    @SuppressWarnings("unchecked")
+    private synchronized void addInvokeResults(GridCacheReturn ret) {
         assert op == TRANSFORM : op;
-        assert ret.value() == null || ret.value() instanceof Map : ret.value();
+        assert ret.value() == null || ret.value() instanceof Collection : ret.value();
 
         if (ret.value() != null) {
-            if (opRes != null) {
-                Map<Object, Object> map = (Map<Object, Object>)opRes.value();
+            Collection<CacheInvokeDirectResult> results =
+                (Collection<CacheInvokeDirectResult>)ret.value();
 
-                map.putAll((Map<Object, Object>)ret.value());
+            Map<Object, CacheInvokeResult> map0 = U.newHashMap(results.size());
+
+            for (CacheInvokeDirectResult res : results) {
+                CacheInvokeResult<?> res0 = res.error() == null ?
+                    new CacheInvokeResult<>(CU.value(res.result(), cctx)) : new CacheInvokeResult<>(res.error());
+
+                map0.put(res.key().value(cctx), res0);
             }
-            else
+
+            if (opRes != null) {
+                Map<Object, CacheInvokeResult> oldMap = (Map<Object, CacheInvokeResult>)opRes.value();
+
+                assert oldMap != null;
+
+                oldMap.putAll(map0);
+            }
+            else {
+                ret.value(map0);
+
                 opRes = ret;
+            }
         }
     }
 

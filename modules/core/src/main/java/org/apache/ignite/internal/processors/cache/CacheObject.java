@@ -37,7 +37,23 @@ public interface CacheObject extends Message {
      */
     @Nullable public <T> T getField(String name);
 
+    /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
     public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException;
 
+    /**
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
     public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
+     *
+     * @return Instance to store in cache.
+     */
+    public CacheObject prepareForCache(GridCacheContext ctx);
 }

@@ -150,8 +150,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         GridCacheMapEntry next, long ttl, int hdrId) {
         log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
-        if (cctx.portableEnabled())
-            key = (KeyCacheObject)cctx.kernalContext().portable().detachPortable(key);
+        key = (KeyCacheObject)cctx.kernalContext().portable().detachPortable(key, cctx);
+
+        assert key != null;
 
         this.key = key;
         this.hash = hash;
@@ -159,8 +160,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         ttlAndExpireTimeExtras(ttl, CU.toExpireTime(ttl));
 
-        if (cctx.portableEnabled())
-            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+        val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
         synchronized (this) {
             value(val, null);
@@ -518,7 +518,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         CacheObject val = e.value();
 
                         if (cctx.portableEnabled())
-                            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+                            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
                         // Set unswapped value.
                         update(val, e.valueBytes(), e.expireTime(), e.ttl(), e.version());
@@ -840,8 +840,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (startVer.equals(ver)) {
                 if (ret != null) {
                     // Detach value before index update.
-                    if (cctx.portableEnabled())
-                        ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret);
+                    ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret, cctx);
 
                     GridCacheVersion nextVer = nextVersion();
 
@@ -924,8 +923,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     long expTime = CU.toExpireTime(ttl);
 
                     // Detach value before index update.
-                    if (cctx.portableEnabled())
-                        ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret);
+                    ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret, cctx);
 
                     // Update indexes.
                     if (ret != null) {
@@ -1059,8 +1057,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             assert expireTime >= 0 : expireTime;
 
             // Detach value before index update.
-            if (cctx.portableEnabled())
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
             // Update index inside synchronization since it can be updated
             // in load methods without actually holding entry lock.
@@ -1343,8 +1340,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 // Detach value before index update.
-                if (cctx.portableEnabled())
-                    old = (CacheObject)cctx.kernalContext().portable().detachPortable(old);
+                old = (CacheObject)cctx.kernalContext().portable().detachPortable(old, cctx);
 
                 if (old != null)
                     updateIndex(old, null, expireTime, ver, null);
@@ -1460,8 +1456,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
                 // Detach value before index update.
-                if (cctx.portableEnabled())
-                    updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated);
+                updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated, cctx);
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
@@ -1587,7 +1582,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
-        EntryProcessorResult<?> invokeRes = null;
+        CacheInvokeDirectResult invokeRes = null;
 
         // System TTL/ET which may have special values.
         long newSysTtl;
@@ -1753,8 +1748,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 readThrough = true;
 
                 // Detach value before index update.
-                if (cctx.portableEnabled())
-                    oldVal = (CacheObject)cctx.kernalContext().portable().detachPortable(oldVal);
+                oldVal = (CacheObject)cctx.kernalContext().portable().detachPortable(oldVal, cctx);
 
                 // Calculate initial TTL and expire time.
                 long initTtl;
@@ -1820,8 +1814,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
+                key0 = key.value(cctx);
                 old0 = CU.value(old0, oldVal, cctx);
-                
+
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key0, old0);
 
                 try {
@@ -1835,12 +1830,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         updated = oldVal;
 
                     if (computed != null)
-                        invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+                        invokeRes = new CacheInvokeDirectResult(key,
+                            cctx.toCacheObject(cctx.unwrapTemporary(computed)));
 
                     valBytes = null;
                 }
                 catch (Exception e) {
-                    invokeRes = new CacheInvokeResult<>(e);
+                    invokeRes = new CacheInvokeDirectResult(key, e);
 
                     updated = oldVal;
 
@@ -1990,8 +1986,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     // Do not change size.
                 }
 
-                if (cctx.portableEnabled())
-                    updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated);
+                updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated, cctx);
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -2906,8 +2901,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // in load methods without actually holding entry lock.
             long expireTime = expireTimeExtras();
 
-            if (cctx.portableEnabled())
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
             updateIndex(val, null, expireTime, nextVer, old);
 
@@ -3195,8 +3189,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (isNew() || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
-                if (cctx.portableEnabled())
-                    val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
                 if (val != null || valBytes != null)
                     updateIndex(val, valBytes, expTime, ver, null);
@@ -3245,7 +3238,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             CacheObject val = unswapped.value();
 
             if (cctx.portableEnabled()) {
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
                 if (cctx.offheapTiered() && !unswapped.valueIsByteArray())
                     unswapped.valueBytes(cctx.convertPortableBytes(unswapped.valueBytes()));
@@ -3293,8 +3286,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 long expTime = CU.toExpireTime(ttl);
 
                 // Detach value before index update.
-                if (cctx.portableEnabled())
-                    val = (CacheObject)cctx.kernalContext().portable().detachPortable(val);
+                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
                 if (val != null) {
                     updateIndex(val, null, expTime, newVer, old);

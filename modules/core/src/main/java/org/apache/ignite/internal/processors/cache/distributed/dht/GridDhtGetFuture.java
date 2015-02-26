@@ -90,9 +90,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Task name. */
     private int taskNameHash;
 
-    /** Whether to deserialize portable objects. */
-    private boolean deserializePortable;
-
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
@@ -117,7 +114,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      */
@@ -132,7 +128,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         long topVer,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals
     ) {
@@ -150,7 +145,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
-        this.deserializePortable = deserializePortable;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
@@ -171,13 +165,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         map(keys);
 
         markInitialized();
-    }
-
-    /**
-     * @return Keys.
-     */
-    Collection<KeyCacheObject> keys() {
-        return keys.keySet();
     }
 
     /** {@inheritDoc} */
@@ -351,28 +338,26 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (txFut != null)
             txFut.markInitialized();
 
-        IgniteInternalFuture<Map<K, V>> fut;
+        IgniteInternalFuture<Map<KeyCacheObject, CacheObject>> fut = null;
 
         if (txFut == null || txFut.isDone()) {
-            fut = null;
+            if (reload && cctx.readThrough() && cctx.store().configured()) {
+                fut = cache().reloadAllAsync0(keys.keySet(),
+                    true,
+                    skipVals,
+                    subjId,
+                    taskName);
+            }
+            else {
+                if (tx == null) {
+                    fut = cache().getDhtAllAsync(keys.keySet(),
+                        readThrough,
+                        subjId,
+                        taskName,
+                        expiryPlc,
+                        skipVals);
+                }
 // TODO IGNITE-51.
-//            if (reload && cctx.readThrough() && cctx.store().configured()) {
-//                fut = cache().reloadAllAsync(keys.keySet(),
-//                    true,
-//                    skipVals,
-//                    subjId,
-//                    taskName);
-//            }
-//            else {
-//                if (tx == null) {
-//                    fut = cache().getDhtAllAsync(keys.keySet(),
-//                        readThrough,
-//                        subjId,
-//                        taskName,
-//                        deserializePortable,
-//                        expiryPlc,
-//                        skipVals);
-//                }
 //                else {
 //                    fut = tx.getAllAsync(cctx,
 //                        keys.keySet(),
@@ -380,7 +365,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 //                        deserializePortable,
 //                        skipVals);
 //                }
-//            }
+            }
         }
         else {
             // If we are here, then there were active transactions for some entries
@@ -388,45 +373,44 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             // transactions to complete.
             fut = new GridEmbeddedFuture<>(
                 txFut,
-                new C2<Boolean, Exception, IgniteInternalFuture<Map<K, V>>>() {
-                    @Override public IgniteInternalFuture<Map<K, V>> apply(Boolean b, Exception e) {
-                        return null;
+                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, CacheObject>>>() {
+                    @Override public IgniteInternalFuture<Map<KeyCacheObject, CacheObject>> apply(Boolean b, Exception e) {
+                        if (e != null)
+                            throw new GridClosureException(e);
+
+                        if (reload && cctx.readThrough() && cctx.store().configured()) {
+                            return cache().reloadAllAsync0(keys.keySet(),
+                                true,
+                                skipVals,
+                                subjId,
+                                taskName);
+                        }
+                        else {
+                            if (tx == null) {
+                                return cache().getDhtAllAsync(keys.keySet(),
+                                    readThrough,
+                                    subjId,
+                                    taskName,
+                                    expiryPlc, skipVals);
+                            }
+                            else {
+                                return null;
 // TODO IGNITE-51.
-//                        if (e != null)
-//                            throw new GridClosureException(e);
-//
-//                        if (reload && cctx.readThrough() && cctx.store().configured()) {
-//                            return cache().reloadAllAsync(keys.keySet(),
-//                                true,
-//                                skipVals,
-//                                subjId,
-//                                taskName);
-//                        }
-//                        else {
-//                            if (tx == null) {
-//                                return cache().getDhtAllAsync(keys.keySet(),
-//                                    readThrough,
-//                                    subjId,
-//                                    taskName,
-//                                    deserializePortable,
-//                                    expiryPlc, skipVals);
-//                            }
-//                            else {
 //                                return tx.getAllAsync(cctx,
 //                                    keys.keySet(),
 //                                    null,
-//                                    deserializePortable,
+//                                    false,
 //                                    skipVals);
-//                            }
-//                        }
+                            }
+                        }
                     }
                 },
                 cctx.kernalContext());
         }
 
         return new GridEmbeddedFuture<>(cctx.kernalContext(), fut,
-            new C2<Map<K, V>, Exception, Collection<GridCacheEntryInfo>>() {
-                @Override public Collection<GridCacheEntryInfo> apply(Map<K, V> map, Exception e) {
+            new C2<Map<KeyCacheObject, CacheObject>, Exception, Collection<GridCacheEntryInfo>>() {
+                @Override public Collection<GridCacheEntryInfo> apply(Map<KeyCacheObject, CacheObject> map, Exception e) {
                     if (e != null) {
                         onDone(e);
 
@@ -436,13 +420,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         for (Iterator<GridCacheEntryInfo> it = infos.iterator(); it.hasNext();) {
                             GridCacheEntryInfo info = it.next();
 
-                            // TODO IGNITE-51.
-                            V v = map.get(info.key().value(cctx));
+                            CacheObject v = map.get(info.key());
 
                             if (v == null)
                                 it.remove();
                             else
-                                info.value(cctx.toCacheObject(v));
+                                info.value(v);
                         }
 
                         return infos;

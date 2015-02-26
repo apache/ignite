@@ -75,8 +75,13 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public Object detachPortable(@Nullable Object obj) {
-        return obj;
+    @Override public Object detachPortable(@Nullable Object obj, GridCacheContext cctx) {
+        if (obj == null)
+            return obj;
+
+        assert obj instanceof CacheObject : obj;
+
+        return ((CacheObject)obj).prepareForCache(cctx);
     }
 
     /** {@inheritDoc} */
@@ -121,11 +126,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
 
     /** {@inheritDoc} */
     @Nullable @Override public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
-        return new KeyCacheObjectImpl(obj);
+        return new UserKeyCacheObjectImpl(obj);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(@Nullable Object obj) {
-        return new CacheObjectImpl(obj);
+        return new UserCacheObjectImpl(obj);
     }
 }

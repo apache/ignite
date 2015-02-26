@@ -299,14 +299,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                                 success = false;
                             }
-                            else {
-                                Object val = v.value(ctx);
-
-                                if (ctx.portableEnabled() && !skipVals)
-                                    val = ctx.unwrapPortableIfNeeded(val, !deserializePortable);
-
-                                locVals.put(key, (V)CU.skipValue(val, skipVals));
-                            }
+                            else
+                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable);
                         }
                         else
                             success = false;

@@ -50,11 +50,8 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
     /** Result. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(GridCacheEntryInfo.class)
     private Collection<GridCacheEntryInfo> entries;
-
-    /** */
-    private byte[] entriesBytes;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
@@ -176,9 +173,8 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         super.prepareMarshal(ctx);
 
         if (entries != null) {
-            marshalInfos(entries, ctx);
-
-            entriesBytes = ctx.marshaller().marshal(entries);
+            for (GridCacheEntryInfo info : entries)
+                info.marshal(ctx);
         }
 
         if (err != null)
@@ -189,10 +185,11 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entriesBytes != null) {
-            entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId());
 
-            unmarshalInfos(entries, ctx.cacheContext(cacheId()), ldr);
+        if (entries != null) {
+            for (GridCacheEntryInfo info : entries)
+                info.unmarshal(cctx, ldr);
         }
 
         if (errBytes != null)
@@ -215,7 +212,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("entriesBytes", entriesBytes))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -273,7 +270,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         switch (reader.state()) {
             case 3:
-                entriesBytes = reader.readByteArray("entriesBytes");
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

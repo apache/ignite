@@ -547,28 +547,27 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param readThrough Read through flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
      * @param expiry Expiry policy.
+     * @param skipVals Skip values flag.
      * @return Get future.
      */
-    IgniteInternalFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+    IgniteInternalFuture<Map<KeyCacheObject, CacheObject>> getDhtAllAsync(
+        Collection<KeyCacheObject> keys,
         boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals
         ) {
-        return getAllAsync(keys,
+        return getAllAsync0(keys,
             readThrough,
-            null,
             /*don't check local tx. */false,
             subjId,
             taskName,
-            deserializePortable,
             false,
             expiry,
-            skipVals);
+            skipVals,
+            /*keep cache objects*/true);
     }
 
     /**
@@ -580,7 +579,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param deserializePortable Deserialize portable flag.
      * @param expiry Expiry policy.
      * @return DHT future.
      */
@@ -592,7 +590,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         long topVer,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
@@ -605,7 +602,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             topVer,
             subjId,
             taskNameHash,
-            deserializePortable,
             expiry,
             skipVals);
 
@@ -634,7 +630,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.topologyVersion(),
                 req.subjectId(),
                 req.taskNameHash(),
-                false,
                 expiryPlc,
                 req.skipValues());
 

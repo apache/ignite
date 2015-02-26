@@ -28,6 +28,8 @@ import java.nio.*;
 
 /**
  * Portable processor.
+ *
+ * TODO IGNITE-51: rename.
  */
 public interface GridPortableProcessor extends GridProcessor {
     /** {@inheritDoc} */
@@ -86,10 +88,13 @@ public interface GridPortableProcessor extends GridProcessor {
     public Object marshalToPortable(@Nullable Object obj) throws IgniteException;
 
     /**
+     * TODO IGNITE-51: rename.
+     *
      * @param obj Object (portable or not).
+     * @param cctx Cache context.
      * @return Detached portable object or original object.
      */
-    public Object detachPortable(@Nullable Object obj);
+    public Object detachPortable(@Nullable Object obj, GridCacheContext cctx);
 
     /**
      * @return Portable marshaller for client connectivity or {@code null} if it's not

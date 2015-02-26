@@ -1164,30 +1164,30 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn<CacheObject>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         // Check k-v predicate first.
         if (!isAll(key, newVal, true))
-            return new GridFinishedFuture<>(cctx.kernalContext(), new GridCacheReturn<CacheObject>(false));
+            return new GridFinishedFuture<>(cctx.kernalContext(), new GridCacheReturn<V>(false));
 
         return cache.replacexAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<CacheObject> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
         return replacexAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<CacheObject> removex(K key, V val) throws IgniteCheckedException {
+    @Override public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException {
         return removexAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn<CacheObject>> removexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
         return !isAll(key, val, true) ? new GridFinishedFuture<>(cctx.kernalContext(),
-            new GridCacheReturn<CacheObject>(false)) : cache.removexAsync(key, val);
+            new GridCacheReturn<V>(false)) : cache.removexAsync(key, val);
     }
 
     /** {@inheritDoc} */
