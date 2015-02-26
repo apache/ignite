@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -193,7 +193,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setAffinity(new CacheConsistentHashAffinityFunction());
+        cfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);

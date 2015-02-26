@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.client.impl;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -27,8 +27,6 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
-
-import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 
 /**
  * Client's partitioned affinity tests.
@@ -285,7 +283,7 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
-        CacheConsistentHashAffinityFunction srvAff = new CacheConsistentHashAffinityFunction();
+        CacheRendezvousAffinityFunction srvAff = new CacheRendezvousAffinityFunction();
 
         getTestResources().inject(srvAff);
 
@@ -324,7 +322,7 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
                 .replicaCount(replicaCnt)
                 .build());
 
-            ClusterNode srvNode = new TestRichNode(nodeId, replicaCnt);
+            ClusterNode srvNode = new TestRichNode(nodeId);
 
             srvNodes.add(srvNode);
         }
@@ -366,28 +364,22 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
          */
         private final UUID nodeId;
 
-        /**
-         * Partitioned affinity replicas count.
-         */
-        private final Integer replicaCnt;
 
         /**
          * Externalizable class requires public no-arg constructor.
          */
         @SuppressWarnings("UnusedDeclaration")
         public TestRichNode() {
-            this(UUID.randomUUID(), DFLT_REPLICA_COUNT);
+            this(UUID.randomUUID());
         }
 
         /**
          * Constructs rich node stub to use in emulated server topology.
          *
          * @param nodeId Node id.
-         * @param replicaCnt Partitioned affinity replicas count.
          */
-        private TestRichNode(UUID nodeId, int replicaCnt) {
+        private TestRichNode(UUID nodeId) {
             this.nodeId = nodeId;
-            this.replicaCnt = replicaCnt;
         }
 
         /** {@inheritDoc} */
@@ -397,9 +389,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> T attribute(String name) {
-            if (DFLT_REPLICA_COUNT_ATTR_NAME.equals(name))
-                return (T)replicaCnt;
-
             return super.attribute(name);
         }
     }

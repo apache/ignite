@@ -192,15 +192,6 @@ public class GridCacheAttributes implements Externalizable {
         CacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff0 = (CacheConsistentHashAffinityFunction) aff;
-
-                affInclNeighbors = aff0.isExcludeNeighbors();
-                affReplicas = aff0.getDefaultReplicas();
-                affReplicaCntAttrName = aff0.getReplicaCountAttributeName();
-                affHashIdRslvrClsName = className(aff0.getHashIdResolver());
-            }
-
             affPartsCnt = aff.partitions();
             affClsName = className(aff);
         }

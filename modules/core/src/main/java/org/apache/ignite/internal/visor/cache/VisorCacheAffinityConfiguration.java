@@ -62,13 +62,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
         Integer dfltReplicas = null;
         Boolean excludeNeighbors = null;
 
-        if (aff instanceof CacheConsistentHashAffinityFunction) {
-            CacheConsistentHashAffinityFunction hashAffFunc = (CacheConsistentHashAffinityFunction)aff;
-
-            dfltReplicas = hashAffFunc.getDefaultReplicas();
-            excludeNeighbors = hashAffFunc.isExcludeNeighbors();
-        }
-
         VisorCacheAffinityConfiguration cfg = new VisorCacheAffinityConfiguration();
 
         cfg.function(compactClass(aff));

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -41,7 +41,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -114,7 +113,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** Test predefined affinity - must be ported to all clients. */
     @SuppressWarnings("UnaryPlus")
     public void testPredefined() throws IgniteCheckedException {
-        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
         getTestResources().inject(aff);
 
@@ -190,40 +189,19 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         data.put(-1.7976931348623157E+308, 6);
         data.put(+4.9E-324, 7);
         data.put(-4.9E-324, 7);
-
-        boolean ok = true;
-
-        for (Map.Entry<Object, Integer> entry : data.entrySet()) {
-            int part = aff.partition(entry.getKey());
-            Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 1);
-            UUID act = F.first(affNodes).id();
-            UUID exp = nodes.get(entry.getValue()).id();
-
-            if (!exp.equals(act)) {
-                ok = false;
-
-                info("Failed to validate affinity for key '" + entry.getKey() + "' [expected=" + exp +
-                    ", actual=" + act + ".");
-            }
-        }
-
-        if (ok)
-            return;
-
-        fail("Server partitioned affinity validation fails.");
     }
 
     /** Test predefined affinity - must be ported to other clients. */
     @SuppressWarnings("UnaryPlus")
     public void testPredefinedHashIdResolver() throws IgniteCheckedException {
         // Use Md5 hasher for this test.
-        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
         getTestResources().inject(aff);
 
         aff.setHashIdResolver(new CacheAffinityNodeHashResolver() {
             @Override public Object resolve(ClusterNode node) {
-                return node.attribute(DFLT_REPLICA_COUNT_ATTR_NAME);
+                return null;
             }
         });
 
@@ -297,27 +275,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         data.put(-1.7976931348623157E+308, 1);
         data.put(+4.9E-324, 1);
         data.put(-4.9E-324, 1);
-
-        boolean ok = true;
-
-        for (Map.Entry<Object, Integer> entry : data.entrySet()) {
-            int part = aff.partition(entry.getKey());
-
-            UUID exp = nodes.get(entry.getValue()).id();
-            UUID act = F.first(aff.nodes(part, nodes, 1)).id();
-
-            if (!exp.equals(act)) {
-                ok = false;
-
-                info("Failed to validate affinity for key '" + entry.getKey() + "' [expected=" + exp +
-                    ", actual=" + act + ".");
-            }
-        }
-
-        if (ok)
-            return;
-
-        fail("Server partitioned affinity validation fails.");
     }
 
     /**
@@ -329,8 +286,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      */
     private ClusterNode createNode(String nodeId, int replicaCnt) {
         GridTestNode node = new GridTestNode(UUID.fromString(nodeId));
-
-        node.setAttribute(DFLT_REPLICA_COUNT_ATTR_NAME, replicaCnt);
 
         return node;
     }

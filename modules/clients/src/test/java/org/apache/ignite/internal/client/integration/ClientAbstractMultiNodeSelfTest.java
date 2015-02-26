@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -196,7 +196,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
 
-        cfg.setAffinity(new CacheConsistentHashAffinityFunction());
+        cfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         return cfg;
     }

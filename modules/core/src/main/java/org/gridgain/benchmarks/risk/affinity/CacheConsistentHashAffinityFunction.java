@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.consistenthash;
+package org.gridgain.benchmarks.risk.affinity;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
