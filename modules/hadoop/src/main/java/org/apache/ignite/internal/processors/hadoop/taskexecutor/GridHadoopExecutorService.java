@@ -179,7 +179,7 @@ public class GridHadoopExecutorService {
             workerName = task.toString();
 
         GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
-            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            @Override protected void body() {
                 try {
                     task.call();
                 }

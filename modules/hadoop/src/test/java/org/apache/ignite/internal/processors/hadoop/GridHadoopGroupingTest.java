@@ -228,7 +228,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 Text val = new Text();
 
-                @Override public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+                @Override public void initialize(InputSplit split, TaskAttemptContext context) {
                     // No-op.
                 }
 
@@ -236,14 +236,14 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                     return cnt++ < split.getLength();
                 }
 
-                @Override public YearTemperature getCurrentKey() throws IOException, InterruptedException {
+                @Override public YearTemperature getCurrentKey() {
                     key.year = 1990 + rnd.nextInt(10);
                     key.temperature = 10 + rnd.nextInt(20);
 
                     return key;
                 }
 
-                @Override public Text getCurrentValue() throws IOException, InterruptedException {
+                @Override public Text getCurrentValue() {
                     UUID id = UUID.randomUUID();
 
                     assertTrue(vals.add(id));
@@ -253,11 +253,11 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                     return val;
                 }
 
-                @Override public float getProgress() throws IOException, InterruptedException {
+                @Override public float getProgress() {
                     return 0;
                 }
 
-                @Override public void close() throws IOException {
+                @Override public void close() {
                     // No-op.
                 }
             };

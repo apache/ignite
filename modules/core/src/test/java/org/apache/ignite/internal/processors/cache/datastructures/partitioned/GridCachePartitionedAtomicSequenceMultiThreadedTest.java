@@ -151,7 +151,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -167,7 +167,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -183,7 +183,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -199,7 +199,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -215,7 +215,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.addAndGet(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -231,7 +231,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndAdd(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -247,7 +247,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
                 t.getAndIncrement();
                 t.incrementAndGet();
@@ -268,7 +268,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndAdd(2);
                 t.addAndGet(3);
                 t.addAndGet(5);

@@ -80,7 +80,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                 X.println("Warming up...");
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-                    @Override public Object call() throws IgniteCheckedException {
+                    @Override public Object call() {
                         g.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                         return null;
