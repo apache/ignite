@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -168,10 +167,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction) grid(0).jcache(null).
-            getConfiguration(CacheConfiguration.class).getAffinity();
-
-        return aff.assignPartition(aff.partition(key), new ArrayList<>(grid(0).cluster().nodes()), 1, null);
+        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
