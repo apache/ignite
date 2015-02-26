@@ -603,7 +603,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = ctx.cache().cache(space).configuration().getLongQueryWarningTimeout();
+            long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
 
             if (time > longQryExecTimeout) {
                 String msg = "Query execution is too long (" + time + " ms): " + sql;
@@ -910,7 +910,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert schema != null;
         assert tbl != null;
 
-        boolean escapeAll = schema.escapeAll;
+        boolean escapeAll = schema.escapeAll();
 
         String keyType = dbTypeFromClass(tbl.type().keyClass());
         String valTypeStr = dbTypeFromClass(tbl.type().valueClass());
@@ -1263,7 +1263,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schema = schema(ccfg.getName());
 
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), ccfg.getOffHeapMaxMemory() >= 0 ?
-            new GridUnsafeMemory(0) : null, ccfg.getSqlOnheapRowCacheSize(), ccfg.isSqlEscapeAll())) != null)
+            new GridUnsafeMemory(0) : null, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + ccfg.getName());
 
         createSchema(schema);
@@ -1496,7 +1496,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.schema = schema;
 
             fullTblName = '\"' + IgniteH2Indexing.schema(schema.spaceName) + "\"." +
-                escapeName(type.name(), schema.escapeAll);
+                escapeName(type.name(), schema.escapeAll());
         }
 
         /**
@@ -1566,11 +1566,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     int i = 0;
 
-                    boolean escapeAll = schema.escapeAll;
+                    boolean escapeAll = schema.escapeAll();
 
                     for (String field : idx.fields()) {
                         // H2 reserved keywords used as column name is case sensitive.
-                        String fieldName = escapeAll ? field : escapeName(field, escapeAll).toUpperCase();
+                        String fieldName = escapeAll ? field : escapeName(field, false).toUpperCase();
 
                         Column col = tbl.getColumn(fieldName);
 
@@ -1779,19 +1779,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
 
         /** */
-        private final boolean escapeAll;
+        private final CacheConfiguration<?,?> ccfg;
 
         /**
          * @param spaceName Space name.
          * @param offheap Offheap memory.
+         * @param ccfg Cache configuration.
          */
-        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, int onheapCacheSize, boolean escapeAll) {
+        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, CacheConfiguration<?,?> ccfg) {
             this.spaceName = spaceName;
             this.offheap = offheap;
-            this.escapeAll = escapeAll;
+            this.ccfg = ccfg;
 
             if (offheap != null)
-                rowCache = new CacheLongKeyLIRS<>(onheapCacheSize, 1, 128, 256);
+                rowCache = new CacheLongKeyLIRS<>(ccfg.getSqlOnheapRowCacheSize(), 1, 128, 256);
             else
                 rowCache = null;
         }
@@ -1802,6 +1803,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         public void add(TableDescriptor tbl) {
             if (tbls.putIfAbsent(tbl.name(), tbl) != null)
                 throw new IllegalStateException("Table already registered: " + tbl.name());
+        }
+
+        /**
+         * @return Escape all.
+         */
+        public boolean escapeAll() {
+            return ccfg.isSqlEscapeAll();
         }
     }
 

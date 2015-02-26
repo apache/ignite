@@ -82,14 +82,14 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     protected void startIndexing(IgniteH2Indexing spi) throws Exception {
+        spi.start(null);
+
         spi.registerCache(cacheCfg("A"));
         spi.registerCache(cacheCfg("B"));
-
-        spi.start(null);
     }
 
     private CacheConfiguration cacheCfg(String name) {
-        CacheConfiguration cfg = new CacheConfiguration<Object,Object>();
+        CacheConfiguration<?,?> cfg = new CacheConfiguration<>();
 
         cfg.setName(name);
 
@@ -253,7 +253,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Query data.
         Iterator<IgniteBiTuple<Integer, Map<String, Object>>> res =
-            spi.query(typeAA.space(), "select * from a order by age", Collections.emptySet(), typeAA, null);
+            spi.query(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa(3, "Borya", 18), value(res.next()));
@@ -261,7 +261,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(aa(2, "Valera", 19), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeAB.space(), "select * from b order by name", Collections.emptySet(), typeAB, null);
+        res = spi.query(typeAB.space(), "from b order by name", Collections.emptySet(), typeAB, null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here."), value(res.next()));
@@ -269,7 +269,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy"), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeBA.space(), "select * from a", Collections.emptySet(), typeBA, null);
+        res = spi.query(typeBA.space(), "from a", Collections.emptySet(), typeBA, null);
 
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true), value(res.next()));
@@ -285,7 +285,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Fields query
         GridQueryFieldsResult fieldsRes =
-            spi.queryFields(null, "select a.a.name n1, a.a.age a1, b.a.name n2, " +
+            spi.queryFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
             "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
@@ -305,10 +305,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         assertFalse(fieldsRes.iterator().hasNext());
-
-        // Query on not existing table should not fail.
-        assertFalse(spi.queryFields(null, "select * from not_existing_table",
-            Collections.emptySet(), null).iterator().hasNext());
 
         // Remove
         spi.remove(typeAA.space(), 2);
@@ -389,7 +385,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryFields(null, sql, Arrays.<Object>asList(1, range), null);
+                GridQueryFieldsResult res = spi.queryFields("A", sql, Arrays.<Object>asList(1, range), null);
 
                 assert res.iterator().hasNext();
 
@@ -495,18 +491,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteSpiException {
             assert !F.isEmpty(field);
 
-            Map m = (Map)key;
+            assert key instanceof Integer;
+
+            Map<String, T> m = (Map<String, T>)val;
 
             if (m.containsKey(field))
-                return (T)m.get(field);
-
-            m = (Map)val;
-
-            if (m.containsKey(field))
-                return (T)m.get(field);
+                return m.get(field);
 
             return null;
         }
