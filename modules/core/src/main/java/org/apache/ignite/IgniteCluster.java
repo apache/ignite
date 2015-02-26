@@ -25,6 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * {@code GridCluster} also provides a handle on {@link #nodeLocalMap()} which provides map-like functionality
@@ -60,7 +61,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @return Node local storage instance for the local node.
      */
-    public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap();
+    public <K, V> ConcurrentMap<K, V> nodeLocalMap();
 
     /**
      * Pings a remote node.

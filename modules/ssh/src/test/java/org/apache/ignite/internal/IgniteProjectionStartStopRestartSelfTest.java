@@ -1015,14 +1015,13 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param timeout Timeout.
      * @param maxConn Maximum connections.
      * @return Results collection.
-     * @throws IgniteCheckedException If failed.
      */
     private Collection<GridTuple3<String, Boolean, String>> startNodes(IgniteCluster cluster,
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,
         int timeout,
-        int maxConn) throws IgniteCheckedException {
+        int maxConn) {
         cluster = cluster.withAsync();
 
         assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));

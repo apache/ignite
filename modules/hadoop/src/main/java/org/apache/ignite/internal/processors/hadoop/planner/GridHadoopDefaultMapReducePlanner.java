@@ -291,10 +291,9 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param mappers Mappers map.
      * @param reducerCnt Reducers count.
      * @return Reducers map.
-     * @throws IgniteCheckedException If failed.
      */
     private Map<UUID, int[]> reducers(Collection<ClusterNode> top,
-        Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) throws IgniteCheckedException {
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) {
         // Determine initial node weights.
         int totalWeight = 0;
 

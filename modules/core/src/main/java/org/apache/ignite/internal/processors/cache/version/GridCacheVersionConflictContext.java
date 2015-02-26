@@ -43,9 +43,6 @@ public class GridCacheVersionConflictContext<K, V> {
     /** TTL. */
     private long ttl;
 
-    /** Explicit TTL flag. */
-    private boolean explicitTtl;
-
     /** Manual resolve flag. */
     private boolean manualResolve;
 
@@ -94,24 +91,11 @@ public class GridCacheVersionConflictContext<K, V> {
 
     /**
      * Force cache to apply new entry overwriting old (existing) entry.
-     * <p>
-     * Note that updates from remote data centers always have explicit TTL , while local data center
-     * updates will only have explicit TTL in case {@link CacheEntry#timeToLive(long)} was called
-     * before update. In the latter case new entry will pick TTL of the old (existing) entry, even
-     * if it was set through update from remote data center. it means that depending on concurrent
-     * update timings new update might pick unexpected TTL. For example, consider that three updates
-     * of the same key are performed: local update with explicit TTL (1) followed by another local
-     * update without explicit TTL (2) and one remote update (3). In this case you might expect that
-     * update (2) will pick TTL set during update (1). However, in case update (3) occurrs between (1)
-     * and (2) and it overwrites (1) during conflict resolution, then update (2) will pick TTL of
-     * update (3). To have predictable TTL in such cases you should either always set it explicitly
-     * through {@code GridCacheEntry.timeToLive(long)} or use {@link #merge(Object, long)}.
      */
     public void useNew() {
         state = State.USE_NEW;
 
-        if (!explicitTtl)
-            ttl = newEntry.ttl();
+        ttl = newEntry.ttl();
     }
 
     /**
@@ -121,15 +105,16 @@ public class GridCacheVersionConflictContext<K, V> {
      * Also in case of merge you have to specify new TTL explicitly. For unlimited TTL use {@code 0}.
      *
      * @param mergeVal Merge value or {@code null} to force remove.
-     * @param ttl Time to live in milliseconds.
+     * @param ttl Time to live in milliseconds (must be non-negative).
      */
     public void merge(@Nullable V mergeVal, long ttl) {
+        if (ttl < 0)
+            throw new IllegalArgumentException("TTL must be non-negative: " + ttl);
+
         state = State.MERGE;
 
         this.mergeVal = mergeVal;
         this.ttl = ttl;
-
-        explicitTtl = true;
     }
 
     /**
@@ -185,15 +170,7 @@ public class GridCacheVersionConflictContext<K, V> {
      * @return Expire time.
      */
     public long expireTime() {
-        return explicitTtl ? CU.toExpireTime(ttl) : isUseNew() ? newEntry.expireTime() :
-            isUseOld() ? oldEntry.expireTime() : 0L;
-    }
-
-    /**
-     * @return Explicit TTL flag.
-     */
-    public boolean explicitTtl() {
-        return explicitTtl;
+        return isUseNew() ? newEntry.expireTime() : isUseOld() ? oldEntry.expireTime() : CU.toExpireTime(ttl);
     }
 
     /** {@inheritDoc} */

@@ -305,7 +305,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     assert ses.accepted();
 
                     if (msg instanceof NodeIdMessage)
-                        sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes, 0);
+                        sndId = U.bytesToUuid(((NodeIdMessage) msg).nodeIdBytes, 0);
                     else {
                         assert msg instanceof HandshakeMessage : msg;
 
@@ -1552,6 +1552,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Failed to bind to local port (will try next port within range) [port=" + port +
                         ", locHost=" + locHost + ']');
+
+                onException("Failed to bind to local port (will try next port within range) [port=" + port +
+                    ", locHost=" + locHost + ']', e);
             }
         }
 
@@ -1601,6 +1604,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Failed to bind to local port (will try next port within range) [port=" + port +
                         ", locHost=" + locHost + ']');
+
+                onException("Failed to bind to local port (will try next port within range) [port=" + port +
+                    ", locHost=" + locHost + ']', e);
             }
         }
 
@@ -1868,9 +1874,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
                 else if (getSpiContext().node(node.id()) != null)
                     LT.warn(log, null, e.getMessage());
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to establish shared memory connection with local node (node has left): " +
-                        node.id());
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to establish shared memory connection with local node (node has left): " +
+                            node.id());
+
+                    onException("Failed to establish shared memory connection with local node (node has left): "
+                        + node.id(), e);
+                }
             }
         }
 
@@ -1912,6 +1923,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 safeHandshake(client, null, node.id(), connTimeout0);
             }
             catch (HandshakeTimeoutException e) {
+                onException("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                    ", client=" + client + ']', e);
+
                 if (log.isDebugEnabled())
                     log.debug("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
                         ", err=" + e.getMessage() + ", client=" + client + ']');
@@ -2067,6 +2081,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         client = null;
                     }
 
+                    onException("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                        ", addr=" + addr + ']', e);
+
                     if (log.isDebugEnabled())
                         log.debug(
                             "Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
@@ -2103,6 +2120,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         client = null;
                     }
+
+                    onException("Client creation failed [addr=" + addr + ", err=" + e + ']', e);
 
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
@@ -2327,6 +2346,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         return recovery;
+    }
+
+    /**
+     * @param msg Error message.
+     * @param e Exception.
+     */
+    private void onException(String msg, Exception e) {
+        getExceptionRegistry().onException(msg, e);
     }
 
     /** {@inheritDoc} */
@@ -2645,8 +2672,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         catch (IOException e) {
                             if (getSpiContext().pingNode(entry.getKey()))
                                 U.error(log, "Failed to flush client: " + client, e);
-                            else if (log.isDebugEnabled())
-                                log.debug("Failed to flush client (node left): " + client);
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to flush client (node left): " + client);
+
+                                onException("Failed to flush client (node left): " + client, e);
+                            }
                         }
                         finally {
                             if (err)
@@ -2805,9 +2836,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         addReconnectRequest(recoveryDesc);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Recovery reconnect failed, " +
-                            "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Recovery reconnect failed, " +
+                                "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+
+                        onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
+                            e);
+                    }
 
                 }
             }

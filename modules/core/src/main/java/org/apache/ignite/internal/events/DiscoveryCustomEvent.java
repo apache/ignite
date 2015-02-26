@@ -15,46 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.securesession;
+package org.apache.ignite.internal.events;
 
-import org.apache.ignite.internal.processors.security.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
- * Secure session object.
+ * Custom event.
  */
-public class GridSecureSession {
-    /** Authentication subject context returned by authentication SPI. */
-    private GridSecurityContext authSubjCtx;
+public class DiscoveryCustomEvent extends DiscoveryEvent {
+    /**
+     * Built-in event type: custom event sent.
+     * <br>
+     * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(Serializable)}.
+     * <p>
+     *
+     * @see DiscoveryCustomEvent
+     */
+    public static final int EVT_DISCOVERY_CUSTOM_EVT = 18;
 
-    /** Session creation time. */
-    private byte[] sesTok;
+    /** */
+    private Serializable data;
 
     /**
-     * @param authSubjCtx Authentication subject context.
-     * @param sesTok Session token.
+     * Default constructor.
      */
-    public GridSecureSession(GridSecurityContext authSubjCtx, byte[] sesTok) {
-        this.authSubjCtx = authSubjCtx;
-        this.sesTok = sesTok;
+    public DiscoveryCustomEvent() {
+        type(EVT_DISCOVERY_CUSTOM_EVT);
     }
 
     /**
-     * @return Authentication subject context returned by authentication SPI.
+     * @return Data.
      */
-    public GridSecurityContext authenticationSubjectContext() {
-        return authSubjCtx;
+    public Serializable data() {
+        return data;
     }
 
     /**
-     * @return Session creation time.
+     * @param data New data.
      */
-    public byte[] sessionToken() {
-        return sesTok;
+    public void data(Serializable data) {
+        this.data = data;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSecureSession.class, this);
+        return S.toString(DiscoveryCustomEvent.class, this, super.toString());
     }
 }
