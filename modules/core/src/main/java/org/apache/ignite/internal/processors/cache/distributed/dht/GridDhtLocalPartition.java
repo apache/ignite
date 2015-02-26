@@ -536,17 +536,12 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
-        boolean isLocStore = cctx.store().isLocalStore();
-
         for (Iterator<GridDhtCacheEntry<K, V>> it = map.values().iterator(); it.hasNext();) {
             GridDhtCacheEntry<K, V> cached = it.next();
 
             try {
                 if (cached.clearInternal(clearVer, swap)) {
                     it.remove();
-
-                    if (isLocStore)
-                        cctx.store().removeFromStore(null, cached.key());
 
                     if (!cached.isInternal()) {
                         mapPubSize.decrement();
