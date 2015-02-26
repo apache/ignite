@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -276,7 +277,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                if (type != EVT_NODE_METRICS_UPDATED && type != EVT_DISCOVERY_CUSTOM_EVT) {
+                if (type != EVT_NODE_METRICS_UPDATED && type != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 
                     discoCacheHist.put(topVer, cache);
@@ -1486,7 +1487,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     break;
                 }
 
-                case EVT_DISCOVERY_CUSTOM_EVT: {
+                case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
                     DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
 
                     customEvt.node(ctx.discovery().localNode());
@@ -1495,7 +1496,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     customEvt.topologySnapshot(topVer, null);
                     customEvt.data(evt.get5());
 
-                    assert ctx.event().isRecordable(EVT_DISCOVERY_CUSTOM_EVT);
+                    assert ctx.event().isRecordable(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
 
                     ctx.event().record(customEvt);
 
