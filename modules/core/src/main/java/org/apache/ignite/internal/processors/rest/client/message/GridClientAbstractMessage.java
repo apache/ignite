@@ -88,12 +88,12 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        IgniteByteUtils.writeByteArray(out, sesTok);
+        U.writeByteArray(out, sesTok);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sesTok = IgniteByteUtils.readByteArray(in);
+        sesTok = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */

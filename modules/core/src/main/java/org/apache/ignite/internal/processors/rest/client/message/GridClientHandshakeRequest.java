@@ -54,7 +54,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
      * @return Protocol version.
      */
     public short version() {
-        return IgniteByteUtils.bytesToShort(arr, 0);
+        return U.bytesToShort(arr, 0);
     }
 
     /**
@@ -93,7 +93,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     public byte[] rawBytes() {
         byte[] ret = new byte[PACKET_SIZE];
 
-        IgniteByteUtils.shortToBytes(PROTO_VER, ret, 0);
+        U.shortToBytes(PROTO_VER, ret, 0);
 
         ret[2] = (byte)(marshId << 6);
 

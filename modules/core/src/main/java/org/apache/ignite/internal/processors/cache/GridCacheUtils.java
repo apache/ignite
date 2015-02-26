@@ -39,6 +39,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
+import javax.cache.integration.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1309,10 +1310,10 @@ public class GridCacheUtils {
 
         byte[] bytes = new byte[28];
 
-        IgniteByteUtils.intToBytes(ver.topologyVersion(), bytes, 0);
-        IgniteByteUtils.longToBytes(ver.globalTime(), bytes, 4);
-        IgniteByteUtils.longToBytes(ver.order(), bytes, 12);
-        IgniteByteUtils.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
+        U.intToBytes(ver.topologyVersion(), bytes, 0);
+        U.longToBytes(ver.globalTime(), bytes, 4);
+        U.longToBytes(ver.order(), bytes, 12);
+        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
 
         return bytes;
     }
@@ -1760,6 +1761,9 @@ public class GridCacheUtils {
      * @return CacheException runtime exception, never null.
      */
     @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
+        if (e.hasCause(CacheWriterException.class))
+            return new CacheWriterException(e);
+
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)

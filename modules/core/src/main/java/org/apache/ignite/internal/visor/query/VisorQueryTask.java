@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.lang.*;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
@@ -282,7 +282,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         private void scheduleResultSetHolderRemoval(final String id) {
             ((IgniteKernal)ignite).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
                 @Override public void onTimeout() {
-                    ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = ignite.cluster().nodeLocalMap();
+                    ConcurrentMap<String, VisorFutureResultSetHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorFutureResultSetHolder<?> t = storage.get(id);
 
