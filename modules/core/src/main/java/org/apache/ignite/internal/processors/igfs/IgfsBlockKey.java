@@ -31,7 +31,7 @@ import java.nio.*;
  * File's binary data block key.
  */
 @GridInternal
-public final class IgfsBlockKey extends MessageAdapter implements Externalizable, Comparable<IgfsBlockKey> {
+public final class IgfsBlockKey implements Message, Externalizable, Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -161,11 +161,11 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -199,17 +199,20 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 affKey = reader.readIgniteUuid("affKey");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 blockId = reader.readLong("blockId");
@@ -217,7 +220,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 evictExclude = reader.readBoolean("evictExclude");
@@ -225,7 +228,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 fileId = reader.readIgniteUuid("fileId");
@@ -233,7 +236,7 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -243,6 +246,11 @@ public final class IgfsBlockKey extends MessageAdapter implements Externalizable
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 65;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 4;
     }
 
     /** {@inheritDoc} */

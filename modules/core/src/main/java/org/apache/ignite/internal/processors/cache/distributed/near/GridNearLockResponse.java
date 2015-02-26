@@ -187,16 +187,16 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, Type.MSG))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -208,7 +208,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeObjectArray("mappedVers", mappedVers, Type.MSG))
+                if (!writer.writeObjectArray("mappedVers", mappedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -220,7 +220,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("pending", pending, Type.MSG))
+                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -231,20 +231,23 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 11:
-                dhtVers = reader.readObjectArray("dhtVers", Type.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 filterRes = reader.readBooleanArray("filterRes");
@@ -252,15 +255,15 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
-                mappedVers = reader.readObjectArray("mappedVers", Type.MSG, GridCacheVersion.class);
+                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
                 miniId = reader.readIgniteUuid("miniId");
@@ -268,15 +271,15 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 15:
-                pending = reader.readCollection("pending", Type.MSG);
+                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -286,6 +289,11 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 52;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 16;
     }
 
     /** {@inheritDoc} */

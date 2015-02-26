@@ -43,6 +43,9 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /** */
     private static ConcurrentHashMap8<Object, Object> storeMap = new ConcurrentHashMap8<>();
 
+    /** */
+    private static Set<Object> unaccessableKeys = new HashSet<>();
+
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheLoader> loaderFactory() {
         return new Factory<CacheLoader>() {
@@ -70,6 +73,8 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         writerCallCnt.set(0);
 
         storeMap.clear();
+
+        unaccessableKeys.clear();
     }
 
     /**
@@ -141,6 +146,42 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         assertFalse(storeMap.containsKey(key));
 
         assertNull(cache.get(key));
+    }
+
+    /**
+     *
+     */
+    public void testLoaderException() {
+        IgniteCache<Object, Object> cache = jcache(0);
+
+        unaccessableKeys.add(1);
+
+        try {
+            cache.get(1);
+
+            assert false : "Exception should be thrown";
+        }
+        catch (CacheLoaderException ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public void testWriterException() {
+        IgniteCache<Object, Object> cache = jcache(0);
+
+        unaccessableKeys.add(1);
+
+        try {
+            cache.put(1, 1);
+
+            assert false : "Exception should be thrown";
+        }
+        catch (CacheWriterException ignored) {
+            // No-op.
+        }
     }
 
     /**
@@ -253,6 +294,9 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
             ldrCallCnt.incrementAndGet();
 
+            if (unaccessableKeys.contains(key))
+                throw new CacheLoaderException();
+
             return storeMap.get(key);
         }
 
@@ -304,6 +348,9 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            if (unaccessableKeys.contains(e.getKey()))
+                throw new CacheWriterException();
+
             assertTrue(startCalled);
 
             assertNotNull(ignite);

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -316,8 +317,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "topic");
 
                         try {
-                            if (msg instanceof MessageAdapter)
-                                ctx.io().send(node, topic, (MessageAdapter)msg, SYSTEM_POOL);
+                            if (msg instanceof Message)
+                                ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
@@ -543,6 +544,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public MessageFactory messageFactory() {
                         return ctx.io().messageFactory();
+                    }
+
+                    @Override public IgniteExceptionRegistry exceptionRegistry() {
+                        return ctx.exceptionRegistry();
                     }
 
                     /**

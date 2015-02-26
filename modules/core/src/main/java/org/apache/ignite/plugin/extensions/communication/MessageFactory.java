@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * A plugin can provide his own message factory as an extension
  * if it uses any custom messages (all message must extend
- * {@link MessageAdapter} class).
+ * {@link Message} class).
  */
 public interface MessageFactory extends Extension {
     /**
@@ -37,5 +37,5 @@ public interface MessageFactory extends Extension {
      * @param type Message type.
      * @return Message instance.
      */
-    @Nullable public MessageAdapter create(byte type);
+    @Nullable public Message create(byte type);
 }

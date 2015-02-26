@@ -69,7 +69,7 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
                 throw new CacheException("Failed to find class: " + clsName, e);
             }
             catch (NoSuchMethodException e) {
-                throw new CacheException("Failed to find empty constructor for class: " + clsName, e);
+                throw new CacheException("Failed to find default constructor for class: " + clsName, e);
             }
 
             setters = U.newHashMap(fields.size());
@@ -87,8 +87,8 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
                         getters.put(field.getJavaName(), cls.getMethod("is" + prop));
                     }
                     catch (NoSuchMethodException e) {
-                        throw new CacheException("Failed to find getter for property " + field.getJavaName() +
-                            " of class: " + cls.getName(), e);
+                        throw new CacheException("Failed to find getter in POJO class [class name=" + clsName +
+                            ", property=" + field.getJavaName() + "]", e);
                     }
                 }
 
@@ -96,8 +96,8 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
                     setters.put(field.getJavaName(), cls.getMethod("set" + prop, field.getJavaType()));
                 }
                 catch (NoSuchMethodException e) {
-                    throw new CacheException("Failed to find setter for property " + field.getJavaName() +
-                        " of class: " + clsName, e);
+                    throw new CacheException("Failed to find setter in POJO class [class name=" + clsName +
+                        ", property=" + field.getJavaName() + "]", e);
                 }
             }
         }
@@ -157,11 +157,18 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
         Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException {
         PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);
 
+        if (mc == null)
+            throw new CacheLoaderException("Failed to find cache type metadata for type: " + typeName);
+
         Object obj = mc.newInstance();
 
         try {
             for (CacheTypeFieldMetadata field : fields) {
                 Method setter = mc.setters.get(field.getJavaName());
+
+                if (setter == null)
+                    throw new CacheLoaderException("Failed to find setter in POJO class [class name=" + typeName +
+                        ", property=" + field.getJavaName() + "]");
 
                 Integer colIdx = loadColIdxs.get(field.getDatabaseName());
 
@@ -181,7 +188,16 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
         try {
             PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);
 
-            return mc.getters.get(fieldName).invoke(obj);
+            if (mc == null)
+                throw new CacheException("Failed to find cache type metadata for type: " + typeName);
+
+            Method getter = mc.getters.get(fieldName);
+
+            if (getter == null)
+                throw new CacheLoaderException("Failed to find getter in POJO class [class name=" + typeName +
+                    ", property=" + fieldName + "]");
+
+            return getter.invoke(obj);
         }
         catch (Exception e) {
             throw new CacheException("Failed to read object of class: " + typeName, e);

@@ -397,7 +397,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
+    @Override public IgfsStatus globalSpace() {
         if (enterBusy()) {
             try {
                 IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
@@ -1992,11 +1992,9 @@ public final class IgfsImpl implements IgfsEx {
          * @param bufSize The size of the buffer to be used.
          * @param mode IGFS mode.
          * @param batch Optional secondary file system batch.
-         * @throws IgniteCheckedException In case of error.
          */
         IgfsEventAwareOutputStream(IgfsPath path, IgfsFileInfo fileInfo,
-            IgniteUuid parentId, int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch)
-            throws IgniteCheckedException {
+            IgniteUuid parentId, int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch) {
             super(igfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
             metrics.incrementFilesOpenedForWrite();

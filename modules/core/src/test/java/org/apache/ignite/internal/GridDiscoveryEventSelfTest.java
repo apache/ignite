@@ -417,4 +417,47 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEvents() throws Exception {
+        try {
+            Ignite g0 = startGrid(0);
+            final Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
+
+            final CountDownLatch cnt = new CountDownLatch(3);
+
+            IgnitePredicate<DiscoveryCustomEvent> lsnr = new IgnitePredicate<DiscoveryCustomEvent>() {
+                @Override public boolean apply(DiscoveryCustomEvent evt) {
+                    assert cnt.getCount() > 0;
+
+                    cnt.countDown();
+
+                    return true;
+                }
+            };
+
+            g0.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
+            g1.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
+            g2.events().localListen(lsnr, EVT_DISCOVERY_CUSTOM_EVT);
+
+            ((IgniteKernal)g1).context().discovery().sendCustomEvent("a");
+
+            cnt.await();
+
+            g0.events().localQuery(new IgnitePredicate<DiscoveryCustomEvent>() {
+                @Override public boolean apply(DiscoveryCustomEvent evt) {
+                    assert "a".equals(evt.data());
+                    assert ((IgniteEx)g1).localNode().id().equals(evt.eventNode().id());
+
+                    return true;
+                }
+            }, EVT_DISCOVERY_CUSTOM_EVT);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 }
