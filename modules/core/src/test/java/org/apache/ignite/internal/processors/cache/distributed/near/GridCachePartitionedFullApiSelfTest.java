@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -68,9 +68,9 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             cache.put(key, i);
         }
 
-        CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cache.configuration().getAffinity();
+        CacheAffinity aff = grid(0).affinity(cache.name());
 
-        for (int i = 0 ; i < aff.getPartitions(); i++)
+        for (int i = 0 ; i < aff.partitions(); i++)
             String.valueOf(cache.entrySet(i));
     }
 }
