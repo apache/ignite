@@ -38,8 +38,8 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(IgniteBiTuple<Boolean, String> arg) {
-        return new VisorCacheMetricsJob(arg, debug);
+    @Override protected VisorCacheMetricsCollectorJob job(IgniteBiTuple<Boolean, String> arg) {
+        return new VisorCacheMetricsCollectorJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -71,7 +71,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     /**
      * Job that collect cache metrics from node.
      */
-    private static class VisorCacheMetricsJob
+    private static class VisorCacheMetricsCollectorJob
         extends VisorJob<IgniteBiTuple<Boolean, String>, Map<String, VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -82,7 +82,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
          * @param arg Whether to collect metrics for all caches or for specified cache name only.
          * @param debug Debug flag.
          */
-        private VisorCacheMetricsJob(IgniteBiTuple<Boolean, String> arg, boolean debug) {
+        private VisorCacheMetricsCollectorJob(IgniteBiTuple<Boolean, String> arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -106,7 +106,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCacheMetricsJob.class, this);
+            return S.toString(VisorCacheMetricsCollectorJob.class, this);
         }
     }
 }
