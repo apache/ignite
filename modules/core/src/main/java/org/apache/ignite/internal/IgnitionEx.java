@@ -1326,8 +1326,6 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
-            myCfg.setGridName(cfg.getGridName());
-
             UUID nodeId = cfg.getNodeId();
 
             if (nodeId == null)
