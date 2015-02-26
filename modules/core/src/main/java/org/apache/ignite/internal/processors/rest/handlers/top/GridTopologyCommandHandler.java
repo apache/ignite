@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.top;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
