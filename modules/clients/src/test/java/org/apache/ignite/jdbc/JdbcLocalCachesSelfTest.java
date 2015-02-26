@@ -53,6 +53,9 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setName(CACHE_NAME);
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setIndexedTypes(
+            String.class, Integer.class
+        );
 
         cfg.setCacheConfiguration(cache);
 

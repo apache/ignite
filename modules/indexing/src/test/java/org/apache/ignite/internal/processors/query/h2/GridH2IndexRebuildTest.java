@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -141,6 +140,14 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
     /** */
     private static final int ENTRY_CNT = 10000;
+
+    /** {@inheritDoc} */
+    @Override protected Class<?>[] indexedTypes() {
+        return new Class<?>[] {
+            Integer.class, TestValue1.class,
+            Integer.class, TestValue2.class
+        };
+    }
 
     /**
      * @throws Exception if failed.

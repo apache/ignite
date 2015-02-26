@@ -58,7 +58,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -69,6 +69,9 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setIndexedTypes(
+            Integer.class, ObjectValue.class
+        );
 
         c.setCacheConfiguration(cc);
 

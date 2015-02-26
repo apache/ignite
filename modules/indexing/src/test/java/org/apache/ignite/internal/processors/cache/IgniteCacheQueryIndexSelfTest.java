@@ -75,6 +75,8 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
 
         IgniteCache<Integer, CacheValue> cache0 = grid(0).jcache(null);
 
+        cache0.loadCache(null);
+
         checkCache(cache0);
         checkQuery(cache0);
     }
