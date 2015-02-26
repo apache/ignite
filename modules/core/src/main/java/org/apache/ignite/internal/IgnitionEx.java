@@ -34,13 +34,29 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.checkpoint.*;
+import org.apache.ignite.spi.checkpoint.noop.*;
+import org.apache.ignite.spi.collision.noop.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.eventstorage.memory.*;
+import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.failover.always.*;
+import org.apache.ignite.spi.indexing.noop.*;
+import org.apache.ignite.spi.loadbalancing.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.spi.swapspace.noop.*;
+import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.io.*;
+import java.lang.management.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
@@ -102,6 +118,9 @@ public class IgnitionEx {
 
     /** */
     private static volatile boolean daemon;
+
+    /** */
+    private static final String[] EMPTY_STR_ARR = new String[0];
 
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
@@ -1278,17 +1297,6 @@ public class IgnitionEx {
 
             IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
 
-            String ggHome = cfg.getIgniteHome();
-
-            // Set Ignite home.
-            if (ggHome == null)
-                ggHome = U.getIgniteHome();
-            else
-                // If user provided IGNITE_HOME - set it as a system property.
-                U.setIgniteHome(ggHome);
-
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
@@ -1298,60 +1306,18 @@ public class IgnitionEx {
             if (startCtx.configUrl() != null)
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
-            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
-
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), myCfg.getNodeId());
+            // Initialize factory's log.
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), cfg.getNodeId());
 
             assert cfgLog != null;
 
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(myCfg.getNodeId()));
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(cfg.getNodeId()));
 
-            // Initialize factory's log.
             log = cfgLog.getLogger(G.class);
 
+            IgniteConfiguration myCfg = initializeDefaultConfiguration(cfg);
+
             myCfg.setGridLogger(cfgLog);
-
-            // Check Ignite home folder (after log is available).
-            if (ggHome != null) {
-                File ggHomeFile = new File(ggHome);
-
-                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
-            }
-
-            myCfg.setIgniteHome(ggHome);
-
-            // Local host.
-            String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
-
-            myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
-
-            // Override daemon flag if it was set on the factory.
-            if (daemon)
-                myCfg.setDaemon(true);
-
-            // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
-
-            if (!F.isEmpty(depModeName)) {
-                if (!F.isEmpty(cfg.getCacheConfiguration())) {
-                    U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
-                        "execution may not work for console Visor)");
-                }
-                else {
-                    try {
-                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
-
-                        if (myCfg.getDeploymentMode() != depMode)
-                            myCfg.setDeploymentMode(depMode);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
-                            "(are there any misspellings?)" +
-                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
-                    }
-                }
-            }
 
             if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
@@ -1362,38 +1328,6 @@ public class IgnitionEx {
                     new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
                 );
             }
-
-            Marshaller marsh = cfg.getMarshaller();
-
-            if (marsh == null) {
-                if (!U.isHotSpot()) {
-                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
-                        "(only Java HotSpot VMs are supported). Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
-
-                    marsh = new JdkMarshaller();
-                }
-                else if (!OptimizedMarshaller.available()) {
-                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
-                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                        "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
-
-                    marsh = new JdkMarshaller();
-                }
-                else
-                    marsh = new OptimizedMarshaller();
-            }
-            else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
-                U.warn(log, "Using GridOptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
-                    "object serialization behavior could yield unexpected results.",
-                    "Using GridOptimizedMarshaller on untested JVM.");
-            }
-
-            myCfg.setMarshaller(marsh);
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -1417,82 +1351,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
-
-            CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
-
-            final boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
-
-            final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
-
-            final boolean clientDisco = myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
-
-            CacheConfiguration[] copies;
-
-            if (cacheCfgs != null && cacheCfgs.length > 0) {
-                if (!U.discoOrdered(myCfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
-                    throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
-                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
-                        "like GridTcpDiscoverySpi)");
-
-                for (CacheConfiguration ccfg : cacheCfgs) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
-                            "\" because this prefix is reserved for internal purposes.");
-                }
-
-                int addCacheCnt = 1; // Always add utility cache.
-
-                if (hasHadoop)
-                    addCacheCnt++;
-
-                if (hasAtomics)
-                    addCacheCnt++;
-
-                copies = new CacheConfiguration[cacheCfgs.length + addCacheCnt];
-
-                int cloneIdx = 1;
-
-                if (hasHadoop)
-                    copies[cloneIdx++] = CU.hadoopSystemCache();
-
-                if (hasAtomics)
-                    copies[cloneIdx++] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
-
-                for (CacheConfiguration ccfg : cacheCfgs)
-                    copies[cloneIdx++] = new CacheConfiguration(ccfg);
-            }
-            else {
-                int cacheCnt = 1; // Always add utility cache.
-
-                if (hasHadoop)
-                    cacheCnt++;
-
-                if (hasAtomics)
-                    cacheCnt++;
-
-                copies = new CacheConfiguration[cacheCnt];
-
-                int cacheIdx = 1;
-
-                if (hasHadoop)
-                    copies[cacheIdx++] = CU.hadoopSystemCache();
-
-                if (hasAtomics)
-                    copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
-            }
-
-            // Always add utility cache.
-            copies[0] = utilitySystemCache(clientDisco);
-
-            myCfg.setCacheConfiguration(copies);
 
             try {
                 // Use reflection to avoid loading undesired classes.
@@ -1632,6 +1490,293 @@ public class IgnitionEx {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
                         "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
+            }
+        }
+
+        /**
+         * @param cfg Ignite configuration copy to.
+         * @return New ignite configuration.
+         */
+        private IgniteConfiguration initializeDefaultConfiguration(IgniteConfiguration cfg)
+            throws IgniteCheckedException {
+            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
+            initializeDefaultConfigurationParameters(myCfg);
+            return myCfg;
+        }
+
+        /**
+         * Initialize default parameters.
+         */
+        public void initializeDefaultConfigurationParameters(IgniteConfiguration cfg) throws IgniteCheckedException {
+            // Set Ignite home.
+            String ggHome = cfg.getIgniteHome();
+
+            if (ggHome == null)
+                ggHome = U.getIgniteHome();
+            else
+                // If user provided IGNITE_HOME - set it as a system property.
+                U.setIgniteHome(ggHome);
+
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+
+            // Check Ignite home folder (after log is available).
+            if (ggHome != null) {
+                File ggHomeFile = new File(ggHome);
+
+                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
+            }
+
+            cfg.setIgniteHome(ggHome);
+
+            // Local host.
+            String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
+
+            cfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
+
+            // Override daemon flag if it was set on the factory.
+            if (daemon)
+                cfg.setDaemon(true);
+
+            Marshaller marsh = cfg.getMarshaller();
+
+            if (marsh == null) {
+                if (!U.isHotSpot()) {
+                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
+                            "(only Java HotSpot VMs are supported). Switching to standard JDK marshalling - " +
+                            "object serialization performance will be significantly slower.",
+                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+
+                    marsh = new JdkMarshaller();
+                }
+                else if (!OptimizedMarshaller.available()) {
+                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
+                            "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
+                            "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
+                            "Switching to standard JDK marshalling - " +
+                            "object serialization performance will be significantly slower.",
+                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+
+                    marsh = new JdkMarshaller();
+                }
+                else
+                    marsh = new OptimizedMarshaller();
+            }
+            else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
+                U.warn(log, "Using GridOptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
+                        "object serialization behavior could yield unexpected results.",
+                    "Using GridOptimizedMarshaller on untested JVM.");
+            }
+
+            // Check for deployment mode override.
+            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
+
+            if (!F.isEmpty(depModeName)) {
+                if (!F.isEmpty(cfg.getCacheConfiguration())) {
+                    U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
+                        "execution may not work for console Visor)");
+                }
+                else {
+                    try {
+                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
+
+                        if (cfg.getDeploymentMode() != depMode)
+                            cfg.setDeploymentMode(depMode);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
+                            "(are there any misspellings?)" +
+                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                    }
+                }
+            }
+
+            cfg.setMarshaller(marsh);
+
+            cfg.setConnectorConfiguration(cfg.getConnectorConfiguration() != null ?
+                new ConnectorConfiguration(cfg.getConnectorConfiguration()) : null);
+
+            IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
+
+            if (igfsCfgs != null) {
+                IgfsConfiguration[] clone = igfsCfgs.clone();
+
+                for (int i = 0; i < igfsCfgs.length; i++)
+                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
+
+                cfg.setIgfsConfiguration(clone);
+            }
+
+            if (cfg.getMBeanServer() == null)
+                cfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+
+            if (cfg.getNodeId() == null)
+               cfg.setNodeId(UUID.randomUUID());
+
+            if (cfg.getPeerClassLoadingLocalClassPathExclude() == null)
+                cfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
+
+            StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
+
+            if (streamerCfgs != null) {
+                StreamerConfiguration[] clone = streamerCfgs.clone();
+
+                for (int i = 0; i < streamerCfgs.length; i++)
+                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
+
+                cfg.setStreamerConfiguration(clone);
+            }
+
+            cfg.setTransactionConfiguration(cfg.getTransactionConfiguration() != null ?
+                new TransactionConfiguration(cfg.getTransactionConfiguration()) : null);
+
+            if (cfg.getUserAttributes() == null) {
+                Map<String, ?> emptyAttr = Collections.emptyMap();
+                cfg.setUserAttributes(emptyAttr);
+            }
+
+            initializeDefaultCacheConfiguration(cfg);
+
+            initializeDefaultSpi(cfg);
+        }
+
+        /**
+         * Initialize default cache configuration.
+         *
+         * @param cfg Ignite configuration.
+         */
+        public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+            CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
+
+            final boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
+
+            final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
+
+            final boolean clientDisco = cfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
+
+            CacheConfiguration[] copies;
+
+            if (cacheCfgs != null && cacheCfgs.length > 0) {
+                if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
+                    throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
+                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
+                        "like GridTcpDiscoverySpi)");
+
+                for (CacheConfiguration ccfg : cacheCfgs) {
+                    if (CU.isHadoopSystemCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
+                            "\" because it is reserved for internal purposes.");
+
+                    if (CU.isAtomicsCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
+                            "\" because it is reserved for internal purposes.");
+
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
+                            "\" because this prefix is reserved for internal purposes.");
+                }
+
+                int addCacheCnt = 1; // Always add utility cache.
+
+                if (hasHadoop)
+                    addCacheCnt++;
+
+                if (hasAtomics)
+                    addCacheCnt++;
+
+                copies = new CacheConfiguration[cacheCfgs.length + addCacheCnt];
+
+                int cloneIdx = 1;
+
+                if (hasHadoop)
+                    copies[cloneIdx++] = CU.hadoopSystemCache();
+
+                if (hasAtomics)
+                    copies[cloneIdx++] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
+
+                for (CacheConfiguration ccfg : cacheCfgs)
+                    copies[cloneIdx++] = new CacheConfiguration(ccfg);
+            }
+            else {
+                int cacheCnt = 1; // Always add utility cache.
+
+                if (hasHadoop)
+                    cacheCnt++;
+
+                if (hasAtomics)
+                    cacheCnt++;
+
+                copies = new CacheConfiguration[cacheCnt];
+
+                int cacheIdx = 1;
+
+                if (hasHadoop)
+                    copies[cacheIdx++] = CU.hadoopSystemCache();
+
+                if (hasAtomics)
+                    copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
+            }
+
+            // Always add utility cache.
+            copies[0] = utilitySystemCache(clientDisco);
+
+            cfg.setCacheConfiguration(copies);
+        }
+
+        /**
+         * Initialize default values for spi.
+         *
+         * @param cfg Ignite configuration.
+         */
+        private void initializeDefaultSpi(IgniteConfiguration cfg) {
+            if (cfg.getDiscoverySpi() == null)
+                cfg.setDiscoverySpi(new TcpDiscoverySpi());
+
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
+                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+                if (tcpDisco.getIpFinder() == null)
+                    tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
+            }
+
+            if (cfg.getCommunicationSpi() == null)
+                cfg.setCommunicationSpi(new TcpCommunicationSpi());
+
+            if (cfg.getDeploymentSpi() == null)
+                cfg.setDeploymentSpi(new LocalDeploymentSpi());
+
+            if (cfg.getEventStorageSpi() == null)
+                cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+
+            if (cfg.getCheckpointSpi() == null)
+                cfg.setCheckpointSpi(new CheckpointSpi[] {new NoopCheckpointSpi()});
+
+            if (cfg.getCollisionSpi() == null)
+                cfg.setCollisionSpi(new NoopCollisionSpi());
+
+            if (cfg.getFailoverSpi() == null)
+                cfg.setFailoverSpi(new FailoverSpi[] {new AlwaysFailoverSpi()});
+
+            if (cfg.getLoadBalancingSpi() == null)
+                cfg.setLoadBalancingSpi(new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()});
+
+            if (cfg.getIndexingSpi() == null)
+                cfg.setIndexingSpi(new NoopIndexingSpi());
+
+            if (cfg.getSwapSpaceSpi() == null) {
+                boolean needSwap = false;
+
+                if (cfg.getCacheConfiguration() != null) {
+                    for (CacheConfiguration c : cfg.getCacheConfiguration()) {
+                        if (c.isSwapEnabled()) {
+                            needSwap = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                cfg.setSwapSpaceSpi(needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi());
             }
         }
 
