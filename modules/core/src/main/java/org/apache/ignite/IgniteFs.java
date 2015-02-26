@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * <b>G</b>rid<b>G</b>ain <b>F</b>ile <b>S</b>ystem API. It provides a typical file system "view" on a particular cache:
+ * <b>IG</b>nite <b>F</b>ile <b>S</b>ystem API. It provides a typical file system "view" on a particular cache:
  * <ul>
  *     <li>list directories or get information for a single path</li>
  *     <li>create/move/delete files or directories</li>
