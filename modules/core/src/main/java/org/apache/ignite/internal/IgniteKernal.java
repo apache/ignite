@@ -105,9 +105,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
 
-    /** Plugin information. */
-    public static final String PLUGIN_INFO = "Configured plugins: ";
-
     /** System line separator. */
     private static final String NL = U.nl();
 
@@ -713,8 +710,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
 
             startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
-
-            ackPluginsInfo();
 
             // Off-heap processor has no dependencies.
             startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
@@ -1572,35 +1567,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 );
             }
         }
-    }
-
-    /**
-     * Plugin information.
-     */
-    private String pluginInfo() {
-        Collection<PluginProvider> plugins = ctx.plugins().allProviders();
-
-        if (plugins.size() == 0)
-            return NL + ">>>    " + PLUGIN_INFO + "none";
-
-        String info = NL + ">>>    " + PLUGIN_INFO + NL;
-
-        for (PluginProvider plugin : plugins)
-            info += ">>>    " + plugin.name() + " " + plugin.version() + NL +
-                ">>>    " + plugin.copyright();
-
-        return info;
-    }
-
-    /**
-     * Print plugin information.
-     */
-    private void ackPluginsInfo() {
-        if (log.isQuiet())
-            U.quiet(false, pluginInfo().split(NL + ">>> "));
-
-        if (log.isInfoEnabled())
-            log.info(pluginInfo());
     }
 
     /**
