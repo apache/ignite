@@ -1434,6 +1434,9 @@ public abstract class IgniteUtils {
         return locHost0 != null && !resetLocalHost().equals(locHost0);
     }
 
+    /**
+     * @param addrs Addresses.
+     */
     public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
         final int reachTimeout = 2000;
 
@@ -1495,7 +1498,6 @@ public abstract class IgniteUtils {
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
         throws IOException, IgniteCheckedException {
-
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
