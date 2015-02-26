@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- *
+ * 123
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** */
