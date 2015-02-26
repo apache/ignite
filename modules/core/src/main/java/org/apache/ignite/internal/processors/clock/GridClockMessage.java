@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;

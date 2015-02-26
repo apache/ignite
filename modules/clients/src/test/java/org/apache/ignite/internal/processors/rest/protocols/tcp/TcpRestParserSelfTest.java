@@ -326,7 +326,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
             assertNotNull(req);
-            assertEquals(U.bytesToShort(new byte[] {5, 0}, 0), req.version());
+            assertEquals(U.bytesToShort(new byte[]{5, 0}, 0), req.version());
         }
     }
 

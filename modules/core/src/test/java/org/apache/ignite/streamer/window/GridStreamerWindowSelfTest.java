@@ -757,9 +757,8 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      *
      * @param win Window to check.
      * @param maxSize Max window size.
-     * @throws IgniteCheckedException If failed.
      */
-    private void finalChecks(StreamerWindow<Integer> win, int maxSize) throws IgniteCheckedException {
+    private void finalChecks(StreamerWindow<Integer> win, int maxSize) {
         int evictQueueSize = win.evictionQueueSize();
 
         info("Eviction queue size for final checks: " + evictQueueSize);

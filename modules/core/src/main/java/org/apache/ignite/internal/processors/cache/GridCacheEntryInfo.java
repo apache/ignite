@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
@@ -276,7 +277,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
             if (val != null && val instanceof byte[]) {
                 out.writeBoolean(true);
 
-                U.writeByteArray(out, (byte[])val);
+                U.writeByteArray(out, (byte[]) val);
             }
             else {
                 out.writeBoolean(false);
@@ -319,7 +320,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         if (valBytesSent)
             valBytes = U.readByteArray(in);
         else
-            val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+            val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
 
         ttl = in.readLong();
 

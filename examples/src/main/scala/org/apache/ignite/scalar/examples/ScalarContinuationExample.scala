@@ -17,15 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
-import java.math._
-import java.util
-
 import org.apache.ignite.compute.ComputeJobContext
 import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
 import org.apache.ignite.resources.JobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
+
+import java.math._
+import java.util
 
 /**
  * This example recursively calculates `Fibonacci` numbers on the ignite cluster. This is
@@ -121,14 +121,24 @@ class FibonacciClosure (
             if (fut1 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 
-                fut1 = store.addIfAbsent(n - 1, comp.future[BigInteger]())
+                val futVal = comp.future[BigInteger]()
+                
+                fut1 = store.putIfAbsent(n - 1, futVal)
+                
+                if (fut1 == null)
+                    fut1 = futVal
             }
 
             // If future is not cached in node-local store, cache it.
             if (fut2 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
 
-                fut2 = store.addIfAbsent(n - 2, comp.future[BigInteger]())
+                val futVal = comp.future[BigInteger]()
+                
+                fut2 = store.putIfAbsent(n - 2, futVal)
+                
+                if (fut2 == null)
+                    fut2 = futVal
             }
 
             // If futures are not done, then wait asynchronously for the result

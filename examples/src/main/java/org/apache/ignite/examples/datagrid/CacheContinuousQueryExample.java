@@ -80,7 +80,7 @@ public class CacheContinuousQueryExample {
             // Entry that pass this filter will be sent to the caller.
             qry.setRemoteFilter(new CacheEntryEventFilter<Integer, String>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
-                    return e.getKey() > 25;
+                    return e.getKey() > 10;
                 }
             });
 

@@ -339,6 +339,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
 
     /**
+     * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
+     */
+    public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

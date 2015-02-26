@@ -157,10 +157,9 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
+    private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) {
         IgniteCache<String, Integer> cache = ignite.jcache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -209,10 +208,9 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
+    private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) {
         IgniteCache<String, Integer> cache = ignite.jcache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -353,10 +351,9 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
      * @param retry Retry count.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
+    private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) {
         IgniteCache<String, Integer> cache = ignite.jcache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -421,9 +418,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
-     * @throws IgniteCheckedException If failed.
      */
-    private void retries(Ignite ignite, boolean putCntr) throws IgniteCheckedException {
+    private void retries(Ignite ignite, boolean putCntr) {
         UUID nodeId = ignite.cluster().localNode().id();
 
         for (int i = 0; i < RETRIES; i++) {
@@ -473,9 +469,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
-     * @throws IgniteCheckedException If failed.
      */
-    private void removeRetriesSimple(Ignite ignite, boolean putCntr) throws IgniteCheckedException {
+    private void removeRetriesSimple(Ignite ignite, boolean putCntr) {
         for (int i = 0; i < RETRIES; i++) {
             if (DEBUG)
                 ignite.log().info("***");
@@ -555,12 +550,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
                 threads.add(new Thread("thread-#" + i) {
                     @Override public void run() {
-                        try {
-                            retries(grid(gridId), false);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        retries(grid(gridId), false);
                     }
                 });
             }
@@ -598,12 +588,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
                 threads.add(new Thread() {
                     @Override public void run() {
-                        try {
-                            retries(grid(gridId), true);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        retries(grid(gridId), true);
                     }
                 });
             }
@@ -812,9 +797,9 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void printCounter() throws IgniteCheckedException {
+    private void printCounter() {
         info("***");
         info("*** Peeked counter: " + grid(0).jcache(null).localPeek(CNTR_KEY, CachePeekMode.ONHEAP));
         info("*** Got counter: " + grid(0).jcache(null).get(CNTR_KEY));

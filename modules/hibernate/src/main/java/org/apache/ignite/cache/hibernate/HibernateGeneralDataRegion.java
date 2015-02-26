@@ -27,14 +27,14 @@ import org.jetbrains.annotations.*;
  * Implementation of {@link GeneralDataRegion}. This interface defines common contract for {@link QueryResultsRegion}
  * and {@link TimestampsRegion}.
  */
-public class GridHibernateGeneralDataRegion extends GridHibernateRegion implements GeneralDataRegion {
+public class HibernateGeneralDataRegion extends HibernateRegion implements GeneralDataRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public GridHibernateGeneralDataRegion(GridHibernateRegionFactory factory, String name,
+    public HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, GridCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
@@ -59,11 +59,11 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
 
     /** {@inheritDoc} */
     @Override public void evict(Object key) throws CacheException {
-        GridHibernateAccessStrategyAdapter.evict(ignite, cache, key);
+        HibernateAccessStrategyAdapter.evict(ignite, cache, key);
     }
 
     /** {@inheritDoc} */
     @Override public void evictAll() throws CacheException {
-        GridHibernateAccessStrategyAdapter.evictAll(cache);
+        HibernateAccessStrategyAdapter.evictAll(cache);
     }
 }
