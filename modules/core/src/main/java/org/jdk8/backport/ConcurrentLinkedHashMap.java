@@ -729,8 +729,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                         if (qEntry != null && qEntry != e)
                             qEntry.val = val;
 
-                        ((HashEntry<K, V>)e.node.item).val = val;
-
                         modified = true;
                     }
                 }
