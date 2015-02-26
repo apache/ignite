@@ -41,7 +41,8 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
         }
         else {
             try {
-                byte[] valBytes = ctx.marshaller().marshal(val);
+                if (valBytes == null)
+                    valBytes = ctx.marshaller().marshal(val);
 
                 return new CacheObjectImpl(null, valBytes);
             }

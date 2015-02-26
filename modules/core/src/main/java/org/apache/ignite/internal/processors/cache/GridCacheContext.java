@@ -1804,10 +1804,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (!keepCacheObjects) {
             Object key0 = key.value(this);
-            Object val0 = skipVals ? Boolean.TRUE : val.value(this);
-
-            assert key0 != null;
-            assert val0 != null;
+            Object val0 = skipVals ? true : val.value(this);
 
             if (portableEnabled() && deserializePortable) {
                 key0 = unwrapPortableIfNeeded(key0, false);
@@ -1816,10 +1813,13 @@ public class GridCacheContext<K, V> implements Externalizable {
                     val0 = unwrapPortableIfNeeded(val0, false);
             }
 
+            assert key0 != null : key;
+            assert val0 != null : val;
+
             map.put((K1)key0, (V1)val0);
         }
         else
-            map.put((K1)key, (V1)(skipVals ? Boolean.TRUE : val));
+            map.put((K1)key, (V1)(skipVals ? true : val));
     }
 
     /**

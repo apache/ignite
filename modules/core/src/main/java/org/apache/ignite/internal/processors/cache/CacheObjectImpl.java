@@ -83,7 +83,7 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        if (!(val instanceof byte[]))
+        if (valBytes == null && !(val instanceof byte[]))
             valBytes = CU.marshal(ctx, val);
     }
 
@@ -201,6 +201,9 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(CacheObjectImpl.class, this);
+        if (val instanceof byte[])
+            return getClass().getSimpleName() + " [val=<byte array>, len=" + ((byte[])val).length + ']';
+        else
+            return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
     }
 }
