@@ -61,7 +61,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testConsistentHashBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new CacheConsistentHashAffinityFunction());
+            checkBackups(i, new CacheRendezvousAffinityFunction());
     }
 
     /**
