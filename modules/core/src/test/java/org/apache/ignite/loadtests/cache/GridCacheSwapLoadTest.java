@@ -88,9 +88,8 @@ public class GridCacheSwapLoadTest {
 
     /**
      * @param args Command line arguments.
-     * @throws IgniteCheckedException In case of error.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         parseArgs(args);
 
         try (Ignite g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
@@ -202,7 +201,7 @@ public class GridCacheSwapLoadTest {
         final AtomicInteger putKey = new AtomicInteger(0);
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 IgniteCache<Integer, Integer> cache = g.jcache(null);
 
                 assert cache != null;

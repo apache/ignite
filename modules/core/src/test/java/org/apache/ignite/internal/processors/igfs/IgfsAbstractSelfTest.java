@@ -2161,10 +2161,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param overwrite Overwrite flag.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
-     * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected static void createFile(Igfs igfs, IgfsPath file, boolean overwrite,
-        @Nullable byte[]... chunks) throws IOException, IgniteCheckedException {
+    protected static void createFile(Igfs igfs, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
+        throws IOException {
         OutputStream os = null;
 
         try {

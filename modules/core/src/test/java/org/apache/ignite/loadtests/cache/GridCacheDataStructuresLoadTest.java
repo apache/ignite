@@ -85,8 +85,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic long write closure. */
     private final CIX1<Ignite> longWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -103,8 +102,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic long read closure. */
     private final CIX1<Ignite> longReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -121,8 +119,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic reference write closure. */
     private final CIX1<Ignite> refWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME,
                 null, true);
 
@@ -140,8 +137,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic reference read closure. */
     private final CIX1<Ignite> refReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME, null,
                 true);
 
@@ -159,8 +155,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic sequence write closure. */
     private final CIX1<Ignite> seqWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -177,8 +172,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic sequence read closure. */
     private final CIX1<Ignite> seqReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -195,8 +189,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic stamped write closure. */
     private final CIX1<Ignite> stampWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
@@ -214,8 +207,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic stamped read closure. */
     private final CIX1<Ignite> stampReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
@@ -233,8 +225,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Queue write closure. */
     private final CIX1<Ignite> queueWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -251,8 +242,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Queue read closure. */
     private final CIX1<Ignite> queueReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -269,8 +259,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Count down latch write closure. */
     private final CIX1<Ignite> latchWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -287,8 +276,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Count down latch read closure. */
     private final CIX1<Ignite> latchReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite)
-            throws IgniteCheckedException {
+        @Override public void applyx(Ignite ignite) {
             IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {

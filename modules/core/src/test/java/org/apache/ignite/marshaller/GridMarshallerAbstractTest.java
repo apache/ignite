@@ -520,13 +520,13 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link org.apache.ignite.cluster.ClusterNodeLocalMap} instance.
+     * Tests marshal {@link ClusterNodeLocalMapImpl} instance.
      *
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
     public void testNodeLocalMarshalling() throws Exception {
-        ClusterNodeLocalMap<String, String> loc = grid().cluster().nodeLocalMap();
+        ConcurrentMap<String, String> loc = grid().cluster().nodeLocalMap();
 
         String key = "test-key";
         String val = "test-val";
@@ -550,7 +550,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         outBean.checkNullResources();
 
-        loc = (ClusterNodeLocalMap<String, String>)outBean.getObjectField();
+        loc = (ConcurrentMap<String, String>)outBean.getObjectField();
 
         assert loc.size() == 1;
         assert val.equals(loc.get(key));

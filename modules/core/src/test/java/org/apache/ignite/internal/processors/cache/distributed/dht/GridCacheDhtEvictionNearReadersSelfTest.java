@@ -171,7 +171,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction) grid(0).jcache(null).
             getConfiguration(CacheConfiguration.class).getAffinity();
 
-        return aff.assignPartition(aff.partition(key), new ArrayList<ClusterNode>(grid(0).cluster().nodes()), 1, null);
+        return aff.assignPartition(aff.partition(key), new ArrayList<>(grid(0).cluster().nodes()), 1, null);
     }
 
     /**
