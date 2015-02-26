@@ -155,19 +155,15 @@ public interface EventType {
      */
     public static final int EVT_NODE_SEGMENTED = 14;
 
+    /**
+     * Built-in event type: client node disconnected.
+     */
     public static final int EVT_CLIENT_NODE_DISCONNECTED = 16;
 
-    public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
-
     /**
-     * Built-in event type: custom event sent.
-     * <br>
-     * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(Serializable)}.
-     * <p>
-     *
-     * @see DiscoveryCustomEvent
+     * Built-in event type: client node reconnected.
      */
-    public static final int EVT_DISCOVERY_CUSTOM_EVT = 18;
+    public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
 
     /**
      * Built-in event type: task started.
