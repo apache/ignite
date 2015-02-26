@@ -34,36 +34,13 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.spi.checkpoint.noop.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.spi.collision.noop.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.eventstorage.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.spi.indexing.noop.*;
-import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.io.*;
-import java.lang.management.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
@@ -1142,9 +1119,6 @@ public class IgnitionEx {
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
 
-        /** */
-        private static final String[] EMPTY_STR_ARR = new String[0];
-
         /** Grid name. */
         private final String name;
 
@@ -1326,18 +1300,11 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
-            UUID nodeId = cfg.getNodeId();
-
-            if (nodeId == null)
-                nodeId = UUID.randomUUID();
-
-            myCfg.setNodeId(nodeId);
-
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), myCfg.getNodeId());
 
             assert cfgLog != null;
 
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(myCfg.getNodeId()));
 
             // Initialize factory's log.
             log = cfgLog.getLogger(G.class);
@@ -1386,23 +1353,15 @@ public class IgnitionEx {
                 }
             }
 
-            ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
-
-            if (clientCfg != null)
-                clientCfg = new ConnectorConfiguration(clientCfg);
-
-            if (clientCfg != null) {
+            if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    clientCfg.getThreadPoolSize(),
-                    clientCfg.getThreadPoolSize(),
+                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
+                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
                 );
             }
-
-            // REST configuration.
-            myCfg.setConnectorConfiguration(clientCfg);
 
             Marshaller marsh = cfg.getMarshaller();
 
@@ -1436,46 +1395,6 @@ public class IgnitionEx {
 
             myCfg.setMarshaller(marsh);
 
-            Map<String, ?> attrs = cfg.getUserAttributes();
-
-            if (attrs == null)
-                attrs = Collections.emptyMap();
-
-            myCfg.setUserAttributes(attrs);
-
-            MBeanServer mbSrv = cfg.getMBeanServer();
-
-            myCfg.setMBeanServer(mbSrv == null ? ManagementFactory.getPlatformMBeanServer() : mbSrv);
-
-            IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
-
-            if (igfsCfgs != null) {
-                IgfsConfiguration[] clone = igfsCfgs.clone();
-
-                for (int i = 0; i < igfsCfgs.length; i++)
-                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
-
-                myCfg.setIgfsConfiguration(clone);
-            }
-
-            StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
-
-            if (streamerCfgs != null) {
-                StreamerConfiguration[] clone = streamerCfgs.clone();
-
-                for (int i = 0; i < streamerCfgs.length; i++)
-                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
-
-                myCfg.setStreamerConfiguration(clone);
-            }
-
-            String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
-
-            if (p2pExclude == null)
-                p2pExclude = EMPTY_STR_ARR;
-
-            myCfg.setPeerClassLoadingLocalClassPathExclude(p2pExclude);
-
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
@@ -1486,94 +1405,17 @@ public class IgnitionEx {
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
-            /*
-             * Initialize default SPI implementations.
-             */
-            CommunicationSpi commSpi = cfg.getCommunicationSpi();
-            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
-            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
-            CollisionSpi colSpi = cfg.getCollisionSpi();
-            DeploymentSpi deploySpi = cfg.getDeploymentSpi();
-            CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
-            FailoverSpi[] failSpi = cfg.getFailoverSpi();
-            LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
-            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            IndexingSpi indexingSpi = cfg.getIndexingSpi();
-
-            if (commSpi == null)
-                commSpi = new TcpCommunicationSpi();
-
-            if (discoSpi == null)
-                discoSpi = new TcpDiscoverySpi();
-
-            if (discoSpi instanceof TcpDiscoverySpi) {
-                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
-
-                if (tcpDisco.getIpFinder() == null)
-                    tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
-            }
-
-            if (evtSpi == null)
-                evtSpi = new MemoryEventStorageSpi();
-
-            if (colSpi == null)
-                colSpi = new NoopCollisionSpi();
-
-            if (deploySpi == null)
-                deploySpi = new LocalDeploymentSpi();
-
-            if (cpSpi == null)
-                cpSpi = new CheckpointSpi[] {new NoopCheckpointSpi()};
-
-            if (failSpi == null)
-                failSpi = new FailoverSpi[] {new AlwaysFailoverSpi()};
-
-            if (loadBalancingSpi == null)
-                loadBalancingSpi = new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()};
-
-            if (swapspaceSpi == null) {
-                boolean needSwap = false;
-
-                CacheConfiguration[] caches = cfg.getCacheConfiguration();
-
-                if (caches != null) {
-                    for (CacheConfiguration c : caches) {
-                        if (c.isSwapEnabled()) {
-                            needSwap = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                swapspaceSpi = needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi();
-            }
-
-            if (indexingSpi == null)
-                indexingSpi = new NoopIndexingSpi();
-
-            myCfg.setCommunicationSpi(commSpi);
-            myCfg.setDiscoverySpi(discoSpi);
-            myCfg.setCheckpointSpi(cpSpi);
-            myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setDeploymentSpi(deploySpi);
-            myCfg.setFailoverSpi(failSpi);
-            myCfg.setCollisionSpi(colSpi);
-            myCfg.setLoadBalancingSpi(loadBalancingSpi);
-            myCfg.setSwapSpaceSpi(swapspaceSpi);
-            myCfg.setIndexingSpi(indexingSpi);
-
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
-                ensureMultiInstanceSupport(deploySpi);
-                ensureMultiInstanceSupport(commSpi);
-                ensureMultiInstanceSupport(discoSpi);
-                ensureMultiInstanceSupport(cpSpi);
-                ensureMultiInstanceSupport(evtSpi);
-                ensureMultiInstanceSupport(colSpi);
-                ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(loadBalancingSpi);
-                ensureMultiInstanceSupport(swapspaceSpi);
+                ensureMultiInstanceSupport(myCfg.getDeploymentSpi());
+                ensureMultiInstanceSupport(myCfg.getCommunicationSpi());
+                ensureMultiInstanceSupport(myCfg.getDiscoverySpi());
+                ensureMultiInstanceSupport(myCfg.getCheckpointSpi());
+                ensureMultiInstanceSupport(myCfg.getEventStorageSpi());
+                ensureMultiInstanceSupport(myCfg.getCollisionSpi());
+                ensureMultiInstanceSupport(myCfg.getFailoverSpi());
+                ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
+                ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
@@ -1582,12 +1424,12 @@ public class IgnitionEx {
 
             final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
 
-            final boolean clientDisco = discoSpi instanceof TcpClientDiscoverySpi;
+            final boolean clientDisco = myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
 
             CacheConfiguration[] copies;
 
             if (cacheCfgs != null && cacheCfgs.length > 0) {
-                if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
+                if (!U.discoOrdered(myCfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
                         "like GridTcpDiscoverySpi)");
@@ -1651,8 +1493,6 @@ public class IgnitionEx {
             copies[0] = utilitySystemCache(clientDisco);
 
             myCfg.setCacheConfiguration(copies);
-
-            myCfg.setCacheSanityCheckEnabled(cfg.isCacheSanityCheckEnabled());
 
             try {
                 // Use reflection to avoid loading undesired classes.

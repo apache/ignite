@@ -26,7 +26,19 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
+import org.apache.ignite.spi.checkpoint.noop.*;
+import org.apache.ignite.spi.collision.noop.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.deployment.local.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.eventstorage.memory.*;
+import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.spi.indexing.noop.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.spi.swapspace.noop.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
@@ -371,6 +383,9 @@ public class IgniteConfiguration {
     /** User's class loader. */
     private ClassLoader classLdr;
 
+    /** */
+    private static final String[] EMPTY_STR_ARR = new String[0];
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -388,76 +403,189 @@ public class IgniteConfiguration {
         assert cfg != null;
 
         // SPIs.
-        discoSpi = cfg.getDiscoverySpi();
-        commSpi = cfg.getCommunicationSpi();
-        deploySpi = cfg.getDeploymentSpi();
-        evtSpi = cfg.getEventStorageSpi();
-        cpSpi = cfg.getCheckpointSpi();
-        colSpi = cfg.getCollisionSpi();
-        failSpi = cfg.getFailoverSpi();
-        loadBalancingSpi = cfg.getLoadBalancingSpi();
+        discoSpi = cfg.getDiscoverySpi() != null ? cfg.getDiscoverySpi() : new TcpDiscoverySpi();
+
+        if (discoSpi instanceof TcpDiscoverySpi) {
+            TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
+
+            if (tcpDisco.getIpFinder() == null)
+                tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
+        }
+
+        commSpi = cfg.getCommunicationSpi() != null ? cfg.getCommunicationSpi() : new TcpCommunicationSpi();
+
+        deploySpi = cfg.getDeploymentSpi() != null ? cfg.getDeploymentSpi() : new LocalDeploymentSpi();
+
+        evtSpi = cfg.getEventStorageSpi() != null ? cfg.getEventStorageSpi() : new MemoryEventStorageSpi();
+
+        cpSpi = cfg.getCheckpointSpi() != null ? cfg.getCheckpointSpi() : new CheckpointSpi[] {new NoopCheckpointSpi()};
+
+        colSpi = cfg.getCollisionSpi() != null ? cfg.getCollisionSpi() : new NoopCollisionSpi();
+
+        failSpi = cfg.getFailoverSpi() != null ? cfg.getFailoverSpi() : new FailoverSpi[] {new AlwaysFailoverSpi()};
+
+        loadBalancingSpi = cfg.getLoadBalancingSpi() != null ? cfg.getLoadBalancingSpi() :
+            new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()};
+
+        indexingSpi = cfg.getIndexingSpi() != null ? cfg.getIndexingSpi() :  new NoopIndexingSpi();
+
         swapSpaceSpi = cfg.getSwapSpaceSpi();
-        indexingSpi = cfg.getIndexingSpi();
+
+        if (swapSpaceSpi == null) {
+            boolean needSwap = false;
+
+            CacheConfiguration[] caches = cfg.getCacheConfiguration();
+
+            if (caches != null) {
+                for (CacheConfiguration c : caches) {
+                    if (c.isSwapEnabled()) {
+                        needSwap = true;
+
+                        break;
+                    }
+                }
+            }
+
+            swapSpaceSpi = needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi();
+        }
 
         /*
          * Order alphabetically for maintenance purposes.
          */
         addrRslvr = cfg.getAddressResolver();
+
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
+
         atomicCfg = cfg.getAtomicConfiguration();
+
         daemon = cfg.isDaemon();
+
         cacheCfg = cfg.getCacheConfiguration();
+
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
-        connectorCfg = cfg.getConnectorConfiguration();
+
+        connectorCfg = cfg.getConnectorConfiguration() != null ?
+            new ConnectorConfiguration(cfg.getConnectorConfiguration()) : null;
+
         classLdr = cfg.getClassLoader();
+
         clockSyncFreq = cfg.getClockSyncFrequency();
+
         clockSyncSamples = cfg.getClockSyncSamples();
+
         deployMode = cfg.getDeploymentMode();
+
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
+
         pubPoolSize = cfg.getPublicThreadPoolSize();
+
         ggHome = cfg.getIgniteHome();
+
         ggWork = cfg.getWorkDirectory();
+
         gridName = cfg.getGridName();
-        igfsCfg = cfg.getIgfsConfiguration();
+
+        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
+
+        if (igfsCfgs != null) {
+            IgfsConfiguration[] clone = igfsCfgs.clone();
+
+            for (int i = 0; i < igfsCfgs.length; i++)
+                clone[i] = new IgfsConfiguration(igfsCfgs[i]);
+
+            igfsCfg = clone;
+        }
+
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
+
         hadoopCfg = cfg.getHadoopConfiguration();
+
         inclEvtTypes = cfg.getIncludeEventTypes();
+
         includeProps = cfg.getIncludeProperties();
+
         lifecycleBeans = cfg.getLifecycleBeans();
+
         locHost = cfg.getLocalHost();
+
         log = cfg.getGridLogger();
+
         lsnrs = cfg.getLocalEventListeners();
+
         marsh = cfg.getMarshaller();
+
         marshLocJobs = cfg.isMarshalLocalJobs();
-        mbeanSrv = cfg.getMBeanServer();
+
+        mbeanSrv = cfg.getMBeanServer() != null ? cfg.getMBeanServer() : ManagementFactory.getPlatformMBeanServer();
+
         metricsHistSize = cfg.getMetricsHistorySize();
+
         metricsExpTime = cfg.getMetricsExpireTime();
+
         metricsLogFreq = cfg.getMetricsLogFrequency();
+
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
+
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+
         netTimeout = cfg.getNetworkTimeout();
-        nodeId = cfg.getNodeId();
+
+        nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
-        p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
+
+        p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude() != null ?
+            cfg.getPeerClassLoadingLocalClassPathExclude() : EMPTY_STR_ARR;
+
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
+
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
+
         pluginCfgs = cfg.getPluginConfigurations();
+
         qryCfg = cfg.getQueryConfiguration();
+
         segChkFreq = cfg.getSegmentCheckFrequency();
+
         segPlc = cfg.getSegmentationPolicy();
+
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
+
         segResolvers = cfg.getSegmentationResolvers();
+
         sndRetryCnt = cfg.getNetworkSendRetryCount();
+
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        streamerCfg = cfg.getStreamerConfiguration();
+
+        StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
+
+        if (streamerCfgs != null) {
+            StreamerConfiguration[] clone = streamerCfgs.clone();
+
+            for (int i = 0; i < streamerCfgs.length; i++)
+                clone[i] = new StreamerConfiguration(streamerCfgs[i]);
+
+            streamerCfg = clone;
+        }
+
         svcCfgs = cfg.getServiceConfiguration();
+
         sysPoolSize = cfg.getSystemThreadPoolSize();
+
         timeSrvPortBase = cfg.getTimeServerPortBase();
+
         timeSrvPortRange = cfg.getTimeServerPortRange();
+
         txCfg = cfg.getTransactionConfiguration() != null ?
             new TransactionConfiguration(cfg.getTransactionConfiguration()) : null;
-        userAttrs = cfg.getUserAttributes();
+
+        if (cfg.getUserAttributes() == null)
+            userAttrs = Collections.emptyMap();
+        else
+            userAttrs = cfg.getUserAttributes();
+
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
+
         warmupClos = cfg.getWarmupClosure();
     }
 
