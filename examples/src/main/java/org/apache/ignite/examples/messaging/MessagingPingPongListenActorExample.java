@@ -41,9 +41,8 @@ public class MessagingPingPongListenActorExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         // Game is played over the default ignite.
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))

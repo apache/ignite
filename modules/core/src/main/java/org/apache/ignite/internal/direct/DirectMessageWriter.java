@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
-    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null, null);
 
     /** State. */
     private final DirectMessageWriterState state = new DirectMessageWriterState();
@@ -37,6 +37,13 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
         stream.setBuffer(buf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeHeader(byte type, byte fieldCnt) {
+        stream.writeByte(type);
+
+        return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
@@ -180,41 +187,41 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
+    @Override public boolean writeMessage(String name, @Nullable Message msg) {
         stream.writeMessage(msg, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageAdapter.Type itemType) {
+    @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType) {
         stream.writeObjectArray(arr, itemType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageAdapter.Type itemType) {
+    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
         stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageAdapter.Type keyType,
-        MessageAdapter.Type valType) {
+    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
+        MessageCollectionItemType valType) {
         stream.writeMap(map, keyType, valType, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isTypeWritten() {
+    @Override public boolean isHeaderWritten() {
         return state.isTypeWritten();
     }
 
     /** {@inheritDoc} */
-    @Override public void onTypeWritten() {
+    @Override public void onHeaderWritten() {
         state.onTypeWritten();
     }
 

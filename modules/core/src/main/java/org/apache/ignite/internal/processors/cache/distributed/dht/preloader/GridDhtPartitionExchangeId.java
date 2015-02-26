@@ -30,8 +30,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Exchange ID.
  */
-public class GridDhtPartitionExchangeId extends MessageAdapter implements Comparable<GridDhtPartitionExchangeId>,
-    Externalizable {
+public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPartitionExchangeId>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -149,11 +148,11 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -181,17 +180,20 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 evt = reader.readInt("evt");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 nodeId = reader.readUuid("nodeId");
@@ -199,7 +201,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
                 topVer = reader.readLong("topVer");
@@ -207,7 +209,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -217,6 +219,11 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 87;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */

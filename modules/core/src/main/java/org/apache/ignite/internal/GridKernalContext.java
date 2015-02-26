@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.schedule.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.*;
 
@@ -366,13 +366,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridSecurityProcessor security();
 
     /**
-     * Gets secure session processor.
-     *
-     * @return Secure session processor.
-     */
-    public GridSecureSessionProcessor secureSession();
-
-    /**
      * Gets load balancing manager.
      *
      * @return Load balancing manager.
@@ -508,4 +501,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Gets exception registry.
+     *
+     * @return Exception registry.
+     */
+    public IgniteExceptionRegistry exceptionRegistry();
 }

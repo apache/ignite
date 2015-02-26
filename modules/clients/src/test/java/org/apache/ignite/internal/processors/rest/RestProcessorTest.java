@@ -132,9 +132,9 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void populateCache() throws IgniteCheckedException {
+    private void populateCache() {
         IgniteCache<String, Object> cache = G.ignite().jcache(null);
 
         cache.put("int", intValue());
@@ -152,9 +152,9 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void deployTasks() throws IgniteCheckedException {
+    private void deployTasks() {
         G.ignite().compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
         G.ignite().compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
     }

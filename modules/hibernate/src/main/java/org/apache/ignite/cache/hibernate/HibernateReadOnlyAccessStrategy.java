@@ -34,7 +34,7 @@ import org.jetbrains.annotations.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -53,12 +53,12 @@ import org.jetbrains.annotations.*;
 
  *
  */
-public class GridHibernateReadOnlyAccessStrategy extends GridHibernateAccessStrategyAdapter {
+public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdapter {
     /**
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public GridHibernateReadOnlyAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
+    public HibernateReadOnlyAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
         super(ignite, cache);
     }
 

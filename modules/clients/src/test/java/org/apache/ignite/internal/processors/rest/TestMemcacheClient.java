@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.*;
@@ -413,7 +414,7 @@ final class TestMemcacheClient {
         packet[0] = (byte)0x80;
         packet[1] = cmd.operationCode();
 
-        U.shortToBytes((short)keyData.length(), packet, 2);
+        U.shortToBytes((short) keyData.length(), packet, 2);
 
         packet[4] = (byte)(extrasLength);
 
@@ -643,17 +644,17 @@ final class TestMemcacheClient {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            bytes = U.intToBytes((Integer)obj);
+            bytes = U.intToBytes((Integer) obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            bytes = U.longToBytes((Long)obj);
+            bytes = U.longToBytes((Long) obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            bytes = U.longToBytes(((Date)obj).getTime());
+            bytes = U.longToBytes(((Date) obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -663,12 +664,12 @@ final class TestMemcacheClient {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            bytes = U.intToBytes(Float.floatToIntBits((Float)obj));
+            bytes = U.intToBytes(Float.floatToIntBits((Float) obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            bytes = U.longToBytes(Double.doubleToLongBits((Double)obj));
+            bytes = U.longToBytes(Double.doubleToLongBits((Double) obj));
 
             flags |= DOUBLE_FLAG;
         }

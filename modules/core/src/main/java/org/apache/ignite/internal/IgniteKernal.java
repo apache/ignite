@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
@@ -402,6 +401,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void printLastErrors() {
+        ctx.exceptionRegistry().printErrors();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getVmName() {
         return ManagementFactory.getRuntimeMXBean().getName();
     }
@@ -665,6 +669,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 this,
                 cfg,
                 gw,
+                new IgniteExceptionRegistry(log),
                 utilityCachePool,
                 execSvc,
                 sysExecSvc,
@@ -722,7 +727,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start security processors.
             startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridSecureSessionProcessor.class, ctx), attrs);
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
@@ -2090,8 +2094,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
-                "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ']');
     }
 
     /**

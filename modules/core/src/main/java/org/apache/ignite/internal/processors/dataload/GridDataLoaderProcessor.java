@@ -78,7 +78,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             return;
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
-            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
                     IgniteDataLoaderImpl<K, V> ldr = flushQ.take();
 

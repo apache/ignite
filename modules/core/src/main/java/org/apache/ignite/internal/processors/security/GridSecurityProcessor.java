@@ -37,7 +37,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteCheckedException;
+    public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.
@@ -53,7 +53,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
+    public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
      * Gets collection of authenticated nodes.
@@ -80,7 +80,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param securityCtx Optional security context.
      * @throws GridSecurityException If security check failed.
      */
-    public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
+    public void authorize(String name, GridSecurityPermission perm, @Nullable SecurityContext securityCtx)
         throws GridSecurityException;
 
     /**

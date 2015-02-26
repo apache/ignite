@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Deployment request.
  */
-public class GridDeploymentRequest extends MessageAdapter {
+public class GridDeploymentRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -159,11 +159,11 @@ public class GridDeploymentRequest extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -180,7 +180,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, Type.UUID))
+                if (!writer.writeCollection("nodeIds", nodeIds, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -203,17 +203,20 @@ public class GridDeploymentRequest extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 isUndeploy = reader.readBoolean("isUndeploy");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 ldrId = reader.readIgniteUuid("ldrId");
@@ -221,15 +224,15 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", Type.UUID);
+                nodeIds = reader.readCollection("nodeIds", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 3:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
@@ -237,7 +240,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 rsrcName = reader.readString("rsrcName");
@@ -245,7 +248,7 @@ public class GridDeploymentRequest extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -255,6 +258,11 @@ public class GridDeploymentRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 11;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
     }
 
     /** {@inheritDoc} */

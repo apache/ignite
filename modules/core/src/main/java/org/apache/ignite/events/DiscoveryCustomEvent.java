@@ -15,46 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.securesession;
+package org.apache.ignite.events;
 
-import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
- * Secure session object.
+ *
  */
-public class GridSecureSession {
-    /** Authentication subject context returned by authentication SPI. */
-    private GridSecurityContext authSubjCtx;
-
-    /** Session creation time. */
-    private byte[] sesTok;
+public class DiscoveryCustomEvent extends DiscoveryEvent {
+    /** */
+    private Serializable data;
 
     /**
-     * @param authSubjCtx Authentication subject context.
-     * @param sesTok Session token.
+     * Default constructor.
      */
-    public GridSecureSession(GridSecurityContext authSubjCtx, byte[] sesTok) {
-        this.authSubjCtx = authSubjCtx;
-        this.sesTok = sesTok;
+    public DiscoveryCustomEvent() {
+        type(EventType.EVT_DISCOVERY_CUSTOM_EVT);
     }
 
     /**
-     * @return Authentication subject context returned by authentication SPI.
+     * @return Data.
      */
-    public GridSecurityContext authenticationSubjectContext() {
-        return authSubjCtx;
+    public Serializable data() {
+        return data;
     }
 
     /**
-     * @return Session creation time.
+     * @param data New data.
      */
-    public byte[] sessionToken() {
-        return sesTok;
+    public void data(Serializable data) {
+        this.data = data;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSecureSession.class, this);
+        return S.toString(DiscoveryCustomEvent.class, this, super.toString());
     }
 }
