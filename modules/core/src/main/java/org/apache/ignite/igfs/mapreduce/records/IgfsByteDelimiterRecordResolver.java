@@ -282,7 +282,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
             out.writeInt(delims.length);
 
             for (byte[] delim : delims)
-                IgniteByteUtils.writeByteArray(out, delim);
+                U.writeByteArray(out, delim);
         }
         else
             out.writeBoolean(false);
@@ -296,7 +296,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
             delims = new byte[len][];
 
             for (int i = 0; i < len; i++)
-                delims[i] = IgniteByteUtils.readByteArray(in);
+                delims[i] = U.readByteArray(in);
 
             maxDelimLen = maxDelimiterLength(delims);
         }

@@ -176,12 +176,12 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
         out.writeBoolean(b);
 
         if (b) {
-            IgniteByteUtils.writeByteArray(out, keyBytes);
+            U.writeByteArray(out, keyBytes);
 
             if (newValBytes != null && !newValBytes.isNull()) {
                 out.writeBoolean(true);
                 out.writeBoolean(newValBytes.isPlain());
-                IgniteByteUtils.writeByteArray(out, newValBytes.get());
+                U.writeByteArray(out, newValBytes.get());
             }
             else
                 out.writeBoolean(false);
@@ -189,7 +189,7 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
             if (oldValBytes != null && !oldValBytes.isNull()) {
                 out.writeBoolean(true);
                 out.writeBoolean(oldValBytes.isPlain());
-                IgniteByteUtils.writeByteArray(out, oldValBytes.get());
+                U.writeByteArray(out, oldValBytes.get());
             }
             else
                 out.writeBoolean(false);
@@ -210,13 +210,13 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
         boolean b = in.readBoolean();
 
         if (b) {
-            keyBytes = IgniteByteUtils.readByteArray(in);
+            keyBytes = U.readByteArray(in);
 
             if (in.readBoolean())
-                newValBytes = in.readBoolean() ? plain(IgniteByteUtils.readByteArray(in)) : marshaled(IgniteByteUtils.readByteArray(in));
+                newValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
 
             if (in.readBoolean())
-                oldValBytes = in.readBoolean() ? plain(IgniteByteUtils.readByteArray(in)) : marshaled(IgniteByteUtils.readByteArray(in));
+                oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
 
             cacheName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();

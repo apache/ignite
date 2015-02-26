@@ -36,13 +36,13 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
 import static org.hibernate.cfg.AvailableSettings.*;
 
 /**
  * Tests Hibernate L2 cache configuration.
  */
-public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
+public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String ENTITY1_NAME = Entity1.class.getName();
 
@@ -137,7 +137,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
 
         cfg.setProperty(USE_QUERY_CACHE, "true");
 
-        cfg.setProperty(CACHE_REGION_FACTORY, GridHibernateRegionFactory.class.getName());
+        cfg.setProperty(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
@@ -155,14 +155,14 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Tests property {@link GridHibernateRegionFactory#REGION_CACHE_PROPERTY}.
+     * Tests property {@link HibernateRegionFactory#REGION_CACHE_PROPERTY}.
      */
     public void testPerRegionCacheProperty() {
         testCacheUsage(1, 1, 0, 1, 1);
     }
 
     /**
-     * Tests property {@link GridHibernateRegionFactory#DFLT_CACHE_NAME_PROPERTY}.
+     * Tests property {@link HibernateRegionFactory#DFLT_CACHE_NAME_PROPERTY}.
      */
     public void testDefaultCache() {
         dfltCache = true;

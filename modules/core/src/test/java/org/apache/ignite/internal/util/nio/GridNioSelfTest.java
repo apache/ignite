@@ -1144,7 +1144,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     private byte[] createMessageWithSize() {
         byte[] msg = new byte[MSG_SIZE];
 
-        IgniteByteUtils.intToBytes(MSG_SIZE - 4, msg, 0);
+        U.intToBytes(MSG_SIZE - 4, msg, 0);
 
         return msg;
     }
@@ -1329,7 +1329,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @throws IOException If send failed.
          */
         public void sendMessage(byte[] data, int len) throws IOException {
-            out.write(IgniteByteUtils.intToBytes(len));
+            out.write(U.intToBytes(len));
             out.write(data, 0, len);
         }
 
@@ -1353,7 +1353,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 idx += read;
             }
 
-            int len = IgniteByteUtils.bytesToInt(prefix, 0);
+            int len = U.bytesToInt(prefix, 0);
 
             byte[] res = new byte[len];
             idx = 0;

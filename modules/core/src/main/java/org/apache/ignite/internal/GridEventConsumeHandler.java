@@ -289,7 +289,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         out.writeBoolean(b);
 
         if (b) {
-            IgniteByteUtils.writeByteArray(out, filterBytes);
+            U.writeByteArray(out, filterBytes);
             U.writeString(out, clsName);
             out.writeObject(depInfo);
         }
@@ -304,7 +304,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         boolean b = in.readBoolean();
 
         if (b) {
-            filterBytes = IgniteByteUtils.readByteArray(in);
+            filterBytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
         }
@@ -392,7 +392,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             out.writeBoolean(b);
 
             if (b) {
-                IgniteByteUtils.writeByteArray(out, bytes);
+                U.writeByteArray(out, bytes);
                 U.writeString(out, cacheName);
                 out.writeObject(depInfo);
             }
@@ -405,7 +405,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             boolean b = in.readBoolean();
 
             if (b) {
-                bytes = IgniteByteUtils.readByteArray(in);
+                bytes = U.readByteArray(in);
                 cacheName = U.readString(in);
                 depInfo = (GridDeploymentInfo)in.readObject();
             }

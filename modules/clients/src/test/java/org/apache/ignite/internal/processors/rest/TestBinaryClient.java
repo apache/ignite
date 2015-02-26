@@ -149,7 +149,7 @@ final class TestBinaryClient {
 
                             if (len == 0) {
                                 if (buf.size() == 4) {
-                                    len = IgniteByteUtils.bytesToInt(buf.toByteArray(), 0);
+                                    len = U.bytesToInt(buf.toByteArray(), 0);
 
                                     if (log.isInfoEnabled())
                                         log.info("Read length: " + len);
@@ -279,8 +279,8 @@ final class TestBinaryClient {
         slice.put((byte)0x90);
         slice.putInt(res.remaining() - 5);
         slice.putLong(msg.requestId());
-        slice.put(IgniteByteUtils.uuidToBytes(msg.clientId()));
-        slice.put(IgniteByteUtils.uuidToBytes(msg.destinationId()));
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
         byte[] arr = new byte[res.remaining()];
 

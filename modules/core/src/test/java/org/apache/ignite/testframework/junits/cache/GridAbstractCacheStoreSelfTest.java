@@ -198,9 +198,8 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @param tx Transaction.
      * @param commit Commit.
-     * @throws IgniteCheckedException If failed.
      */
-    private void doTestAllOps(@Nullable Transaction tx, boolean commit) throws IgniteCheckedException {
+    private void doTestAllOps(@Nullable Transaction tx, boolean commit) {
         try {
             ses.newSession(tx);
 

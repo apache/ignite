@@ -218,7 +218,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public void add(int i) {
         requestFreeSize(4);
 
-        IgniteByteUtils.intToBytes(i, data, size);
+        U.intToBytes(i, data, size);
 
         size += 4;
     }
@@ -231,7 +231,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public void add(short i) {
         requestFreeSize(2);
 
-        IgniteByteUtils.shortToBytes(i, data, size);
+        U.shortToBytes(i, data, size);
 
         size += 2;
     }
@@ -246,7 +246,7 @@ public class GridByteArrayList implements Message, Externalizable {
         assert pos >= 0;
         assert pos + 2 <= size;
 
-        IgniteByteUtils.shortToBytes(i, data, pos);
+        U.shortToBytes(i, data, pos);
     }
 
     /**
@@ -259,7 +259,7 @@ public class GridByteArrayList implements Message, Externalizable {
         assert pos >= 0;
         assert pos + 4 <= size;
 
-        IgniteByteUtils.intToBytes(i, data, pos);
+        U.intToBytes(i, data, pos);
     }
 
     /**
@@ -270,7 +270,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public void add(long l) {
         requestFreeSize(8);
 
-        IgniteByteUtils.longToBytes(l, data, size);
+        U.longToBytes(l, data, size);
 
         size += 8;
     }
@@ -285,7 +285,7 @@ public class GridByteArrayList implements Message, Externalizable {
         assert pos >= 0;
         assert pos + 8 <= size;
 
-        IgniteByteUtils.longToBytes(l, data, pos);
+        U.longToBytes(l, data, pos);
     }
 
     /**
@@ -336,7 +336,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public int getInt(int i) {
         assert i + 4 <= size;
 
-        return IgniteByteUtils.bytesToInt(data, i);
+        return U.bytesToInt(data, i);
     }
 
     /**

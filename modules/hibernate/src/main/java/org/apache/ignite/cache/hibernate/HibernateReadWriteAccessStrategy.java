@@ -40,7 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
  *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
- *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
+ *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.HibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;
  *     &lt;mapping class="com.example.Entity"/&gt;
@@ -57,7 +57,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * public class Entity { ... }
  * </pre>
  */
-public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStrategyAdapter {
+public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAdapter {
     /** */
     private final ThreadLocal<TxContext> txCtx;
 
@@ -66,7 +66,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
      * @param cache Cache.
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected GridHibernateReadWriteAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal txCtx) {
+    protected HibernateReadWriteAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal txCtx) {
         super(ignite, cache);
 
         this.txCtx = (ThreadLocal<TxContext>)txCtx;
@@ -125,7 +125,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null)
                 unlock(ctx, key);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -152,7 +152,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
 
             return false;
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -197,9 +197,9 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
      *
      * @param ctx Transaction context.
      * @param key Key.
-     * @throws IgniteCheckedException If failed.
+     * @throws CacheException If failed.
      */
-    private void unlock(TxContext ctx, Object key) throws IgniteCheckedException {
+    private void unlock(TxContext ctx, Object key) throws CacheException {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 

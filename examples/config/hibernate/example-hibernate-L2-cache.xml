@@ -44,7 +44,7 @@
         <property name="generate_statistics">true</property>
 
         <!-- Specify Ignite as L2 cache provider. -->
-        <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.GridHibernateRegionFactory</property>
+        <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.HibernateRegionFactory</property>
 
         <!-- Specify the name of the ignite, that will be used for second level caching. -->
         <property name="org.apache.ignite.hibernate.grid_name">hibernate-grid</property>

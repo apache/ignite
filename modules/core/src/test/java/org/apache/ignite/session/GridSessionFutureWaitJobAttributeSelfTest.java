@@ -105,9 +105,8 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
     /**
      * @param num Number.
      * @throws InterruptedException if failed.
-     * @throws IgniteCheckedException if failed.
      */
-    private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
+    private void checkTask(int num) throws InterruptedException {
         Ignite ignite = G.ignite(getTestGridName());
 
         IgniteCompute comp = ignite.compute().withAsync();
