@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -331,8 +330,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             else
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
-            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.cluster().nodeLocalMap();
+            ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap = g.cluster().nodeLocalMap();
 
             QueryFutureWrapper wrapper = new QueryFutureWrapper(fut);
 
@@ -367,8 +365,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.cluster().nodeLocalMap();
+            ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap = g.cluster().nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),
                 locMap, g.cluster().localNode().id());
