@@ -499,7 +499,7 @@
 
     <profiles>
         <profile>
-            <id>rat-license-check</id>
+            <id>check-licenses</id>
             <build>
                 <plugins>
                     <plugin>
@@ -513,62 +513,55 @@
                                     <goal>check</goal>
                                 </goals>
                                 <configuration>
-                                    <!--<ignoreErrors>true</ignoreErrors>-->
-                                    <!--<addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>-->
-                                    <!--<addLicenseHeaders>forced</addLicenseHeaders>-->
-                                    <!--<copyrightMessage>rat.copyrightMessage</copyrightMessage>-->
                                     <excludes>
                                         <exclude>work/**</exclude>
                                         <exclude>**/target/**</exclude>
-                                        <exclude>**/*.jks</exclude>
-                                        <exclude>**/*.pem</exclude>
-                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
                                         <exclude>**/*.log</exclude>
+                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
                                         <exclude>**/*.dylib</exclude><!--bin-files-->
                                         <exclude>**/*.gar</exclude><!--bin-files-->
-                                        <exclude>**/licenses/*.txt</exclude>
-                                        <exclude>**/*.timestamp</exclude>
-                                        <exclude>**/*.iml</exclude>
-                                        <exclude>**/*.md</exclude>
-                                        <exclude>**/pom-installed.xml</exclude>
-                                        <exclude>**/keystore/*.pfx</exclude>
+                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
+                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
+                                        <exclude>**/*.iml</exclude><!--IDEA files-->
+                                        <exclude>**/*.md</exclude><!--readme-files-->
+                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
-                                        <exclude>**/com/romix/scala/**</exclude>
-                                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--Copyright (c) 2009 Stanford University-->
-                                        <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude>
-                                        <exclude>**/org/pcollections/**</exclude>
-                                        <exclude>**/org/jetbrains/annotations/**</exclude>
-                                        <exclude>**/org/jdk8/backport/</exclude>
+                                        <exclude>**/com/romix/scala/**</exclude><!--own license-->
+                                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
+                                        <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
+                                        <exclude>**/org/pcollections/**</exclude><!--own license-->
+                                        <exclude>**/org/jdk8/backport/</exclude><!--own license-->
                                         <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>**/test/resources/log/ignite.log.tst</exclude>
-                                        <exclude>**/test/config/start-nodes.ini</exclude>
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.incorrefs</exclude>
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.empty</exclude>
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.brokenxml</exclude>
-                                        <exclude>**/hadoop/books/*.txt</exclude>
-                                        <exclude>**/javax.cache.spi.CachingProvider</exclude>
-                                        <exclude>**/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude>
+                                        <exclude>**/test/resources/log/ignite.log.tst</exclude><!--test resource-->
+                                        <exclude>**/test/config/start-nodes.ini</exclude><!---->
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
+                                        <exclude>**/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
+                                        <exclude>**/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>**/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
+                                        <exclude>**/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
                                         <!--shmem-->
-                                        <exclude>ipc/shmem/**/Makefile.am</exclude>
-                                        <exclude>ipc/shmem/**/Makefile.in</exclude>
-                                        <exclude>ipc/shmem/**/Makefile</exclude>
-                                        <exclude>ipc/shmem/compile</exclude>
+                                        <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
+                                        <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
+                                        <exclude>ipc/shmem/compile</exclude><!---->
                                         <exclude>ipc/shmem/config.guess</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.sub</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure</exclude>
-                                        <exclude>ipc/shmem/configure.ac</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude>
-                                        <exclude>ipc/shmem/include/Makefile</exclude>
+                                        <exclude>ipc/shmem/configure</exclude><!--own license-->
+                                        <exclude>ipc/shmem/configure.ac</exclude><!---->
+                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude><!--tmp files-->
+                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
-                                        <exclude>ipc/shmem/install-sh</exclude>
-                                        <exclude>ipc/shmem/depcomp</exclude>
-                                        <exclude>ipc/shmem/config.status</exclude>
-                                        <exclude>ipc/shmem/libtool</exclude>
-                                        <exclude>ipc/shmem/missing</exclude>
-                                        <exclude>ipc/shmem/stamp-h1</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude>
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude>
+                                        <exclude>ipc/shmem/install-sh</exclude><!--own license-->
+                                        <exclude>ipc/shmem/depcomp</exclude><!--own license-->
+                                        <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/libtool</exclude><!--own license-->
+                                        <exclude>ipc/shmem/missing</exclude><!--own license-->
+                                        <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
                                     </excludes>
                                 </configuration>
                             </execution>
