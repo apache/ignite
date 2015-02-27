@@ -267,7 +267,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = key.value(cctx);
+            Object storeKey = key.value(cctx, false);
 
             if (convertPortable)
                 storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
@@ -412,14 +412,14 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (convertPortable) {
                 keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx), false);
+                        return cctx.unwrapPortableIfNeeded(key.value(cctx, false), false);
                     }
                 });
             }
             else {
                 keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx);
+                        return key.value(cctx, false);
                     }
                 });
             }
@@ -562,8 +562,8 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (key.internal())
                 return true;
 
-            Object storeKey = key.value(cctx);
-            Object storeVal = val.value(cctx);
+            Object storeKey = key.value(cctx, false);
+            Object storeVal = val.value(cctx, false);
 
             if (convertPortable) {
                 storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
@@ -678,7 +678,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (key.internal())
                 return false;
 
-            Object storeKey = key.value(cctx);
+            Object storeKey = key.value(cctx, false);
 
             if (convertPortable)
                 storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
@@ -738,14 +738,14 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (convertPortable) {
                 keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx), false);
+                        return cctx.unwrapPortableIfNeeded(key.value(cctx, false), false);
                     }
                 });
             }
             else {
                 keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx);
+                        return key.value(cctx, false);
                     }
                 });
             }
@@ -1049,8 +1049,8 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                         if (rmvd != null && rmvd.contains(k))
                             continue;
 
-                        Object storeKey = e.getKey().value(cctx);
-                        Object storeVal = e.getValue().get1().value(cctx);
+                        Object storeKey = e.getKey().value(cctx, false);
+                        Object storeVal = e.getValue().get1().value(cctx, false);
 
                         if (convertPortable) {
                             storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);

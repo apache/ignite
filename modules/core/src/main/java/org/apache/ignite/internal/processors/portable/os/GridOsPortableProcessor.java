@@ -31,7 +31,7 @@ import java.nio.*;
 /**
  * No-op implementation of {@link GridPortableProcessor}.
  */
-public class GridOsPortableProcessor extends GridProcessorAdapter implements GridPortableProcessor {
+public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
@@ -125,12 +125,12 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
+    @Nullable public KeyCacheObject toCacheKeyObject(GridCacheContext ctx, Object obj) {
         return new UserKeyCacheObjectImpl(obj);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(@Nullable Object obj) {
+    @Nullable @Override public CacheObject toCacheObject(GridCacheContext ctx, @Nullable Object obj) {
         return new UserCacheObjectImpl(obj);
     }
 }

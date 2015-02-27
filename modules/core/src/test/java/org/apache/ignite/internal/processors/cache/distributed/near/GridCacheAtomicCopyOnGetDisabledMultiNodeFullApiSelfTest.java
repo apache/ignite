@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.near;
+
+import org.apache.ignite.configuration.*;
 
 /**
  *
  */
-public interface KeyCacheObject extends CacheObject {
-    /**
-     * @return Key hash code.
-     */
-    public int hashCode();
+public class GridCacheAtomicCopyOnGetDisabledMultiNodeFullApiSelfTest extends GridCacheAtomicMultiNodeFullApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-    /**
-     * @return {@code True} if internal cache key.
-     */
-    public boolean internal();
+        assert ccfg.isCopyOnGet();
+
+        ccfg.setCopyOnGet(false);
+
+        return ccfg;
+    }
 }

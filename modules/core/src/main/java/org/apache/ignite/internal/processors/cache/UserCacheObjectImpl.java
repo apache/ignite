@@ -35,21 +35,25 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
-        if (val instanceof byte[]) {
-            byte[] byteArr = (byte[])val;
+        if (needCopy(ctx)) {
+            if (val instanceof byte[]) {
+                byte[] byteArr = (byte[])val;
 
-            return new CacheObjectImpl(Arrays.copyOf(byteArr, byteArr.length), null);
-        }
-        else {
-            try {
-                if (valBytes == null)
-                    valBytes = CU.marshal(ctx.shared(), val);
+                return new CacheObjectImpl(Arrays.copyOf(byteArr, byteArr.length), null);
+            }
+            else {
+                try {
+                    if (valBytes == null)
+                        valBytes = CU.marshal(ctx.shared(), val);
 
-                return new CacheObjectImpl(null, valBytes);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
+                    return new CacheObjectImpl(null, valBytes);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to marshal object: " + val, e);
+                }
             }
         }
+        else
+            return new CacheObjectImpl(val, valBytes);
     }
 }

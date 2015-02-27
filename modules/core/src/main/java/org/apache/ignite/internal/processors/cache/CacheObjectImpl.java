@@ -18,27 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  *
  */
-public class CacheObjectImpl implements CacheObject, Externalizable {
-    /** */
-    @GridToStringInclude
-    @GridDirectTransient
-    protected Object val;
-
-    /** */
-    protected byte[] valBytes;
-
+public class CacheObjectImpl extends CacheObjectAdapter {
     /**
      *
      */
@@ -58,20 +48,25 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T getField(String name) {
-        // TODO IGNITE-51.
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(GridCacheContext ctx) {
-        if (val != null)
-            return (T)val;
-
-        assert valBytes != null;
+    @Nullable @Override public <T> T value(GridCacheContext ctx, boolean cpy) {
+        cpy = cpy && needCopy(ctx);
 
         try {
+            if (cpy) {
+                byte[] bytes = valueBytes(ctx);
+
+                if (byteArray())
+                    return (T)Arrays.copyOf(bytes, bytes.length);
+                else
+                    return ctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
+            }
+
+            if (val != null)
+                return (T)val;
+
+            assert valBytes != null;
+
             val = ctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
         }
         catch (IgniteCheckedException e) {
@@ -201,25 +196,7 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
         return this;
-    }
-
-    /** {@inheritDoc} */
-    public String toString() {
-        if (val instanceof byte[])
-            return getClass().getSimpleName() + " [val=<byte array>, len=" + ((byte[])val).length + ']';
-        else
-            return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
     }
 }

@@ -300,7 +300,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 success = false;
                             }
                             else
-                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable);
+                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable, true);
                         }
                         else
                             success = false;

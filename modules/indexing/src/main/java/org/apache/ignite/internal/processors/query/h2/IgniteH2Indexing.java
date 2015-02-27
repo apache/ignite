@@ -2089,7 +2089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // TODO IGNITE-51.
             GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
 
-            return e != null ? e.value().value(cctx) : null;
+            return e != null ? e.value().value(cctx, false) : null;
         }
 
         /** {@inheritDoc} */

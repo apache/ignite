@@ -216,7 +216,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Nullable @Override public Object applyx(IgniteInternalFuture<GridCacheReturn<CacheObject>> fut)
                 throws IgniteCheckedException
             {
-                return CU.value(fut.get().value(), ctx);
+                return CU.value(fut.get().value(), ctx, true);
             }
 
             @Override public String toString() {
@@ -2328,7 +2328,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                 misses.put(key, ver);
                             }
                             else {
-                                ctx.addResult(map, key, val, skipVals, keepCacheObjects, deserializePortable);
+                                ctx.addResult(map, key, val, skipVals, keepCacheObjects, deserializePortable, true);
 
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                     ctx.evicts().touch(entry, topVer);
@@ -2408,7 +2408,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                                         cacheVal,
                                                         skipVals,
                                                         keepCacheObjects,
-                                                        deserializePortable);
+                                                        deserializePortable,
+                                                        false);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&
@@ -2542,7 +2543,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
                 CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
 
-                return CU.value(prev, ctx);
+                return CU.value(prev, ctx, false);
             }
 
             @Override public String toString() {
@@ -2962,7 +2963,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
                 CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noPeekArray()).get().value();
 
-                return CU.value(prev, ctx);
+                return CU.value(prev, ctx, true);
             }
 
             @Override public String toString() {
@@ -3081,7 +3082,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
                 CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasPeekArray()).get().value();
 
-                return CU.value(prev, ctx);
+                return CU.value(prev, ctx, true);
             }
 
             @Override public String toString() {
@@ -3329,7 +3330,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
                 CacheObject ret = tx.removeAllAsync(ctx, Collections.singletonList(key), entry, true, filter).get().value();
 
-                V retVal = CU.value(ret, ctx);
+                V retVal = CU.value(ret, ctx, true);
 
                 if (ctx.config().getInterceptor() != null)
                     return (V)ctx.config().getInterceptor().onBeforeRemove(key, retVal).get2();
@@ -3573,7 +3574,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 CacheObject val = (CacheObject)ret.value();
 
-                ret.value(CU.value(val, ctx));
+                ret.value(CU.value(val, ctx, true));
 
                 return ret;
             }
@@ -3648,7 +3649,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 CacheObject val = (CacheObject)ret.value();
 
-                ret.value(CU.value(val, ctx));
+                ret.value(CU.value(val, ctx, true));
 
                 return ret;
             }
@@ -3692,7 +3693,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                         CacheObject val = (CacheObject)ret.value();
 
-                        ret.value(CU.value(val, ctx));
+                        ret.value(CU.value(val, ctx, true));
 
                         return ret;
                     }
@@ -3742,7 +3743,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                         CacheObject val = (CacheObject)ret.value();
 
-                        ret.value(CU.value(val, ctx));
+                        ret.value(CU.value(val, ctx, true));
 
                         return ret;
                     }

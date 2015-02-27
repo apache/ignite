@@ -961,7 +961,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 success = false;
                             }
                             else
-                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable);
+                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable, false);
                         }
                         else
                             success = false;
@@ -1340,8 +1340,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         null);
 
-                    Object keyVal = entry.key().value(ctx);
-                    Object oldVal = CU.value(old, ctx);
+                    Object keyVal = entry.key().value(ctx, false);
+                    Object oldVal = CU.value(old, ctx, false);
                     Object updatedVal = null;
 
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx,
@@ -1481,9 +1481,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             taskName,
                             null);
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(entry.key().value(ctx),
-                            CU.value(old, ctx),
-                            updated.value(ctx));
+                        Object val = ctx.config().getInterceptor().onBeforePut(entry.key().value(ctx, false),
+                            CU.value(old, ctx, false),
+                            updated.value(ctx, false));
 
                         if (val == null)
                             continue;
@@ -1517,8 +1517,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                            entry.key().value(ctx),
-                            CU.value(old, ctx));
+                            entry.key().value(ctx, false),
+                            CU.value(old, ctx, false));
 
                         if (ctx.cancelRemove(interceptorRes))
                             continue;

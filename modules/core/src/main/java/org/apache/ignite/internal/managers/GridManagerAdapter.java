@@ -500,7 +500,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                             GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
 
-                            return e != null ? CU.<V>value(e.value(), cctx) : null;
+                            return e != null ? CU.<V>value(e.value(), cctx, true) : null;
                         }
                         catch (IgniteCheckedException e) {
                             throw U.convertException(e);

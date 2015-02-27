@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.portable;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
@@ -151,11 +152,18 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param obj Object.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(@Nullable Object obj);
+    @Nullable public CacheObject toCacheObject(GridCacheContext ctx, @Nullable Object obj);
 
     /**
      * @param obj Key value.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(Object obj);
+    public KeyCacheObject toCacheKeyObject(GridCacheContext ctx, Object obj);
+
+    /**
+     * @param obj Value.
+     * @return {@code True} if object is of known immutable type of it is marked
+     *          with {@link IgniteImmutable} annotation.
+     */
+    public boolean immutable(Object obj);
 }

@@ -1770,7 +1770,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj instanceof CacheObject)
             return (CacheObject)obj;
 
-        return portable().toCacheObject(obj);
+        return portable().toCacheObject(this, obj);
     }
 
     /**
@@ -1781,7 +1781,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
-        return portable().toCacheKeyObject(obj);
+        return portable().toCacheKeyObject(this, obj);
     }
 
     /**
@@ -1882,7 +1882,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert val != null;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(this, cpy);
+            Object key0 = key.value(this, false);
             Object val0 = skipVals ? true : val.value(this, cpy);
 
             if (portableEnabled() && deserializePortable) {

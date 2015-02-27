@@ -554,8 +554,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
      */
     @SuppressWarnings("unchecked")
     public CacheObject applyEntryProcessors(CacheObject cacheVal) {
-        Object key = CU.value(this.key, ctx);
-        Object val = CU.value(cacheVal, ctx);
+        Object key = CU.value(this.key, ctx, false);
+        Object val = CU.value(cacheVal, ctx, false);
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
@@ -580,9 +580,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 //        return val;
     }
 
+    /**
+     * @param cacheVal Value.
+     * @return New value.
+     */
     public <V> V applyEntryProcessors(V cacheVal) {
         Object val = cacheVal;
-        Object key = CU.value(this.key, ctx);
+        Object key = CU.value(this.key, ctx, false);
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {

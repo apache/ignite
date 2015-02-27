@@ -182,10 +182,10 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 }
             }
 
-            CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx),
-                CU.<V>value(newVal, cctx),
+            CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx, false),
+                CU.<V>value(newVal, cctx, false),
                 newBytes,
-                lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx) : null,
+                lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx, false) : null,
                 lsnr.oldValueRequired() ? oldBytes : null);
 
             CacheContinuousQueryEvent<K, V> evt = new CacheContinuousQueryEvent<>(
@@ -235,10 +235,10 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 }
 
                // TODO IGNITE-51.
-               CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx),
+               CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx, false),
                     null,
                     null,
-                    lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx) : null,
+                    lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx, false) : null,
                     lsnr.oldValueRequired() ? oldBytes : null);
 
                 CacheContinuousQueryEvent<K, V> evt = new CacheContinuousQueryEvent<>(

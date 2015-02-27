@@ -32,14 +32,18 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
-        try {
-            if (valBytes == null)
-                valBytes = ctx.marshaller().marshal(val);
+        if (needCopy(ctx)) {
+            try {
+                if (valBytes == null)
+                    valBytes = ctx.marshaller().marshal(val);
 
-            return new KeyCacheObjectImpl(ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader()), valBytes);
+                return new KeyCacheObjectImpl(ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader()), valBytes);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal object: " + val, e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshal object: " + val, e);
-        }
+        else
+            return new KeyCacheObjectImpl(val, valBytes);
     }
 }

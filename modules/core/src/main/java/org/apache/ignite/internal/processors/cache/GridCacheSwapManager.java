@@ -465,7 +465,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             assert key != null;
 
             byte[] valBytes = swapMgr.read(spaceName,
-                new SwapKey(key.value(cctx), part, key.valueBytes(cctx)),
+                new SwapKey(key.value(cctx, false), part, key.valueBytes(cctx)),
                 cctx.deploy().globalLoader());
 
             return valBytes != null;
@@ -1093,7 +1093,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         checkIteratorQueue();
 
         swapMgr.write(spaceName,
-            new SwapKey(key.value(cctx), part, key.valueBytes(cctx)),
+            new SwapKey(key.value(cctx, false), part, key.valueBytes(cctx)),
             entry,
             cctx.deploy().globalLoader());
 
@@ -1308,7 +1308,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      */
     public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, long topVer) {
         // TODO IGNITE-51.
-        return null;
+        return new GridEmptyCloseableIterator<>();
     }
 
     /**
@@ -1317,7 +1317,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer)
         throws IgniteCheckedException {
         // TODO IGNITE-51.
-        return null;
+        return new GridEmptyCloseableIterator<>();
     }
 
     /**
@@ -1384,7 +1384,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                             swapEntry(e);
 
-                            return e.value().value(cctx);
+                            return e.value().value(cctx, false);
                         }
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);

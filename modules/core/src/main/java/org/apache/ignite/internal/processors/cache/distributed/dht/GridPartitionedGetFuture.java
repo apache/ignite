@@ -462,7 +462,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
-                                cctx.addResult(locVals, key, v, skipVals, false, deserializePortable);
+                                cctx.addResult(locVals, key, v, skipVals, false, deserializePortable, true);
 
                                 return false;
                             }
@@ -537,7 +537,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             Map<K, V> map = new GridLeanMap<>(keysSize);
 
             for (GridCacheEntryInfo info : infos)
-                cctx.addResult(map, info.key(), info.value(), skipVals, false, deserializePortable);
+                cctx.addResult(map, info.key(), info.value(), skipVals, false, deserializePortable, false);
 
             return map;
         }

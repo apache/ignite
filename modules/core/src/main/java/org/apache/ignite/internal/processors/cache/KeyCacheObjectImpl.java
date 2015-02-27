@@ -24,13 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.nio.*;
 
 /**
  *
  */
-public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
+public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
     /** */
     @GridToStringInclude
     @GridDirectTransient
@@ -59,8 +58,6 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean byteArray() {
-        assert false;
-
         return false;
     }
 
@@ -80,14 +77,19 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(GridCacheContext ctx) {
-        return (T)val;
-    }
+    @Nullable @Override public <T> T value(GridCacheContext ctx, boolean cpy) {
+        cpy = cpy && needCopy(ctx);
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T getField(String name) {
-        // TODO IGNITE-51.
-        return null;
+        if (cpy) {
+            try {
+                return (T)ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal object.", e);
+            }
+        }
+
+        return (T)val;
     }
 
     /** {@inheritDoc} */
@@ -177,20 +179,5 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
         return val.equals(other.val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    public String toString() {
-        return S.toString(KeyCacheObjectImpl.class, this);
     }
 }

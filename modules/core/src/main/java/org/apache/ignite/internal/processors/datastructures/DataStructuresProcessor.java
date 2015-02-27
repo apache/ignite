@@ -1008,7 +1008,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     GridCacheInternal key = (GridCacheInternal)entry.key();
 
                     // TODO IGNITE-51.
-                    Object val0 = CU.value(entry.value(), entry.context());
+                    Object val0 = CU.value(entry.value(), entry.context(), false);
 
                     if (val0 instanceof GridCacheCountDownLatchValue) {
                         // Notify latch on changes.

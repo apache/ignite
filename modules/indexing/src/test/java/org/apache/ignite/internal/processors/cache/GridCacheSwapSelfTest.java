@@ -641,10 +641,10 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = CU.value(entry.rawGet(), entry.context());
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assert val != null;
-            assert CU.value(entry.key(), entry.context()) == val.value();
+            assert CU.value(entry.key(), entry.context(), false) == val.value();
             assert entry.version().equals(versions.get(i));
         }
     }

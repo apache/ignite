@@ -576,7 +576,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx);
+                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
                                     .onBeforeRemove(key, oldVal);
@@ -1168,7 +1168,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         val = txEntry.applyEntryProcessors(val);
 
                     if (val != null) {
-                        Object val0 = val.value(cacheCtx);
+                        Object val0 = val.value(cacheCtx, true);
 
                         if (cacheCtx.portableEnabled())
                             val0 = cacheCtx.unwrapPortableIfNeeded(val0, !deserializePortable);
@@ -1273,7 +1273,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 accessPlc);
 
                             if (val != null) {
-                                Object val0 = val.value(cacheCtx);
+                                Object val0 = val.value(cacheCtx, false);
 
                                 if (cacheCtx.portableEnabled())
                                     val0 = cacheCtx.unwrapPortableIfNeeded(val0, !deserializePortable);
@@ -1507,7 +1507,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 cacheCtx.evicts().touch(e, topologyVersion());
 
                                 if (visibleVal != null)
-                                    map.put(key.<K>value(cacheCtx), (V)CU.skipValue(visibleVal, skipVals));
+                                    map.put(key.<K>value(cacheCtx, false), (V)CU.skipValue(visibleVal, skipVals));
                             }
                             else {
                                 assert txEntry != null;
@@ -1515,7 +1515,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 txEntry.setAndMarkValid(cacheVal);
 
                                 if (visibleVal != null)
-                                    map.put(key.<K>value(cacheCtx), (V)visibleVal);
+                                    map.put(key.<K>value(cacheCtx, false), (V)visibleVal);
                             }
 
                             loaded.add(key);
@@ -1636,7 +1636,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = cacheKey.<K>value(cacheCtx);
+                            K keyVal = cacheKey.<K>value(cacheCtx, false);
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1677,7 +1677,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                                         txEntry.setAndMarkValid(val);
 
-                                        Object val0 = val.value(cacheCtx);
+                                        Object val0 = val.value(cacheCtx, false);
 
                                         if (!F.isEmpty(txEntry.entryProcessors()))
                                             val0 = txEntry.applyEntryProcessors(val0);
@@ -1769,7 +1769,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (!missed.isEmpty()) {
                     if (!readCommitted())
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
-                            K keyVal = it.next().value(cacheCtx);
+                            K keyVal = it.next().value(cacheCtx, false);
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2432,8 +2432,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx);
-        Object val = CU.value(cacheVal, ctx);
+        Object keyVal = txEntry.key().value(ctx, false);
+        Object val = CU.value(cacheVal, ctx, false);
 
         try {
             Object res = null;

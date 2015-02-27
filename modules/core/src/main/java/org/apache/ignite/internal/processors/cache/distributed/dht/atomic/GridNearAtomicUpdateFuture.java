@@ -330,7 +330,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (op != TRANSFORM) {
             CacheObject val = (CacheObject)ret.value();
 
-            ret.value(CU.value(val, cctx));
+            ret.value(CU.value(val, cctx, false));
         }
 
         Object retval = res == null ? null : rawRetval ? ret : this.retval ? ret.value() : ret.success();
@@ -897,9 +897,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
             for (CacheInvokeDirectResult res : results) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    new CacheInvokeResult<>(CU.value(res.result(), cctx)) : new CacheInvokeResult<>(res.error());
+                    new CacheInvokeResult<>(CU.value(res.result(), cctx, false)) : new CacheInvokeResult<>(res.error());
 
-                map0.put(res.key().value(cctx), res0);
+                map0.put(res.key().value(cctx, false), res0);
             }
 
             if (opRes != null) {

@@ -297,14 +297,8 @@ public class GridAffinityAssignmentCache {
      */
     public int partition(Object key) {
         // TODO IGNITE-51.
-        if (ctx.portableEnabled()) {
-            try {
-                key = ctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(ctx, false);
 
         return aff.partition(affMapper.affinityKey(key));
     }
