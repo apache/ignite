@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -165,6 +167,34 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvict() throws Exception {
+        Ignite ignite1 = startGrid(1);
+
+        IgniteCache<Object, Object> cache = ignite1.jcache(null).withExpiryPolicy(new CreatedExpiryPolicy(
+            new Duration(TimeUnit.MILLISECONDS, 100L)));
+
+        // Putting entry.
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        // Wait when entry 
+        U.sleep(200);
+
+        // Check that entry is evicted from cache, but local store does contain it.
+        for (int i = 0; i < KEYS; i++) {
+            cache.localEvict(Arrays.asList(i));
+
+            assertNull(cache.localPeek(i));
+
+            assertEquals(i, (int)LOCAL_STORE_1.load(i).get1());
+
+            assertEquals(i, cache.get(i));
+        }
     }
 
     /**
