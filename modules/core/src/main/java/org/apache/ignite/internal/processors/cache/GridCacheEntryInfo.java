@@ -322,7 +322,7 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void marshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx);
 
         val.prepareMarshal(ctx);
@@ -350,9 +350,9 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx.shared(), clsLdr);
+        key.finishUnmarshal(ctx, clsLdr);
 
-        val.finishUnmarshal(ctx.shared(), clsLdr);
+        val.finishUnmarshal(ctx, clsLdr);
 // TODO IGNITE-51
 //        Marshaller mrsh = ctx.marshaller();
 //

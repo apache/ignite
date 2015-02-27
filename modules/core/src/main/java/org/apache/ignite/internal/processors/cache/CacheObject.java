@@ -27,9 +27,10 @@ import org.jetbrains.annotations.*;
 public interface CacheObject extends Message {
     /**
      * @param ctx Context.
+     * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
-    @Nullable public <T> T value(GridCacheContext ctx);
+    @Nullable public <T> T value(GridCacheContext ctx, boolean cpy);
 
     /**
      * @param name Field name.
@@ -41,14 +42,26 @@ public interface CacheObject extends Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException;
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if value is byte array.
+     */
+    public boolean byteArray();
+
+    /**
+     * @param ctx Context.
+     * @return Value bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.

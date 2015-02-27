@@ -522,13 +522,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        prepareMarshalCacheObjects(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(vals, ctx);
+        prepareMarshalCacheObjects(keys, cctx);
 
-        prepareMarshalCacheObjects(nearKeys, ctx);
+        prepareMarshalCacheObjects(vals, cctx);
 
-        prepareMarshalCacheObjects(nearVals, ctx);
+        prepareMarshalCacheObjects(nearKeys, cctx);
+
+        prepareMarshalCacheObjects(nearVals, cctx);
 
         if (forceTransformBackups) {
             invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
@@ -544,13 +546,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        finishUnmarshalCacheObjects(keys, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        finishUnmarshalCacheObjects(vals, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
 
-        finishUnmarshalCacheObjects(nearKeys, ctx, ldr);
+        finishUnmarshalCacheObjects(vals, cctx, ldr);
 
-        finishUnmarshalCacheObjects(nearVals, ctx, ldr);
+        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearVals, cctx, ldr);
 
         if (forceTransformBackups) {
             entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);

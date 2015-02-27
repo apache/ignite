@@ -495,10 +495,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                     byte[] keyBytes = entry.getKey();
 
-                    // TODO IGNITE-51.
-                    KeyCacheObject key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
+                    KeyCacheObject key = cctx.toCacheKeyObject(null, keyBytes);
 
-                    cctx.swap().remove(key, keyBytes);
+                    cctx.swap().remove(key);
                 }
             }
         }

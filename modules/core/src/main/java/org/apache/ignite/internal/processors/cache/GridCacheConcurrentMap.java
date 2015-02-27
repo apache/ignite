@@ -2174,7 +2174,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public K next() {
-            return it.next().key().value(it.ctx);
+            return it.next().key().value(it.ctx, true);
         }
 
         /** {@inheritDoc} */

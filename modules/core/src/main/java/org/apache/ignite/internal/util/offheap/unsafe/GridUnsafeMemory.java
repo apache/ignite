@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import sun.misc.*;
 
 import java.util.concurrent.atomic.*;
@@ -467,6 +468,24 @@ public class GridUnsafeMemory {
         }
 
         return GridCacheValueBytes.nil();
+    }
+
+    /**
+     * Get value stored in offheap along with a flag indicating whether this is "raw bytes", i.e. this is actual value
+     * or not.
+     *
+     * @param ptr Pointer to read.
+     * @return Stored byte array and "raw bytes" flag.
+     */
+    public IgniteBiTuple<byte[], Boolean> get(long ptr) {
+        assert ptr != 0;
+
+        int size = readInt(ptr);
+
+        boolean plain = readByte(ptr + 4) == 1;
+        byte[] bytes = readBytes(ptr + 5, size);
+
+        return new IgniteBiTuple<>(bytes, plain);
     }
 
     /**

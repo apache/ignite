@@ -46,7 +46,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public K getKey() throws IllegalStateException {
-        return cached.key().value(cached.context());
+        return cached.key().value(cached.context(), false);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +79,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         try {
             CacheObject val = cached.peek(GridCachePeekMode.GLOBAL);
 
-            return val != null ? val.<V>value(cached.context()) : null;
+            return val != null ? val.<V>value(cached.context(), false) : null;
         }
         catch (GridCacheEntryRemovedException e) {
             return null;
@@ -96,13 +96,13 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                 GridTuple<CacheObject> peek = tx.peek(cached.context(), false, cached.key(), null);
 
                 if (peek != null)
-                    return peek.get().value(cached.context());
+                    return peek.get().value(cached.context(), false);
             }
 
             if (cached.detached()) {
                 CacheObject val = cached.rawGet();
 
-                return val != null ? val.<V>value(cached.context()) : null;
+                return val != null ? val.<V>value(cached.context(), false) : null;
             }
 
             for (;;) {
@@ -114,7 +114,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                 try {
                     CacheObject val = e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
 
-                    return val != null ? val.<V>value(cached.context()) : null;
+                    return val != null ? val.<V>value(cached.context(), false) : null;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.

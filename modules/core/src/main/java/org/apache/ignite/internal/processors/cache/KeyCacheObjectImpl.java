@@ -58,7 +58,23 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean byteArray() {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] valueBytes(GridCacheContext ctx) {
+        assert valBytes != null;
+
+        return valBytes;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean internal() {
+        assert val != null;
+
         return val instanceof GridCacheInternal;
     }
 
@@ -141,13 +157,13 @@ public class KeyCacheObjectImpl implements KeyCacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = CU.marshal(ctx, val);
+            valBytes = CU.marshal(ctx.shared(), val);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert valBytes != null;
 
         val = ctx.marshaller().unmarshal(valBytes, ldr);

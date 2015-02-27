@@ -188,7 +188,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     void addEntry(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert info != null;
 
-        marshalInfo(info, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        marshalInfo(info, cctx);
 
         msgSize += info.marshalledSize();
 
@@ -216,8 +218,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
         assert info.key() != null;
         assert info.value() != null;
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         // Need to call this method to initialize info properly.
-        marshalInfo(info, ctx);
+        marshalInfo(info, cctx);
 
         msgSize += info.marshalledSize();
 

@@ -48,7 +48,6 @@ public class GridCacheEntryInfoCollectSwapListener implements GridCacheSwapListe
     /** {@inheritDoc} */
     @Override public void onEntryUnswapped(int part,
         KeyCacheObject key,
-        byte[] keyBytes,
         GridCacheSwapEntry swapEntry)
     {
 // TODO IGNITE-51.

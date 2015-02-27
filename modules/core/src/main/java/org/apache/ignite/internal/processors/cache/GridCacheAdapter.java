@@ -871,7 +871,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             else
                 cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, modes.swap, plc);
 
-            Object val = cacheVal != null ? cacheVal.value(ctx) : null;
+            Object val = cacheVal != null ? cacheVal.value(ctx, true) : null;
 
             if (ctx.portableEnabled())
                 val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -963,7 +963,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    return v.value(ctx);
+                    return v.value(ctx, true);
 // TODO IGNITE-51
 //                    if (ctx.portableEnabled())
 //                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
@@ -980,7 +980,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    return v.value(ctx);
+                    return v.value(ctx, true);
 // TODO IGNITE-51
 //                    if (ctx.portableEnabled())
 //                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
@@ -1070,7 +1070,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
 
                 if (val != null)
-                    return F.t((V)val.get().value(ctx));
+                    return F.t((V)val.get().value(ctx, true));
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
@@ -1311,22 +1311,22 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet() {
-        return primaryEntrySet((IgnitePredicate<Cache.Entry<K, V>>[])null);
+        return primaryEntrySet((IgnitePredicate<Cache.Entry<K, V>>[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet() {
-        return keySet((IgnitePredicate<Cache.Entry<K, V>>[])null);
+        return keySet((IgnitePredicate<Cache.Entry<K, V>>[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return primaryKeySet((IgnitePredicate<Cache.Entry<K, V>>[])null);
+        return primaryKeySet((IgnitePredicate<Cache.Entry<K, V>>[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<V> values() {
-        return values((IgnitePredicate<Cache.Entry<K, V>>[])null);
+        return values((IgnitePredicate<Cache.Entry<K, V>>[]) null);
     }
 
     /** {@inheritDoc} */
@@ -1620,7 +1620,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
             taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override
+            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -1677,7 +1678,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         String taskName,
         final IgniteBiInClosure<KeyCacheObject, Object> vis) {
         return ctx.closures().callLocalSafe(new GPC<Object>() {
-            @Nullable @Override public Object call() {
+            @Nullable
+            @Override
+            public Object call() {
                 try {
                     ctx.store().loadAllFromStore(tx, keys, vis);
                 }
@@ -1806,11 +1809,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                                     if (map != null) {
                                         if (set || wasNew)
-                                            map.put(key.<K>value(ctx), (V)val);
+                                            map.put(key.<K>value(ctx, false), (V)val);
                                         else {
                                             try {
                                                 // TODO IGNITE-51.
-                                                K k = key.<K>value(ctx);
+                                                K k = key.<K>value(ctx, false);
 
                                                 GridTuple<V> v = peek0(false, k, GLOBAL);
 
@@ -2089,8 +2092,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (ctx.config().getInterceptor() != null)
             fut =  fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
-                @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                @Override
+                public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
+                    return (V) ctx.config().getInterceptor().onGet(key, f.get());
                 }
             });
 
@@ -4583,7 +4587,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         CacheObject val = unswapped.value();
 
-        Object val0 = val != null ? val.value(ctx) : null;
+        Object val0 = val != null ? val.value(ctx, true) : null;
 
         if (ctx.portableEnabled())
             return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
@@ -5412,7 +5416,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 CacheObject val = entryEx(cacheKey).innerReload();
 
-                return (V)(val != null ? val.value(ctx) : null);
+                return (V)(val != null ? val.value(ctx, true) : null);
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isDebugEnabled())
@@ -5645,8 +5649,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             KeyCacheObject key = entry.key();
 
-            Object key0 = key.value(ctx);
-            Object val0 = val.value(ctx);
+            Object key0 = key.value(ctx, true);
+            Object val0 = val.value(ctx, true);
 
             if (deserializePortable && ctx.portableEnabled()) {
                 key0 = ctx.unwrapPortableIfNeeded(key0, true);
@@ -6408,7 +6412,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         {
             assert ver != null;
 
-            if (p != null && !p.apply(key.<K>value(ctx), (V)val))
+            if (p != null && !p.apply(key.<K>value(ctx, false), (V)val))
                 return;
 
             long ttl = 0;

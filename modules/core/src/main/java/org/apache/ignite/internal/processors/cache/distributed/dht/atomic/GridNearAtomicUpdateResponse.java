@@ -387,18 +387,20 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         if (err != null)
             errBytes = ctx.marshaller().marshal(err);
 
-        prepareMarshalCacheObjects(failedKeys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(remapKeys, ctx);
+        prepareMarshalCacheObjects(failedKeys, cctx);
 
-        prepareMarshalCacheObjects(nearVals, ctx);
+        prepareMarshalCacheObjects(remapKeys, cctx);
+
+        prepareMarshalCacheObjects(nearVals, cctx);
 
         if (retVal != null)
-            retVal.prepareMarshal(ctx);
+            retVal.prepareMarshal(cctx);
 
         if (invokeRes != null) {
             for (CacheInvokeDirectResult res : invokeRes)
-                res.prepareMarshal(ctx);
+                res.prepareMarshal(cctx);
         }
     }
 
@@ -409,18 +411,20 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
 
-        finishUnmarshalCacheObjects(failedKeys, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        finishUnmarshalCacheObjects(remapKeys, ctx, ldr);
+        finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
 
-        finishUnmarshalCacheObjects(nearVals, ctx, ldr);
+        finishUnmarshalCacheObjects(remapKeys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearVals, cctx, ldr);
 
         if (retVal != null)
-            retVal.finishUnmarshal(ctx, ldr);
+            retVal.finishUnmarshal(cctx, ldr);
 
         if (invokeRes != null) {
             for (CacheInvokeDirectResult res : invokeRes)
-                res.finishUnmarshal(ctx, ldr);
+                res.finishUnmarshal(cctx, ldr);
         }
     }
 

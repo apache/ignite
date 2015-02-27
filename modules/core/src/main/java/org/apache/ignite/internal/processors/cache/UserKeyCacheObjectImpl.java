@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Cache object wrapping key provided by user. Need to be copied before stored in cache.
@@ -37,7 +36,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
             if (valBytes == null)
                 valBytes = ctx.marshaller().marshal(val);
 
-            return new KeyCacheObjectImpl(ctx.marshaller().unmarshal(valBytes, U.gridClassLoader()), valBytes);
+            return new KeyCacheObjectImpl(ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader()), valBytes);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to marshal object: " + val, e);

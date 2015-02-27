@@ -93,7 +93,7 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /** {@inheritDoc} */
-    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx);
 
         if (err != null)
@@ -104,7 +104,7 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /** {@inheritDoc} */
-    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)

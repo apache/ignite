@@ -271,15 +271,15 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfo(GridCacheEntryInfo info, GridCacheSharedContext ctx) throws IgniteCheckedException {
+    protected final void marshalInfo(GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (info != null) {
             info.marshal(ctx);
 
             if (ctx.deploymentEnabled()) {
-                prepareObject(info.key(), ctx);
-                prepareObject(info.value(), ctx);
+                prepareObject(info.key(), ctx.shared());
+                prepareObject(info.value(), ctx.shared());
             }
         }
     }
@@ -306,7 +306,7 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void marshalInfos(
         Iterable<? extends GridCacheEntryInfo> infos,
-        GridCacheSharedContext ctx
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         assert ctx != null;
 
@@ -581,7 +581,7 @@ public abstract class GridCacheMessage implements Message {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     protected final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
-        GridCacheSharedContext ctx) throws IgniteCheckedException {
+        GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -597,7 +597,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void prepareMarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
-        GridCacheSharedContext ctx) throws IgniteCheckedException {
+        GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -613,7 +613,7 @@ public abstract class GridCacheMessage implements Message {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     protected final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
-        GridCacheSharedContext ctx,
+        GridCacheContext ctx,
         ClassLoader ldr)
         throws IgniteCheckedException
     {
@@ -633,7 +633,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
-        GridCacheSharedContext ctx,
+        GridCacheContext ctx,
         ClassLoader ldr)
         throws IgniteCheckedException
     {

@@ -940,7 +940,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         try {
             for (GridCacheEntryEx entry : cached.values()) {
                 // Do not evict internal entries.
-                if (entry.key() instanceof GridCacheInternal)
+                if (entry.key().internal())
                     continue;
 
                 // Lock entry.

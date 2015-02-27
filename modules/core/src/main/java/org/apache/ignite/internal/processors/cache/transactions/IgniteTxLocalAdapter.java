@@ -536,7 +536,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx);
+                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(key, oldVal, val);
 
@@ -1205,7 +1205,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (!F.isEmpty(txEntry.entryProcessors()))
                                     val = txEntry.applyEntryProcessors(val);
 
-                                Object val0 = val.value(cacheCtx);
+                                Object val0 = val.value(cacheCtx, !skipVals);
 
                                 if (cacheCtx.portableEnabled())
                                     val0 = cacheCtx.unwrapPortableIfNeeded(val0, !deserializePortable);

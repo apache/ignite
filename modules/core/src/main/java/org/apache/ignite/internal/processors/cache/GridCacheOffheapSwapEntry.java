@@ -75,11 +75,11 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        valIsByteArr = UNSAFE.getByte(readPtr) != 0;
+        valIsByteArr = UNSAFE.getByte(readPtr + 4) == 1;
 
         valPtr = readPtr;
 
-        assert (ptr + size) > (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
+        assert (ptr + size) > (UNSAFE.getInt(valPtr) + valPtr + 5);
     }
 
     /**
@@ -97,7 +97,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         ptr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        assert (ptr + size) > (UNSAFE.getInt(ptr + 1) + ptr + 5);
+        assert (ptr + size) > (UNSAFE.getInt(ptr) + ptr + 5);
 
         return ptr;
     }

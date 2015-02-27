@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
@@ -227,14 +226,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 assert mem != null;
 
-                if (val != null || valBytes != null) {
-// TODO IGNITE-51.
-//                    boolean valIsByteArr = val instanceof byte[];
-//
-//                    if (valBytes == null && !valIsByteArr)
-//                        valBytes = CU.marshal(cctx.shared(), val);
-//
-//                    valPtr = mem.putOffHeap(valPtr, valIsByteArr ? (byte[])val : valBytes, valIsByteArr);
+                if (val != null) {
+                    boolean valIsByteArr = val.byteArray();
+
+                    valPtr = mem.putOffHeap(valPtr, val.valueBytes(cctx), valIsByteArr);
                 }
                 else {
                     mem.removeOffHeap(valPtr);
@@ -489,7 +484,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             valPtr = e.offheapPointer();
 
                             if (needVal) {
-                                CacheObject val = unmarshalOffheap(false);
+                                CacheObject val = cctx.fromOffheap(valPtr, false);
 
                                 e.value(val);
                             }
@@ -497,6 +492,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         else { // Read from swap.
                             valPtr = 0;
 
+                            // TODO IGNITE-51.
                             if (cctx.portableEnabled() && !e.valueIsByteArray())
                                 e.valueBytes(null); // Clear bytes marshalled with portable marshaller.
                         }
@@ -517,8 +513,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (delta >= 0) {
                         CacheObject val = e.value();
 
-                        if (cctx.portableEnabled())
-                            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+                        val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
 
                         // Set unswapped value.
                         update(val, e.valueBytes(), e.expireTime(), e.ttl(), e.version());
@@ -550,7 +545,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (expireTime > 0 && U.currentTimeMillis() >= expireTime) { // Don't swap entry if it's expired.
                 // Entry might have been updated.
                 if (cctx.offheapTiered()) {
-                    cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
+                    cctx.swap().removeOffheap(key);
 
                     valPtr = 0;
                 }
@@ -563,31 +558,50 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     log.debug("Value did not change, skip write swap entry: " + this);
 
                 if (cctx.swap().offheapEvictionEnabled())
-                    cctx.swap().enableOffheapEviction(key(), getOrMarshalKeyBytes());
+                    cctx.swap().enableOffheapEviction(key());
 
                 return;
             }
 
-// TODO IGNITE-51.
-//            boolean plain = val instanceof byte[];
-//
-//            IgniteUuid valClsLdrId = null;
-//
-//            if (val != null)
-//                valClsLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
-//
-//            cctx.swap().write(key(),
-//                getOrMarshalKeyBytes(),
-//                plain ? ByteBuffer.wrap((byte[])val) : swapValueBytes(),
-//                plain,
-//                ver,
-//                ttlExtras(),
-//                expireTime,
-//                cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)),
-//                valClsLdrId);
+            IgniteUuid valClsLdrId = null;
+
+            if (val != null)
+                valClsLdrId = cctx.deploy().getClassLoaderId(val.value(cctx, false).getClass().getClassLoader());
+
+            IgniteBiTuple<byte[], Boolean> valBytes = swapValueBytes();
+
+            cctx.swap().write(key(),
+                ByteBuffer.wrap(valBytes.get1()),
+                valBytes.get2(),
+                ver,
+                ttlExtras(),
+                expireTime,
+                cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key.value(cctx, false))),
+                valClsLdrId);
 
             if (log.isDebugEnabled())
                 log.debug("Wrote swap entry: " + this);
+        }
+    }
+
+    /**
+     * @return Value bytes and flag indicating whether value is byte array.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IgniteBiTuple<byte[], Boolean> swapValueBytes() throws IgniteCheckedException {
+        if (valPtr != 0) {
+            assert isOffHeapValuesOnly() || cctx.offheapTiered();
+
+            return cctx.unsafeMemory().get(valPtr);
+        }
+        else {
+            assert val != null;
+
+            byte[] bytes = val.valueBytes(cctx);
+
+            boolean plain = val.byteArray();
+
+            return new IgniteBiTuple<>(bytes, plain);
         }
     }
 
@@ -597,7 +611,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     protected final void releaseSwap() throws IgniteCheckedException {
         if (cctx.isSwapOrOffheapEnabled()) {
             synchronized (this){
-                cctx.swap().remove(key(), getOrMarshalKeyBytes());
+                cctx.swap().remove(key());
             }
 
             if (log.isDebugEnabled())
@@ -858,7 +872,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     update(ret, null, expTime, ttl, nextVer);
 
                     if (hadValPtr && cctx.offheapTiered())
-                        cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
+                        cctx.swap().removeOffheap(key);
 
                     if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                         deletedUnlocked(false);
@@ -1183,7 +1197,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             update(null, null, 0, 0, newVer);
 
             if (cctx.offheapTiered() && hadValPtr) {
-                boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
+                boolean rmv = cctx.swap().removeOffheap(key);
 
                 assert rmv;
             }
@@ -1382,7 +1396,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 assert entryProcessor != null;
 
                 // TODO IGNITE-51.
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key.value(cctx), old.value(cctx));
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx,
+                    key.value(cctx, false),
+                    old.value(cctx, false));
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1814,8 +1830,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                key0 = key.value(cctx);
-                old0 = CU.value(old0, oldVal, cctx);
+                key0 = key.value(cctx, false);
+                old0 = value(old0, oldVal, false);
 
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key0, old0);
 
@@ -1943,9 +1959,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Actual update.
             if (op == GridCacheOperation.UPDATE) {
                 if (intercept) {
-                    key0 = CU.value(key0, key, cctx);
-                    old0 = CU.value(old0, oldVal, cctx);
-                    updated0 = CU.value(updated0, updated, cctx);
+                    key0 = value(key0, key, false);
+                    old0 = value(old0, oldVal, false);
+                    updated0 = value(updated0, updated, false);
 
                     Object interceptorVal = cctx.config().getInterceptor().onBeforePut(key0, old0, updated0);
 
@@ -2021,8 +2037,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
             else {
                 if (intercept) {
-                    key0 = CU.value(key0, key, cctx);
-                    old0 = CU.value(old0, oldVal, cctx);
+                    key0 = value(key0, key, false);
+                    old0 = value(old0, oldVal, false);
 
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(key0, old0);
 
@@ -2075,7 +2091,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 assert newSysExpireTime == CU.EXPIRE_TIME_CALCULATE;
 
                 if (cctx.offheapTiered() && hasValPtr) {
-                    boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
+                    boolean rmv = cctx.swap().removeOffheap(key);
 
                     assert rmv;
                 }
@@ -2120,12 +2136,12 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
             if (intercept) {
-                key0 = CU.value(key0, key, cctx);
+                key0 = value(key0, key, false);
 
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(key0, val.value(cctx));
+                    cctx.config().getInterceptor().onAfterPut(key0, val.value(cctx, false));
                 else {
-                    old0 = CU.value(old0, oldVal, cctx);
+                    old0 = value(old0, oldVal, false);
 
                     cctx.config().getInterceptor().onAfterRemove(key0, old0);
                 }
@@ -2147,6 +2163,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             enqueueVer,
             conflictCtx,
             true);
+    }
+
+    /**
+     * @param val Value.
+     * @param cacheObj Cache object.
+     * @param cpy Copy flag.
+     * @return Cache object value.
+     */
+    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean cpy) {
+        if (val != null)
+            return val;
+
+        return cacheObj != null ? cacheObj.value(cctx, cpy) : null;
     }
 
     /**
@@ -3131,17 +3160,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (val != null)
             return val;
 
-        GridCacheValueBytes valBytes = valueBytesUnlocked();
+        if (valPtr != 0)
+            return cctx.fromOffheap(valPtr, tmp);
 
-// TODO IGNITE-51.
-//        if (!valBytes.isNull())
-//            val = valBytes.isPlain() ? (V)valBytes.get() : cctx.marshaller().<V>unmarshal(valBytes.get(),
-//                cctx.deploy().globalLoader());
-
-        if (val == null && cctx.offheapTiered() && valPtr != 0)
-            val = unmarshalOffheap(tmp);
-
-        return val;
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -3786,7 +3808,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             else
                 val = rawGetOrUnmarshal(false);
 
-            return new CacheEntryImpl<>(key.<K>value(cctx), val != null ? val.<V>value(cctx) : null);
+            return new CacheEntryImpl<>(key.<K>value(cctx, false), val != null ? val.<V>value(cctx, false) : null);
         }
         catch (GridCacheFilterFailedException ignored) {
             throw new IgniteException("Should never happen.");
@@ -3805,7 +3827,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Override public <K, V> Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         CacheObject val = rawGetOrUnmarshal(true);
 
-        return new CacheEntryImpl<>(key.<K>value(cctx), val != null ? val.<V>value(cctx) : null) ;
+        return new CacheEntryImpl<>(key.<K>value(cctx, false), val != null ? val.<V>value(cctx, false) : null) ;
     }
 
     /** {@inheritDoc} */
@@ -3815,7 +3837,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public synchronized <K, V> CacheVersionedEntryImpl<K, V> wrapVersioned() {
-        return new CacheVersionedEntryImpl<>(key.<K>value(cctx), null, ver);
+        return new CacheVersionedEntryImpl<>(key.<K>value(cctx, false), null, ver);
     }
 
     /** {@inheritDoc} */
@@ -3924,24 +3946,22 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         try {
             if (!hasReaders() && markObsolete0(obsoleteVer, false)) {
                 if (!isStartVersion() && hasValueUnlocked()) {
-// TODO IGNITE-51.
-//                    boolean plain = val instanceof byte[];
-//
-//                    IgniteUuid valClsLdrId = null;
-//
-//                    if (val != null)
-//                        valClsLdrId = cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(val));
-//
-//                    ret = new GridCacheBatchSwapEntry<>(key(),
-//                        getOrMarshalKeyBytes(),
-//                        partition(),
-//                        plain ? ByteBuffer.wrap((byte[])val) : swapValueBytes(),
-//                        plain,
-//                        ver,
-//                        ttlExtras(),
-//                        expireTimeExtras(),
-//                        cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)),
-//                        valClsLdrId);
+                    IgniteUuid valClsLdrId = null;
+
+                    if (val != null)
+                        valClsLdrId = cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(val.value(cctx, false)));
+
+                    IgniteBiTuple<byte[], Boolean> valBytes = swapValueBytes();
+
+                    ret = new GridCacheBatchSwapEntry(key(),
+                        partition(),
+                        ByteBuffer.wrap(valBytes.get1()),
+                        valBytes.get2(),
+                        ver,
+                        ttlExtras(),
+                        expireTimeExtras(),
+                        cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key.value(cctx, false))),
+                        valClsLdrId);
                 }
 
                 value(null, null);
@@ -3953,37 +3973,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         }
 
         return ret;
-    }
-
-    /**
-     * Create value bytes wrapper from the given object.
-     *
-     * @return Value bytes wrapper.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ByteBuffer swapValueBytes() throws IgniteCheckedException {
-        assert val != null || valPtr != 0;
-
-        if (cctx.offheapTiered() && cctx.portableEnabled()) {
-            if (val != null)
-                return cctx.portable().marshal(val, false);
-
-// TODO IGNITE-51.
-//            V val0 = cctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
-//
-//            return cctx.portable().marshal(val0, false);
-            return null;
-        }
-        else {
-            GridCacheValueBytes res = valueBytesUnlocked();
-
-            if (res.isNull())
-                res = GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
-
-            assert res.get() != null;
-
-            return ByteBuffer.wrap(res.get());
-        }
     }
 
     /**
@@ -4431,7 +4420,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return key.value(cctx);
+            return key.value(cctx, false);
         }
 
         /** {@inheritDoc} */
@@ -4444,11 +4433,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     GridTuple<CacheObject> peek = tx.peek(cctx, false, key, null);
 
                     if (peek != null)
-                        return peek.get().value(cctx);
+                        return peek.get().value(cctx, false);
                 }
 
                 if (detached())
-                    return rawGet().value(cctx);
+                    return rawGet().value(cctx, false);
 
                 for (;;) {
                     GridCacheEntryEx e = cctx.cache().peekEx(key);
@@ -4457,7 +4446,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         return null;
 
                     try {
-                        return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty()).value(cctx);
+                        return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty()).value(cctx, false);
                     }
                     catch (GridCacheEntryRemovedException ignored) {
                         // No-op.

@@ -133,12 +133,14 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (missedKeys != null)
-            prepareMarshalCacheObjects(missedKeys, ctx);
+            prepareMarshalCacheObjects(missedKeys, cctx);
 
         if (infos != null) {
             for (GridCacheEntryInfo info : infos)
-                info.marshal(ctx);
+                info.marshal(cctx);
         }
     }
 
@@ -146,12 +148,12 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (missedKeys != null)
-            finishUnmarshalCacheObjects(missedKeys, ctx, ldr);
+            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
 
         if (infos != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
-
             for (GridCacheEntryInfo info : infos)
                 info.unmarshal(cctx, ldr);
         }

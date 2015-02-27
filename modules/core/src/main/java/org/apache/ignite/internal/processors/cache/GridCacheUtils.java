@@ -1782,20 +1782,7 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      * @return Cache object value.
      */
-    @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx) {
-        return cacheObj != null ? cacheObj.<T>value(ctx) : null;
-    }
-
-    /**
-     * @param val Value.
-     * @param cacheObj Cache object.
-     * @param ctx Cache context.
-     * @return Cache object value.
-     */
-    @Nullable public static <T> T value(@Nullable T val, @Nullable CacheObject cacheObj, GridCacheContext ctx) {
-        if (val != null)
-            return val;
-
-        return cacheObj != null ? cacheObj.<T>value(ctx) : null;
+    @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
+        return cacheObj != null ? cacheObj.<T>value(ctx, cpy) : null;
     }
 }

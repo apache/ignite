@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -42,7 +43,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
         else {
             try {
                 if (valBytes == null)
-                    valBytes = ctx.marshaller().marshal(val);
+                    valBytes = CU.marshal(ctx.shared(), val);
 
                 return new CacheObjectImpl(null, valBytes);
             }

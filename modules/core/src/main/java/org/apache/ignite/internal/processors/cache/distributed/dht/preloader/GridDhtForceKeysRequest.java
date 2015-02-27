@@ -131,14 +131,18 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        prepareMarshalCacheObjects(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        finishUnmarshalCacheObjects(keys, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
     /**

@@ -172,9 +172,11 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (entries != null) {
             for (GridCacheEntryInfo info : entries)
-                info.marshal(ctx);
+                info.marshal(cctx);
         }
 
         if (err != null)

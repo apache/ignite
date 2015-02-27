@@ -227,7 +227,9 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         assert !F.isEmpty(keys);
         assert keys.size() == flags.size();
 
-        prepareMarshalCacheObjects(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
     }
 
     /**
@@ -238,7 +240,9 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        finishUnmarshalCacheObjects(keys, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
 
         assert !F.isEmpty(keys);
         assert keys.size() == flags.size();

@@ -30,9 +30,6 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
     /** Key. */
     private KeyCacheObject key;
 
-    /** Key bytes. */
-    private byte[] keyBytes;
-
     /** Partition. */
     private int part;
 
@@ -40,7 +37,6 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
      * Creates batch swap entry.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param part Partition id.
      * @param valBytes Value bytes.
      * @param valIsByteArr Whether value is byte array.
@@ -51,7 +47,6 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
      * @param valClsLdrId Optional value class loader ID.
      */
     public GridCacheBatchSwapEntry(KeyCacheObject key,
-        byte[] keyBytes,
         int part,
         ByteBuffer valBytes,
         boolean valIsByteArr,
@@ -63,7 +58,6 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
         super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;
-        this.keyBytes = keyBytes;
         this.part = part;
     }
 
@@ -72,13 +66,6 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
      */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes() {
-        return keyBytes;
     }
 
     /**

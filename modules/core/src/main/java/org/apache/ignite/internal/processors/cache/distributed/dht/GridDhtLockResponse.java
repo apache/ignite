@@ -174,8 +174,10 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         if (preloadEntriesBytes == null && preloadEntries != null)
             preloadEntriesBytes = marshalCollection(preloadEntries, ctx);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (preloadEntriesBytes == null && preloadEntries != null) {
-            marshalInfos(preloadEntries, ctx);
+            marshalInfos(preloadEntries, cctx);
 
             preloadEntriesBytes = marshalCollection(preloadEntries, ctx);
         }

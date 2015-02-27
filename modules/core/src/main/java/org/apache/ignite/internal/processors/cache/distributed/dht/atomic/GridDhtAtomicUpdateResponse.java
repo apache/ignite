@@ -143,9 +143,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        prepareMarshalCacheObjects(failedKeys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(nearEvicted, ctx);
+        prepareMarshalCacheObjects(failedKeys, cctx);
+
+        prepareMarshalCacheObjects(nearEvicted, cctx);
 
         errBytes = ctx.marshaller().marshal(err);
     }
@@ -154,9 +156,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        finishUnmarshalCacheObjects(failedKeys, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        finishUnmarshalCacheObjects(nearEvicted, ctx, ldr);
+        finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
 
         err = ctx.marshaller().unmarshal(errBytes, ldr);
     }

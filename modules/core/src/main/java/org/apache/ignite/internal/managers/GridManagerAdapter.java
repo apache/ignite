@@ -430,37 +430,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key,
-                        byte[] keyBytes, @Nullable ClassLoader ldr) {
-                        try {
-                            return ctx.offheap().getValue(spaceName, part, key, keyBytes, ldr);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-                        @Nullable byte[] keyBytes) {
-                        try {
-                            return ctx.offheap().removex(spaceName, part, key, keyBytes);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
-                        @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
-                        try {
-                            ctx.offheap().put(spaceName, part, key, keyBytes, valBytes != null ? valBytes :
-                                ctx.config().getMarshaller().marshal(val));
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, SwapKey key,
                         @Nullable ClassLoader ldr) {

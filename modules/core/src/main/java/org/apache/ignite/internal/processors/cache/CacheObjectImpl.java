@@ -82,13 +82,29 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        if (valBytes == null && !(val instanceof byte[]))
-            valBytes = CU.marshal(ctx, val);
+    @Override public boolean byteArray() {
+        return val instanceof byte[];
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+        if (byteArray())
+            return (byte[])val;
+
+        if (valBytes == null)
+            valBytes = CU.marshal(ctx.shared(), val);
+
+        return valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+        if (valBytes == null && !byteArray())
+            valBytes = CU.marshal(ctx.shared(), val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
     }
 
@@ -105,7 +121,7 @@ public class CacheObjectImpl implements CacheObject, Externalizable {
             writer.onHeaderWritten();
         }
 
-        boolean byteArr = val instanceof byte[];
+        boolean byteArr = byteArray();
 
         switch (writer.state()) {
             case 0:

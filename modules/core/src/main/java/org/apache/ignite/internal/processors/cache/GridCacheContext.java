@@ -290,7 +290,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         trueArr = new IgnitePredicate[]{F.alwaysTrue()};
 
         // Create unsafe memory only if writing values
-        unsafeMemory = cacheCfg.getMemoryMode() == OFFHEAP_VALUES ?
+        unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
@@ -1777,11 +1777,89 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param obj Object.
      * @return Cache object.
      */
-    @Nullable public KeyCacheObject toCacheKeyObject(@Nullable Object obj) {
+    public KeyCacheObject toCacheKeyObject(Object obj) {
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
         return portable().toCacheKeyObject(obj);
+    }
+
+    /**
+     * @param obj Object.
+     * @param bytes Key bytes.
+     * @return Cache object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public KeyCacheObject toCacheKeyObject(Object obj, byte[] bytes) throws IgniteCheckedException {
+        // TODO IGNITE-51 move to processor.
+        assert obj != null || bytes != null;
+
+        if (obj == null)
+            obj = marshaller().unmarshal(bytes, deploy().globalLoader());
+
+        return new KeyCacheObjectImpl(obj, bytes);
+    }
+
+    /**
+     * @param bytes Bytes.
+     * @param valIsByteArr {@code True} if value is byte array.
+     * @param clsLdrId Class loader ID.
+     * @return Cache object.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheObject unswapCacheObject(byte[] bytes, boolean valIsByteArr, @Nullable IgniteUuid clsLdrId)
+        throws IgniteCheckedException
+    {
+        // TODO IGNITE-51 move to processor.
+        if (valIsByteArr)
+            return new CacheObjectImpl(bytes, null);
+
+        ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
+
+        if (ldr == null)
+            return null;
+
+        return new CacheObjectImpl(marshaller().unmarshal(bytes, ldr), bytes);
+    }
+
+    /** */
+    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /**
+     * @param valPtr Value pointer.
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
+     * @return Cache object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public CacheObject fromOffheap(long valPtr, boolean tmp) throws IgniteCheckedException {
+        assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES;
+
+        // TODO IGNITE-51.
+        if (portableEnabled())
+            return (CacheObject)portable().unmarshal(valPtr, !tmp);
+
+        long ptr = valPtr;
+
+        int size = UNSAFE.getInt(ptr);
+
+        ptr += 4;
+
+        boolean plainByteArr = UNSAFE.getByte(ptr++) == 1;
+
+        byte[] bytes = U.copyMemory(ptr, size);
+
+        if (plainByteArr)
+            return new CacheObjectImpl(bytes, null);
+
+        if (offheapTiered()) {
+            IgniteUuid valClsLdrId = U.readGridUuid(ptr + size);
+
+            ClassLoader ldr = valClsLdrId != null ? deploy().getClassLoader(valClsLdrId) : deploy().localLoader();
+
+            return new CacheObjectImpl(marshaller().unmarshal(bytes, ldr), bytes);
+        }
+        else
+            return new CacheObjectImpl(marshaller().unmarshal(bytes, U.gridClassLoader()), bytes);
     }
 
     /**
@@ -1798,13 +1876,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheObject val,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean deserializePortable) {
+        boolean deserializePortable,
+        boolean cpy) {
         assert key != null;
         assert val != null;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(this);
-            Object val0 = skipVals ? true : val.value(this);
+            Object key0 = key.value(this, cpy);
+            Object val0 = skipVals ? true : val.value(this, cpy);
 
             if (portableEnabled() && deserializePortable) {
                 key0 = unwrapPortableIfNeeded(key0, false);

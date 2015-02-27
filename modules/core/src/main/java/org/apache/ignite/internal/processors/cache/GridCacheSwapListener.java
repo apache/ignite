@@ -24,8 +24,7 @@ public interface GridCacheSwapListener {
     /**
      * @param part Partition.
      * @param key Cache key.
-     * @param keyBytes Key bytes.
      * @param e Entry.
      */
-    public void onEntryUnswapped(int part, KeyCacheObject key, byte[] keyBytes, GridCacheSwapEntry e);
+    public void onEntryUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e);
 }

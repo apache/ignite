@@ -57,7 +57,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     /** Value. */
     private CacheObject val;
 
-    /** Falg indicating that value is byte array, so valBytes should not be unmarshalled. */
+    /** Flag indicating that value is byte array, so valBytes should not be unmarshalled. */
     private boolean valIsByteArr;
 
     /** Class loader ID. */
@@ -274,11 +274,11 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         off = U.writeVersion(arr, off, ver);
 
-        UNSAFE.putBoolean(arr, off++, valIsByteArr);
-
         UNSAFE.putInt(arr, off, len);
 
         off += 4;
+
+        UNSAFE.putBoolean(arr, off++, valIsByteArr);
 
         UNSAFE.copyMemory(valBytes.array(), BYTE_ARR_OFF, arr, off, len);
 
@@ -312,11 +312,11 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
-        boolean valIsByteArr = UNSAFE.getBoolean(arr, off++);
-
         int arrLen = UNSAFE.getInt(arr, off);
 
         off += 4;
+
+        boolean valIsByteArr = UNSAFE.getBoolean(arr, off++);
 
         byte[] valBytes = new byte[arrLen];
 
