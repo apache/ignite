@@ -159,8 +159,21 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         }
 
-        for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0, ((IgniteKernal)grid(i)).cache(null).size());
+        boolean allEmpty = true;
+
+        for (int i = 0; i < gridCount(); i++) {
+            Set<Cache.Entry<Object, Object>> entries = ((IgniteKernal) grid(i)).cache(null).entrySet();
+
+            for (Cache.Entry entry : entries) {
+                info("Not removed entry " + grid(i).affinity(null).isPrimary(grid(i).localNode(), entry.getKey()));
+                info("Not removed entry " + grid(i).affinity(null).isBackup(grid(i).localNode(), entry.getKey()));
+                allEmpty = false;
+            }
+
+            info("Cache is not empty: " + ((IgniteKernal) grid(i)).cache(null).entrySet());
+        }
+
+        assertTrue(allEmpty);
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
@@ -831,6 +844,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         finally {
             stopGrid("anotherGrid");
         }
+
+        awaitPartitionMapExchange();
     }
 
     /**
