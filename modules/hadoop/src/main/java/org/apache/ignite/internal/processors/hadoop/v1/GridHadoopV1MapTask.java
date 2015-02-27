@@ -31,7 +31,11 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
     /** */
     private static final String[] EMPTY_HOSTS = new String[0];
 
-    /** {@inheritDoc} */
+    /**
+     * Constructor.
+     *
+     * @param taskInfo 
+     */
     public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
     }

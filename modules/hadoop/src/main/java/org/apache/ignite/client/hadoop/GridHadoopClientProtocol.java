@@ -57,7 +57,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** Configuration. */
     private final Configuration conf;
 
-    /** GG client. */
+    /** Ignite client. */
     private volatile GridClient cli;
 
     /** Last received version. */
@@ -70,7 +70,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      * Constructor.
      *
      * @param conf Configuration.
-     * @param cli GG client.
+     * @param cli Ignite client.
      */
     GridHadoopClientProtocol(Configuration conf, GridClient cli) {
         assert cli != null;
@@ -311,7 +311,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /**
      * Process received status update.
      *
-     * @param status GG status.
+     * @param status Hadoop map-reduce job status.
      * @return Hadoop status.
      */
     private JobStatus processStatus(GridHadoopJobStatus status) {
