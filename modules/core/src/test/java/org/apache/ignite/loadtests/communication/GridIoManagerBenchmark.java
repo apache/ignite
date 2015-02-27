@@ -97,9 +97,8 @@ public class GridIoManagerBenchmark {
 
     /**
      * @param args Command line arguments.
-     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         int threads = args.length > 0 ? Integer.parseInt(args[0]) : DFLT_THREADS;
         int duration =  args.length > 1 ? Integer.parseInt(args[1]) : 0;
         String outputFilename = args.length > 2 ? args[2] : null;

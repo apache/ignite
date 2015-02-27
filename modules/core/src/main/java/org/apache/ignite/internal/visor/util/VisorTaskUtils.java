@@ -41,7 +41,9 @@ import java.nio.charset.*;
 import java.nio.file.*;
 import java.text.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.zip.*;
 
 import static java.lang.System.*;
 import static org.apache.ignite.configuration.IgfsConfiguration.*;
@@ -361,7 +363,7 @@ public class VisorTaskUtils {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 
-        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -575,7 +577,7 @@ public class VisorTaskUtils {
 
                 boolean zipped = buf.length > 512;
 
-                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? U.zipBytes(buf) : buf);
+                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? zipBytes(buf) : buf);
             }
         }
         finally {
@@ -801,5 +803,44 @@ public class VisorTaskUtils {
             pb.directory(workFolder);
 
         return pb.start();
+    }
+
+    /**
+     * Zips byte array.
+     *
+     * @param input Input bytes.
+     * @return Zipped byte array.
+     * @throws java.io.IOException If failed.
+     */
+    public static byte[] zipBytes(byte[] input) throws IOException {
+        return zipBytes(input, 4096);
+    }
+
+    /**
+     * Zips byte array.
+     *
+     * @param input Input bytes.
+     * @param initBufSize Initial buffer size.
+     * @return Zipped byte array.
+     * @throws java.io.IOException If failed.
+     */
+    public static byte[] zipBytes(byte[] input, int initBufSize) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
+
+        try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+            ZipEntry entry = new ZipEntry("");
+
+            try {
+                entry.setSize(input.length);
+
+                zos.putNextEntry(entry);
+
+                zos.write(input);
+            } finally {
+                zos.closeEntry();
+            }
+        }
+
+        return bos.toByteArray();
     }
 }

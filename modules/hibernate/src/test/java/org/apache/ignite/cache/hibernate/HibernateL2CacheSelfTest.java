@@ -43,14 +43,16 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
+
+import org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.Entity;
 
 /**
  *
  * Tests Hibernate L2 cache.
  */
-public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
+public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -74,11 +76,11 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String NATURAL_ID_REGION =
-        "org.apache.ignite.cache.hibernate.GridHibernateL2CacheSelfTest$Entity##NaturalId";
+        "org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest$Entity##NaturalId";
 
     /** */
     public static final String NATURAL_ID_REGION2 =
-        "org.apache.ignite.cache.hibernate.GridHibernateL2CacheSelfTest$Entity2##NaturalId";
+        "org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest$Entity2##NaturalId";
 
     /** */
     private SessionFactory sesFactory1;
@@ -479,7 +481,7 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setProperty(USE_QUERY_CACHE, "true");
 
-        cfg.setProperty(CACHE_REGION_FACTORY, GridHibernateRegionFactory.class.getName());
+        cfg.setProperty(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 

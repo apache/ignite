@@ -1099,8 +1099,71 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... args)
+        throws EntryProcessorException {
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                if (isAsync()) {
+                    IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
+
+                    IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
+                            throws IgniteCheckedException {
+                            EntryProcessorResult<T> res = fut.get();
+
+                            return res != null ? res.get() : null;
+                        }
+                    });
+
+                    setFuture(fut0);
+
+                    return null;
+                }
+                else {
+                    EntryProcessorResult<T> res = delegate.invoke(key, entryProcessor, args);
+
+                    return res != null ? res.get() : null;
+                }
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                if (isAsync()) {
+                    setFuture(delegate.invokeAllAsync(keys, entryProcessor, args));
+
+                    return null;
+                }
+                else
+                    return delegate.invokeAll(keys, entryProcessor, args);
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        IgniteEntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

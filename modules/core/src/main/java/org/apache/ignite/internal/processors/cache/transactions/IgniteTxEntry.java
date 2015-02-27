@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -1091,7 +1092,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
                     if (val != null && val instanceof byte[]) {
                         out.writeBoolean(true);
 
-                        U.writeByteArray(out, (byte[])val);
+                        U.writeByteArray(out, (byte[]) val);
                     }
                     else {
                         out.writeBoolean(false);
@@ -1118,7 +1119,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
                 if (valBytesSent)
                     valBytes = U.readByteArray(in);
                 else
-                    val = in.readBoolean() ? (V)U.readByteArray(in) : (V)in.readObject();
+                    val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
             }
 
             op = fromOrdinal(in.readInt());

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.visor.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
@@ -85,8 +86,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
 
         /** {@inheritDoc} */
         @Override protected Void run(Collection<String> qryIds) {
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap =
-                ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = ignite.cluster().nodeLocalMap();
 
             for (String qryId : qryIds)
                 locMap.remove(qryId);

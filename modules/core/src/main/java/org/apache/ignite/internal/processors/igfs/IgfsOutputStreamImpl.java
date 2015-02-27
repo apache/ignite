@@ -96,11 +96,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
      * @param metrics Local IGFS metrics.
-     * @throws IgniteCheckedException If stream creation failed.
      */
     IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
-        throws IgniteCheckedException {
+        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
         assert fileInfo != null;

@@ -40,7 +40,7 @@ import org.hibernate.cache.spi.access.*;
  * }
  * </pre>
  */
-public class GridHibernateNaturalIdRegion extends GridHibernateTransactionalDataRegion implements NaturalIdRegion {
+public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion implements NaturalIdRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
@@ -48,7 +48,7 @@ public class GridHibernateNaturalIdRegion extends GridHibernateTransactionalData
      * @param cache Region cache,
      * @param dataDesc Region data description.
      */
-    public GridHibernateNaturalIdRegion(GridHibernateRegionFactory factory, String name,
+    public HibernateNaturalIdRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
@@ -61,18 +61,18 @@ public class GridHibernateNaturalIdRegion extends GridHibernateTransactionalData
     /**
      * NaturalId region access strategy.
      */
-    private class AccessStrategy extends GridHibernateAbstractRegionAccessStrategy implements
+    private class AccessStrategy extends HibernateAbstractRegionAccessStrategy implements
         NaturalIdRegionAccessStrategy {
         /**
          * @param stgy Access strategy implementation.
          */
-        private AccessStrategy(GridHibernateAccessStrategyAdapter stgy) {
+        private AccessStrategy(HibernateAccessStrategyAdapter stgy) {
             super(stgy);
         }
 
         /** {@inheritDoc} */
         @Override public NaturalIdRegion getRegion() {
-            return GridHibernateNaturalIdRegion.this;
+            return HibernateNaturalIdRegion.this;
         }
 
         /** {@inheritDoc} */
