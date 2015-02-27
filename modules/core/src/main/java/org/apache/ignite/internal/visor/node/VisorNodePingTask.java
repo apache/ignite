@@ -36,8 +36,8 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorPingJob job(UUID arg) {
-        return new VisorPingJob(arg, debug);
+    @Override protected VisorNodePingJob job(UUID arg) {
+        return new VisorNodePingJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -53,7 +53,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     /**
      * Job that ping node.
      */
-    private static class VisorPingJob extends VisorJob<UUID, GridTuple3<Boolean, Long, Long>> {
+    private static class VisorNodePingJob extends VisorJob<UUID, GridTuple3<Boolean, Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,7 +61,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
          * @param arg Node ID to ping.
          * @param debug Debug flag.
          */
-        protected VisorPingJob(UUID arg, boolean debug) {
+        protected VisorNodePingJob(UUID arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -74,7 +74,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorPingJob.class, this);
+            return S.toString(VisorNodePingJob.class, this);
         }
     }
 }
