@@ -42,7 +42,7 @@ import static java.net.URLEncoder.*;
  */
 class GridUpdateNotifier {
     /** Access URL to be used to access latest version data. */
-    private static final String UPD_STATUS_PARAMS = GridProperties.get("ignite.update.status.params");
+    private static final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.

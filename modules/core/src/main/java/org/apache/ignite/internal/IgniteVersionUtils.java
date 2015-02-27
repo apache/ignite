@@ -54,13 +54,13 @@ public class IgniteVersionUtils {
      * Static initializer.
      */
     static {
-        VER_STR = GridProperties.get("ignite.version");
+        VER_STR = IgniteProperties.get("ignite.version");
 
-        BUILD_TSTAMP = Long.valueOf(GridProperties.get("ignite.build"));
+        BUILD_TSTAMP = Long.valueOf(IgniteProperties.get("ignite.build"));
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
-        REV_HASH_STR = GridProperties.get("ignite.revision");
-        RELEASE_DATE_STR = GridProperties.get("ignite.rel.date");
+        REV_HASH_STR = IgniteProperties.get("ignite.revision");
+        RELEASE_DATE_STR = IgniteProperties.get("ignite.rel.date");
 
         String rev = REV_HASH_STR.length() > 8 ? REV_HASH_STR.substring(0, 8) : REV_HASH_STR;
 
