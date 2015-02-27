@@ -267,45 +267,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Validate client partitioned affinity and cache partitioned affinity produce the same result.
-     *
-     * @throws Exception On any exception.
-     */
-    public void testReplicas() throws Exception {
-        // Emulate nodes in topology.
-        Collection<GridClientNode> nodes = new ArrayList<>();
-        Collection<ClusterNode> srvNodes = new ArrayList<>();
-
-        // Define affinities to test.
-        GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
-
-        getTestResources().inject(aff);
-
-        aff.setHashIdResolver(HASH_ID_RSLVR);
-
-        CacheRendezvousAffinityFunction srvAff = new CacheRendezvousAffinityFunction();
-
-        getTestResources().inject(srvAff);
-
-        srvAff.setHashIdResolver(new CacheAffinityNodeIdHashResolver());
-
-        // Define keys to test affinity for.
-        Collection<String> keys = new ArrayList<>(
-            Arrays.asList("", "1", "12", "asdf", "Hadoop\u3092\u6bba\u3059"));
-
-        for (int i = 0; i < 10; i++)
-            keys.add(UUID.randomUUID().toString());
-
-        // Test affinity behaviour on different topologies.
-        for (int i = 0; i < 20; i++) {
-            addNodes(1 + (int)Math.round(Math.random() * 50), nodes, srvNodes);
-
-            for (String key : keys)
-                assertSameAffinity(key, aff, srvAff, nodes, srvNodes);
-        }
-    }
-
-    /**
      * Add {@code cnt} nodes into emulated topology.
      *
      * @param cnt Number of nodes to add into emulated topology.
@@ -325,33 +286,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
             ClusterNode srvNode = new TestRichNode(nodeId);
 
             srvNodes.add(srvNode);
-        }
-    }
-
-    /**
-     * Compare server and client affinity for specified key in current topology.
-     *
-     * @param key Key to validate affinity for.
-     * @param aff Client affinity.
-     * @param srvAff Server affinity.
-     * @param nodes Client topology.
-     * @param srvNodes Server topology.
-     */
-    private void assertSameAffinity(Object key, GridClientDataAffinity aff, CacheAffinityFunction srvAff,
-        Collection<? extends GridClientNode> nodes, Collection<ClusterNode> srvNodes) {
-        GridClientNode node = aff.node(key, nodes);
-        int part = srvAff.partition(key);
-
-        CacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
-            null, null, 1, 0);
-
-        ClusterNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));
-
-        if (node == null)
-            assertNull(srvNode);
-        else {
-            assertNotNull(srvNode);
-            assertEquals(node.nodeId(), srvNode.id());
         }
     }
 
