@@ -119,9 +119,6 @@ public class IgnitionEx {
     /** */
     private static volatile boolean daemon;
 
-    /** */
-    private static final String[] EMPTY_STR_ARR = new String[0];
-
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
      * This will load pretty much first so we must do these checks here.
@@ -1138,6 +1135,9 @@ public class IgnitionEx {
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
 
+        /** */
+        private static final String[] EMPTY_STR_ARR = new String[0];
+
         /** Grid name. */
         private final String name;
 
@@ -1297,6 +1297,17 @@ public class IgnitionEx {
 
             IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
 
+            String ggHome = cfg.getIgniteHome();
+
+            // Set Ignite home.
+            if (ggHome == null)
+                ggHome = U.getIgniteHome();
+            else
+                // If user provided IGNITE_HOME - set it as a system property.
+                U.setIgniteHome(ggHome);
+
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
@@ -1317,19 +1328,17 @@ public class IgnitionEx {
 
             log = cfgLog.getLogger(G.class);
 
-            IgniteConfiguration myCfg = initializeDefaultConfiguration(cfg);
+            // Check Ignite home folder (after log is available).
+            if (ggHome != null) {
+                File ggHomeFile = new File(ggHome);
+
+                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
+            }
+
+            IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
             myCfg.setGridLogger(cfgLog);
-
-            if (myCfg.getConnectorConfiguration() != null) {
-                restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest-" + cfg.getGridName(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
-                );
-            }
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -1417,6 +1426,16 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
+            if (myCfg.getConnectorConfiguration() != null) {
+                restExecSvc = new IgniteThreadPoolExecutor(
+                    "rest-" + myCfg.getGridName(),
+                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
+                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
+                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
+                );
+            }
+
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility-" + cfg.getGridName(),
                 DFLT_SYSTEM_CORE_THREAD_CNT,
@@ -1499,10 +1518,12 @@ public class IgnitionEx {
          * @param cfg Ignite configuration copy to.
          * @return New ignite configuration.
          */
-        private IgniteConfiguration initializeDefaultConfiguration(IgniteConfiguration cfg)
+        private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
+
             initializeDefaultConfigurationParameters(myCfg);
+
             return myCfg;
         }
 
@@ -1510,26 +1531,7 @@ public class IgnitionEx {
          * Initialize default parameters.
          */
         public void initializeDefaultConfigurationParameters(IgniteConfiguration cfg) throws IgniteCheckedException {
-            // Set Ignite home.
-            String ggHome = cfg.getIgniteHome();
-
-            if (ggHome == null)
-                ggHome = U.getIgniteHome();
-            else
-                // If user provided IGNITE_HOME - set it as a system property.
-                U.setIgniteHome(ggHome);
-
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-
-            // Check Ignite home folder (after log is available).
-            if (ggHome != null) {
-                File ggHomeFile = new File(ggHome);
-
-                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
-            }
-
-            cfg.setIgniteHome(ggHome);
+            cfg.setIgniteHome(U.getIgniteHome());
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
