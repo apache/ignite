@@ -78,11 +78,14 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(swapEnabled);
+        cacheCfg.setIndexedTypes(
+            Integer.class, CacheValue.class
+        );
 
         cfg.setCacheConfiguration(cacheCfg);
 
