@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Ignite properties holder.
  */
-public class GridProperties {
+public class IgniteProperties {
     /** Properties file path. */
     private static final String FILE_PATH = "ignite.properties";
 
@@ -73,7 +73,7 @@ public class GridProperties {
     /**
      *
      */
-    private GridProperties() {
+    private IgniteProperties() {
         // No-op.
     }
 }

@@ -42,9 +42,6 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** */
     private volatile Map<Class<?>, Object[]> extensions;
 
-    /** Plugin information. */
-    public static final String PLUGIN_INFO = "Configured plugins: ";
-
     /**
      *
      * @param ctx Kernal context.
@@ -206,32 +203,22 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Plugin information.
-     */
-    private String pluginInfo() {
-        Collection<PluginProvider> plugins = ctx.plugins().allProviders();
-
-        if (plugins.size() == 0)
-            return U.nl() + ">>>    " + PLUGIN_INFO + "none";
-
-        String info = U.nl() + ">>>    " + PLUGIN_INFO + U.nl();
-
-        for (PluginProvider plugin : plugins)
-            info += ">>>    " + plugin.name() + " " + plugin.version() + U.nl() +
-                ">>>    " + plugin.copyright();
-
-        return info;
-    }
-
-    /**
      * Print plugin information.
      */
     private void ackPluginsInfo() {
-        if (log.isQuiet())
-            U.quiet(false, pluginInfo().split(U.nl() + ">>> "));
+        U.quietAndInfo(log, "Configured plugins:");
 
-        if (log.isInfoEnabled())
-            log.info(pluginInfo());
+        if (plugins.isEmpty()) {
+            U.quietAndInfo(log, "  ^-- None");
+            U.quietAndInfo(log, "");
+        }
+        else {
+            for (PluginProvider plugin : plugins.values()) {
+                U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version());
+                U.quietAndInfo(log, "  ^-- " + plugin.copyright());
+                U.quietAndInfo(log, "");
+            }
+        }
     }
 
     /**
