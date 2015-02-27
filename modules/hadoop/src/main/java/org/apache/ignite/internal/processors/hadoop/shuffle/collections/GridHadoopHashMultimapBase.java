@@ -160,8 +160,8 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
         private final Reader valReader;
 
         /**
-         * @throws IgniteCheckedException If failed.
          * @param taskCtx Task context.
+         * @throws IgniteCheckedException If failed.
          */
         public Input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
             cap = capacity();

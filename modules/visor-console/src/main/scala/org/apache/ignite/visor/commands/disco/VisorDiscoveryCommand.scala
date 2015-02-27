@@ -194,7 +194,7 @@ class VisorDiscoveryCommand {
                     case de: VisorGridDiscoveryEvent =>
                         t +=(formatDateTime(de.timestamp()), de.name(),
                             nodeId8(de.evtNodeId()) + (if (de.isDaemon) "(daemon)" else ""),
-                            if (F.isEmpty(de.address())) "<n/a>" else de.address())
+                            if (F.isEmpty(de.address())) NA else de.address())
                     case _ =>
                 }
 
