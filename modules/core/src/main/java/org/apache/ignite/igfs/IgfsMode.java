@@ -39,7 +39,7 @@ public enum IgfsMode {
      * through to secondary Hadoop file system. If this mode is enabled, then
      * secondary Hadoop file system must be configured.
      *
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryFileSystem()
      */
     PROXY,
 
@@ -50,7 +50,7 @@ public enum IgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryFileSystem()
      */
     DUAL_SYNC,
 
@@ -61,7 +61,7 @@ public enum IgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see org.apache.ignite.configuration.IgfsConfiguration#getSecondaryFileSystem()
      */
     DUAL_ASYNC;
 
