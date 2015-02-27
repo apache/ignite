@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -322,7 +322,7 @@ public abstract class IgfsHadoop20FileSystemAbstractSelfTest extends IgfsCommonA
 
         FsStatus status = fs.getFsStatus();
 
-        assertEquals(4, grid(0).nodes().size());
+        assertEquals(4, grid(0).cluster().nodes().size());
 
         long used = 0, max = 0;
 

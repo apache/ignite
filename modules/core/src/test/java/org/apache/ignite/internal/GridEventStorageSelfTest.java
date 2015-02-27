@@ -186,9 +186,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * Create events in grid.
      *
      * @param ignite Grid.
-     * @throws IgniteCheckedException In case of error.
      */
-    private void generateEvents(Ignite ignite) throws IgniteCheckedException {
+    private void generateEvents(Ignite ignite) {
         ignite.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
         ignite.compute().execute(GridEventTestTask.class.getName(), null);

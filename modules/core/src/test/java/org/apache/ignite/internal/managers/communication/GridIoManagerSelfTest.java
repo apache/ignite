@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.mockito.*;
 
-import java.io.*;
 import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -77,7 +76,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     public void testSendIfOneOfNodesIsLocalAndTopicIsEnum() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE, new Message(),
+                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE, new TestMessage(),
                     GridIoPolicy.P2P_POOL);
 
                 return null;
@@ -91,7 +90,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     public void testSendIfOneOfNodesIsLocalAndTopicIsObject() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), new Object(), new Message(),
+                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), new Object(), new TestMessage(),
                     GridIoPolicy.P2P_POOL);
 
                 return null;
@@ -183,8 +182,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, GridTopic topic, MessageAdapter msg,
-            GridIoPolicy plc) throws IgniteCheckedException {
+        @Override public void send(ClusterNode node, GridTopic topic, Message msg, GridIoPolicy plc)
+            throws IgniteCheckedException {
             // No-op.
         }
     }
@@ -218,19 +217,24 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Message extends MessageAdapter implements Serializable {
+    private static class TestMessage implements Message {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public byte directType() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
             return 0;
         }
     }

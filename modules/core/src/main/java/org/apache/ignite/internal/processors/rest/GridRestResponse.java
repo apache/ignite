@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

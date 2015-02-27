@@ -78,7 +78,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         // No-op.
     }
 

@@ -373,6 +373,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void sendCustomEvent(Serializable evt) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.
@@ -892,7 +897,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         if (dataList != null) {
                             for (Map<Integer, Object> discoData : dataList)
-                                exchange.onExchange(discoData);
+                                exchange.onExchange(newNodeId, discoData);
                         }
 
                         locNode.setAttributes(node.attributes());
@@ -915,7 +920,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(data);
+                        exchange.onExchange(newNodeId, data);
                 }
             }
         }
@@ -1220,7 +1225,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist));
+                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), null);
             }
             else if (log.isDebugEnabled())
                 log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +

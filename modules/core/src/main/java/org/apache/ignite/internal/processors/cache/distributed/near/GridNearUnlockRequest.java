@@ -53,21 +53,24 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
             return false;
 
         return true;
@@ -76,6 +79,11 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 57;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 9;
     }
 
     /** {@inheritDoc} */

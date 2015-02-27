@@ -96,9 +96,6 @@ public class VisorBasicConfiguration implements Serializable {
     /** Whether update checker is enabled. */
     private boolean updateNtf;
 
-    /** Security credentials. */
-    private String securityCred;
-
     /**
      * @param ignite Grid.
      * @param c Grid configuration.
@@ -409,20 +406,6 @@ public class VisorBasicConfiguration implements Serializable {
      */
     public void updateNotifier(boolean updateNtf) {
         this.updateNtf = updateNtf;
-    }
-
-    /**
-     * @return Security credentials.
-     */
-    @Nullable public String securityCredentialsProvider() {
-        return securityCred;
-    }
-
-    /**
-     * @param securityCred New security credentials.
-     */
-    public void securityCredentialsProvider(@Nullable String securityCred) {
-        this.securityCred = securityCred;
     }
 
     /** {@inheritDoc} */

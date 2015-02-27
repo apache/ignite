@@ -279,13 +279,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             GridCacheEntryEx<K, V> cached = txEntry.cached();
 
-            ExpiryPolicy expiry = txEntry.expiry();
-
-            if (expiry == null)
-                expiry = cacheCtx.expiry();
+            ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
             try {
-                if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
+                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                    txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
                         Duration duration = cached.hasValue() ?
                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
@@ -994,10 +992,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         GridDhtCacheAdapter<K, V> dht = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
-        ExpiryPolicy expiry = entry.expiry();
-
-        if (expiry == null)
-            expiry = cacheCtx.expiry();
+        ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(entry);
 
         if (expiry != null && entry.op() == READ) {
             entry.op(NOOP);

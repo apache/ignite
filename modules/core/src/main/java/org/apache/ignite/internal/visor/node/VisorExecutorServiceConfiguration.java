@@ -152,7 +152,6 @@ public class VisorExecutorServiceConfiguration implements Serializable {
         this.restPoolSz = restPoolSz;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorExecutorServiceConfiguration.class, this);

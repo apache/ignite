@@ -219,7 +219,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     return new HashMap<>();
                 }
 
-                @Override public void onExchange(Map<Integer, Object> data) {
+                @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                 }
             });
 
@@ -331,18 +331,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         getTestData().setDiscoverySpi(discoSpi);
 
         getTestResources().inject(discoSpi);
-
-        discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                return new GridSecurityContext(subj);
-            }
-
-            @Override public boolean isGlobalNodeAuthentication() {
-                return false;
-            }
-        });
 
         configure(discoSpi);
 

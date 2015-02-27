@@ -149,8 +149,8 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(0);
             Ignite g2 = startGrid(1)
         ) {
-            assertEquals(2, grid(0).nodes().size());
-            assertEquals(2, grid(1).nodes().size());
+            assertEquals(2, grid(0).cluster().nodes().size());
+            assertEquals(2, grid(1).cluster().nodes().size());
 
             Collection<Integer> t = g1.compute().broadcast(new IgniteCallable<Integer>() {
                 @Override public Integer call() throws Exception {

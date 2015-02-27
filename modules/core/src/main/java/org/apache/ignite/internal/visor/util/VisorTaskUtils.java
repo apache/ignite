@@ -41,11 +41,13 @@ import java.nio.charset.*;
 import java.nio.file.*;
 import java.text.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.zip.*;
 
 import static java.lang.System.*;
-import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.configuration.IgfsConfiguration.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
@@ -94,7 +96,7 @@ public class VisorTaskUtils {
     /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
     public static final int MAX_FOLDER_DEPTH = 4;
 
-    /** Comparator for log files by last modified date.  */
+    /** Comparator for log files by last modified date. */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.lastModified(), f1.lastModified());
@@ -132,7 +134,7 @@ public class VisorTaskUtils {
      * @param arrays Arrays.
      * @return Summary array.
      */
-    public static int[] concat(int[] ... arrays) {
+    public static int[] concat(int[]... arrays) {
         assert arrays != null;
         assert arrays.length > 1;
 
@@ -248,7 +250,7 @@ public class VisorTaskUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        for (Object s: arr)
+        for (Object s : arr)
             sb.append(s).append(sep);
 
         if (sb.length() > 0)
@@ -298,7 +300,7 @@ public class VisorTaskUtils {
 
         V res = map.get(key);
 
-        return res != null? res : ifNull;
+        return res != null ? res : ifNull;
     }
 
     /**
@@ -336,7 +338,7 @@ public class VisorTaskUtils {
      *
      * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
-     * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
+     * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
@@ -351,7 +353,7 @@ public class VisorTaskUtils {
      *
      * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
-     * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
+     * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param evtTypes Event types to collect.
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
@@ -361,7 +363,7 @@ public class VisorTaskUtils {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 
-        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -464,7 +466,7 @@ public class VisorTaskUtils {
     }
 
     /** Text files mime types. */
-    private static final String[] TEXT_MIME_TYPE = new String[]{ "text/plain", "application/xml", "text/html", "x-sh" };
+    private static final String[] TEXT_MIME_TYPE = new String[] {"text/plain", "application/xml", "text/html", "x-sh"};
 
     /**
      * Check is text file.
@@ -524,7 +526,9 @@ public class VisorTaskUtils {
                     decoder.decode(buf);
 
                     return charset;
-                } catch (CharacterCodingException ignored) { }
+                }
+                catch (CharacterCodingException ignored) {
+                }
             }
         }
 
@@ -573,7 +577,7 @@ public class VisorTaskUtils {
 
                 boolean zipped = buf.length > 512;
 
-                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? U.zipBytes(buf) : buf);
+                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? zipBytes(buf) : buf);
             }
         }
         finally {
@@ -602,7 +606,6 @@ public class VisorTaskUtils {
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }
-
 
     /**
      * Extract max size from eviction policy if available.
@@ -663,7 +666,6 @@ public class VisorTaskUtils {
     }
 
     /**
-     *
      * @param log Logger.
      * @param time Time.
      * @param msg Message.
@@ -730,7 +732,6 @@ public class VisorTaskUtils {
 
         return end;
     }
-
 
     /**
      * Checks if address can be reached using one argument InetAddress.isReachable() version or ping command if failed.
@@ -802,5 +803,44 @@ public class VisorTaskUtils {
             pb.directory(workFolder);
 
         return pb.start();
+    }
+
+    /**
+     * Zips byte array.
+     *
+     * @param input Input bytes.
+     * @return Zipped byte array.
+     * @throws java.io.IOException If failed.
+     */
+    public static byte[] zipBytes(byte[] input) throws IOException {
+        return zipBytes(input, 4096);
+    }
+
+    /**
+     * Zips byte array.
+     *
+     * @param input Input bytes.
+     * @param initBufSize Initial buffer size.
+     * @return Zipped byte array.
+     * @throws java.io.IOException If failed.
+     */
+    public static byte[] zipBytes(byte[] input, int initBufSize) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
+
+        try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+            ZipEntry entry = new ZipEntry("");
+
+            try {
+                entry.setSize(input.length);
+
+                zos.putNextEntry(entry);
+
+                zos.write(input);
+            } finally {
+                zos.closeEntry();
+            }
+        }
+
+        return bos.toByteArray();
     }
 }

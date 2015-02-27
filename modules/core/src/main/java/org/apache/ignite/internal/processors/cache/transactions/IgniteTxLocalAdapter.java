@@ -724,11 +724,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     if (cacheCtx.isNear()) {
                                         ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
 
-                                        if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
-                                            ExpiryPolicy expiry = txEntry.expiry();
-
-                                            if (expiry == null)
-                                                expiry = cacheCtx.expiry();
+                                        if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                                            txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
+                                            ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                             if (expiry != null) {
                                                 Duration duration = cached.hasValue() ?
@@ -743,15 +741,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    // Deal with DR conflicts.
-                                    GridCacheVersion explicitVer = txEntry.drVersion() != null ?
-                                        txEntry.drVersion() : writeVersion();
+                                    // Deal with conflicts.
+                                    GridCacheVersion explicitVer = txEntry.conflictVersion() != null ?
+                                        txEntry.conflictVersion() : writeVersion();
 
-                                    if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
-                                        ExpiryPolicy expiry = txEntry.expiry();
-
-                                        if (expiry == null)
-                                            expiry = cacheCtx.expiry();
+                                    if ((op == CREATE || op == UPDATE) &&
+                                        txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
+                                        ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
                                             Duration duration = cached.hasValue() ?
@@ -766,51 +762,49 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         }
                                     }
 
-                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
+                                    boolean conflictNeedResolve = cacheCtx.conflictNeedResolve();
 
-                                    if (drNeedResolve) {
+                                    GridCacheVersionConflictContext<K, V> conflictCtx = null;
+
+                                    if (conflictNeedResolve) {
                                         IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
-                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
-                                                txEntry.drExpireTime(), explicitVer, cached);
+                                            conflictRes = conflictResolve(op, txEntry, val, valBytes, explicitVer,
+                                                cached);
 
-                                        assert drRes != null;
+                                        assert conflictRes != null;
 
-                                        GridCacheVersionConflictContext<K, V> conflictCtx = drRes.get2();
+                                        conflictCtx = conflictRes.get2();
 
                                         if (conflictCtx.isUseOld())
                                             op = NOOP;
                                         else if (conflictCtx.isUseNew()) {
                                             txEntry.ttl(conflictCtx.ttl());
-
-                                            if (conflictCtx.newEntry().dataCenterId() != cctx.dataCenterId())
-                                                txEntry.drExpireTime(conflictCtx.expireTime());
-                                            else
-                                                txEntry.drExpireTime(-1L);
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
                                         else {
                                             assert conflictCtx.isMerge();
 
-                                            op = drRes.get1();
+                                            op = conflictRes.get1();
                                             val = conflictCtx.mergeValue();
                                             valBytes = null;
                                             explicitVer = writeVersion();
 
                                             txEntry.ttl(conflictCtx.ttl());
-                                            txEntry.drExpireTime(-1L);
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    if (sndTransformedVals || drNeedResolve) {
-                                        assert sndTransformedVals && cacheCtx.isReplicated() || drNeedResolve;
+                                    if (sndTransformedVals || conflictNeedResolve) {
+                                        assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
 
                                         txEntry.value(val, true, false);
                                         txEntry.valueBytes(valBytes);
                                         txEntry.op(op);
                                         txEntry.entryProcessors(null);
-                                        txEntry.drVersion(explicitVer);
+                                        txEntry.conflictVersion(explicitVer);
                                     }
 
                                     if (op == CREATE || op == UPDATE) {
@@ -828,7 +822,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             topVer,
                                             null,
                                             cached.detached() ? DR_NONE : drType,
-                                            txEntry.drExpireTime(),
+                                            txEntry.conflictExpireTime(),
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName());
@@ -848,7 +842,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                                 topVer,
                                                 CU.<K, V>empty(),
                                                 DR_NONE,
-                                                txEntry.drExpireTime(),
+                                                txEntry.conflictExpireTime(),
                                                 null,
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName());
@@ -892,10 +886,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             nearCached.innerReload();
                                     }
                                     else if (op == READ) {
-                                        ExpiryPolicy expiry = txEntry.expiry();
-
-                                        if (expiry == null)
-                                            expiry = cacheCtx.expiry();
+                                        ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
                                             Duration duration = expiry.getExpiryForAccess();
@@ -912,8 +903,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
-                                        if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
-                                            cached.updateTtl(null, txEntry.ttl());
+                                        if (conflictCtx == null || !conflictCtx.isUseOld()) {
+                                            if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
+                                                cached.updateTtl(null, txEntry.ttl());
+                                        }
 
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring NOOP entry when committing: " + txEntry);
@@ -1345,6 +1338,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         }
 
                         break; // While loop.
+                    }
+                    finally {
+                        if (cacheCtx.isNear() && entry != null && readCommitted()) {
+                            if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.key(), topVer)) {
+                                if (entry.markObsolete(xidVer))
+                                    cacheCtx.cache().removeEntry(entry);
+                            }
+                        }
                     }
                 }
             }
@@ -2380,7 +2381,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                     if (updateTtl) {
                         if (!read) {
-                            ExpiryPolicy expiryPlc = txEntry.expiry() != null ? txEntry.expiry() : cacheCtx.expiry();
+                            ExpiryPolicy expiryPlc = cacheCtx.expiryForTxEntry(txEntry);
 
                             if (expiryPlc != null)
                                 txEntry.ttl(CU.toTtl(expiryPlc.getExpiryForAccess()));
@@ -2412,7 +2413,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param val Value.
      * @param ret Return value to update.
      */
-    private void addInvokeResult(IgniteTxEntry<K, V> txEntry, V val, GridCacheReturn ret) {
+    private void addInvokeResult(IgniteTxEntry<K, V> txEntry, V val, GridCacheReturn<?> ret) {
         try {
             Object res = null;
 
@@ -3192,7 +3193,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 filter,
                 drVer);
 
-            txEntry.drExpireTime(drExpireTime);
+            txEntry.conflictExpireTime(drExpireTime);
 
             if (!hasDrTtl)
                 txEntry.expiry(expiryPlc);
@@ -3257,24 +3258,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /**
      * @param key Key.
-     * @param ttl Time to live.
-     * @return {@code true} if tx entry exists for this key, {@code false} otherwise.
-     */
-    public boolean entryTtl(IgniteTxKey<K> key, long ttl) {
-        assert key != null;
-
-        IgniteTxEntry<K, V> e = entry(key);
-
-        if (e != null) {
-            e.ttl(ttl);
-            e.drExpireTime(-1L);
-        }
-
-        return e != null;
-    }
-
-    /**
-     * @param key Key.
      * @param expiryPlc Expiry policy.
      */
     void entryExpiry(IgniteTxKey<K> key, @Nullable ExpiryPolicy expiryPlc) {
@@ -3282,8 +3265,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         IgniteTxEntry<K, V> e = entry(key);
 
-        if (e != null)
+        if (e != null) {
             e.expiry(expiryPlc);
+            e.conflictExpireTime(CU.EXPIRE_TIME_CALCULATE);
+        }
     }
 
     /**
@@ -3301,7 +3286,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         if (e != null) {
             e.ttl(ttl);
 
-            e.drExpireTime(expireTime);
+            e.conflictExpireTime(expireTime);
 
             e.expiry(null);
         }

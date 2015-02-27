@@ -1228,7 +1228,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                     try {
-                        EntryProcessor processor = t.get1();
+                        EntryProcessor<K, V, ?> processor = t.get1();
 
                         processor.process(invokeEntry, t.get2());
 
@@ -1241,13 +1241,17 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     modified |= invokeEntry.modified();
                 }
 
+                if (modified) {
+                    val = (V)cacheCtx.<V>unwrapTemporary(val);
+
+                    if (cacheCtx.portableEnabled())
+                        val = (V)cacheCtx.marshalToPortable(val);
+                }
+
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                 if (op == NOOP) {
-                    ExpiryPolicy expiry = txEntry.expiry();
-
-                    if (expiry == null)
-                        expiry = cacheCtx.expiry();
+                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                     if (expiry != null) {
                         long ttl = CU.toTtl(expiry.getExpiryForAccess());
@@ -1259,7 +1263,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                     }
                 }
 
-                return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
+                return F.t(op, val, null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;
@@ -1283,21 +1287,65 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * Resolve DR conflict.
      *
      * @param op Initially proposed operation.
-     * @param key Key.
+     * @param txEntry TX entry being updated.
      * @param newVal New value.
      * @param newValBytes New value bytes.
-     * @param newTtl New TTL.
-     * @param newDrExpireTime New explicit DR expire time.
      * @param newVer New version.
      * @param old Old entry.
      * @return Tuple with adjusted operation type and conflict context.
      * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
-        GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
-        GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
+        GridCacheOperation op, IgniteTxEntry txEntry, V newVal, byte[] newValBytes, GridCacheVersion newVer,
+        GridCacheEntryEx<K, V> old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert newVer != null;
+
+        // 1. Calculate TTL and expire time.
+        long newTtl = txEntry.ttl();
+        long newExpireTime = txEntry.conflictExpireTime();
+
+        // 1.1. If TTL is not changed, then calculate it based on expiry.
+        if (newTtl == CU.TTL_NOT_CHANGED) {
+            ExpiryPolicy expiry = txEntry.context().expiryForTxEntry(txEntry);
+
+            if (expiry != null) {
+                if (op == CREATE)
+                    newTtl = CU.toTtl(expiry.getExpiryForCreation());
+                else if (op == UPDATE)
+                    newTtl = CU.toTtl(expiry.getExpiryForUpdate());
+            }
+        }
+
+        // 1.2. If TTL is set to zero, then mark operation as "DELETE".
+        if (newTtl == CU.TTL_ZERO) {
+            op = DELETE;
+
+            newTtl = CU.TTL_ETERNAL;
+        }
+
+        // 1.3. If TTL is still not changed, then either use old entry TTL or set it to "ETERNAL".
+        if (newTtl == CU.TTL_NOT_CHANGED) {
+            if (old.isNewLocked())
+                newTtl = CU.TTL_ETERNAL;
+            else {
+                newTtl = old.rawTtl();
+                newExpireTime = old.rawExpireTime();
+            }
+        }
+
+        // TTL must be resolved at this point.
+        assert newTtl != CU.TTL_ZERO && newTtl != CU.TTL_NOT_CHANGED;
+
+        // 1.4 If expire time was not set explicitly, then calculate it.
+        if (newExpireTime == CU.EXPIRE_TIME_CALCULATE)
+            newExpireTime = CU.toExpireTime(newTtl);
+
+        // Expire time must be resolved at this point.
+        assert newExpireTime != CU.EXPIRE_TIME_CALCULATE;
+
         // Construct old entry info.
         GridCacheVersionedEntryEx<K, V> oldEntry = old.versionedEntry();
 
@@ -1305,10 +1353,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         if (newVal == null && newValBytes != null)
             newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
 
-        long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
-
         GridCacheVersionedEntryEx<K, V> newEntry =
-            new GridCachePlainVersionedEntry<>(key, newVal, newTtl, newExpireTime, newVer);
+            new GridCachePlainVersionedEntry<>((K)txEntry.key(), newVal, newTtl, newExpireTime, newVer);
 
         GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 

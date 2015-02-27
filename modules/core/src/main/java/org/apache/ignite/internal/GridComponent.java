@@ -84,10 +84,10 @@ public interface GridComponent {
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
      *
+     * @param nodeId Remote node ID.
      * @param data Discovery data object or {@code null} if nothing was
-     *      sent for this component.
      */
-    public void onDiscoveryDataReceived(Object data);
+    public void onDiscoveryDataReceived(UUID nodeId, Object data);
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).

@@ -70,6 +70,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     };
 
+    /** Increment processor for invoke operations with IgniteEntryProcessor. */
+    public static final IgniteEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
+        new IgniteEntryProcessor<String, Integer, String>() {
+            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+                return INCR_PROCESSOR.process(e, args);
+            }
+        };
+
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -82,6 +90,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return String.valueOf(old);
         }
     };
+
+    /** Increment processor for invoke operations with IgniteEntryProcessor. */
+    public static final IgniteEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
+        new IgniteEntryProcessor<String, Integer, String>() {
+            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+                return RMV_PROCESSOR.process(e, args);
+            }
+        };
 
     /** Dflt grid. */
     protected Ignite dfltIgnite;
@@ -182,7 +198,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             map.put("key" + i, i);
 
         // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
-        Map<ClusterNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
+        Map<ClusterNode, Collection<String>> mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keys = mapped.get(grid(i).localNode());
@@ -195,7 +211,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         map.remove("key0");
 
-        mapped = grid(0).mapKeysToNodes(null, map.keySet());
+        mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             // Will actually delete entry from map.
@@ -538,7 +554,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutTx() throws Exception {
         if (txEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
-            
+
             try (Transaction tx = transactions().txStart()) {
                 assert cache.getAndPut("key1", 1) == null;
                 assert cache.getAndPut("key2", 2) == null;
@@ -554,7 +570,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assert cache.get("key1") != null;
                 assert cache.get("key2") != null;
                 assert cache.get("wrong") == null;
-                
+
                 tx.commit();
             }
 
@@ -597,6 +613,89 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testTransformPessimisticRepeatableRead() throws Exception {
         checkTransform(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformOptimisticReadCommitted() throws Exception {
+        checkIgniteTransform(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformOptimisticRepeatableRead() throws Exception {
+        checkIgniteTransform(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformPessimisticReadCommitted() throws Exception {
+        checkIgniteTransform(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteTransformPessimisticRepeatableRead() throws Exception {
+        checkIgniteTransform(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    private void checkIgniteTransform(TransactionConcurrency concurrency, TransactionIsolation isolation)
+        throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key2", 1);
+        cache.put("key3", 3);
+
+        Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
+
+        try {
+            assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
+            assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
+            assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
+
+            if (tx != null)
+                tx.commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            throw e;
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", CachePeekMode.ONHEAP));
+
+        cache.remove("key1");
+        cache.put("key2", 1);
+        cache.put("key3", 3);
+
+        assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
+        assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
+        assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
+
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek("key3", CachePeekMode.ONHEAP));
     }
 
     /**
@@ -1161,7 +1260,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             cache.put("key1", 1);
             cache.put("key2", 2);
-    
+
             // Check inside transaction.
             assert cache.get("key1") == 1;
             assert cache.get("key2") == 2;
@@ -1196,25 +1295,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             jcache().put("key2", 1);
-    
+
             cacheAsync.put("key1", 10);
-    
+
             IgniteFuture<?> fut1 = cacheAsync.future();
-    
+
             cacheAsync.put("key2", 11);
-    
+
             IgniteFuture<?> fut2 = cacheAsync.future();
-    
+
             IgniteFuture<Transaction> f = null;
-    
+
             if (tx != null) {
                 tx = (Transaction)tx.withAsync();
-    
+
                 tx.commit();
 
                 f = tx.future();
             }
-    
+
             fut1.get();
             fut2.get();
 
@@ -2977,7 +3076,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             String key = "1";
             int ttl = 500;
 
-            try (Transaction tx = grid(0).ignite().transactions().txStart()) {
+            try (Transaction tx = grid(0).transactions().txStart()) {
                 final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
@@ -3560,7 +3659,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             });
 
             CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.remove("key" + i));
                 }

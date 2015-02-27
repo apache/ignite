@@ -37,15 +37,15 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorGcJob job(Void arg) {
-        return new VisorGcJob(arg, debug);
+    @Override protected VisorNodeGcJob job(Void arg) {
+        return new VisorNodeGcJob(arg, debug);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results) {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
-        for (ComputeJobResult res: results) {
+        for (ComputeJobResult res : results) {
             IgniteBiTuple<Long, Long> jobRes = res.getData();
 
             total.put(res.getNode().id(), jobRes);
@@ -55,7 +55,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
     }
 
     /** Job that perform GC on node. */
-    private static class VisorGcJob extends VisorJob<Void, IgniteBiTuple<Long, Long>> {
+    private static class VisorNodeGcJob extends VisorJob<Void, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -65,7 +65,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
          * @param arg Formal task argument.
          * @param debug Debug flag.
          */
-        private VisorGcJob(Void arg, boolean debug) {
+        private VisorNodeGcJob(Void arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -92,7 +92,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorGcJob.class, this);
+            return S.toString(VisorNodeGcJob.class, this);
         }
     }
 }

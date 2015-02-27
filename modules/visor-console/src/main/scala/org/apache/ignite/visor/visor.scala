@@ -36,7 +36,7 @@ import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
 import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
-import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}
+import org.apache.ignite.internal.util.{IgniteUtils => U, GridConfigurationFinder}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
@@ -51,6 +51,7 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.io.StdIn
 import scala.language.{implicitConversions, reflectiveCalls}
+import scala.reflect.ClassTag
 import scala.util.control.Breaks._
 
 /**
@@ -142,6 +143,9 @@ object visor extends VisorTag {
 
     /** System line separator. */
     final val NL = System getProperty "line.separator"
+
+    /** Display value for `null`. */
+    final val NA = "<n/a>"
 
     /** */
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
@@ -240,7 +244,7 @@ object visor extends VisorTag {
         if (g == null)
             throw new IgniteException("Visor disconnected")
         else {
-            val node = g.node(nid)
+            val node = g.cluster.node(nid)
 
             if (node == null)
                 throw new IgniteException("Node is gone: " + nid)
@@ -849,7 +853,7 @@ object visor extends VisorTag {
         }
         else if (id.isDefined)
             try {
-                val node = Option(ignite.node(java.util.UUID.fromString(id.get)))
+                val node = Option(ignite.cluster.node(java.util.UUID.fromString(id.get)))
 
                 if (node.isDefined)
                     Right(node)
@@ -989,10 +993,31 @@ object visor extends VisorTag {
      * @param a Parameter.
      * @param dflt Value to return if `a` is `null`.
      */
-    def safe(@Nullable a: Any, dflt: Any = ""): String = {
+    def safe(@Nullable a: Any, dflt: Any = NA): String = {
         assert(dflt != null)
 
         if (a != null) a.toString else dflt.toString
+    }
+
+    /**
+     * Joins array elements to string.
+     *
+     * @param arr Array.
+     * @param dflt Value to return if `arr` is `null` or empty.
+     * @return String.
+     */
+    def arr2Str[T: ClassTag](arr: Array[T], dflt: Any = NA): String = {
+        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
+    }
+
+    /**
+     * Converts `Boolean` to 'on'/'off' string.
+     *
+     * @param bool Boolean value.
+     * @return String.
+     */
+    def bool2Str(bool: Boolean): String = {
+        if (bool) "on" else "off"
     }
 
     /**
@@ -1288,15 +1313,15 @@ object visor extends VisorTag {
         t += ("Status", if (isCon) "Connected" else "Disconnected")
         t += ("Grid name",
             if (ignite == null)
-                "<n/a>"
+                NA
             else {
                 val n = ignite.name
 
                 if (n == null) "<default>" else n
             }
         )
-        t += ("Config path", safe(cfgPath, "<n/a>"))
-        t += ("Uptime", if (isCon) X.timeSpan2HMS(uptime) else "<n/a>")
+        t += ("Config path", safe(cfgPath))
+        t += ("Uptime", if (isCon) X.timeSpan2HMS(uptime) else NA)
 
         t.render()
     }
@@ -1472,7 +1497,7 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = IgniteUtils.resolveIgniteUrl(path)
+                            val url = U.resolveIgniteUrl(path)
 
                             if (url == null)
                                 throw new IgniteException("Ignite configuration path is invalid: " + path, e)
@@ -1483,7 +1508,7 @@ object visor extends VisorTag {
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
                     if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
-                        IgniteUtils.addLog4jNoOpLogger()
+                        U.addLog4jNoOpLogger()
                     else
                         null
 
@@ -1496,7 +1521,7 @@ object visor extends VisorTag {
                             "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
-                            IgniteUtils.removeLog4jNoOpLogger(log4jTup)
+                            U.removeLog4jNoOpLogger(log4jTup)
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
@@ -1612,7 +1637,7 @@ object visor extends VisorTag {
         conOwner = true
         conTs = System.currentTimeMillis
 
-        ignite.nodes().foreach(n => {
+        ignite.cluster.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
             val ip = n.addresses().headOption
@@ -1627,7 +1652,7 @@ object visor extends VisorTag {
                     case de: DiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
-                        val node = ignite.node(de.eventNode().id())
+                        val node = ignite.cluster.node(de.eventNode().id())
 
                         if (node != null) {
                             val ip = node.addresses().headOption
@@ -1662,7 +1687,7 @@ object visor extends VisorTag {
                         val ip = de.eventNode().addresses.headOption
 
                         if (ip.isDefined) {
-                            val last = !ignite.nodes().exists(n =>
+                            val last = !ignite.cluster.nodes().exists(n =>
                                 n.addresses.size > 0 && n.addresses.head == ip.get
                             )
 
@@ -1766,7 +1791,7 @@ object visor extends VisorTag {
         if (g != null && g.localNode.id == id)
             "<visor>"
         else {
-            val n = ignite.node(id)
+            val n = ignite.cluster.node(id)
 
             val id8 = nid8(id)
             val v = mfind(id8)
@@ -1774,7 +1799,7 @@ object visor extends VisorTag {
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
                 ", " +
-                (if (n == null) "<n/a>" else n.addresses().headOption.getOrElse("<n/a>"))
+                (if (n == null) NA else n.addresses().headOption.getOrElse(NA))
         }
     }
 
@@ -1798,14 +1823,9 @@ object visor extends VisorTag {
      * Guards against invalid percent readings.
      *
      * @param v Value in '%' to guard. Any value below `0` and greater than `100`
-     *      will return `n/a` string.
+     *      will return `<n/a>` string.
      */
-    def safePercent(v: Double): String = {
-        if (v < 0 || v > 100)
-            "n/a"
-        else
-            formatDouble(v) + " %"
-    }
+    def safePercent(v: Double): String = if (v < 0 || v > 100) NA else formatDouble(v) + " %"
 
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
@@ -1834,7 +1854,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
-        val nodes = ignite.nodes().toList
+        val nodes = ignite.cluster.nodes().toList
 
         if (nodes.isEmpty) {
             warn("Topology is empty.")
@@ -1898,7 +1918,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
-        val neighborhood = IgniteUtils.neighborhood(ignite.nodes()).values().toIndexedSeq
+        val neighborhood = U.neighborhood(ignite.cluster.nodes()).values().toIndexedSeq
 
         if (neighborhood.isEmpty) {
             warn("Topology is empty.")
@@ -1956,7 +1976,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(ignite.forNodes(neighborhood(a.toInt)))
+                    Some(ignite.cluster.forNodes(neighborhood(a.toInt)))
                 catch {
                     case e: Throwable =>
                         warn("Invalid selection: " + a)
@@ -2057,7 +2077,7 @@ object visor extends VisorTag {
     def askNodeId(): Option[String] = {
         assert(isConnected)
 
-        val ids = ignite.forRemotes().nodes().map(nid8).toList
+        val ids = ignite.cluster.forRemotes().nodes().map(nid8).toList
 
         (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
 
@@ -2350,7 +2370,7 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(IgniteUtils.resolveWorkDirectory(folder, false), fileName)
+        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
 
         logFile.createNewFile()
 
@@ -2415,12 +2435,12 @@ object visor extends VisorTag {
                 if (g != null) {
                     try {
                         // Discovery events collected only locally.
-                        val loc = g.compute(g.forLocal()).withName("visor-log-collector").withNoFailover().
+                        val loc = g.compute(g.cluster.forLocal()).withName("visor-log-collector").withNoFailover().
                             execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(g.localNode().id(),
                             VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
 
                         val evts = if (!rmtLogDisabled) {
-                            val prj = g.forRemotes()
+                            val prj = g.cluster.forRemotes()
 
                             loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
                                 execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes().map(_.id()),
@@ -2440,7 +2460,7 @@ object visor extends VisorTag {
                                         out,
                                         formatDateTime(e.timestamp),
                                         nodeId8Addr(e.nid()),
-                                        IgniteUtils.compact(e.shortDisplay())
+                                        U.compact(e.shortDisplay())
                                     )
 
                                     if (EVTS_DISCOVERY.contains(e.typeId()))
@@ -2448,7 +2468,7 @@ object visor extends VisorTag {
                                 })
                             }
                             finally {
-                                IgniteUtils.close(out, null)
+                                U.close(out, null)
                             }
                         }
                     }
@@ -2483,7 +2503,7 @@ object visor extends VisorTag {
 
         if (g != null)
             try
-                drawBar(g.metrics())
+                drawBar(g.cluster.metrics())
             catch {
                 case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
                 case e: Exception => ()
@@ -2513,8 +2533,8 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            IgniteUtils.neighborhood(ignite.nodes()).size.toString.padTo(4, ' ') + pipe +
-            ignite.nodes().size().toString.padTo(4, ' ') + pipe +
+            U.neighborhood(ignite.cluster.nodes()).size.toString.padTo(4, ' ') + pipe +
+            ignite.cluster.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
             bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryTotal) + pipe
         )
@@ -2545,7 +2565,7 @@ object visor extends VisorTag {
                 case e: IOException => ()
             }
             finally {
-                IgniteUtils.close(out, null)
+                U.close(out, null)
             }
         }
     }
@@ -2616,7 +2636,7 @@ object visor extends VisorTag {
      * @return Collection of nodes that has specified ID8.
      */
     def nodeById8(id8: String) = {
-        ignite.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
+        ignite.cluster.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
     }
 
     /**

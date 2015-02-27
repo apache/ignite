@@ -345,9 +345,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             entry.explicitVersion(e.explicitVersion());
             entry.groupLockEntry(e.groupLockEntry());
 
-            // DR stuff.
-            entry.drVersion(e.drVersion());
-            entry.drExpireTime(e.drExpireTime());
+            // Conflict resolution stuff.
+            entry.conflictVersion(e.conflictVersion());
+            entry.conflictExpireTime(e.conflictExpireTime());
         }
 
         addExplicit(e);
@@ -504,42 +504,40 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    GridCacheVersion explicitVer = txEntry.drVersion();
+                                    GridCacheVersion explicitVer = txEntry.conflictVersion();
+
+                                    if (explicitVer == null)
+                                        explicitVer = writeVersion();
 
                                     if (txEntry.ttl() == CU.TTL_ZERO)
                                         op = DELETE;
 
+                                    boolean conflictNeedResolve = cacheCtx.conflictNeedResolve();
 
-                                    boolean drNeedResolve =
-                                        cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
+                                    GridCacheVersionConflictContext<K, V> conflictCtx = null;
 
-                                        if (drNeedResolve) {
-                                            IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
-                                                drRes = conflictResolve(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
+                                    if (conflictNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
+                                            drRes = conflictResolve(op, txEntry, val, valBytes, explicitVer, cached);
 
                                         assert drRes != null;
 
-                                            GridCacheVersionConflictContext<K, V> drCtx = drRes.get2();
+                                        conflictCtx = drRes.get2();
 
-                                        if (drCtx.isUseOld())
+                                        if (conflictCtx.isUseOld())
                                             op = NOOP;
-                                        else if (drCtx.isUseNew()) {
-                                            txEntry.ttl(drCtx.ttl());
-
-                                            if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
-                                                txEntry.drExpireTime(drCtx.expireTime());
-                                            else
-                                                txEntry.drExpireTime(-1L);
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
-                                        else if (drCtx.isMerge()) {
+                                        else if (conflictCtx.isMerge()) {
                                             op = drRes.get1();
-                                            val = drCtx.mergeValue();
+                                            val = conflictCtx.mergeValue();
                                             valBytes = null;
                                             explicitVer = writeVersion();
 
-                                            txEntry.ttl(drCtx.ttl());
-                                            txEntry.drExpireTime(-1L);
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
                                     }
                                     else
@@ -556,7 +554,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
-                                                replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
+                                                replicate ? DR_BACKUP : DR_NONE, txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
                                                 resolveTaskName());
 
@@ -612,26 +610,28 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
-                                        if (txEntry.ttl() != -1L)
-                                            cached.updateTtl(null, txEntry.ttl());
+                                        if (conflictCtx == null || !conflictCtx.isUseOld()) {
+                                            if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
+                                                cached.updateTtl(null, txEntry.ttl());
 
-                                        if (nearCached != null) {
-                                            V val0 = null;
-                                            byte[] valBytes0 = null;
+                                            if (nearCached != null) {
+                                                V val0 = null;
+                                                byte[] valBytes0 = null;
 
-                                            GridCacheValueBytes valBytesTuple = cached.valueBytes();
+                                                GridCacheValueBytes valBytesTuple = cached.valueBytes();
 
-                                            if (!valBytesTuple.isNull()) {
-                                                if (valBytesTuple.isPlain())
-                                                    val0 = (V)valBytesTuple.get();
+                                                if (!valBytesTuple.isNull()) {
+                                                    if (valBytesTuple.isPlain())
+                                                        val0 = (V) valBytesTuple.get();
+                                                    else
+                                                        valBytes0 = valBytesTuple.get();
+                                                }
                                                 else
-                                                    valBytes0 = valBytesTuple.get();
-                                            }
-                                            else
-                                                val0 = cached.rawGet();
+                                                    val0 = cached.rawGet();
 
-                                            nearCached.updateOrEvict(xidVer, val0, valBytes0, cached.expireTime(),
-                                                cached.ttl(), nodeId);
+                                                nearCached.updateOrEvict(xidVer, val0, valBytes0, cached.expireTime(),
+                                                    cached.ttl(), nodeId);
+                                            }
                                         }
                                     }
 

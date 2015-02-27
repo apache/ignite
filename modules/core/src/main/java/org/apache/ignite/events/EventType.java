@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -153,8 +155,14 @@ public interface EventType {
      */
     public static final int EVT_NODE_SEGMENTED = 14;
 
+    /**
+     * Built-in event type: client node disconnected.
+     */
     public static final int EVT_CLIENT_NODE_DISCONNECTED = 16;
 
+    /**
+     * Built-in event type: client node reconnected.
+     */
     public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
 
     /**

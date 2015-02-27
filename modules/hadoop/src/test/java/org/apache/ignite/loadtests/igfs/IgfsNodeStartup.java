@@ -30,9 +30,8 @@ public class IgfsNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         try (Ignite ignored = G.start("config/hadoop/default-config.xml")) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(

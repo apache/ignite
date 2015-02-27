@@ -210,16 +210,16 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param valBytes Value bytes.
      * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
-     * @param drExpireTime DR expire time (optional).
-     * @param drVer DR version (optional).
+     * @param conflictExpireTime Conflict expire time (optional).
+     * @param conflictVer Conflict version (optional).
      */
     public void addWriteEntry(GridDhtCacheEntry<K, V> entry,
         @Nullable V val,
         @Nullable byte[] valBytes,
         EntryProcessor<K, V, ?> entryProcessor,
         long ttl,
-        long drExpireTime,
-        @Nullable GridCacheVersion drVer) {
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer) {
         long topVer = updateReq.topologyVersion();
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
@@ -259,8 +259,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     valBytes,
                     entryProcessor,
                     ttl,
-                    drExpireTime,
-                    drVer);
+                    conflictExpireTime,
+                    conflictVer);
             }
         }
     }

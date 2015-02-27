@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.lang.*;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
@@ -207,7 +207,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 if (scan) {
                     CacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
-                        .projection(ignite.forNodeIds(arg.proj()))
+                        .projection(ignite.cluster().forNodeIds(arg.proj()))
                         .execute();
 
                     long start = U.currentTimeMillis();
@@ -221,7 +221,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     Map.Entry<Object, Object> next = rows.get2();
 
-                    ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                    ignite.cluster().<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                         new VisorFutureResultSetHolder<>(fut, next, false));
 
                     scheduleResultSetHolderRemoval(qryId);
@@ -233,7 +233,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                     CacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
                         .createSqlFieldsQuery(arg.queryTxt(), true)
                         .pageSize(arg.pageSize())
-                        .projection(ignite.forNodeIds(arg.proj()))
+                        .projection(ignite.cluster().forNodeIds(arg.proj()))
                         .execute();
 
                     List<Object> firstRow = (List<Object>)fut.next();
@@ -261,7 +261,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                         long duration = fut.duration() + fetchDuration; // Query duration + fetch duration.
 
-                        ignite.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                        ignite.cluster().<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, rows.get2(), false));
 
                         scheduleResultSetHolderRemoval(qryId);
@@ -282,7 +282,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         private void scheduleResultSetHolderRemoval(final String id) {
             ((IgniteKernal)ignite).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
                 @Override public void onTimeout() {
-                    ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = ignite.nodeLocalMap();
+                    ConcurrentMap<String, VisorFutureResultSetHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorFutureResultSetHolder<?> t = storage.get(id);
 

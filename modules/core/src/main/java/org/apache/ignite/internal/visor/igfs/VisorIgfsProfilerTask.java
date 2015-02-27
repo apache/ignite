@@ -74,7 +74,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** System time (either read or write). Available only for CLOSE_IN/CLOSE_OUT events. */
         private final long sysTime;
 
-        /** Total amount of read or written bytes. Available only for CLOSE_IN/CLOSE_OUT events.*/
+        /** Total amount of read or written bytes. Available only for CLOSE_IN/CLOSE_OUT events. */
         private final long totalBytes;
 
         /**
@@ -117,7 +117,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     : a.ts > b.ts ? 1
                     : 0;
             }
-    };
+        };
 
     /**
      * Job that do actual profiler work.
@@ -207,7 +207,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param ix Index of array item to parse.
          * @param dflt Default value if string is empty or index is out of array bounds.
          * @return Parsed integer.
-         * @exception NumberFormatException  if the string does not contain a parsable integer.
+         * @throws NumberFormatException if the string does not contain a parsable integer.
          */
         private int parseInt(String[] ss, int ix, int dflt) {
             if (ss.length <= ix)
@@ -226,7 +226,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param ix Index of array item to parse.
          * @param dflt Default value if string is empty or index is out of array bounds.
          * @return Parsed integer.
-         * @exception NumberFormatException if the string does not contain a parsable long.
+         * @throws NumberFormatException if the string does not contain a parsable long.
          */
         private long parseLong(String[] ss, int ix, long dflt) {
             if (ss.length <= ix)
@@ -411,26 +411,26 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     if (line.equalsIgnoreCase(HDR))
                         line = br.readLine();
 
-                        while (line != null) {
-                            try {
-                                VisorIgfsProfilerParsedLine ln = parseLine(line);
+                    while (line != null) {
+                        try {
+                            VisorIgfsProfilerParsedLine ln = parseLine(line);
 
-                                if (ln != null)
-                                    parsedLines.add(ln);
-                            }
-                            catch (NumberFormatException ignored) {
-                                // Skip invalid lines.
-                            }
-
-                            line = br.readLine();
+                            if (ln != null)
+                                parsedLines.add(ln);
                         }
+                        catch (NumberFormatException ignored) {
+                            // Skip invalid lines.
+                        }
+
+                        line = br.readLine();
+                    }
                 }
             }
 
             // Group parsed lines by streamId.
             Map<Long, List<VisorIgfsProfilerParsedLine>> byStreamId = new HashMap<>();
 
-            for (VisorIgfsProfilerParsedLine line: parsedLines) {
+            for (VisorIgfsProfilerParsedLine line : parsedLines) {
                 List<VisorIgfsProfilerParsedLine> grp = byStreamId.get(line.streamId);
 
                 if (grp == null) {
@@ -455,7 +455,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             // Group by files.
             Map<String, List<VisorIgfsProfilerEntry>> byPath = new HashMap<>();
 
-            for (VisorIgfsProfilerEntry entry: entries) {
+            for (VisorIgfsProfilerEntry entry : entries) {
                 List<VisorIgfsProfilerEntry> grp = byPath.get(entry.path());
 
                 if (grp == null) {
