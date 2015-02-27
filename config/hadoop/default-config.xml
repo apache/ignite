@@ -129,6 +129,18 @@
                             <entry key="port" value="10500"/>
                         </map>
                     </property>
+
+                    <!-- Example secondary file system configuration (IGFS configured over Hadoop HDFS): -->
+                    <!--
+                    <property name="defaultMode" value="PROXY"/>
+
+                    <property name="secondaryFileSystem">
+                        <bean class="org.apache.ignite.igfs.hadoop.IgfsHadoopFileSystemWrapper">
+                            <constructor-arg name="uri"     value="hdfs://1.2.3.4:9000"/>
+                            <constructor-arg name="cfgPath" value="/opt/hadoop-server/etc/hadoop/core-site.xml"/>
+                        </bean>
+                    </property>
+                    -->
                 </bean>
             </list>
         </property>

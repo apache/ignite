@@ -100,7 +100,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 return loadClassExplicitly(name, resolve);
             }
 
-            if (isIgfsOrGgHadoop(name)) { // For GG Hadoop and IGFS classes we have to check if they depend on Hadoop.
+            if (isIgfsOrGgHadoop(name)) { // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
                 Boolean hasDeps = cache.get(name);
 
                 if (hasDeps == null) {
