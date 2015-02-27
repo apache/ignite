@@ -776,7 +776,6 @@ object VisorCacheCommand {
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
-        val writeBehind = cfg.writeBehind()
 
         val cacheT = VisorTextTable()
 
@@ -836,20 +835,25 @@ object VisorCacheCommand {
         cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
         cacheT += ("Cache Interceptor", cfg.interceptor())
 
-        cacheT += ("Store Enabled", storeCfg.enabled())
-        cacheT += ("Store", storeCfg.store())
-        cacheT += ("Store Values In Bytes", storeCfg.valueBytes())
+        cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
+        cacheT += ("Memory Mode", cfg.memoryMode())
+
+        cacheT += ("Store Values In Bytes", cfg.valueBytes())
 
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
 
-        cacheT += ("Write-Behind Enabled", writeBehind.enabled())
-        cacheT += ("Write-Behind Flush Size", writeBehind.flushSize())
-        cacheT += ("Write-Behind Frequency", writeBehind.flushFrequency())
-        cacheT += ("Write-Behind Flush Threads Count", writeBehind.flushThreadCount())
-        cacheT += ("Write-Behind Batch Size", writeBehind.batchSize())
+        cacheT += ("Store Enabled", storeCfg.enabled())
+        cacheT += ("Store", storeCfg.store())
+        cacheT += ("Store Factory", storeCfg.storeFactory())
 
-        cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
-        cacheT += ("Memory Mode", cfg.memoryMode())
+        cacheT += ("Store Read-Through", storeCfg.readThrough())
+        cacheT += ("Store Write-Through", storeCfg.writeThrough())
+
+        cacheT += ("Write-Behind Enabled", storeCfg.writeBehindEnabled())
+        cacheT += ("Write-Behind Flush Size", storeCfg.flushSize())
+        cacheT += ("Write-Behind Frequency", storeCfg.flushFrequency())
+        cacheT += ("Write-Behind Flush Threads Count", storeCfg.flushThreadCount())
+        cacheT += ("Write-Behind Batch Size", storeCfg.batchSize())
 
         println(title)
 
