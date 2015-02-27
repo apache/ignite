@@ -83,7 +83,12 @@ public class VisorNodeLastErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
 
             List<IgniteExceptionRegistry.ExceptionInfo> errors = ignite.context().exceptionRegistry().getErrors(order);
 
-            return new IgniteBiTuple<>(errors.isEmpty() ? no : errors.get(0).order(), errors);
+            for (IgniteExceptionRegistry.ExceptionInfo error : errors) {
+                if (error.order() > order)
+                    order = error.order();
+            }
+
+            return new IgniteBiTuple<>(order, errors);
         }
 
         /** {@inheritDoc} */

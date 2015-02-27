@@ -96,10 +96,8 @@ public class IgniteExceptionRegistry {
         List<ExceptionInfo> errors = new ArrayList<>();
 
         for (ExceptionInfo error : queue) {
-            if (error.order <= order)
-                break;
-
-            errors.add(error);
+            if (error.order > order)
+                errors.add(error);
         }
 
         return errors;
