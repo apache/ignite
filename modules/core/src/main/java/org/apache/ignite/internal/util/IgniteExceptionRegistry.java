@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -56,15 +57,16 @@ public class IgniteExceptionRegistry {
      */
     public IgniteExceptionRegistry(IgniteLogger log) {
         this.log = log;
-        this.queue = new ConcurrentLinkedDeque<>();
+
+        queue = new ConcurrentLinkedDeque<>();
     }
 
     /**
      * Default constructor.
      */
     protected IgniteExceptionRegistry() {
-        this.log = null;
-        this.queue = null;
+        log = null;
+        queue = null;
     }
 
     /**
@@ -74,26 +76,31 @@ public class IgniteExceptionRegistry {
      * @param e Exception.
      */
     public void onException(String msg, Throwable e) {
-        errorCnt.incrementAndGet();
+        long order = errorCnt.incrementAndGet();
 
         // Remove extra entity.
         while (queue.size() >= maxSize)
             queue.pollLast();
 
-        queue.offerFirst(new ExceptionInfo(e, msg, Thread.currentThread().getId(),
+        queue.offerFirst(new ExceptionInfo(order, e, msg, Thread.currentThread().getId(),
             Thread.currentThread().getName(), U.currentTimeMillis()));
     }
 
     /**
-     * Gets exceptions.
+     * Gets suppressed errors.
      *
-     * @return Exceptions.
+     * @param order Order number to filter errors.
+     * @return List of exceptions that happened after specified order.
      */
-    Collection<ExceptionInfo> getErrors() {
+    public List<ExceptionInfo> getErrors(long order) {
         List<ExceptionInfo> errors = new ArrayList<>();
 
-        for (ExceptionInfo entry : queue)
-            errors.add(entry);
+        for (ExceptionInfo error : queue) {
+            if (error.order <= order)
+                break;
+
+            errors.add(error);
+        }
 
         return errors;
     }
@@ -144,9 +151,16 @@ public class IgniteExceptionRegistry {
     }
 
     /**
-     *
+     * Detailed info about suppressed error.
      */
-    static class ExceptionInfo {
+    @SuppressWarnings("PublicInnerClass")
+    public static class ExceptionInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final long order;
+
         /** */
         @GridToStringExclude
         private final Throwable error;
@@ -166,13 +180,16 @@ public class IgniteExceptionRegistry {
         /**
          * Constructor.
          *
-         * @param exception Exception.
-         * @param threadId Thread id.
+         * @param order Locally unique ID that is atomically incremented for each new error.
+         * @param error Suppressed error.
+         * @param msg Message that describe reason why error was suppressed.
+         * @param threadId Thread ID.
          * @param threadName Thread name.
          * @param time Occurrence time.
          */
-        public ExceptionInfo(Throwable exception, String msg, long threadId, String threadName, long time) {
-            this.error = exception;
+        public ExceptionInfo(long order, Throwable error, String msg, long threadId, String threadName, long time) {
+            this.order = order;
+            this.error = error;
             this.threadId = threadId;
             this.threadName = threadName;
             this.time = time;
@@ -180,21 +197,28 @@ public class IgniteExceptionRegistry {
         }
 
         /**
-         * @return Gets message.
+         * Locally unique ID that is atomically incremented for each new error.
+         */
+        public long order() {
+            return order;
+        }
+
+        /**
+         * @return Gets message that describe reason why error was suppressed.
          */
         public String message() {
             return msg;
         }
 
         /**
-         * @return Exception.
+         * @return Suppressed error.
          */
         public Throwable error() {
             return error;
         }
 
         /**
-         * @return Gets thread id.
+         * @return Gets thread ID.
          */
         public long threadId() {
             return threadId;
@@ -237,7 +261,7 @@ public class IgniteExceptionRegistry {
         }
 
         /** {@inheritDoc} */
-        @Override Collection<ExceptionInfo> getErrors() {
+        @Override public List<ExceptionInfo> getErrors(long order) {
             return Collections.emptyList();
         }
 
