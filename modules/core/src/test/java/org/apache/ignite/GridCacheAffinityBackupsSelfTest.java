@@ -58,14 +58,6 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testConsistentHashBackups() throws Exception {
-        for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new CacheRendezvousAffinityFunction());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRendezvousBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
             checkBackups(i, new CacheRendezvousAffinityFunction());
