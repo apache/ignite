@@ -1307,11 +1307,13 @@ public class IgnitionEx {
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
             // Initialize factory's log.
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), cfg.getNodeId());
+            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
 
             assert cfgLog != null;
 
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(cfg.getNodeId()));
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
 
             log = cfgLog.getLogger(G.class);
 
