@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -4454,8 +4455,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             TcpDiscoverySpiState spiState = spiStateCopy();
 
             if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
-                lsnr.onDiscovery(EVT_DISCOVERY_CUSTOM_EVT, msg.topologyVersion(), ring.node(msg.creatorNodeId()), null,
-                    null, msg.message());
+                lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    msg.topologyVersion(),
+                    ring.node(msg.creatorNodeId()),
+                    null,
+                    null,
+                    msg.message());
 
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);

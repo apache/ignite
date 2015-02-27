@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem;
 import org.apache.ignite.internal.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;

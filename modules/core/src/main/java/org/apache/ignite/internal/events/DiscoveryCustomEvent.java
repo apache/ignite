@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.events;
+package org.apache.ignite.internal.events;
 
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- *
+ * Custom event.
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
+    /** */
+    private static final long serialVersionUID = 0L;
+    
+    /**
+     * Built-in event type: custom event sent.
+     * <br>
+     * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(Serializable)}.
+     * <p>
+     *
+     * @see DiscoveryCustomEvent
+     */
+    public static final int EVT_DISCOVERY_CUSTOM_EVT = 18;
+
     /** */
     private Serializable data;
 
@@ -32,7 +47,7 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
      * Default constructor.
      */
     public DiscoveryCustomEvent() {
-        type(EventType.EVT_DISCOVERY_CUSTOM_EVT);
+        type(EVT_DISCOVERY_CUSTOM_EVT);
     }
 
     /**
