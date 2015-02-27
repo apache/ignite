@@ -311,7 +311,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /**
      * Process received status update.
      *
-     * @param status Hadoop map-reduce job status.
+     * @param status Ignite status.
      * @return Hadoop status.
      */
     private JobStatus processStatus(GridHadoopJobStatus status) {

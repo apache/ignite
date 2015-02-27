@@ -18,7 +18,7 @@
 package org.apache.ignite.cluster;
 
 /**
- * This class represents runtime information on a node. Apart from obvious
+ * This class represents runtime information on a cluster. Apart from obvious
  * statistical value, this information is used for implementation of
  * load balancing, failover, and collision SPIs. For example, collision SPI
  * in combination with fail-over SPI could check if other nodes don't have
