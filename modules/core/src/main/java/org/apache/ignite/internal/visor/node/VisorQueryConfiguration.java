@@ -70,13 +70,13 @@ public class VisorQueryConfiguration implements Serializable {
             for (int i = 0; i < sz; i++)
                 strClss[i] = U.compact(clss[i].getName());
 
-            c.indexCustomFunctionClasses(strClss);
-            c.searchPath(qcfg.getSearchPath());
-            c.initialScriptPath(qcfg.getInitialScriptPath());
-            c.maxOffHeapMemory(qcfg.getMaxOffHeapMemory());
-            c.longQueryExecutionTimeout(qcfg.getLongQueryExecutionTimeout());
-            c.longQueryExplain(qcfg.isLongQueryExplain());
-            c.useOptimizedSerializer(qcfg.isUseOptimizedSerializer());
+            c.idxCustomFuncClss = strClss;
+            c.searchPath = qcfg.getSearchPath();
+            c.initScriptPath = qcfg.getInitialScriptPath();
+            c.maxOffHeapMemory = qcfg.getMaxOffHeapMemory();
+            c.longQryExecTimeout = qcfg.getLongQueryExecutionTimeout();
+            c.longQryExplain = qcfg.isLongQueryExplain();
+            c.useOptimizedSerializer = qcfg.isUseOptimizedSerializer();
         }
 
         return c;
@@ -90,24 +90,10 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param idxCustomFuncClss Classes with methods annotated by {@link QuerySqlFunction}.
-     */
-    public void indexCustomFunctionClasses(String[] idxCustomFuncClss) {
-        this.idxCustomFuncClss = idxCustomFuncClss;
-    }
-
-    /**
      * @return Optional search path consisting of space names to search SQL schema objects.
      */
     public String[] searchPath() {
         return searchPath;
-    }
-
-    /**
-     * @param searchPath Optional search path consisting of space names to search SQL schema objects.
-     */
-    public void searchPath(String[] searchPath) {
-        this.searchPath = searchPath;
     }
 
     /**
@@ -118,24 +104,10 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param initScriptPath Script path to be ran against H2 database after opening.
-     */
-    public void initialScriptPath(String initScriptPath) {
-        this.initScriptPath = initScriptPath;
-    }
-
-    /**
      * @return Maximum amount of memory available to off-heap storage.
      */
     public long maxOffHeapMemory() {
         return maxOffHeapMemory;
-    }
-
-    /**
-     * @param maxOffHeapMemory Maximum amount of memory available to off-heap storage.
-     */
-    public void maxOffHeapMemory(long maxOffHeapMemory) {
-        this.maxOffHeapMemory = maxOffHeapMemory;
     }
 
     /**
@@ -146,24 +118,10 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param longQryExecTimeout Query execution time threshold.
-     */
-    public void longQueryExecutionTimeout(long longQryExecTimeout) {
-        this.longQryExecTimeout = longQryExecTimeout;
-    }
-
-    /**
      * @return If {@code true}, SPI will print SQL execution plan for long queries.
      */
     public boolean longQryExplain() {
         return longQryExplain;
-    }
-
-    /**
-     * @param longQryExplain If {@code true}, SPI will print SQL execution plan for long queries.
-     */
-    public void longQueryExplain(boolean longQryExplain) {
-        this.longQryExplain = longQryExplain;
     }
 
     /**
@@ -173,11 +131,8 @@ public class VisorQueryConfiguration implements Serializable {
         return useOptimizedSerializer;
     }
 
-    /**
-     * @param useOptimizedSerializer The flag indicating that serializer for H2 database will be set to Ignite's
-     * marshaller.
-     */
-    public void useOptimizedSerializer(boolean useOptimizedSerializer) {
-        this.useOptimizedSerializer = useOptimizedSerializer;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorQueryConfiguration.class, this);
     }
 }

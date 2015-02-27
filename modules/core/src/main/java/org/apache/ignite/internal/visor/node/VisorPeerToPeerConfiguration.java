@@ -48,9 +48,9 @@ public class VisorPeerToPeerConfiguration implements Serializable {
     public static VisorPeerToPeerConfiguration from(IgniteConfiguration c) {
         VisorPeerToPeerConfiguration cfg = new VisorPeerToPeerConfiguration();
 
-        cfg.p2pEnabled(c.isPeerClassLoadingEnabled());
-        cfg.p2pMissedResponseCacheSize(c.getPeerClassLoadingMissedResourcesCacheSize());
-        cfg.p2pLocalClassPathExclude(compactArray(c.getPeerClassLoadingLocalClassPathExclude()));
+        cfg.p2pEnabled = c.isPeerClassLoadingEnabled();
+        cfg.p2pMissedResCacheSize = c.getPeerClassLoadingMissedResourcesCacheSize();
+        cfg.p2pLocClsPathExcl = compactArray(c.getPeerClassLoadingLocalClassPathExclude());
 
         return cfg;
     }
@@ -63,13 +63,6 @@ public class VisorPeerToPeerConfiguration implements Serializable {
     }
 
     /**
-     * @param p2pEnabled New whether peer-to-peer class loading is enabled.
-     */
-    public void p2pEnabled(boolean p2pEnabled) {
-        this.p2pEnabled = p2pEnabled;
-    }
-
-    /**
      * @return Missed resource cache size.
      */
     public int p2pMissedResponseCacheSize() {
@@ -77,25 +70,10 @@ public class VisorPeerToPeerConfiguration implements Serializable {
     }
 
     /**
-     * @param p2pMissedResCacheSize New missed resource cache size.
-     */
-    public void p2pMissedResponseCacheSize(int p2pMissedResCacheSize) {
-        this.p2pMissedResCacheSize = p2pMissedResCacheSize;
-    }
-
-    /**
      * @return List of packages from the system classpath that need to be loaded from task originating node.
      */
     @Nullable public String p2pLocalClassPathExclude() {
         return p2pLocClsPathExcl;
-    }
-
-    /**
-     * @param p2pLocClsPathExcl New list of packages from the system classpath that need to be loaded from task
-     * originating node.
-     */
-    public void p2pLocalClassPathExclude(@Nullable String p2pLocClsPathExcl) {
-        this.p2pLocClsPathExcl = p2pLocClsPathExcl;
     }
 
     /** {@inheritDoc} */

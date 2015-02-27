@@ -60,9 +60,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode;
 
-    /** Sequence reserve size. */
-    private int seqReserveSize;
-
     /** Swap enabled flag. */
     private boolean swapEnabled;
 
@@ -254,13 +251,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return writeSynchronizationMode;
-    }
-
-    /**
-     * @return Sequence reserve size.
-     */
-    public int sequenceReserveSize() {
-        return seqReserveSize;
     }
 
     /**
