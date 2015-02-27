@@ -1295,50 +1295,18 @@ public class IgnitionEx {
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
+            // Set configuration URL, if any, into system property.
+            if (startCtx.configUrl() != null)
+                System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
+
             IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
-
-            String ggHome = cfg.getIgniteHome();
-
-            // Set Ignite home.
-            if (ggHome == null)
-                ggHome = U.getIgniteHome();
-            else
-                // If user provided IGNITE_HOME - set it as a system property.
-                U.setIgniteHome(ggHome);
-
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
             assert F.eq(name, cfg.getGridName());
 
-            // Set configuration URL, if any, into system property.
-            if (startCtx.configUrl() != null)
-                System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
-
-            // Initialize factory's log.
-            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
-
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
-
-            assert cfgLog != null;
-
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
-
-            log = cfgLog.getLogger(G.class);
-
-            // Check Ignite home folder (after log is available).
-            if (ggHome != null) {
-                File ggHomeFile = new File(ggHome);
-
-                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
-            }
-
             IgniteConfiguration myCfg = initializeConfiguration(cfg);
-
-            myCfg.setGridLogger(cfgLog);
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -1521,9 +1489,41 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
+            // Initialize factory's log.
+            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+
+            assert cfgLog != null;
+
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
+
+            log = cfgLog.getLogger(G.class);
+
+            String ggHome = cfg.getIgniteHome();
+
+            // Set Ignite home.
+            if (ggHome == null)
+                ggHome = U.getIgniteHome();
+            else
+                // If user provided IGNITE_HOME - set it as a system property.
+                U.setIgniteHome(ggHome);
+
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+
+            // Check Ignite home folder (after log is available).
+            if (ggHome != null) {
+                File ggHomeFile = new File(ggHome);
+
+                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
+            }
+
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
-            myCfg.setIgniteHome(U.getIgniteHome());
+            myCfg.setIgniteHome(ggHome);
+
+            myCfg.setGridLogger(cfgLog);
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
@@ -1606,8 +1606,7 @@ public class IgnitionEx {
             if (myCfg.getMBeanServer() == null)
                 myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
-            if (myCfg.getNodeId() == null)
-               myCfg.setNodeId(UUID.randomUUID());
+            myCfg.setNodeId(nodeId);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
