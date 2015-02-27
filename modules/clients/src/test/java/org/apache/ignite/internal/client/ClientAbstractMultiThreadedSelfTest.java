@@ -426,19 +426,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
                         String key = String.valueOf(rawKey);
 
                         UUID nodeId = cache.affinity(key);
-                        UUID srvNodeId = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
-
-                        if (!nodeId.equals(srvNodeId)) {
-                            //GridClientDataAffinity clAff =
-                            //    ((GridClientConfiguration)getFieldValue(client, "cfg")).
-                            //        getDataConfiguration(PARTITIONED_CACHE_NAME).getAffinity();
-
-                            //printAffinityState(gridMap.values());
-                            //info("Client affinity: " + clAff);
-
-                            info("Got wrong client mapping [key=" + key + ", exp=" + srvNodeId +
-                                ", actual=" + nodeId + "]");
-                        }
 
                         String val = "val" + rawKey;
 
@@ -475,25 +462,14 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
                     puts.get(key).get2(), gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
             }
 
-            // Assert that client has properly determined affinity node.
-            if (!node.id().equals(puts.get(key).get1())) {
-                //GridClientDataAffinity clAff =
-                //    ((GridClientConfiguration)getFieldValue(client, "cfg")).
-                //        getDataConfiguration(PARTITIONED_CACHE_NAME).getAffinity();
 
-                //printAffinityState(gridMap.values());
-                //info("Client affinity: " + clAff);
-
-                UUID curAffNode = client.data(PARTITIONED_CACHE_NAME).affinity(key);
-
-                failNotEquals(
-                    "Got different mappings [key=" + key + ", currId=" + curAffNode + "]",
-                    node.id(), puts.get(key).get1());
-            }
+            UUID curAffNode = client.data(PARTITIONED_CACHE_NAME).affinity(key);
 
             // Check that no other nodes see this key.
-            for (UUID id : F.view(gridMap.keySet(), F.notEqualTo(node.id())))
-                assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
+            for (UUID id : gridMap.keySet()) {
+                if (!id.equals(curAffNode) && !id.equals(node.id()))
+                    assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
+            }
         }
 
         for (Ignite g : gridMap.values())
