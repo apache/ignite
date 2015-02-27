@@ -242,7 +242,8 @@ class VisorConfigurationCommand {
                 cmnT += ("Query Function Classes", arr2Str(query.indexCustomFunctionClasses()))
                 cmnT += ("Query Path To SQL Schema Objects", arr2Str(query.searchPath()))
                 cmnT += ("Query Initial Script Path", safe(query.initialScriptPath()))
-                cmnT += ("Query Off-Heap Storage Memory", query.maxOffHeapMemory())
+                cmnT += ("Query Off-Heap Storage Memory",
+                    if (query.maxOffHeapMemory() >= 0) query.maxOffHeapMemory() else NA)
                 cmnT += ("Query Execution Time Threshold", query.longQueryExecutionTimeout())
                 cmnT += ("Query Long Queries Explaining", bool2Str(query.longQryExplain()))
                 cmnT += ("Query Serializer", bool2Str(query.useOptimizedSerializer()))
