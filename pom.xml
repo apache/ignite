@@ -529,20 +529,20 @@
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
-                                        <exclude>**/com/romix/scala/**</exclude><!--own license-->
-                                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
-                                        <exclude>**/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
-                                        <exclude>**/org/pcollections/**</exclude><!--own license-->
-                                        <exclude>**/org/jdk8/backport/</exclude><!--own license-->
-                                        <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>**/test/resources/log/ignite.log.tst</exclude><!--test resource-->
-                                        <exclude>**/test/config/start-nodes.ini</exclude><!---->
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
-                                        <exclude>**/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>**/hadoop/books/*.txt</exclude><!--books examples-->
-                                        <exclude>**/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
-                                        <exclude>**/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
+                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--own license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
+                                        <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
+                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
+                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
+                                        <exclude>src/test/config/start-nodes.ini</exclude><!---->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
+                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
