@@ -26,6 +26,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
