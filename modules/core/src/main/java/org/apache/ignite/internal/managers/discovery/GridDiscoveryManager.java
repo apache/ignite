@@ -194,7 +194,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        // TODO GG-7574 move to metrics processor?
         long totSysMemory = -1;
 
         try {
