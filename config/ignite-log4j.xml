@@ -67,10 +67,12 @@
         Logs all output to specified file.
         By default, the logging goes to IGNITE_HOME/work/log folder
     -->
-    <appender name="FILE" class="org.apache.ignite.logger.log4j.Log4JFileAppender">
+    <appender name="FILE" class="org.apache.ignite.logger.log4j.Log4jRollingFileAppender">
         <param name="Threshold" value="DEBUG"/>
         <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
         <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="10"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
