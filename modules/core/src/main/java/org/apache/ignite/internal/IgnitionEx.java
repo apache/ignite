@@ -1306,8 +1306,6 @@ public class IgnitionEx {
             // and I don't want to reshuffle a lot of code.
             assert F.eq(name, cfg.getGridName());
 
-            IgniteConfiguration myCfg = initializeConfiguration(cfg);
-
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
@@ -1317,6 +1315,8 @@ public class IgnitionEx {
                 U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
+
+            IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
