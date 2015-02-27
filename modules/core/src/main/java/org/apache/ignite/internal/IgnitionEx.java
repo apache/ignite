@@ -1517,36 +1517,28 @@ public class IgnitionEx {
         /**
          * @param cfg Ignite configuration copy to.
          * @return New ignite configuration.
+         * @throws IgniteCheckedException If failed.
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
-            initializeDefaultConfigurationParameters(myCfg);
-
-            return myCfg;
-        }
-
-        /**
-         * Initialize default parameters.
-         */
-        public void initializeDefaultConfigurationParameters(IgniteConfiguration cfg) throws IgniteCheckedException {
-            cfg.setIgniteHome(U.getIgniteHome());
+            myCfg.setIgniteHome(U.getIgniteHome());
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
-            cfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
+            myCfg.setLocalHost(F.isEmpty(locHost) ? myCfg.getLocalHost() : locHost);
 
             // Override daemon flag if it was set on the factory.
             if (daemon)
-                cfg.setDaemon(true);
+                myCfg.setDaemon(true);
 
-            Marshaller marsh = cfg.getMarshaller();
+            Marshaller marsh = myCfg.getMarshaller();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
-                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
+                    U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
                             "(only Java HotSpot VMs are supported). Switching to standard JDK marshalling - " +
                             "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
@@ -1554,7 +1546,7 @@ public class IgnitionEx {
                     marsh = new JdkMarshaller();
                 }
                 else if (!OptimizedMarshaller.available()) {
-                    U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
+                    U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
                             "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                             "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
                             "Switching to standard JDK marshalling - " +
@@ -1567,7 +1559,7 @@ public class IgnitionEx {
                     marsh = new OptimizedMarshaller();
             }
             else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
-                U.warn(log, "Using GridOptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
+                U.warn(log, "Using OptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
                         "object serialization behavior could yield unexpected results.",
                     "Using GridOptimizedMarshaller on untested JVM.");
             }
@@ -1576,7 +1568,7 @@ public class IgnitionEx {
             String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
-                if (!F.isEmpty(cfg.getCacheConfiguration())) {
+                if (!F.isEmpty(myCfg.getCacheConfiguration())) {
                     U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
                         "execution may not work for console Visor)");
                 }
@@ -1584,8 +1576,8 @@ public class IgnitionEx {
                     try {
                         DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
 
-                        if (cfg.getDeploymentMode() != depMode)
-                            cfg.setDeploymentMode(depMode);
+                        if (myCfg.getDeploymentMode() != depMode)
+                            myCfg.setDeploymentMode(depMode);
                     }
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Failed to override deployment mode using system property " +
@@ -1595,12 +1587,12 @@ public class IgnitionEx {
                 }
             }
 
-            cfg.setMarshaller(marsh);
+            myCfg.setMarshaller(marsh);
 
-            cfg.setConnectorConfiguration(cfg.getConnectorConfiguration() != null ?
-                new ConnectorConfiguration(cfg.getConnectorConfiguration()) : null);
+            myCfg.setConnectorConfiguration(myCfg.getConnectorConfiguration() != null ?
+                new ConnectorConfiguration(myCfg.getConnectorConfiguration()) : null);
 
-            IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
+            IgfsConfiguration[] igfsCfgs = myCfg.getIgfsConfiguration();
 
             if (igfsCfgs != null) {
                 IgfsConfiguration[] clone = igfsCfgs.clone();
@@ -1608,19 +1600,19 @@ public class IgnitionEx {
                 for (int i = 0; i < igfsCfgs.length; i++)
                     clone[i] = new IgfsConfiguration(igfsCfgs[i]);
 
-                cfg.setIgfsConfiguration(clone);
+                myCfg.setIgfsConfiguration(clone);
             }
 
-            if (cfg.getMBeanServer() == null)
-                cfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+            if (myCfg.getMBeanServer() == null)
+                myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
-            if (cfg.getNodeId() == null)
-               cfg.setNodeId(UUID.randomUUID());
+            if (myCfg.getNodeId() == null)
+               myCfg.setNodeId(UUID.randomUUID());
 
-            if (cfg.getPeerClassLoadingLocalClassPathExclude() == null)
-                cfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
+            if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
+                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
 
-            StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
+            StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();
 
             if (streamerCfgs != null) {
                 StreamerConfiguration[] clone = streamerCfgs.clone();
@@ -1628,26 +1620,29 @@ public class IgnitionEx {
                 for (int i = 0; i < streamerCfgs.length; i++)
                     clone[i] = new StreamerConfiguration(streamerCfgs[i]);
 
-                cfg.setStreamerConfiguration(clone);
+                myCfg.setStreamerConfiguration(clone);
             }
 
-            cfg.setTransactionConfiguration(cfg.getTransactionConfiguration() != null ?
-                new TransactionConfiguration(cfg.getTransactionConfiguration()) : null);
+            myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
+                new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
 
-            if (cfg.getUserAttributes() == null) {
+            if (myCfg.getUserAttributes() == null) {
                 Map<String, ?> emptyAttr = Collections.emptyMap();
-                cfg.setUserAttributes(emptyAttr);
+                myCfg.setUserAttributes(emptyAttr);
             }
 
-            initializeDefaultCacheConfiguration(cfg);
+            initializeDefaultCacheConfiguration(myCfg);
 
-            initializeDefaultSpi(cfg);
+            initializeDefaultSpi(myCfg);
+
+            return myCfg;
         }
 
         /**
          * Initialize default cache configuration.
          *
          * @param cfg Ignite configuration.
+         * @throws IgniteCheckedException If failed.
          */
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
