@@ -739,17 +739,17 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            data = U.intToBytes((Integer)obj);
+            data = U.intToBytes((Integer) obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            data = U.longToBytes((Long)obj);
+            data = U.longToBytes((Long) obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            data = U.longToBytes(((Date)obj).getTime());
+            data = U.longToBytes(((Date) obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -759,12 +759,12 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            data = U.intToBytes(Float.floatToIntBits((Float)obj));
+            data = U.intToBytes(Float.floatToIntBits((Float) obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            data = U.longToBytes(Double.doubleToLongBits((Double)obj));
+            data = U.longToBytes(Double.doubleToLongBits((Double) obj));
 
             flags |= DOUBLE_FLAG;
         }

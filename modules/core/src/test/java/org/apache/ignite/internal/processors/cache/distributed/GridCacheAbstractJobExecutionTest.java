@@ -128,7 +128,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Void applyx(final Integer i) throws IgniteCheckedException {
+                @Override public Void applyx(final Integer i) {
                     IgniteCache<String, int[]> cache = ignite.jcache(null);
 
                     try (Transaction tx = ignite.transactions().txStart(concur, isolation)) {

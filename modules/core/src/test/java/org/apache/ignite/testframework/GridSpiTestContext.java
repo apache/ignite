@@ -24,6 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -526,6 +527,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
         }
 
         return formatter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteExceptionRegistry exceptionRegistry() {
+        return IgniteExceptionRegistry.DUMMY_REGISTRY;
     }
 
     /** {@inheritDoc} */

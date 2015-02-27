@@ -960,9 +960,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @param path Directory path to validate listing for.
      * @param item List of directory items.
-     * @throws IgniteCheckedException If failed.
      */
-    private void assertListDir(String path, String... item) throws IgniteCheckedException {
+    private void assertListDir(String path, String... item) {
         Collection<IgfsFile> files = igfs.listFiles(new IgfsPath(path));
 
         List<String> names = new ArrayList<>(item.length);

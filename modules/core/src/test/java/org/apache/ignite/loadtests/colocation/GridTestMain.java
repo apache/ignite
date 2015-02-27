@@ -162,9 +162,8 @@ public class GridTestMain {
      * {@link GridTestCacheStore#loadAll} method.
      *
      * @param cache Cache to load.
-     * @throws IgniteCheckedException If failed.
      */
-    private static void loadFromStore(IgniteCache<GridTestKey, Long> cache) throws IgniteCheckedException {
+    private static void loadFromStore(IgniteCache<GridTestKey, Long> cache) {
         cache.loadCache(null, 0, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
     }
 

@@ -187,10 +187,8 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Runnable job.
      * @param p Optional node predicate.
      * @return Future object.
-     * @throws IgniteCheckedException If failed.
      */
-    private ComputeTaskFuture<?> runAsync(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p)
-        throws IgniteCheckedException {
+    private ComputeTaskFuture<?> runAsync(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
@@ -210,10 +208,8 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Runnable job.
      * @param p Optional node predicate.
      * @return Future object.
-     * @throws IgniteCheckedException If failed.
      */
-    private ComputeTaskFuture<?> broadcast(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p)
-        throws IgniteCheckedException {
+    private ComputeTaskFuture<?> broadcast(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
@@ -283,10 +279,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param job Callable job.
      * @param p Optional node predicate.
      * @return Future object.
-     * @throws IgniteCheckedException If failed.
      */
     private ComputeTaskFuture<Collection<Integer>> broadcast(int idx, IgniteCallable<Integer> job,
-        @Nullable IgnitePredicate<ClusterNode> p) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
 
@@ -306,10 +301,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param jobs Callable job.
      * @param p Optional node predicate.
      * @return Future object.
-     * @throws IgniteCheckedException If failed.
      */
     private ComputeTaskFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
-        @Nullable IgnitePredicate<ClusterNode> p) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 

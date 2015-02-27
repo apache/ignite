@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
@@ -44,8 +45,8 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorEventsCollectJob job(VisorNodeEventsCollectorTaskArg arg) {
-        return new VisorEventsCollectJob(arg, debug);
+    @Override protected VisorNodeEventsCollectorJob job(VisorNodeEventsCollectorTaskArg arg) {
+        return new VisorNodeEventsCollectorJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -171,7 +172,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     /**
      * Job for task returns events data.
      */
-    private static class VisorEventsCollectJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
+    private static class VisorNodeEventsCollectorJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
         Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -182,7 +183,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorEventsCollectJob(VisorNodeEventsCollectorTaskArg arg, boolean debug) {
+        private VisorNodeEventsCollectorJob(VisorNodeEventsCollectorTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -263,7 +264,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
+            final ConcurrentMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
@@ -333,7 +334,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorEventsCollectJob.class, this);
+            return S.toString(VisorNodeEventsCollectorJob.class, this);
         }
     }
 }

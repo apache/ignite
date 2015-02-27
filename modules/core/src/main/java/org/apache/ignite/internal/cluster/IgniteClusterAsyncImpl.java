@@ -27,6 +27,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -66,7 +67,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
+    @Override public <K, V> ConcurrentMap<K, V> nodeLocalMap() {
         return cluster.nodeLocalMap();
     }
 

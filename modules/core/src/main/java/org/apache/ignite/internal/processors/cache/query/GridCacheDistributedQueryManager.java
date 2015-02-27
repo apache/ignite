@@ -193,10 +193,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      * @return Query info.
-     * @throws ClassNotFoundException If class not found.
      */
-    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
-        throws ClassNotFoundException {
+    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req) {
         IgnitePredicate<Cache.Entry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<Cache.Entry<Object, Object>>alwaysTrue() : req.projectionFilter();
 

@@ -18,8 +18,9 @@
 package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.resources.*;
+
+import java.util.concurrent.*;
 
 /**
  * User resource, that increases node-local counters
@@ -46,7 +47,7 @@ public class GridP2PAwareTestUserResource {
      * @param key Key for the value to be incremented.
      */
     private <T> void concurrentIncrement(T key) {
-        ClusterNodeLocalMap<T, Integer> nodeLoc = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<T, Integer> nodeLoc = ignite.cluster().nodeLocalMap();
 
         Integer cntr = nodeLoc.get(key);
 

@@ -115,7 +115,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
                             try {
                                 deployTask(ignite);
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (Exception e) {
                                 error("Failed to deploy grid task.", e);
 
                                 fail();
@@ -139,10 +139,9 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Grid.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void deployTask(Ignite ignite) throws IgniteCheckedException {
+    private void deployTask(Ignite ignite) {
         ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
     }
 
