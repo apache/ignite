@@ -866,15 +866,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return attrs.containsKey(key);
     }
 
-
     /** {@inheritDoc} */
     @Override public Object addNodeAttribute(String key, Object val) {
         return attrs.put(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addNodeAttributes(Map<String, String> attrs) {
-        this.attrs.putAll(attrs);
     }
 
     /** {@inheritDoc} */

@@ -47,6 +47,8 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
         if (ctx.config().isDaemon())
             return;
 
+        super.start();
+
         startSpi();
 
         if (enabled()) {

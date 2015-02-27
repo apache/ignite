@@ -222,6 +222,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {

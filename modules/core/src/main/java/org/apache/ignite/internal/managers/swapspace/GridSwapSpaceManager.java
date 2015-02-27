@@ -53,6 +53,8 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
         if (ctx.config().isDaemon())
             return;
 
+        super.start();
+
         getSpi().setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
                 if (ctx.event().isRecordable(evtType)) {

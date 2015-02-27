@@ -31,15 +31,7 @@ import java.util.*;
 @GridToStringExclude
 public interface GridManager extends GridComponent {
     /**
-     * Adds attributes from underlying SPI to node attributes.
-     *
-     * @throws IgniteCheckedException Wrapper for exception thrown by underlying SPI.
-     */
-    public void addSpiAttributes() throws IgniteCheckedException;
-
-    /**
-     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
-     *      implementation, {@code false} otherwise.
+     * @return {@code true} if at least one SPI does not have a {@code NO-OP} implementation, {@code false} otherwise.
      */
     public boolean enabled();
 }

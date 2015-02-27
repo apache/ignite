@@ -48,6 +48,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         if (ctx.config().isDaemon())
             return;
 
+        super.start();
+
         if (!enabled())
             U.warn(log, "Indexing is disabled (to enable please configure GridIndexingSpi).");
 

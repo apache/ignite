@@ -1103,12 +1103,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             // Stick all environment settings into node attributes.
-            ctx.addNodeAttributes(F.view(System.getenv(), new P1<String>() {
-                @Override public boolean apply(String name) {
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name);
-                }
-            }));
+            for (Map.Entry<String, String> sysEntry : System.getenv().entrySet()) {
+                String name = sysEntry.getKey();
+
+                if (incProps == null || U.containsStringArray(incProps, name, true) ||
+                    U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
+                    ctx.addNodeAttribute(name, sysEntry.getValue());
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Added environment properties to node attributes.");
@@ -1375,16 +1376,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteCheckedException Throw in case of any errors.
      */
     private void startManager(GridManager mgr) throws IgniteCheckedException {
-        mgr.addSpiAttributes();
-
-        // Set all node attributes into discovery manager,
-        // so they can be distributed to all nodes.
-        if (mgr instanceof GridDiscoveryManager)
-            ((GridDiscoveryManager)mgr).setNodeAttributes(VER);
-
-        // Add manager to registry before it starts to avoid
-        // cases when manager is started but registry does not
-        // have it yet.
+        // Add manager to registry before it starts to avoid cases when manager is started
+        // but registry does not have it yet.
         ctx.add(mgr);
 
         try {

@@ -39,6 +39,8 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         startSpi();
 
         if (log.isDebugEnabled())
