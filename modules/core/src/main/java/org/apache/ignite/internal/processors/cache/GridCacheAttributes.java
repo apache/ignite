@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -191,6 +192,13 @@ public class GridCacheAttributes implements Externalizable {
         CacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
+            if (aff instanceof CacheRendezvousAffinityFunction) {
+                CacheRendezvousAffinityFunction aff0 = (CacheRendezvousAffinityFunction) aff;
+
+                affInclNeighbors = aff0.isExcludeNeighbors();
+                affHashIdRslvrClsName = className(aff0.getHashIdResolver());
+            }
+
             affPartsCnt = aff.partitions();
             affClsName = className(aff);
         }
