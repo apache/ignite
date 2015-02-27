@@ -119,12 +119,6 @@ public class GridCacheAttributes implements Externalizable {
     private int affKeyBackups = -1;
 
     /** */
-    private int affReplicas = -1;
-
-    /** */
-    private String affReplicaCntAttrName;
-
-    /** */
     private String affHashIdRslvrClsName;
 
     /** */
@@ -294,24 +288,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Affinity replicas.
-     */
-    public int affinityReplicas() {
-        return affReplicas;
-    }
-
-    /**
      * @return Affinity partitions count.
      */
     public int affinityPartitionsCount() {
         return affPartsCnt;
-    }
-
-    /**
-     * @return Aff replicas count attr name.
-     */
-    public String affinityReplicaCountAttrName() {
-        return affReplicaCntAttrName;
     }
 
     /**
@@ -537,8 +517,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(affInclNeighbors);
         out.writeInt(affKeyBackups);
         out.writeInt(affPartsCnt);
-        out.writeInt(affReplicas);
-        U.writeString(out, affReplicaCntAttrName);
         U.writeString(out, affHashIdRslvrClsName);
 
         U.writeString(out, evictFilterClsName);
@@ -581,8 +559,6 @@ public class GridCacheAttributes implements Externalizable {
         affInclNeighbors = in.readBoolean();
         affKeyBackups = in.readInt();
         affPartsCnt = in.readInt();
-        affReplicas = in.readInt();
-        affReplicaCntAttrName = U.readString(in);
         affHashIdRslvrClsName = U.readString(in);
 
         evictFilterClsName = U.readString(in);

@@ -1186,14 +1186,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "Affinity key backups", locAttr.affinityKeyBackups(),
                                 rmtAttr.affinityKeyBackups(), true);
 
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicas",
-                                "Affinity replicas", locAttr.affinityReplicas(),
-                                rmtAttr.affinityReplicas(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicaCountAttrName",
-                                "Affinity replica count attribute name", locAttr.affinityReplicaCountAttrName(),
-                                rmtAttr.affinityReplicaCountAttrName(), true);
-
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity.hashIdResolver",
                                 "Partitioned cache affinity hash ID resolver class",
                                 locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
