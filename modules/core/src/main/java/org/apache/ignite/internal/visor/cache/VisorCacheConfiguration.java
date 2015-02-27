@@ -93,7 +93,7 @@ public class VisorCacheConfiguration implements Serializable {
     /** Cache interceptor. */
     private String interceptor;
 
-    /** Should value bytes be stored. */
+    /** Flag indicating if cached values should be additionally stored in serialized form. */
     private boolean valBytes;
 
     /** Cache affinityCfg config. */
@@ -331,19 +331,11 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Should value bytes be stored.
+     * @return {@code true} if cached values should be additionally stored in serialized form.
      */
     public boolean valueBytes() {
         return valBytes;
     }
-
-    /**
-     * @param valBytes New should value bytes be stored.
-     */
-    public void valueBytes(boolean valBytes) {
-        this.valBytes = valBytes;
-    }
-
 
     /**
      * @return Collection of type metadata.
