@@ -43,6 +43,15 @@ public interface CacheStoreSession {
     public Transaction transaction();
 
     /**
+     * Returns {@code true} if performing store operation within a transaction,
+     * {@code false} otherwise. Analogous to calling {@code transaction() != null}.
+     *
+     * @return {@code True} if performing store operation within a transaction,
+     * {@code false} otherwise.
+     */
+    public boolean isWithinTransaction();
+
+    /**
      * Gets current session properties. You can add properties directly to the
      * returned map.
      *
