@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.managers;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
-
-import java.util.*;
 
 /**
  * This interface defines life-cycle for kernal manager. Managers provide layer of indirection
