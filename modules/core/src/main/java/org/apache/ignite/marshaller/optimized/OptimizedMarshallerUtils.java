@@ -58,7 +58,7 @@ class OptimizedMarshallerUtils {
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** Predefined classes. */
-    private static final Class<?>[] PREDEFINED = new Class[] {
+    private static final Class[] PREDEFINED = new Class[] {
         byte[].class,
         Integer.class,
         String.class,
@@ -82,14 +82,15 @@ class OptimizedMarshallerUtils {
     };
 
     /** Class descriptors by class. */
-    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
+    private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
 
     /** Classes by ID. */
-    private static final ConcurrentMap<Integer, Class<?>> CLS_BY_ID = new ConcurrentHashMap8<>(256);
+    private static final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> CLS_BY_ID =
+        new ConcurrentHashMap8<>(256);
 
     static {
-        for (Class<?> cls : PREDEFINED)
-            CLS_BY_ID.put(cls.getName().hashCode(), cls);
+        for (Class cls : PREDEFINED)
+            CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
     }
 
     /**
@@ -106,13 +107,13 @@ class OptimizedMarshallerUtils {
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class<?> cls, MarshallerContext ctx) throws IOException {
+    static OptimizedClassDescriptor classDescriptor(Class cls, MarshallerContext ctx) throws IOException {
         OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
             desc = new OptimizedClassDescriptor(cls, ctx);
 
-            if (CLS_BY_ID.putIfAbsent(desc.typeId(), cls) == null)
+            if (CLS_BY_ID.putIfAbsent(desc.typeId(), F.t(cls, false)) == null)
                 ctx.registerClass(desc.typeId(), cls.getName());
 
             OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
@@ -136,7 +137,7 @@ class OptimizedMarshallerUtils {
      */
     static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx)
         throws IOException, ClassNotFoundException {
-        Class<?> cls = CLS_BY_ID.get(id);
+        Class cls = CLS_BY_ID.get(id).get1();
 
         if (cls == null) {
             String clsName = ctx.className(id);
@@ -145,10 +146,10 @@ class OptimizedMarshallerUtils {
 
             cls = U.forName(clsName, ldr);
 
-            Class<?> old = CLS_BY_ID.putIfAbsent(id, cls);
+            IgniteBiTuple<Class, Boolean> old = CLS_BY_ID.putIfAbsent(id, F.t(cls, false));
 
             if (old != null)
-                cls = old;
+                cls = old.get1();
         }
 
         return classDescriptor(cls, ctx);
@@ -164,6 +165,11 @@ class OptimizedMarshallerUtils {
             if (ldr.equals(cls.getClassLoader()))
                 DESC_BY_CLS.remove(cls);
         }
+
+        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : CLS_BY_ID.entrySet()) {
+            if (!e.getValue().get2() && ldr.equals(e.getValue().get1().getClassLoader()))
+                CLS_BY_ID.remove(e.getKey());
+        }
     }
 
     /**
@@ -171,6 +177,11 @@ class OptimizedMarshallerUtils {
      */
     public static void clearCache() {
         DESC_BY_CLS.clear();
+
+        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : CLS_BY_ID.entrySet()) {
+            if (!e.getValue().get2())
+                CLS_BY_ID.remove(e.getKey());
+        }
     }
 
     /**
