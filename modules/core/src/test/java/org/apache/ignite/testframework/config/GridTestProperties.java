@@ -66,13 +66,13 @@ public final class GridTestProperties {
     /** */
     static {
         // Initialize IGNITE_HOME system property.
-        String ggHome = System.getProperty("IGNITE_HOME");
+        String igniteHome = System.getProperty("IGNITE_HOME");
 
-        if (ggHome == null || ggHome.isEmpty()) {
-            ggHome = System.getenv("IGNITE_HOME");
+        if (igniteHome == null || igniteHome.isEmpty()) {
+            igniteHome = System.getenv("IGNITE_HOME");
 
-            if (ggHome != null && !ggHome.isEmpty())
-                System.setProperty("IGNITE_HOME", ggHome);
+            if (igniteHome != null && !igniteHome.isEmpty())
+                System.setProperty("IGNITE_HOME", igniteHome);
         }
 
         // Load default properties.
