@@ -100,7 +100,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     protected boolean needRetVal;
 
     /** Implicit transaction result. */
-    protected GridCacheReturn<CacheObject> implicitRes = new GridCacheReturn<>(false);
+    protected GridCacheReturn<Object> implicitRes = new GridCacheReturn<>(false);
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -274,14 +274,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<CacheObject> implicitSingleResult() {
+    @Override public GridCacheReturn<Object> implicitSingleResult() {
         return implicitRes;
     }
 
     /**
      * @param ret Result.
      */
-    public void implicitSingleResult(GridCacheReturn<CacheObject> ret) {
+    public void implicitSingleResult(GridCacheReturn<Object> ret) {
         if (ret.invokeResult())
             implicitRes.mergeEntryProcessResults(ret);
         else
@@ -2692,8 +2692,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         return new GridFinishedFutureEx<>(new GridCacheReturn<V>(), e);
                     }
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<CacheObject>>() {
-                        @Override public GridCacheReturn<CacheObject> applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<Object>>() {
+                        @Override public GridCacheReturn<Object> applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
@@ -2921,7 +2921,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         {
                             txFut.get();
 
-                            return implicitRes;
+                            return (GridCacheReturn)implicitRes;
                         }
                     });
                 }

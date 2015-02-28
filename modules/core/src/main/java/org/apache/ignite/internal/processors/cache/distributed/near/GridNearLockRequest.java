@@ -272,14 +272,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      *
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
-     * @param keyBytes Key bytes.
      * @param dhtVer DHT version.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
         KeyCacheObject key,
-        byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
         GridCacheContext ctx
@@ -287,7 +285,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, keyBytes, retVal, (Collection<GridCacheMvccCandidate>)null, ctx);
+        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx);
     }
 
     /**

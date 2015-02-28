@@ -6168,10 +6168,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     protected abstract static class CacheExpiryPolicy implements IgniteCacheExpiryPolicy {
         /** */
-        private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
+        private Map<KeyCacheObject, GridCacheVersion> entries;
 
         /** */
-        private Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrsMap;
+        private Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrsMap;
 
         /**
          * @param expiryPlc Expiry policy.
@@ -6232,32 +6232,28 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /**
          * @param key Entry key.
-         * @param keyBytes Entry key bytes.
          * @param ver Entry version.
          */
         @SuppressWarnings("unchecked")
-        @Override public void ttlUpdated(Object key,
-            byte[] keyBytes,
+        @Override public void ttlUpdated(KeyCacheObject key,
             GridCacheVersion ver,
             @Nullable Collection<UUID> rdrs) {
             if (entries == null)
                 entries = new HashMap<>();
 
-            IgniteBiTuple<byte[], GridCacheVersion> t = new IgniteBiTuple<>(keyBytes, ver);
-
-            entries.put(key, t);
+            entries.put(key, ver);
 
             if (rdrs != null && !rdrs.isEmpty()) {
                 if (rdrsMap == null)
                     rdrsMap = new HashMap<>();
 
                 for (UUID nodeId : rdrs) {
-                    Collection<IgniteBiTuple<byte[], GridCacheVersion>> col = rdrsMap.get(nodeId);
+                    Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>> col = rdrsMap.get(nodeId);
 
                     if (col == null)
                         rdrsMap.put(nodeId, col = new ArrayList<>());
 
-                    col.add(t);
+                    col.add(new T2<>(key, ver));
                 }
             }
         }
@@ -6265,12 +6261,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * @return TTL update request.
          */
-        @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+        @Nullable @Override public Map<KeyCacheObject, GridCacheVersion> entries() {
             return entries;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
+        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> readers() {
             return rdrsMap;
         }
 

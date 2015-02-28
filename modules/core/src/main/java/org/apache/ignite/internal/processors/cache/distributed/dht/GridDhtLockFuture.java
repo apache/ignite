@@ -858,7 +858,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             req.addDhtKey(
                                 e.key(),
-                                e.getOrMarshalKeyBytes(),
                                 invalidateRdr,
                                 cctx);
 

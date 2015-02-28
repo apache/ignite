@@ -2664,7 +2664,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             updateTtl(ttl);
 
             expiryPlc.ttlUpdated(key(),
-                getOrMarshalKeyBytes(),
                 version(),
                 hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
         }

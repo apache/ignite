@@ -180,7 +180,7 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
     /**
      * @param other Other result to merge with.
      */
-    public synchronized void mergeEntryProcessResults(GridCacheReturn<CacheObject> other) {
+    public synchronized void mergeEntryProcessResults(GridCacheReturn<Object> other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;
 

@@ -101,6 +101,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
+
+        if (val == null && ctx.isUnmarshalValues())
+            val = ctx.marshaller().unmarshal(valBytes, ldr);
     }
 
     /** {@inheritDoc} */

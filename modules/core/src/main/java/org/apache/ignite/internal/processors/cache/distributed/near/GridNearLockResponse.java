@@ -153,20 +153,16 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
     /**
      * @param val Value.
-     * @param valBytes Value bytes (possibly {@code null}).
      * @param filterPassed Boolean flag indicating whether filter passed for fast-commit transaction.
      * @param dhtVer DHT version.
      * @param mappedVer Mapped version.
-     * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addValueBytes(
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         boolean filterPassed,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheVersion mappedVer,
-        GridCacheContext ctx
+        @Nullable GridCacheVersion mappedVer
     ) throws IgniteCheckedException {
         int idx = valuesSize();
 
@@ -177,7 +173,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
             filterRes[idx] = filterPassed;
 
         // Delegate to super.
-        addValueBytes(val, valBytes, ctx);
+        addValue(val);
     }
 
     /** {@inheritDoc} */

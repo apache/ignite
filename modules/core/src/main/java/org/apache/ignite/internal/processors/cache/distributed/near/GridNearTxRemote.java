@@ -321,9 +321,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /**
      * @param key Key to add to read set.
-     * @param keyBytes Key bytes.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param drVer Data center replication version.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
@@ -331,10 +329,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     public boolean addEntry(
         GridCacheContext cacheCtx,
         IgniteTxKey key,
-        byte[] keyBytes,
         GridCacheOperation op,
         CacheObject val,
-        byte[] valBytes,
         @Nullable GridCacheVersion drVer
     ) throws IgniteCheckedException {
         checkInternal(key);

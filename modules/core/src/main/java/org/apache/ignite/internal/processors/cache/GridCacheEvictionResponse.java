@@ -39,13 +39,8 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
 
     /** Rejected keys. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(KeyCacheObject.class)
     private Collection<KeyCacheObject> rejectedKeys = new HashSet<>();
-
-    /** Serialized rejected keys. */
-    @GridToStringExclude
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> rejectedKeyBytes;
 
     /** Flag to indicate whether request processing has finished with error. */
     private boolean err;
@@ -81,14 +76,14 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        rejectedKeyBytes = marshalCollection(rejectedKeys, ctx);
+        prepareMarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        rejectedKeys = unmarshalCollection(rejectedKeyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /**
@@ -156,7 +151,7 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("rejectedKeys", rejectedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -194,7 +189,7 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", MessageCollectionItemType.BYTE_ARR);
+                rejectedKeys = reader.readCollection("rejectedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

@@ -67,11 +67,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     private int txSize;
 
     /** Group lock key. */
-    @GridDirectTransient
     private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    private byte[] grpLockKeyBytes;
 
     /** System flag. */
     private boolean sys;
@@ -229,20 +225,16 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (grpLockKey != null && grpLockKeyBytes == null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(grpLockKey, ctx);
-
-            grpLockKeyBytes = CU.marshal(ctx, grpLockKey);
-        }
+        if (grpLockKey != null)
+            grpLockKey.prepareMarshal(ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
+        if (grpLockKey == null)
+            grpLockKey.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -285,7 +277,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
+                if (!writer.writeMessage("grpLockKey", grpLockKey))
                     return false;
 
                 writer.incrementState();
@@ -375,7 +367,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 12:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+                grpLockKey = reader.readMessage("grpLockKey");
 
                 if (!reader.isLastRead())
                     return false;

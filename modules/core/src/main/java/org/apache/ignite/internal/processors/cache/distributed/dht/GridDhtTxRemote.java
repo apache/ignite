@@ -279,18 +279,14 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param cacheCtx Cache context.
      * @param op Write operation.
      * @param key Key to add to write set.
-     * @param keyBytes Key bytes.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
         IgniteTxKey key,
-        byte[] keyBytes,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl) {
         checkInternal(key);
@@ -309,9 +305,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null);
 
-// TODO IGNITE-51.
-//        txEntry.keyBytes(keyBytes);
-//        txEntry.valueBytes(valBytes);
         txEntry.entryProcessors(entryProcessors);
 
         writeMap.put(key, txEntry);

@@ -30,6 +30,13 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
         super(val, null);
     }
 
+    /**
+     *
+     */
+    public UserKeyCacheObjectImpl() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
         if (needCopy(ctx)) {

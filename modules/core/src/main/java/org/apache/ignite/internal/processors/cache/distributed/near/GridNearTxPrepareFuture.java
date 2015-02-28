@@ -935,7 +935,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     assert F.isEmpty(res.invalidPartitions());
 
-                    for (Map.Entry<IgniteTxKey, GridTuple3<GridCacheVersion, CacheObject, byte[]>> entry : res.ownedValues().entrySet()) {
+                    for (Map.Entry<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> entry : res.ownedValues().entrySet()) {
                         IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
                         assert txEntry != null;
@@ -947,17 +947,17 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 if (cacheCtx.isNear()) {
                                     GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                                    GridTuple3<GridCacheVersion, CacheObject, byte[]> tup = entry.getValue();
+                                    IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
 
-                                    nearEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion(),
+                                    nearEntry.resetFromPrimary(tup.get2(), null, tx.xidVersion(),
                                         tup.get1(), m.node().id());
                                 }
                                 else if (txEntry.cached().detached()) {
                                     GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                                    GridTuple3<GridCacheVersion, CacheObject, byte[]> tup = entry.getValue();
+                                    IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
 
-                                    detachedEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion());
+                                    detachedEntry.resetFromPrimary(tup.get2(), null, tx.xidVersion());
                                 }
 
                                 break;

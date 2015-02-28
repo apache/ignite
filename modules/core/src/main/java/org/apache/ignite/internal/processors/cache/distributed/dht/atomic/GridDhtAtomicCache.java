@@ -1305,7 +1305,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             entry.updateTtl(null, ttl);
 
                             expiry.ttlUpdated(entry.key(),
-                                entry.getOrMarshalKeyBytes(),
                                 entry.version(),
                                 entry.readers());
                         }

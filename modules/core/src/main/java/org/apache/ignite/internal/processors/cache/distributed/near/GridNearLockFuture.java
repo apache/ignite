@@ -883,7 +883,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     req.addKeyBytes(
                                         key,
-                                        node.isLocal() ? null : entry.getOrMarshalKeyBytes(),
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
                                         cctx);
@@ -1012,7 +1011,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         boolean hasBytes = entry.hasValue();
                                         CacheObject oldVal = entry.rawGet();
                                         CacheObject newVal = res.value(i);
-                                        byte[] newBytes = res.valueBytes(i);
 
                                         GridCacheVersion dhtVer = res.dhtVersion(i);
                                         GridCacheVersion mappedVer = res.mappedVersion(i);
@@ -1022,11 +1020,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                         if (newVal == null) {
                                             if (oldValTup != null) {
-                                                if (oldValTup.get1().equals(dhtVer)) {
+                                                if (oldValTup.get1().equals(dhtVer))
                                                     newVal = oldValTup.get2();
-
-                                                    newBytes = oldValTup.get3();
-                                                }
 
                                                 oldVal = oldValTup.get2();
                                             }
@@ -1034,7 +1029,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                         // Lock is held at this point, so we can set the
                                         // returned value if any.
-                                        entry.resetFromPrimary(newVal, newBytes, lockVer, dhtVer, node.id());
+                                        entry.resetFromPrimary(newVal, null, lockVer, dhtVer, node.id());
 
                                         entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
                                             res.rolledbackVersions(), res.pending());
@@ -1368,7 +1363,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             CacheObject oldVal = entry.rawGet();
                             boolean hasOldVal = false;
                             CacheObject newVal = res.value(i);
-                            byte[] newBytes = res.valueBytes(i);
 
                             boolean readRecordable = false;
 
@@ -1384,11 +1378,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             if (newVal == null) {
                                 if (oldValTup != null) {
-                                    if (oldValTup.get1().equals(dhtVer)) {
+                                    if (oldValTup.get1().equals(dhtVer))
                                         newVal = oldValTup.get2();
-
-                                        newBytes = oldValTup.get3();
-                                    }
 
                                     oldVal = oldValTup.get2();
                                 }
@@ -1396,7 +1387,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             // Lock is held at this point, so we can set the
                             // returned value if any.
-                            entry.resetFromPrimary(newVal, newBytes, lockVer, dhtVer, node.id());
+                            entry.resetFromPrimary(newVal, null, lockVer, dhtVer, node.id());
 
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);
@@ -1416,7 +1407,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         null,
                                         EVT_CACHE_OBJECT_READ,
                                         newVal,
-                                        newVal != null || newBytes != null,
+                                        newVal != null,
                                         oldVal,
                                         hasOldVal,
                                         CU.subjectId(tx, cctx.shared()),

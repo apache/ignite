@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -30,14 +28,6 @@ import java.nio.*;
  *
  */
 public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
-    /** */
-    @GridToStringInclude
-    @GridDirectTransient
-    protected Object val;
-
-    /** */
-    protected byte[] valBytes;
-
     /**
      *
      */

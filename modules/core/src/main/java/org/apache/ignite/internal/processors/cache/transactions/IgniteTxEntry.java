@@ -730,6 +730,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
+        key.prepareMarshal(context());
+
         val.marshal(ctx, context(), depEnabled);
     }
 
@@ -742,36 +744,33 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
      * @throws IgniteCheckedException If un-marshalling failed.
      */
     public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (this.ctx == null) {
-//            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
-//
-//            if (cacheCtx.isNear() && !near)
-//                cacheCtx = cacheCtx.near().dht().context();
-//            else if (!cacheCtx.isNear() && near)
-//                cacheCtx = cacheCtx.dht().near().context();
-//
-//            this.ctx = cacheCtx;
-//        }
-//
-//        if (depEnabled) {
-//            // Don't unmarshal more than once by checking key for null.
-//            if (key == null)
-//                key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
-//
-//            // Unmarshal transform closure anyway if it exists.
-//            if (transformClosBytes != null && entryProcessorsCol == null)
-//                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
-//
-//            if (filters == null && filterBytes != null) {
-//                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
-//
-//                if (filters == null)
-//                    filters = CU.empty();
-//            }
-//        }
-//
-//        val.unmarshal(this.ctx, clsLdr, depEnabled);
+        if (this.ctx == null) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
+
+            if (cacheCtx.isNear() && !near)
+                cacheCtx = cacheCtx.near().dht().context();
+            else if (!cacheCtx.isNear() && near)
+                cacheCtx = cacheCtx.dht().near().context();
+
+            this.ctx = cacheCtx;
+        }
+
+        if (depEnabled) {
+            // Unmarshal transform closure anyway if it exists.
+            if (transformClosBytes != null && entryProcessorsCol == null)
+                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+
+            if (filters == null && filterBytes != null) {
+                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
+
+                if (filters == null)
+                    filters = CU.empty();
+            }
+        }
+
+        key.finishUnmarshal(context(), clsLdr);
+
+        val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
 
     /**
@@ -790,71 +789,69 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-// TODO IGNITE-51.
-//        out.writeBoolean(depEnabled);
-//
-//        if (depEnabled) {
-//            U.writeByteArray(out, keyBytes);
-//            U.writeByteArray(out, transformClosBytes);
-//            U.writeByteArray(out, filterBytes);
-//        }
-//        else {
-//            out.writeObject(key);
-//            U.writeCollection(out, entryProcessorsCol);
-//            U.writeArray(out, filters);
-//        }
-//
-//        out.writeInt(cacheId);
-//
-//        val.writeTo(out);
-//
-//        out.writeLong(ttl);
-//
-//        CU.writeVersion(out, explicitVer);
-//        out.writeBoolean(grpLock);
-//
-//        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
-//            out.writeBoolean(true);
-//            out.writeLong(conflictExpireTime);
-//        }
-//        else
-//            out.writeBoolean(false);
-//
-//        CU.writeVersion(out, conflictVer);
-//
-//        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
+        out.writeBoolean(depEnabled);
+
+        if (depEnabled) {
+            U.writeByteArray(out, transformClosBytes);
+            U.writeByteArray(out, filterBytes);
+        }
+        else {
+            U.writeCollection(out, entryProcessorsCol);
+            U.writeArray(out, filters);
+        }
+
+        out.writeObject(key);
+
+        out.writeInt(cacheId);
+
+        val.writeTo(out);
+
+        out.writeLong(ttl);
+
+        CU.writeVersion(out, explicitVer);
+        out.writeBoolean(grpLock);
+
+        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
+            out.writeBoolean(true);
+            out.writeLong(conflictExpireTime);
+        }
+        else
+            out.writeBoolean(false);
+
+        CU.writeVersion(out, conflictVer);
+
+        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-// TODO IGNITE-51.
-//        depEnabled = in.readBoolean();
-//
-//        if (depEnabled) {
-//            keyBytes = U.readByteArray(in);
-//            transformClosBytes = U.readByteArray(in);
-//            filterBytes = U.readByteArray(in);
-//        }
-//        else {
-//            key = (K)in.readObject();
-//            entryProcessorsCol = U.readCollection(in);
-//            filters = GridCacheUtils.readEntryFilterArray(in);
-//        }
-//
-//        cacheId = in.readInt();
-//
-//        val.readFrom(in);
-//
-//        ttl = in.readLong();
-//
-//        explicitVer = CU.readVersion(in);
-//        grpLock = in.readBoolean();
-//
-//        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
-//        conflictVer = CU.readVersion(in);
-//
-//        expiryPlc = (ExpiryPolicy)in.readObject();
+        depEnabled = in.readBoolean();
+
+        if (depEnabled) {
+            transformClosBytes = U.readByteArray(in);
+            filterBytes = U.readByteArray(in);
+        }
+        else {
+            entryProcessorsCol = U.readCollection(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
+        }
+
+        key = (KeyCacheObject)in.readObject();
+
+        cacheId = in.readInt();
+
+        val.readFrom(in);
+
+        ttl = in.readLong();
+
+        explicitVer = CU.readVersion(in);
+        grpLock = in.readBoolean();
+
+        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
+        conflictVer = CU.readVersion(in);
+
+        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -900,9 +897,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
         /** Flag indicating that value has been set for read. */
         private boolean hasReadVal;
-
-        /** Flag indicating that bytes were sent. */
-        private boolean valBytesSent;
 
         /**
          * @param op Cache operation.
@@ -984,6 +978,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
          */
         public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx, boolean depEnabled)
             throws IgniteCheckedException {
+            if (hasWriteVal && val != null)
+                val.prepareMarshal(ctx);
 // TODO IGNITE-51.
 //            boolean valIsByteArr = val != null && val instanceof byte[];
 //
@@ -1002,6 +998,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
          * @throws IgniteCheckedException If unmarshalling failed.
          */
         public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
+            if (val != null)
+                val.finishUnmarshal(ctx, ldr);
 // TODO IGNITE-51.
 //            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
 //                val = ctx.marshaller().unmarshal(valBytes, ldr);
@@ -1012,6 +1010,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
          * @throws IOException If failed.
          */
         public void writeTo(ObjectOutput out) throws IOException {
+            out.writeBoolean(hasWriteVal);
+
+            if (hasWriteVal)
+                out.writeObject(val);
+
 // TODO IGNITE-51.
 //            out.writeBoolean(hasWriteVal);
 //            out.writeBoolean(valBytesSent);
@@ -1043,6 +1046,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
          */
         @SuppressWarnings("unchecked")
         public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
+            hasWriteVal = in.readBoolean();
+
+            val = (CacheObject)in.readObject();
 // TODO IGNITE-51.
 //            hasWriteVal = in.readBoolean();
 //            valBytesSent = in.readBoolean();

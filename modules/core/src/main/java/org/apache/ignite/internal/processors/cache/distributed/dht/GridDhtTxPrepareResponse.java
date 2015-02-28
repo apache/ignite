@@ -41,12 +41,8 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> nearEvicted;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearEvictedBytes;
 
     /** Future ID.  */
     private IgniteUuid futId;
@@ -59,13 +55,9 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @GridDirectCollection(int.class)
     private Collection<Integer> invalidParts;
 
-    @GridDirectTransient
     /** Preload entries. */
+    @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> preloadEntries;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> preloadEntriesBytes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -117,13 +109,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      */
     public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
-    }
-
-    /**
-     * @param nearEvictedBytes Near evicted bytes.
-     */
-    public void nearEvictedBytes(Collection<byte[]> nearEvictedBytes) {
-        this.nearEvictedBytes = nearEvictedBytes;
     }
 
     /**
@@ -182,23 +167,34 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (nearEvictedBytes == null)
-            nearEvictedBytes = marshalCollection(nearEvicted, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (preloadEntriesBytes == null && preloadEntries != null)
-            preloadEntriesBytes = marshalCollection(preloadEntries, ctx);
+        if (nearEvicted != null) {
+            for (IgniteTxKey key : nearEvicted)
+                key.prepareMarshal(cctx);
+        }
+
+        if (preloadEntries != null) {
+            for (GridCacheEntryInfo info : preloadEntries)
+                info.marshal(cctx);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        // Unmarshal even if deployment is disabled, since we could get bytes initially.
-        if (nearEvicted == null && nearEvictedBytes != null)
-            nearEvicted = unmarshalCollection(nearEvictedBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (preloadEntries == null && preloadEntriesBytes != null)
-            preloadEntries = unmarshalCollection(preloadEntriesBytes, ctx, ldr);
+        if (nearEvicted != null) {
+            for (IgniteTxKey key : nearEvicted)
+                key.finishUnmarshal(cctx, ldr);
+        }
+
+        if (preloadEntries != null) {
+            for (GridCacheEntryInfo info : preloadEntries)
+                info.unmarshal(cctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -240,13 +236,13 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -292,7 +288,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 reader.incrementState();
 
             case 13:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", MessageCollectionItemType.BYTE_ARR);
+                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +296,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 reader.incrementState();
 
             case 14:
-                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", MessageCollectionItemType.BYTE_ARR);
+                preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

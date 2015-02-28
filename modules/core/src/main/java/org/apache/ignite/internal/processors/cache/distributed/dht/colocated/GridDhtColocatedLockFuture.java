@@ -807,7 +807,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                                 req.addKeyBytes(
                                     key,
-                                    node.isLocal() ? null : entry.getOrMarshalKeyBytes(),
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
                                     cctx);
@@ -1216,17 +1215,13 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     GridTuple3<GridCacheVersion, CacheObject, byte[]> oldValTup = valMap.get(k);
 
                     CacheObject newVal = res.value(i);
-                    byte[] newBytes = res.valueBytes(i);
 
                     GridCacheVersion dhtVer = res.dhtVersion(i);
 
                     if (newVal == null) {
                         if (oldValTup != null) {
-                            if (oldValTup.get1().equals(dhtVer)) {
+                            if (oldValTup.get1().equals(dhtVer))
                                 newVal = oldValTup.get2();
-
-                                newBytes = oldValTup.get3();
-                            }
                         }
                     }
 
@@ -1249,7 +1244,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             }
 
                             // Set value to detached entry.
-                            entry.resetFromPrimary(newVal, newBytes, dhtVer);
+                            entry.resetFromPrimary(newVal, null, dhtVer);
 
                             if (log.isDebugEnabled())
                                 log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
@@ -1270,7 +1265,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             null,
                             EVT_CACHE_OBJECT_READ,
                             newVal,
-                            newVal != null || newBytes != null,
+                            newVal != null,
                             null,
                             false,
                             CU.subjectId(tx, cctx.shared()),

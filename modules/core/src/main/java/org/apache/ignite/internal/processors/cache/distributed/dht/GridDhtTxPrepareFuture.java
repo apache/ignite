@@ -113,7 +113,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private boolean retVal;
 
     /** Return value. */
-    private GridCacheReturn<CacheObject> ret;
+    private GridCacheReturn<Object> ret;
 
     /** Keys that did not pass the filter. */
     private Collection<IgniteTxKey> filterFailedKeys;
@@ -625,23 +625,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                         GridCacheVersion dhtVer = entry.version();
 
-                        CacheObject val0 = null;
-                        byte[] valBytes0 = null;
+                        CacheObject val0 = entry.rawGet();
 
-                        GridCacheValueBytes valBytesTuple = entry.valueBytes();
-
-                        if (!valBytesTuple.isNull()) {
-// TODO IGNITE-51
-//                            if (valBytesTuple.isPlain())
-//                                val0 = (V) valBytesTuple.get();
-//                            else
-//                                valBytes0 = valBytesTuple.get();
-                        }
-                        else
-                            val0 = entry.rawGet();
-
-                        if (val0 != null || valBytes0 != null)
-                            res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
+                        if (val0 != null)
+                            res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
 
                         break;
                     }
@@ -668,22 +655,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     GridCacheVersion dhtVer = entry.version();
 
                     if (ver.getValue() == null || !ver.getValue().equals(dhtVer)) {
-                        CacheObject val0 = null;
-                        byte[] valBytes0 = null;
+                        CacheObject val0 = entry.rawGet();
 
-                        GridCacheValueBytes valBytesTuple = entry.valueBytes();
-
-                        if (!valBytesTuple.isNull()) {
-// TODO IGNITE-51.
-//                            if (valBytesTuple.isPlain())
-//                                val0 = (V)valBytesTuple.get();
-//                            else
-//                                valBytes0 = valBytesTuple.get();
-                        }
-                        else
-                            val0 = entry.rawGet();
-
-                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
+                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
                     }
 
                     break;

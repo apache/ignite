@@ -677,7 +677,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             ctx.closures().runLocalSafe(new Runnable() {
                 @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
                 @Override public void run() {
-                    Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries = expiryPlc.entries();
+                    Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
 
                     assert entries != null && !entries.isEmpty();
 
@@ -685,7 +685,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     long topVer = ctx.discovery().topologyVersion();
 
-                    for (Map.Entry<Object, IgniteBiTuple<byte[], GridCacheVersion>> e : entries.entrySet()) {
+                    for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
                         List<ClusterNode> nodes = ctx.affinity().nodes((K)e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
@@ -701,17 +701,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     req.cacheId(ctx.cacheId());
                                 }
 
-                                req.addEntry(e.getValue().get1(), e.getValue().get2());
+                                req.addEntry(e.getKey(), e.getValue());
                             }
                         }
                     }
 
-                    Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrs = expiryPlc.readers();
+                    Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrs = expiryPlc.readers();
 
                     if (rdrs != null) {
                         assert !rdrs.isEmpty();
 
-                        for (Map.Entry<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> e : rdrs.entrySet()) {
+                        for (Map.Entry<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> e : rdrs.entrySet()) {
                             ClusterNode node = ctx.node(e.getKey());
 
                             if (node != null) {
@@ -724,7 +724,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     req.cacheId(ctx.cacheId());
                                 }
 
-                                for (IgniteBiTuple<byte[], GridCacheVersion> t : e.getValue())
+                                for (IgniteBiTuple<KeyCacheObject, GridCacheVersion> t : e.getValue())
                                     req.addNearEntry(t.get1(), t.get2());
                             }
                         }

@@ -472,9 +472,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 req.version(ver);
                             }
 
-                            byte[] keyBytes = entry != null ? entry.getOrMarshalKeyBytes() : CU.marshal(ctx.shared(), key);
+                            KeyCacheObject key0 = entry != null ? entry.key() : cacheKey;
 
-                            req.addKey(cacheKey, keyBytes, ctx);
+                            req.addKey(key0, ctx);
                         }
                         else
                             locKeys.add(cacheKey);
@@ -501,7 +501,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 assert !n.isLocal();
 
-                if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys()))
+                if (!F.isEmpty(req.keys()))
                     // We don't wait for reply to this message.
                     ctx.io().send(n, req, ctx.ioPolicy());
             }
@@ -561,9 +561,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         GridCacheEntryEx entry = peekEx(cacheKey);
 
-                        byte[] keyBytes = entry != null ? entry.getOrMarshalKeyBytes() : CU.marshal(ctx.shared(), key);
+                        KeyCacheObject key0 = entry != null ? entry.key() : cacheKey;
 
-                        req.addKey(cacheKey, keyBytes, ctx);
+                        req.addKey(key0, ctx);
                     }
                     else
                         locKeys.add(cacheKey);
@@ -584,7 +584,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedUnlockRequest req = mapping.getValue();
 
-                if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys())) {
+                if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);
 
                     // We don't wait for reply to this message.

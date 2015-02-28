@@ -37,12 +37,8 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
 
     /** Entries keys. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
-
-    /** Keys bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keysBytes;
 
     /** Entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
@@ -50,12 +46,8 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
 
     /** Near entries keys. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
-
-    /** Near entries bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearKeysBytes;
 
     /** Near entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
@@ -100,33 +92,33 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     }
 
     /**
-     * @param keyBytes Key bytes.
+     * @param key Key.
      * @param ver Version.
      */
-    public void addEntry(byte[] keyBytes, GridCacheVersion ver) {
-        if (keysBytes == null) {
-            keysBytes = new ArrayList<>();
+    public void addEntry(KeyCacheObject key, GridCacheVersion ver) {
+        if (keys == null) {
+            keys = new ArrayList<>();
 
             vers = new ArrayList<>();
         }
 
-        keysBytes.add(keyBytes);
+        keys.add(key);
 
         vers.add(ver);
     }
 
     /**
-     * @param keyBytes Key bytes.
+     * @param key Key.
      * @param ver Version.
      */
-    public void addNearEntry(byte[] keyBytes, GridCacheVersion ver) {
-        if (nearKeysBytes == null) {
-            nearKeysBytes = new ArrayList<>();
+    public void addNearEntry(KeyCacheObject key, GridCacheVersion ver) {
+        if (nearKeys == null) {
+            nearKeys = new ArrayList<>();
 
             nearVers = new ArrayList<>();
         }
 
-        nearKeysBytes.add(keyBytes);
+        nearKeys.add(key);
 
         nearVers.add(ver);
     }
@@ -170,15 +162,26 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
+
+        prepareMarshalCacheObjects(nearKeys, cctx);
+    }
+
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null && keysBytes != null)
-            keys = unmarshalCollection(keysBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (nearKeys == null && nearKeysBytes != null)
-            nearKeys = unmarshalCollection(nearKeysBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -197,13 +200,13 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("keysBytes", keysBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -249,7 +252,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                keysBytes = reader.readCollection("keysBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +260,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                nearKeysBytes = reader.readCollection("nearKeysBytes", MessageCollectionItemType.BYTE_ARR);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

@@ -33,6 +33,13 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
         super(val, null);
     }
 
+    /**
+     *
+     */
+    public UserCacheObjectImpl() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
         if (needCopy(ctx)) {

@@ -43,15 +43,10 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Near keys. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private List<KeyCacheObject> nearKeys;
-
     /** Near keys to lock. */
-    @GridToStringExclude
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearKeyBytes;
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> nearKeys;
 
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
@@ -153,7 +148,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         this.topVer = topVer;
 
-        nearKeyBytes = nearCnt == 0 ? Collections.<byte[]>emptyList() : new ArrayList<byte[]>(nearCnt);
         nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
 
@@ -199,29 +193,19 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Near keys.
-     */
-    public List<byte[]> nearKeyBytes() {
-        return nearKeyBytes == null ? Collections.<byte[]>emptyList() : nearKeyBytes;
-    }
-
-    /**
      * Adds a Near key.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(KeyCacheObject key, byte[] keyBytes, GridCacheSharedContext ctx)
+    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
-        if (ctx.deploymentEnabled())
-            prepareObject(key, ctx);
+// TODO IGNITE-51.
+//        if (ctx.deploymentEnabled())
+//            prepareObject(key, ctx);
 
         nearKeys.add(key);
-
-        if (keyBytes != null)
-            nearKeyBytes.add(keyBytes);
     }
 
     /**
@@ -235,20 +219,18 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * Adds a DHT key.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addDhtKey(
         KeyCacheObject key,
-        byte[] keyBytes,
         boolean invalidateEntry,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, keyBytes, false, null, ctx);
+        addKeyBytes(key, false, null, ctx);
     }
 
     /**
@@ -320,7 +302,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        assert F.isEmpty(nearKeys) || !F.isEmpty(nearKeyBytes);
+        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
 
         if (owned != null)
             ownedBytes = CU.marshal(ctx, owned);
@@ -330,8 +312,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (nearKeys == null && nearKeyBytes != null)
-            nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
 
         if (ownedBytes != null)
             owned = ctx.marshaller().unmarshal(ownedBytes, ldr);
@@ -371,7 +352,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -447,7 +428,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", MessageCollectionItemType.BYTE_ARR);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -511,7 +492,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtLockRequest.class, this, "nearKeyBytesSize", nearKeyBytes.size(),
-            "super", super.toString());
+        return S.toString(GridDhtLockRequest.class, this, "super", super.toString());
     }
 }

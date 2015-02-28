@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -35,12 +35,9 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Keys to unlock. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keyBytes;
-
     /** Keys. */
-    @GridDirectTransient
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
     /**
@@ -61,13 +58,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Key to lock.
-     */
-    public List<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Keys.
      */
     public List<KeyCacheObject> keys() {
@@ -76,25 +66,20 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /**
      * @param key Key.
-     * @param bytes Key bytes.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addKey(KeyCacheObject key, byte[] bytes, GridCacheContext ctx) throws IgniteCheckedException {
-        boolean depEnabled = ctx.deploymentEnabled();
-
-        if (depEnabled)
-            prepareObject(key, ctx.shared());
+    public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
+// TODO IGNITE-51.
+//        boolean depEnabled = ctx.deploymentEnabled();
+//
+//        if (depEnabled)
+//            prepareObject(key.value(ctx, false), ctx.shared());
 
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
         keys.add(key);
-
-        if (keyBytes == null)
-            keyBytes = new ArrayList<>(keysCount());
-
-        keyBytes.add(bytes);
     }
 
     /** {@inheritDoc}
@@ -102,16 +87,14 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
-            keyBytes = marshalCollection(keys, ctx);
+        prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null && !F.isEmpty(keyBytes))
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +113,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -152,7 +135,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         switch (reader.state()) {
             case 8:
-                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,7 +159,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedUnlockRequest.class, this, "keyBytesSize",
-            keyBytes == null ? 0 : keyBytes.size(), "super", super.toString());
+        return S.toString(GridDistributedUnlockRequest.class, this, "super", super.toString());
     }
 }
