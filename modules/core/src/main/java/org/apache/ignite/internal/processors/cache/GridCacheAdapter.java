@@ -4101,7 +4101,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
 
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
@@ -4271,7 +4271,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (final IgniteDataLoader<KeyCacheObject, CacheObject> ldr =
-                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataLoad().dataLoader(ctx.namex(), false)) {
+                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataLoad().dataLoader(ctx.namex())) {
             ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
@@ -4323,7 +4323,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
 
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());

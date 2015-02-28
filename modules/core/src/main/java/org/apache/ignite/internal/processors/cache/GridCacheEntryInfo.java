@@ -323,9 +323,9 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx);
+        key.prepareMarshal(ctx.cacheObjectContext());
 
-        val.prepareMarshal(ctx);
+        val.prepareMarshal(ctx.cacheObjectContext());
 // TODO IGNITE-51
 //        boolean depEnabled = ctx.gridDeploy().enabled();
 //

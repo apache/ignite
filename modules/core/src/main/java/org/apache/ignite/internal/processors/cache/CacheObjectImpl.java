@@ -93,9 +93,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null && !byteArray())
-            valBytes = CU.marshal(ctx.shared(), val);
+            valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
     }
 
     /** {@inheritDoc} */

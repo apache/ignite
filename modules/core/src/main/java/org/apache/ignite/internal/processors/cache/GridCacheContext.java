@@ -200,6 +200,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Conflict resolver. */
     private GridCacheVersionAbstractConflictResolver conflictRslvr;
 
+    /** */
+    private CacheObjectContext cacheObjCtx;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -288,6 +291,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         noPeekArr = new IgnitePredicate[]{F.cacheNoPeekValue()};
         hasPeekArr = new IgnitePredicate[]{F.cacheHasPeekValue()};
         trueArr = new IgnitePredicate[]{F.alwaysTrue()};
+
+        cacheObjCtx = new CacheObjectContext(ctx);
 
         // Create unsafe memory only if writing values
         unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
@@ -1762,15 +1767,20 @@ public class GridCacheContext<K, V> implements Externalizable {
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return serMgr.unwrapPortableIfNeeded(o, keepPortable);
     }
+
+    /**
+     * @return Cache object context.
+     */
+    public CacheObjectContext cacheObjectContext() {
+        return cacheObjCtx;
+    }
+
     /**
      * @param obj Object.
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
-        if (obj instanceof CacheObject)
-            return (CacheObject)obj;
-
-        return portable().toCacheObject(this, obj);
+        return portable().toCacheObject(cacheObjCtx, obj);
     }
 
     /**
@@ -1778,10 +1788,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        if (obj instanceof KeyCacheObject)
-            return (KeyCacheObject)obj;
-
-        return portable().toCacheKeyObject(this, obj);
+        return portable().toCacheKeyObject(cacheObjCtx, obj);
     }
 
     /**

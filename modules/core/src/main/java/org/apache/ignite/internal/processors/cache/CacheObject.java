@@ -42,7 +42,7 @@ public interface CacheObject extends Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException;
+    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if value is byte array.

@@ -523,6 +523,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 95:
+                msg = new IgniteDataLoaderEntry();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

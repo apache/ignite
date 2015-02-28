@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
+public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject, Comparable<KeyCacheObjectImpl> {
     /**
      *
      */
@@ -44,6 +44,15 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         this.val = val;
         this.valBytes = valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public int compareTo(KeyCacheObjectImpl other) {
+        assert val instanceof Comparable : val;
+        assert other.val instanceof Comparable : val;
+
+        return ((Comparable)val).compareTo(other.val);
     }
 
     /** {@inheritDoc} */
@@ -149,16 +158,18 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = CU.marshal(ctx.shared(), val);
+            valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert valBytes != null;
+        if (val == null) {
+            assert valBytes != null;
 
-        val = ctx.marshaller().unmarshal(valBytes, ldr);
+            val = ctx.marshaller().unmarshal(valBytes, ldr);
+        }
     }
 
     /** {@inheritDoc} */

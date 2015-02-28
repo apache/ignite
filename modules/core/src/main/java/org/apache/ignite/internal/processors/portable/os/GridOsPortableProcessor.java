@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -125,12 +125,28 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable public KeyCacheObject toCacheKeyObject(GridCacheContext ctx, Object obj) {
+    @Override public CacheObjectContext dataLoadContext(@Nullable String cacheName) {
+        ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
+
+        if (node == null)
+            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
+
+        return new CacheObjectContext(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj) {
+        if (obj instanceof KeyCacheObject)
+            return (KeyCacheObject)obj;
+
         return new UserKeyCacheObjectImpl(obj);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(GridCacheContext ctx, @Nullable Object obj) {
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj) {
+        if (obj == null || obj instanceof CacheObject)
+            return (CacheObject)obj;
+
         return new UserCacheObjectImpl(obj);
     }
 }

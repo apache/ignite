@@ -396,7 +396,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         prepareMarshalCacheObjects(nearVals, cctx);
 
         if (retVal != null)
-            retVal.prepareMarshal(cctx);
+            retVal.prepareMarshal(cctx.cacheObjectContext());
 
         if (invokeRes != null) {
             for (CacheInvokeDirectResult res : invokeRes)

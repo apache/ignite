@@ -149,16 +149,22 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean hasField(Object obj, String fieldName);
 
     /**
+     * @param cacheName Cache name.
+     * @return Cache object context.
+     */
+    public CacheObjectContext dataLoadContext(@Nullable String cacheName);
+
+    /**
      * @param obj Object.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(GridCacheContext ctx, @Nullable Object obj);
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj);
 
     /**
      * @param obj Key value.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(GridCacheContext ctx, Object obj);
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj);
 
     /**
      * @param obj Value.

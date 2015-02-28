@@ -235,7 +235,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 CacheObject val = tup.get2();
 
                 if (val != null)
-                    val.prepareMarshal(cctx);
+                    val.prepareMarshal(cctx.cacheObjectContext());
 
                 ownedValsBytes.add(ctx.marshaller().marshal(F.t(entry.getKey(), tup.get1(), val)));
             }

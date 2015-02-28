@@ -15,108 +15,81 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.dataload;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 
 import java.nio.*;
-import javax.cache.processor.*;
+import java.util.*;
 
 /**
  *
  */
-public class CacheInvokeDirectResult implements Message {
+public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
+    @GridToStringInclude
     private KeyCacheObject key;
 
     /** */
     @GridToStringInclude
-    private CacheObject res;
-
-    /** */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Exception err;
-
-    /** */
-    private byte[] errBytes;
+    private CacheObject val;
 
     /**
-     * Required for {@link Message}.
+     *
      */
-    public CacheInvokeDirectResult() {
+    public IgniteDataLoaderEntry() {
         // No-op.
     }
 
     /**
      * @param key Key.
-     * @param res Result.
+     * @param val Value.
      */
-    public CacheInvokeDirectResult(KeyCacheObject key, CacheObject res) {
+    public IgniteDataLoaderEntry(KeyCacheObject key, CacheObject val) {
         this.key = key;
-        this.res = res;
+        this.val = val;
     }
 
-    /**
-     * @param key Key.
-     * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.
-     */
-    public CacheInvokeDirectResult(KeyCacheObject key, Exception err) {
-        this.key = key;
-        this.err = err;
-    }
-
-    /**
-     * @return Key.
-     */
-    public KeyCacheObject key() {
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject getKey() {
         return key;
     }
 
+    /** {@inheritDoc} */
+    @Override public CacheObject getValue() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject setValue(CacheObject val) {
+        CacheObject old = this.val;
+
+        this.val = val;
+
+        return old;
+    }
+
     /**
-     * @return Result.
+     * @param ctx Cache context.
+     * @return Map entry unwrapping internal key and value.
      */
-    public CacheObject result() {
-        return res;
-    }
+    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
+        return new Map.Entry<K, V>() {
+            @Override public K getKey() {
+                return key.value(ctx, false);
+            }
 
-    /**
-     * @return Error.
-     */
-    @Nullable public Exception error() {
-        return err;
-    }
+            @Override public V setValue(V val) {
+                throw new UnsupportedOperationException();
+            }
 
-    /** {@inheritDoc} */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-
-        if (err != null)
-            errBytes = ctx.marshaller().marshal(err);
-
-        if (res != null)
-            res.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /** {@inheritDoc} */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
-
-        if (res != null)
-            res.finishUnmarshal(ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 93;
+            @Override public V getValue() {
+                return val != null ? val.<V>value(ctx, false) : null;
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -132,19 +105,13 @@ public class CacheInvokeDirectResult implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
-                if (!writer.writeMessage("res", res))
+            case 1:
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
@@ -163,14 +130,6 @@ public class CacheInvokeDirectResult implements Message {
 
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -178,8 +137,8 @@ public class CacheInvokeDirectResult implements Message {
 
                 reader.incrementState();
 
-            case 2:
-                res = reader.readMessage("res");
+            case 1:
+                val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,12 +151,17 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 95;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheInvokeDirectResult.class, this);
+        return S.toString(IgniteDataLoaderEntry.class, this);
     }
 }

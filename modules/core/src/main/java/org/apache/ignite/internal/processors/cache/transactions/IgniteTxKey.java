@@ -76,7 +76,7 @@ public class IgniteTxKey implements Externalizable, Message {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx);
+        key.prepareMarshal(ctx.cacheObjectContext());
     }
 
     /**

@@ -170,7 +170,21 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     public void init() {
         long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
+        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
+            @Override public KeyCacheObject apply(K key) {
+                if (key == null) {
+                    NullPointerException err = new NullPointerException("Null key.");
+
+                    onDone(err);
+
+                    throw err;
+                }
+
+                return cctx.toCacheKeyObject(key);
+            }
+        });
+
+        map(keys0, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }
@@ -276,8 +290,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(Collection<? extends K> keys,
-        Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped,
+    private void map(Collection<KeyCacheObject> keys,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         final long topVer) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
@@ -290,35 +304,26 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(affNodes.size());
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(affNodes.size());
 
-        Map<K, GridCacheVersion> savedVers = null;
+        Map<KeyCacheObject, GridCacheVersion> savedVers = null;
 
         // Assign keys to primary nodes.
-        for (K key : keys) {
-            if (key == null) {
-                NullPointerException err = new NullPointerException("Null key.");
-
-                onDone(err);
-
-                throw err;
-            }
-
+        for (KeyCacheObject key : keys)
             savedVers = map(key, mappings, topVer, mapped, savedVers);
-        }
 
         if (isDone())
             return;
 
-        final Map<K, GridCacheVersion> saved = savedVers;
+        final Map<KeyCacheObject, GridCacheVersion> saved = savedVers;
 
         final int keysSize = keys.size();
 
         // Create mini futures.
-        for (Map.Entry<ClusterNode, LinkedHashMap<K, Boolean>> entry : mappings.entrySet()) {
+        for (Map.Entry<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> entry : mappings.entrySet()) {
             final ClusterNode n = entry.getKey();
 
-            final LinkedHashMap<K, Boolean> mappedKeys = entry.getValue();
+            final LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
 
             assert !mappedKeys.isEmpty();
 
@@ -327,9 +332,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     dht().getDhtAsync(n.id(),
                         -1,
-                        // TODO IGNITE-51.
-                        // mappedKeys,
-                        null,
+                        mappedKeys,
                         readThrough,
                         reload,
                         topVer,
@@ -341,9 +344,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<K> remapKeys = new ArrayList<>(keysSize);
+                    Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
 
-                    for (K key : keys) {
+                    for (KeyCacheObject key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
                             remapKeys.add(key);
                     }
@@ -388,9 +391,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     futId,
                     fut.futureId(),
                     ver,
-                    // TODO IGNITE-51.
-                    // mappedKeys,
-                    null,
+                    mappedKeys,
                     readThrough,
                     reload,
                     topVer,
@@ -423,17 +424,17 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param savedVers Saved versions.
      * @return Map.
      */
-    private Map<K, GridCacheVersion> map(K key, Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings,
-        long topVer, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, Map<K, GridCacheVersion> savedVers) {
-        final GridNearCacheAdapter<K, V> near = cache();
+    private Map<KeyCacheObject, GridCacheVersion> map(KeyCacheObject key,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
+        long topVer,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
+        Map<KeyCacheObject, GridCacheVersion> savedVers) {
+        final GridNearCacheAdapter near = cache();
 
         // Allow to get cached value from the local node.
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
 
-        // TODO IGNITE-51.
-        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
-
-        GridCacheEntryEx entry = allowLocRead ? near.peekEx(cacheKey) : null;
+        GridCacheEntryEx entry = allowLocRead ? near.peekEx(key) : null;
 
         while (true) {
             try {
@@ -462,7 +463,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     GridDhtCacheAdapter<K, V> dht = cache().dht();
 
                     try {
-                        entry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(cacheKey) : dht.peekEx(cacheKey);
+                        entry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
 
                         // If near cache does not have value, then we peek DHT cache.
                         if (entry != null) {
@@ -483,7 +484,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
-                                dht.removeIfObsolete(cacheKey);
+                                dht.removeIfObsolete(key);
                         }
 
                         if (v != null) {
@@ -510,21 +511,21 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
 
                 if (v != null && !reload) {
-                    K key0 = key;
+                    K key0 = key.value(cctx, false);
+                    V val0 = v.value(cctx, true);
 
-// TODO IGNITE-51.
-//                    if (cctx.portableEnabled()) {
-//                        v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
-//                        key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-//                    }
-//
-//                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key0, v)));
+                    if (cctx.portableEnabled()) {
+                        val0 = (V)cctx.unwrapPortableIfNeeded(val0, !deserializePortable);
+                        key0 = (K)cctx.unwrapPortableIfNeeded(key0, !deserializePortable);
+                    }
+
+                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key0, val0)));
                 }
                 else {
                     if (primary == null)
                         primary = cctx.affinity().primary(key, topVer);
 
-                    GridNearCacheEntry nearEntry = allowLocRead ? near.peekExx(cacheKey) : null;
+                    GridNearCacheEntry nearEntry = allowLocRead ? near.peekExx(key) : null;
 
                     entry = nearEntry;
 
@@ -533,7 +534,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     savedVers.put(key, nearEntry == null ? null : nearEntry.dhtVersion());
 
-                    LinkedHashMap<K, Boolean> keys = mapped.get(primary);
+                    LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(primary);
 
                     if (keys != null && keys.containsKey(key)) {
                         if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
@@ -548,10 +549,10 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     // Don't add reader if transaction acquires lock anyway to avoid deadlock.
                     boolean addRdr = tx == null || tx.optimistic();
 
-                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(cacheKey)))
+                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(key)))
                         addRdr = true;
 
-                    LinkedHashMap<K, Boolean> old = mappings.get(primary);
+                    LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(primary);
 
                     if (old == null)
                         mappings.put(primary, old = new LinkedHashMap<>(3, 1f));
@@ -567,7 +568,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 break;
             }
             catch (GridCacheEntryRemovedException ignored) {
-                entry = allowLocRead ? near.peekEx(cacheKey) : null;
+                entry = allowLocRead ? near.peekEx(key) : null;
             }
             catch (GridCacheFilterFailedException e) {
                 if (log.isDebugEnabled())
@@ -607,9 +608,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @return Result map.
      */
     private Map<K, V> loadEntries(UUID nodeId,
-        Collection<K> keys,
+        Collection<KeyCacheObject> keys,
         Collection<GridCacheEntryInfo> infos,
-        Map<K, GridCacheVersion> savedVers,
+        Map<KeyCacheObject, GridCacheVersion> savedVers,
         long topVer) {
         boolean empty = F.isEmpty(keys);
 
@@ -650,13 +651,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     CacheObject val = info.value();
                     KeyCacheObject key = info.key();
 
-// TODO IGNITE-51.
-//                    if (cctx.portableEnabled()) {
-//                        val = (V)cctx.unwrapPortableIfNeeded(val, !deserializePortable);
-//                        key = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-//                    }
-//
-//                    map.put(key, val);
+                    cctx.addResult(map, key, val, skipVals, false, deserializePortable, false);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -690,10 +685,10 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         /** Keys. */
         @GridToStringInclude
-        private LinkedHashMap<K, Boolean> keys;
+        private LinkedHashMap<KeyCacheObject, Boolean> keys;
 
         /** Saved entry versions. */
-        private Map<K, GridCacheVersion> savedVers;
+        private Map<KeyCacheObject, GridCacheVersion> savedVers;
 
         /** Topology version on which this future was mapped. */
         private long topVer;
@@ -711,7 +706,10 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
          * @param savedVers Saved entry versions.
          * @param topVer Topology version.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, Map<K, GridCacheVersion> savedVers, long topVer) {
+        MiniFuture(ClusterNode node,
+            LinkedHashMap<KeyCacheObject, Boolean> keys,
+            Map<KeyCacheObject, GridCacheVersion> savedVers,
+            long topVer) {
             super(cctx.kernalContext());
 
             this.node = node;
@@ -737,7 +735,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /**
          * @return Keys.
          */
-        public Collection<K> keys() {
+        public Collection<KeyCacheObject> keys() {
             return keys.keySet();
         }
 
@@ -827,8 +825,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         long readyTopVer = fut.get();
 
                         // This will append new futures to compound list.
-                        map(F.view(keys.keySet(), new P1<K>() {
-                            @Override public boolean apply(K key) {
+                        map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
+                            @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
                         }), F.t(node, keys), readyTopVer);

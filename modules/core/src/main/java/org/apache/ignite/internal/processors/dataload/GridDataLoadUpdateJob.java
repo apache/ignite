@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * Job to put entries to cache on affinity node.
  */
-class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
+class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
     /** */
     private final GridKernalContext ctx;
 
@@ -39,7 +40,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final String cacheName;
 
     /** Entries to put. */
-    private final Collection<Map.Entry<K, V>> col;
+    private final Collection<IgniteDataLoaderEntry> col;
 
     /** {@code True} to ignore deployment ownership. */
     private final boolean ignoreDepOwnership;
@@ -48,7 +49,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final boolean skipStore;
 
     /** */
-    private final IgniteDataLoader.Updater<K, V> updater;
+    private final IgniteDataLoader.Updater updater;
 
     /**
      * @param ctx Context.
@@ -62,10 +63,10 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         GridKernalContext ctx,
         IgniteLogger log,
         @Nullable String cacheName,
-        Collection<Map.Entry<K, V>> col,
+        Collection<IgniteDataLoaderEntry> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDataLoader.Updater<K, V> updater) {
+        IgniteDataLoader.Updater<?, ?> updater) {
         this.ctx = ctx;
         this.log = log;
 
@@ -80,6 +81,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Object call() throws Exception {
         if (log.isDebugEnabled())
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
@@ -95,16 +97,37 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
 //        if (ignoreDepOwnership)
 //            cache.context().deploy().ignoreOwnership(true);
 
-        IgniteCacheProxy<K, V> cache = ctx.cache().jcache(cacheName);
+        IgniteCacheProxy cache = ctx.cache().jcache(cacheName);
 
         if (skipStore)
-            cache = (IgniteCacheProxy<K, V>)cache.withSkipStore();
+            cache = (IgniteCacheProxy<?, ?>)cache.withSkipStore();
 
         if (ignoreDepOwnership)
             cache.context().deploy().ignoreOwnership(true);
 
         try {
-            updater.update(cache, col);
+            final GridCacheContext cctx = cache.context();
+
+            for (IgniteDataLoaderEntry e : col) {
+                e.getKey().finishUnmarshal(cctx, cctx.deploy().globalLoader());
+
+                CacheObject val = e.getValue();
+
+                if (val != null)
+                    val.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+            }
+
+            if (unwrapEntries()) {
+                Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<IgniteDataLoaderEntry, Map.Entry>() {
+                    @Override public Map.Entry apply(IgniteDataLoaderEntry e) {
+                        return e.toEntry(cctx);
+                    }
+                });
+
+                updater.update(cache, col0);
+            }
+            else
+                updater.update(cache, col);
 
             return null;
         }
@@ -115,5 +138,12 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
             if (log.isDebugEnabled())
                 log.debug("Update job finished on node: " + ctx.localNodeId());
         }
+    }
+
+    /**
+     * @return {@code True} if need to unwrap internal entries.
+     */
+    private boolean unwrapEntries() {
+        return !(updater instanceof GridDataLoadCacheUpdaters.InternalUpdater);
     }
 }

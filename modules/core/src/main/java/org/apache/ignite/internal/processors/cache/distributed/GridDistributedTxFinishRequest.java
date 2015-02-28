@@ -233,7 +233,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (grpLockKey == null)
+        if (grpLockKey != null)
             grpLockKey.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
     }
 

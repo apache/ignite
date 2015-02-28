@@ -573,11 +573,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         }
 
         return ctx.toCacheObject(val);
-// TODO IGNITE-51
-//        if (ctx.portableEnabled())
-//            val = (V)ctx.marshalToPortable(val);
-//
-//        return val;
     }
 
     /**
@@ -730,7 +725,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
-        key.prepareMarshal(context());
+        key.prepareMarshal(context().cacheObjectContext());
 
         val.marshal(ctx, context(), depEnabled);
     }
@@ -979,7 +974,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx, boolean depEnabled)
             throws IgniteCheckedException {
             if (hasWriteVal && val != null)
-                val.prepareMarshal(ctx);
+                val.prepareMarshal(ctx.cacheObjectContext());
 // TODO IGNITE-51.
 //            boolean valIsByteArr = val != null && val instanceof byte[];
 //
@@ -1015,6 +1010,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
             if (hasWriteVal)
                 out.writeObject(val);
 
+            out.writeInt(op.ordinal());
 // TODO IGNITE-51.
 //            out.writeBoolean(hasWriteVal);
 //            out.writeBoolean(valBytesSent);
@@ -1049,6 +1045,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
             hasWriteVal = in.readBoolean();
 
             val = (CacheObject)in.readObject();
+
+            op = fromOrdinal(in.readInt());
 // TODO IGNITE-51.
 //            hasWriteVal = in.readBoolean();
 //            valBytesSent = in.readBoolean();
