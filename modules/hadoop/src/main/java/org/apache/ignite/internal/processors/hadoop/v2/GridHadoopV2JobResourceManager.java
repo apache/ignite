@@ -73,8 +73,8 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Set working directory in local file system.
      *
-     * @throws IOException If fails.
      * @param dir Working directory.
+     * @throws IOException If fails.
      */
     private void setLocalFSWorkingDirectory(File dir) throws IOException {
         JobConf cfg = ctx.getJobConf();

@@ -25,6 +25,9 @@ import java.util.*;
  */
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Serializable msg;
 
     /**
