@@ -45,9 +45,6 @@ public class PojoField {
     /** Field name in database. */
     private final StringProperty dbNameProp;
 
-    /** JDBC field type in database. */
-    private final int dbType;
-
     /** Field type in database. */
     private final StringProperty dbTypeNameProp;
 
@@ -138,8 +135,6 @@ public class PojoField {
      */
     public PojoField(String dbName, int dbType, String javaName, String javaTypeName, boolean key, boolean nullable) {
         dbNameProp = new SimpleStringProperty(dbName);
-
-        this.dbType = dbType;
 
         dbTypeNameProp = new SimpleStringProperty(jdbcTypeName(dbType));
 
@@ -340,10 +335,10 @@ public class PojoField {
     }
 
     /**
-     * @return POJO field JDBC type in database.
+     * @return POJO field JDBC type name in database.
      */
-    public int dbType() {
-        return dbType;
+    public String dbTypeName() {
+        return dbTypeNameProp.get();
     }
 
     /**
