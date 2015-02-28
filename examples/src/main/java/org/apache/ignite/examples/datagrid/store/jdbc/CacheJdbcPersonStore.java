@@ -131,7 +131,8 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
             int updated;
 
-            // Try update first.
+            // Try update first. If it does not work, then try insert.
+            // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
                 "update PERSONS set firstName=?, lastName=? where id=?")) {
                 st.setString(1, val.getFirstName());
