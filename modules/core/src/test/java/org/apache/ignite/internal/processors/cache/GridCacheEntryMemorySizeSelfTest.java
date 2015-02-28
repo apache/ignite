@@ -84,6 +84,16 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             Marshaller marsh = new OptimizedMarshaller();
 
+            marsh.setContext(new MarshallerContext() {
+                @Override public void registerClass(int id, String clsName) {
+                    // No-op.
+                }
+
+                @Override public String className(int id) {
+                    throw new UnsupportedOperationException();
+                }
+            });
+
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;
             TWO_KB_VAL_SIZE = marsh.marshal(new Value(new byte[2048])).length;

@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
  */
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final MarshallerContext CTX = new MarshallerContextImpl();
+    private static final MarshallerContext CTX = new MarshallerContextTestImpl();
 
     /**
      * @throws Exception If failed.
@@ -1049,22 +1049,6 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(outHandles[i].getClass() == inHandles[i].getClass());
             }
-        }
-    }
-
-    /** */
-    private static class MarshallerContextImpl implements MarshallerContext {
-        /** */
-        private final Map<Integer, String> map = new HashMap<>();
-
-        /** {@inheritDoc} */
-        @Override public void registerClass(int id, String clsName) {
-            map.put(id, clsName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String className(int id) {
-            return map.get(id);
         }
     }
 

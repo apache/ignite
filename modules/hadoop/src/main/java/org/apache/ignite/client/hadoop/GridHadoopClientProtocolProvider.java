@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
+import org.apache.ignite.internal.client.marshaller.jdk.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -32,8 +32,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.client.GridClientProtocol.*;
 import static org.apache.ignite.client.hadoop.GridHadoopClientProtocol.*;
+import static org.apache.ignite.internal.client.GridClientProtocol.*;
 
 
 /**
@@ -110,7 +110,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
-                    cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
+                    cliCfg.setMarshaller(new GridClientJdkMarshaller());
                     cliCfg.setDaemon(true);
 
                     try {

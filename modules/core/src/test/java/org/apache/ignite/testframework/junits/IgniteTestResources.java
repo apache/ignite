@@ -250,6 +250,8 @@ public class IgniteTestResources {
             }
         }
 
+        marshaller.setContext(new MarshallerContextTestImpl());
+
         return marshaller;
     }
 }

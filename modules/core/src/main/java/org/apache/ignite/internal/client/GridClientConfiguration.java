@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client;
 
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.marshaller.*;
+import org.apache.ignite.internal.client.marshaller.jdk.*;
 import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -110,7 +111,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marshaller = new GridClientJdkMarshaller();
 
     /** Daemon flag. */
     private boolean daemon;
