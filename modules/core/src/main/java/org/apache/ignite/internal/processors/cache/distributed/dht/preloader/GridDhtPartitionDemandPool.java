@@ -809,6 +809,25 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
+                if (!CU.isMarshallerCache(cctx.name())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
+
+                    try {
+                        cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
+                                "[cacheName=" + cctx.name() + ']');
+
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
+                    }
+                }
+
                 int preloadOrder = cctx.config().getPreloadOrder();
 
                 if (preloadOrder > 0) {

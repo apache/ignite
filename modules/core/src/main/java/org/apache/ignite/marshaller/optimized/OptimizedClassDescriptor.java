@@ -132,8 +132,14 @@ class OptimizedClassDescriptor {
     /** Class. */
     private Class<?> cls;
 
+    /** Context. */
+    private MarshallerContext ctx;
+
+    /** Type ID. */
+    private int typeId;
+
     /** Short ID. */
-    private Short shortId;
+    private short checksum;
 
     /** Class name. */
     private String name;
@@ -196,11 +202,16 @@ class OptimizedClassDescriptor {
      * Creates descriptor for class.
      *
      * @param cls Class.
+     * @param ctx Context.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "MapReplaceableByEnumMap"})
-    OptimizedClassDescriptor(Class<?> cls) throws IOException {
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    OptimizedClassDescriptor(Class<?> cls, MarshallerContext ctx) throws IOException {
         this.cls = cls;
+        this.ctx = ctx;
+
+        // TODO: IGNITE-141 - resolve
+        typeId = cls.getName().hashCode();
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
@@ -396,7 +407,9 @@ class OptimizedClassDescriptor {
                     type = TYPE_EXTERNALIZABLE;
 
                     try {
-                        constructor = cls.getDeclaredConstructor();
+                        constructor = !Modifier.isStatic(cls.getModifiers()) && cls.getDeclaringClass() != null ?
+                            cls.getDeclaredConstructor(cls.getDeclaringClass()) :
+                            cls.getDeclaredConstructor();
 
                         constructor.setAccessible(true);
                     }
@@ -548,7 +561,7 @@ class OptimizedClassDescriptor {
             }
         }
 
-        shortId = OptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
+        checksum = OptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null);
     }
 
     /**
@@ -566,24 +579,10 @@ class OptimizedClassDescriptor {
     }
 
     /**
-     * @return Short ID.
+     * @return Type ID.
      */
-    Short shortId() {
-        return shortId;
-    }
-
-    /**
-     * @return Class name.
-     */
-    String name() {
-        return name;
-    }
-
-    /**
-     * @return Array component type.
-     */
-    Class<?> componentType() {
-        return arrCompType;
+    int typeId() {
+        return typeId;
     }
 
     /**
@@ -636,8 +635,6 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
-        out.writeInt(cls.getName().hashCode());
-
         switch (type) {
             case TYPE_BYTE:
                 out.writeByte((Byte)obj);
@@ -780,11 +777,15 @@ class OptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                out.writeInt(((Class<?>)obj).getName().hashCode());
+                // TODO: IGNITE-141 - Do not acquire descriptor?
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor((Class<?>)obj, ctx);
+
+                out.writeInt(desc.typeId());
 
                 break;
 
             case TYPE_EXTERNALIZABLE:
+                out.writeShort(checksum);
                 out.writeExternalizable(obj);
 
                 break;
@@ -795,6 +796,7 @@ class OptimizedClassDescriptor {
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
+                out.writeShort(checksum);
                 out.writeSerializable(obj, writeObjMtds, fields);
 
                 break;
@@ -899,17 +901,34 @@ class OptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return null; // TODO: IGNITE-141
+                // TODO: IGNITE-141 - Do not acquire descriptor?
+                return OptimizedMarshallerUtils.classDescriptor(in.readInt(), in.classLoader(), ctx).describedClass();
 
             case TYPE_EXTERNALIZABLE:
+                verifyChecksum(in.readShort());
+
                 return in.readExternalizable(constructor, readResolveMtd);
 
             case TYPE_SERIALIZABLE:
+                verifyChecksum(in.readShort());
+
                 return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
         }
+    }
+
+    /**
+     * @param checksum Checksum.
+     * @throws ClassNotFoundException If checksum is wrong.
+     * @throws IOException In case of error.
+     */
+    private void verifyChecksum(short checksum) throws ClassNotFoundException, IOException {
+        if (checksum != this.checksum)
+            throw new ClassNotFoundException("Optimized stream class checksum mismatch " +
+                "(is same version of marshalled class present on all nodes?) " +
+                "[expected=" + this.checksum + ", actual=" + checksum + ", cls=" + cls + ']');
     }
 
     /**

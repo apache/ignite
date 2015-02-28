@@ -17,8 +17,17 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 import sun.misc.*;
 
@@ -48,13 +57,40 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Class descriptors by class. */
-    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> DESC_BY_CLS =
-        new ConcurrentHashMap8<>(256);
+    /** Predefined classes. */
+    private static final Class<?>[] PREDEFINED = new Class[] {
+        byte[].class,
+        Integer.class,
+        String.class,
+        UUID.class,
+        ArrayList.class,
+        LinkedList.class,
+        HashSet.class,
+        HashMap.class,
 
-    /** Class descriptors by ID. */
-    private static final ConcurrentMap<Integer, OptimizedClassDescriptor> DESC_BY_ID =
-        new ConcurrentHashMap8<>(256);
+        GridDhtPartitionMap.class,
+        GridDhtPartitionFullMap.class,
+        GridCacheMvccCandidate.class,
+        GridCacheVersion.class,
+        IgniteTxEntry.class,
+        IgnitePredicate[].class,
+        IgniteExternalizableExpiryPolicy.class,
+        IgniteTxKey.class,
+        GridCacheReturn.class,
+        GridTuple4.class,
+        GridCacheEntryInfo.class
+    };
+
+    /** Class descriptors by class. */
+    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
+
+    /** Classes by ID. */
+    private static final ConcurrentMap<Integer, Class<?>> CLS_BY_ID = new ConcurrentHashMap8<>(256);
+
+    static {
+        for (Class<?> cls : PREDEFINED)
+            CLS_BY_ID.put(cls.getName().hashCode(), cls);
+    }
 
     /**
      */
@@ -66,16 +102,20 @@ class OptimizedMarshallerUtils {
      * Gets descriptor for provided class.
      *
      * @param cls Class.
+     * @param ctx Context.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class<?> cls) throws IOException {
+    static OptimizedClassDescriptor classDescriptor(Class<?> cls, MarshallerContext ctx) throws IOException {
         OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
-            // TODO: IGNITE-141 - Put to cache.
+            desc = new OptimizedClassDescriptor(cls, ctx);
 
-            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc = new OptimizedClassDescriptor(cls));
+            if (CLS_BY_ID.putIfAbsent(desc.typeId(), cls) == null)
+                ctx.registerClass(desc.typeId(), cls.getName());
+
+            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
 
             if (old != null)
                 desc = old;
@@ -89,27 +129,29 @@ class OptimizedMarshallerUtils {
      *
      * @param id ID.
      * @param ldr Class loader.
+     * @param ctx Context.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
      */
-    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr)
+    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx)
         throws IOException, ClassNotFoundException {
-        OptimizedClassDescriptor desc = DESC_BY_ID.get(id);
+        Class<?> cls = CLS_BY_ID.get(id);
 
-        if (desc == null) {
-            // TODO: IGNITE-141 - Get from cache.
-            String clsName = null;
+        if (cls == null) {
+            String clsName = ctx.className(id);
 
-            Class<?> cls = Class.forName(clsName, true, ldr);
+            assert clsName != null : id;
 
-            OptimizedClassDescriptor old = DESC_BY_ID.putIfAbsent(id, desc = new OptimizedClassDescriptor(cls));
+            cls = U.forName(clsName, ldr);
+
+            Class<?> old = CLS_BY_ID.putIfAbsent(id, cls);
 
             if (old != null)
-                desc = old;
+                cls = old;
         }
 
-        return desc;
+        return classDescriptor(cls, ctx);
     }
 
     /**
@@ -129,7 +171,6 @@ class OptimizedMarshallerUtils {
      */
     public static void clearCache() {
         DESC_BY_CLS.clear();
-        DESC_BY_ID.clear();
     }
 
     /**
@@ -142,9 +183,9 @@ class OptimizedMarshallerUtils {
      * @throws IOException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    static Long computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
+    static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
         if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls))
-            return ObjectStreamClass.lookup(cls).getSerialVersionUID();
+            return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
 
         MessageDigest md;
 
@@ -174,7 +215,7 @@ class OptimizedMarshallerUtils {
         for (int i = Math.min(hashBytes.length, 8) - 1; i >= 0; i--)
             hash = (hash << 8) | (hashBytes[i] & 0xFF);
 
-        return hash;
+        return (short)hash;
     }
 
     /**

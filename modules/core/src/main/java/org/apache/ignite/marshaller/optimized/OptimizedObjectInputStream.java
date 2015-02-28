@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -42,6 +43,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
     /** */
     private final HandleTable handles = new HandleTable(10);
+
+    /** */
+    private MarshallerContext ctx;
 
     /** */
     private ClassLoader clsLdr;
@@ -73,10 +77,10 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
-     * @throws IOException In case of error.
+     * @param ctx Context.
      */
-    OptimizedObjectInputStream() throws IOException {
-        // No-op.
+    void context(MarshallerContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
@@ -143,9 +147,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 return handles.lookup(readInt());
 
             case OBJECT:
-                int clsId = readInt();
+                int typeId = readInt();
 
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsId, clsLdr);
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx);
 
                 curCls = desc.describedClass();
 
@@ -174,6 +178,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     <T> T[] readArray(Class<T> compType) throws ClassNotFoundException, IOException {
         int len = in.readInt();
 
@@ -438,6 +443,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             HashSet<Object> set = (HashSet<Object>)UNSAFE.allocateInstance(HashSet.class);
@@ -509,6 +515,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             LinkedHashSet<Object> set = (LinkedHashSet<Object>)UNSAFE.allocateInstance(LinkedHashSet.class);
@@ -1013,6 +1020,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          * @param dflt Default value.
          * @return Value.
          */
+        @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
             return objs[fieldInfoMap.get(name).get1()] != null ? (T)objs[fieldInfoMap.get(name).get1()] : dflt;
         }

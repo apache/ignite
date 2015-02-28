@@ -137,6 +137,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
+            objOut.context(ctx);
             objOut.requireSerializable(requireSer);
 
             objOut.out().outputStream(out);
@@ -158,6 +159,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
+            objOut.context(ctx);
             objOut.requireSerializable(requireSer);
 
             objOut.writeObject(obj);
@@ -181,6 +183,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
+            objIn.context(ctx);
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
@@ -209,6 +212,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
+            objIn.context(ctx);
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);

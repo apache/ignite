@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 
 import java.io.*;
 import java.lang.reflect.*;
@@ -43,10 +44,13 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 
     /** */
-    private boolean requireSer;
+    private final GridDataOutput out;
 
     /** */
-    private GridDataOutput out;
+    private MarshallerContext ctx;
+
+    /** */
+    private boolean requireSer;
 
     /** */
     private Object curObj;
@@ -60,20 +64,19 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private PutFieldImpl curPut;
 
-
-    /**
-     * @throws IOException In case of error.
-     */
-    OptimizedObjectOutputStream() throws IOException {
-        // No-op.
-    }
-
     /**
      * @param out Output.
      * @throws IOException In case of error.
      */
     OptimizedObjectOutputStream(GridDataOutput out) throws IOException {
         this.out = out;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    void context(MarshallerContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
@@ -88,13 +91,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      */
     boolean requireSerializable() {
         return requireSer;
-    }
-
-    /**
-     * @param out Output.
-     */
-    public void out(GridDataOutput out) {
-        this.out = out;
     }
 
     /**
@@ -156,7 +152,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         else {
             Class<?> cls = obj.getClass();
 
-            OptimizedClassDescriptor desc = classDescriptor(cls);
+            OptimizedClassDescriptor desc = classDescriptor(cls, ctx);
 
             if (desc.excluded()) {
                 writeByte(NULL);
@@ -180,7 +176,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             if (obj0 != obj) {
                 obj = obj0;
 
-                desc = classDescriptor(obj.getClass());
+                desc = classDescriptor(obj.getClass(), ctx);
             }
 
             if (handle >= 0) {
@@ -189,6 +185,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             }
             else {
                 writeByte(OBJECT);
+                writeInt(desc.typeId());
 
                 desc.write(this, obj);
             }

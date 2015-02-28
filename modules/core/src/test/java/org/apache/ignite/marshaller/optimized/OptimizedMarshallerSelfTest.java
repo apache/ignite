@@ -32,12 +32,8 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Marshaller")
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected Marshaller createMarshaller() {
-        OptimizedMarshaller m = new OptimizedMarshaller();
-
-        m.setRequireSerializable(false);
-
-        return m;
+    @Override protected Marshaller marshaller() {
+        return new OptimizedMarshaller(false);
     }
 
     /**
@@ -45,8 +41,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
      */
     public void testTestMarshalling() throws Exception {
         final String msg = "PASSED";
-
-        assert msg != null;
 
         byte[] buf = marshal(new IgniteRunnable() {
             @Override public void run() {

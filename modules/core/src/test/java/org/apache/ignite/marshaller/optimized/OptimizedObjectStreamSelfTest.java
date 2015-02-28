@@ -39,6 +39,9 @@ import static org.junit.Assert.*;
  * Test for optimized object streams.
  */
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final MarshallerContext CTX = new MarshallerContextImpl();
+
     /**
      * @throws Exception If failed.
      */
@@ -216,7 +219,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testRequireSerializable() throws Exception {
         try {
-            new OptimizedMarshaller(true).marshal(new Object());
+            OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+            marsh.setContext(CTX);
+
+            marsh.marshal(new Object());
 
             assert false : "Exception not thrown.";
         }
@@ -994,6 +1001,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
+            out.context(CTX);
             out.requireSerializable(true);
 
             out.writeObject(obj);
@@ -1002,6 +1010,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
+            in.context(CTX);
             in.classLoader(getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
@@ -1040,6 +1049,22 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(outHandles[i].getClass() == inHandles[i].getClass());
             }
+        }
+    }
+
+    /** */
+    private static class MarshallerContextImpl implements MarshallerContext {
+        /** */
+        private final Map<Integer, String> map = new HashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void registerClass(int id, String clsName) {
+            map.put(id, clsName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String className(int id) {
+            return map.get(id);
         }
     }
 

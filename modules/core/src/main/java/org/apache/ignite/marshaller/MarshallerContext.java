@@ -15,19 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.jdk;
-
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.testframework.junits.common.*;
+package org.apache.ignite.marshaller;
 
 /**
- * JDK marshaller self test.
+ * Marshaller context.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridCommonTest(group = "Marshaller")
-public class GridJdkMarshallerSelfTest extends GridMarshallerAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new JdkMarshaller();
-    }
+public interface MarshallerContext {
+    /**
+     * Registers class name for provided type ID.
+     *
+     * @param id Type ID.
+     * @param clsName Class name.
+     */
+    public void registerClass(int id, String clsName);
+
+    /**
+     * Gets class name for provided type ID.
+     *
+     * @param id Type ID.
+     * @return Class name.
+     */
+    public String className(int id);
 }

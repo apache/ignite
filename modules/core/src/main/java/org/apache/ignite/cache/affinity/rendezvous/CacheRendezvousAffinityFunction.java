@@ -24,8 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -91,8 +90,9 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     /** Hash ID resolver. */
     private CacheAffinityNodeHashResolver hashIdRslvr = new CacheAffinityNodeAddressHashResolver();
 
-    /** Marshaller. */
-    private Marshaller marshaller = new OptimizedMarshaller(false);
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /**
      * Empty constructor with all defaults.
@@ -291,7 +291,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-                byte[] nodeHashBytes = marshaller.marshal(nodeHash);
+                byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
 
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
                 out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
