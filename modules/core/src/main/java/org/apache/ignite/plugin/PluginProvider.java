@@ -41,6 +41,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String version();
 
     /**
+     * @return Copyright.
+     */
+    public String copyright();
+
+    /**
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
