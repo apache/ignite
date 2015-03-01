@@ -1295,28 +1295,13 @@ public class IgnitionEx {
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
+            IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
+
+            IgniteConfiguration myCfg = initializeConfiguration(cfg);
+
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
-
-            IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
-
-            // Ensure invariant.
-            // It's a bit dirty - but this is a result of late refactoring
-            // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getGridName());
-
-            // Validate segmentation configuration.
-            GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
-
-            // 1. Warn on potential configuration problem: grid is not configured to wait
-            // for correct segment after segmentation happens.
-            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
-                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
-                    "on start?) [segPlc=" + segPlc + ", wait=false]");
-            }
-
-            IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
@@ -1329,17 +1314,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getFailoverSpi());
                 ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
-            }
-
-            try {
-                // Use reflection to avoid loading undesired classes.
-                Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
-
-                helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
-                    String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
-            }
-            catch (Exception ignored) {
-                // No-op.
             }
 
             execSvc = new IgniteThreadPoolExecutor(
@@ -1413,6 +1387,17 @@ public class IgnitionEx {
 
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
+
+            try {
+                // Use reflection to avoid loading undesired classes.
+                Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
+
+                helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
+                        String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
 
             boolean started = false;
 
@@ -1489,16 +1474,7 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
-            // Initialize factory's log.
-            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
-
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
-
-            assert cfgLog != null;
-
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
-
-            log = cfgLog.getLogger(G.class);
+            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
             String ggHome = cfg.getIgniteHome();
 
@@ -1511,6 +1487,24 @@ public class IgnitionEx {
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
+            // Ensure invariant.
+            // It's a bit dirty - but this is a result of late refactoring
+            // and I don't want to reshuffle a lot of code.
+            assert F.eq(name, cfg.getGridName());
+
+            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+
+            assert cfgLog != null;
+
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
+
+            // Initialize factory's log.
+            log = cfgLog.getLogger(G.class);
+
+            myCfg.setGridLogger(cfgLog);
+
             // Check Ignite home folder (after log is available).
             if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
@@ -1519,11 +1513,23 @@ public class IgnitionEx {
                     throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
             }
 
-            IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
-
             myCfg.setIgniteHome(ggHome);
 
-            myCfg.setGridLogger(cfgLog);
+            // Validate segmentation configuration.
+            GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
+
+            // 1. Warn on potential configuration problem: grid is not configured to wait
+            // for correct segment after segmentation happens.
+            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
+                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
+                        "on start?) [segPlc=" + segPlc + ", wait=false]");
+            }
+
+            myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
+                    new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
+
+            myCfg.setConnectorConfiguration(myCfg.getConnectorConfiguration() != null ?
+                    new ConnectorConfiguration(myCfg.getConnectorConfiguration()) : null);
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
@@ -1533,6 +1539,37 @@ public class IgnitionEx {
             // Override daemon flag if it was set on the factory.
             if (daemon)
                 myCfg.setDaemon(true);
+
+            // Check for deployment mode override.
+            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
+
+            if (!F.isEmpty(depModeName)) {
+                if (!F.isEmpty(myCfg.getCacheConfiguration())) {
+                    U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
+                            "execution may not work for console Visor)");
+                }
+                else {
+                    try {
+                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
+
+                        if (myCfg.getDeploymentMode() != depMode)
+                            myCfg.setDeploymentMode(depMode);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
+                                "(are there any misspellings?)" +
+                                "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                    }
+                }
+            }
+
+            if (myCfg.getUserAttributes() == null) {
+                Map<String, ?> emptyAttr = Collections.emptyMap();
+                myCfg.setUserAttributes(emptyAttr);
+            }
+
+            if (myCfg.getMBeanServer() == null)
+                myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
             Marshaller marsh = myCfg.getMarshaller();
 
@@ -1564,33 +1601,12 @@ public class IgnitionEx {
                     "Using GridOptimizedMarshaller on untested JVM.");
             }
 
-            // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
-
-            if (!F.isEmpty(depModeName)) {
-                if (!F.isEmpty(myCfg.getCacheConfiguration())) {
-                    U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
-                        "execution may not work for console Visor)");
-                }
-                else {
-                    try {
-                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
-
-                        if (myCfg.getDeploymentMode() != depMode)
-                            myCfg.setDeploymentMode(depMode);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
-                            "(are there any misspellings?)" +
-                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
-                    }
-                }
-            }
-
             myCfg.setMarshaller(marsh);
 
-            myCfg.setConnectorConfiguration(myCfg.getConnectorConfiguration() != null ?
-                new ConnectorConfiguration(myCfg.getConnectorConfiguration()) : null);
+            if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
+                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
+
+            myCfg.setNodeId(nodeId);
 
             IgfsConfiguration[] igfsCfgs = myCfg.getIgfsConfiguration();
 
@@ -1603,14 +1619,6 @@ public class IgnitionEx {
                 myCfg.setIgfsConfiguration(clone);
             }
 
-            if (myCfg.getMBeanServer() == null)
-                myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
-
-            myCfg.setNodeId(nodeId);
-
-            if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
-                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
-
             StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();
 
             if (streamerCfgs != null) {
@@ -1622,17 +1630,9 @@ public class IgnitionEx {
                 myCfg.setStreamerConfiguration(clone);
             }
 
-            myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
-                new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
-
-            if (myCfg.getUserAttributes() == null) {
-                Map<String, ?> emptyAttr = Collections.emptyMap();
-                myCfg.setUserAttributes(emptyAttr);
-            }
+            initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
-
-            initializeDefaultSpi(myCfg);
 
             return myCfg;
         }
@@ -1722,7 +1722,7 @@ public class IgnitionEx {
         }
 
         /**
-         * Initialize default values for spi.
+         * Initialize default SPI implementations.
          *
          * @param cfg Ignite configuration.
          */
