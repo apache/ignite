@@ -2723,6 +2723,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      */
     private static class MarshallerContextImpl implements MarshallerContext {
+        /** */
         private final GridKernalContext ctx;
 
         /** */

@@ -58,6 +58,7 @@ class OptimizedMarshallerUtils {
     private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
 
     /** Classes by ID. */
+    // TODO: IGNITE-141 - Move to marshaller context implementation.
     private static final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> CLS_BY_ID =
         new ConcurrentHashMap8<>(256);
 

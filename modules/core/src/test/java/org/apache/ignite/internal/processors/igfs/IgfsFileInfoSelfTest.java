@@ -83,6 +83,8 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException In case of any marshalling exception.
      */
     private <T> T mu(T obj) throws IgniteCheckedException {
+        marshaller.setContext(new MarshallerContextTestImpl());
+
         return marshaller.unmarshal(marshaller.marshal(obj), null);
     }
 }
