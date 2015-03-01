@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
-
-import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 
 /**
  * Client's partitioned affinity tests.
@@ -269,45 +263,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Validate client partitioned affinity and cache partitioned affinity produce the same result.
-     *
-     * @throws Exception On any exception.
-     */
-    public void testReplicas() throws Exception {
-        // Emulate nodes in topology.
-        Collection<GridClientNode> nodes = new ArrayList<>();
-        Collection<ClusterNode> srvNodes = new ArrayList<>();
-
-        // Define affinities to test.
-        GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
-
-        getTestResources().inject(aff);
-
-        aff.setHashIdResolver(HASH_ID_RSLVR);
-
-        CacheConsistentHashAffinityFunction srvAff = new CacheConsistentHashAffinityFunction();
-
-        getTestResources().inject(srvAff);
-
-        srvAff.setHashIdResolver(new CacheAffinityNodeIdHashResolver());
-
-        // Define keys to test affinity for.
-        Collection<String> keys = new ArrayList<>(
-            Arrays.asList("", "1", "12", "asdf", "Hadoop\u3092\u6bba\u3059"));
-
-        for (int i = 0; i < 10; i++)
-            keys.add(UUID.randomUUID().toString());
-
-        // Test affinity behaviour on different topologies.
-        for (int i = 0; i < 20; i++) {
-            addNodes(1 + (int)Math.round(Math.random() * 50), nodes, srvNodes);
-
-            for (String key : keys)
-                assertSameAffinity(key, aff, srvAff, nodes, srvNodes);
-        }
-    }
-
-    /**
      * Add {@code cnt} nodes into emulated topology.
      *
      * @param cnt Number of nodes to add into emulated topology.
@@ -324,36 +279,9 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
                 .replicaCount(replicaCnt)
                 .build());
 
-            ClusterNode srvNode = new TestRichNode(nodeId, replicaCnt);
+            ClusterNode srvNode = new TestRichNode(nodeId);
 
             srvNodes.add(srvNode);
-        }
-    }
-
-    /**
-     * Compare server and client affinity for specified key in current topology.
-     *
-     * @param key Key to validate affinity for.
-     * @param aff Client affinity.
-     * @param srvAff Server affinity.
-     * @param nodes Client topology.
-     * @param srvNodes Server topology.
-     */
-    private void assertSameAffinity(Object key, GridClientDataAffinity aff, CacheAffinityFunction srvAff,
-        Collection<? extends GridClientNode> nodes, Collection<ClusterNode> srvNodes) {
-        GridClientNode node = aff.node(key, nodes);
-        int part = srvAff.partition(key);
-
-        CacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
-            null, null, 1, 0);
-
-        ClusterNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));
-
-        if (node == null)
-            assertNull(srvNode);
-        else {
-            assertNotNull(srvNode);
-            assertEquals(node.nodeId(), srvNode.id());
         }
     }
 
@@ -366,28 +294,22 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
          */
         private final UUID nodeId;
 
-        /**
-         * Partitioned affinity replicas count.
-         */
-        private final Integer replicaCnt;
 
         /**
          * Externalizable class requires public no-arg constructor.
          */
         @SuppressWarnings("UnusedDeclaration")
         public TestRichNode() {
-            this(UUID.randomUUID(), DFLT_REPLICA_COUNT);
+            this(UUID.randomUUID());
         }
 
         /**
          * Constructs rich node stub to use in emulated server topology.
          *
          * @param nodeId Node id.
-         * @param replicaCnt Partitioned affinity replicas count.
          */
-        private TestRichNode(UUID nodeId, int replicaCnt) {
+        private TestRichNode(UUID nodeId) {
             this.nodeId = nodeId;
-            this.replicaCnt = replicaCnt;
         }
 
         /** {@inheritDoc} */
@@ -397,9 +319,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> T attribute(String name) {
-            if (DFLT_REPLICA_COUNT_ATTR_NAME.equals(name))
-                return (T)replicaCnt;
-
             return super.attribute(name);
         }
     }

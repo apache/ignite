@@ -21,7 +21,6 @@ import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -1093,13 +1092,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(node.tcpAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
-
-        Integer replica = grid().localNode().attribute(CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
-
-        if (replica == null)
-            replica = CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
-
-        assertEquals((int)replica, node.replicaCount());
 
         Map<String, GridClientCacheMode> caches = node.caches();
 

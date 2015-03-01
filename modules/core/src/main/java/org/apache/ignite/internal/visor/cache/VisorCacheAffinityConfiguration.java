@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -59,13 +59,11 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     public static VisorCacheAffinityConfiguration from(CacheConfiguration ccfg) {
         CacheAffinityFunction aff = ccfg.getAffinity();
 
-        Integer dfltReplicas = null;
         Boolean excludeNeighbors = null;
 
-        if (aff instanceof CacheConsistentHashAffinityFunction) {
-            CacheConsistentHashAffinityFunction hashAffFunc = (CacheConsistentHashAffinityFunction)aff;
+        if (aff instanceof CacheRendezvousAffinityFunction) {
+            CacheRendezvousAffinityFunction hashAffFunc = (CacheRendezvousAffinityFunction)aff;
 
-            dfltReplicas = hashAffFunc.getDefaultReplicas();
             excludeNeighbors = hashAffFunc.isExcludeNeighbors();
         }
 
@@ -74,7 +72,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
         cfg.function(compactClass(aff));
         cfg.mapper(compactClass(ccfg.getAffinityMapper()));
         cfg.partitionedBackups(ccfg.getBackups());
-        cfg.defaultReplicas(dfltReplicas);
         cfg.excludeNeighbors(excludeNeighbors);
 
         return cfg;

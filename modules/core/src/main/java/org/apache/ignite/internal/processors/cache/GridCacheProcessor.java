@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
@@ -304,14 +303,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cc.getAffinity() instanceof CachePartitionFairAffinity)
                 throw new IgniteCheckedException("REPLICATED cache can not be started with CachePartitionFairAffinity" +
                     " [cacheName=" + cc.getName() + ']');
-
-            if (cc.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cc.getAffinity();
-
-                if (aff.isExcludeNeighbors())
-                    throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
-                        "CacheConsistentHashAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
-            }
 
             if (cc.getAffinity() instanceof CacheRendezvousAffinityFunction) {
                 CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cc.getAffinity();
@@ -1002,8 +993,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
             CacheConfiguration cfg = cache.configuration();
 
-            if (cfg.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cfg.getAffinity();
+            if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
+                CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
 
                 CacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
@@ -1194,14 +1185,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
                                 "Affinity key backups", locAttr.affinityKeyBackups(),
                                 rmtAttr.affinityKeyBackups(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicas",
-                                "Affinity replicas", locAttr.affinityReplicas(),
-                                rmtAttr.affinityReplicas(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicaCountAttrName",
-                                "Affinity replica count attribute name", locAttr.affinityReplicaCountAttrName(),
-                                rmtAttr.affinityReplicaCountAttrName(), true);
 
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity.hashIdResolver",
                                 "Partitioned cache affinity hash ID resolver class",
