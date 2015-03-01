@@ -130,19 +130,22 @@ class OptimizedClassDescriptor {
     private static final int TYPE_SERIALIZABLE = 51;
 
     /** Class. */
-    private Class<?> cls;
+    private final Class<?> cls;
 
     /** Context. */
-    private MarshallerContext ctx;
+    private final MarshallerContext ctx;
 
-    /** Type ID. */
-    private int typeId;
-
-    /** Short ID. */
-    private short checksum;
+    /** ID mapper. */
+    private final OptimizedMarshallerIdMapper mapper;
 
     /** Class name. */
-    private String name;
+    private final String name;
+
+    /** Type ID. */
+    private final int typeId;
+
+    /** Short ID. */
+    private final short checksum;
 
     /** Class type. */
     private int type;
@@ -157,7 +160,7 @@ class OptimizedClassDescriptor {
     private boolean isSerial;
 
     /** Excluded flag. */
-    private final boolean excluded;
+    private boolean excluded;
 
     /** {@code True} if descriptor is for {@link Class}. */
     private boolean isCls;
@@ -203,19 +206,32 @@ class OptimizedClassDescriptor {
      *
      * @param cls Class.
      * @param ctx Context.
+     * @param mapper ID mapper.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    OptimizedClassDescriptor(Class<?> cls, MarshallerContext ctx) throws IOException {
+    OptimizedClassDescriptor(Class<?> cls, MarshallerContext ctx, OptimizedMarshallerIdMapper mapper)
+        throws IOException {
         this.cls = cls;
         this.ctx = ctx;
-
-        // TODO: IGNITE-141 - resolve
-        typeId = cls.getName().hashCode();
-
-        excluded = MarshallerExclusions.isExcluded(cls);
+        this.mapper = mapper;
 
         name = cls.getName();
+
+        int typeId;
+
+        if (mapper != null) {
+            typeId = mapper.typeId(name);
+
+            if (typeId == 0)
+                typeId = name.hashCode();
+        }
+        else
+            typeId = name.hashCode();
+
+        this.typeId = typeId;
+
+        excluded = MarshallerExclusions.isExcluded(cls);
 
         if (!excluded) {
             Class<?> parent;
@@ -777,8 +793,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                // TODO: IGNITE-141 - Do not acquire descriptor?
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor((Class<?>)obj, ctx);
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor((Class<?>)obj, ctx, mapper);
 
                 out.writeInt(desc.typeId());
 
@@ -901,8 +916,8 @@ class OptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                // TODO: IGNITE-141 - Do not acquire descriptor?
-                return OptimizedMarshallerUtils.classDescriptor(in.readInt(), in.classLoader(), ctx).describedClass();
+                return OptimizedMarshallerUtils.classDescriptor(in.readInt(), in.classLoader(), ctx, mapper).
+                    describedClass();
 
             case TYPE_EXTERNALIZABLE:
                 verifyChecksum(in.readShort());

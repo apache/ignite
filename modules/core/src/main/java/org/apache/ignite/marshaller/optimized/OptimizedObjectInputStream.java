@@ -48,6 +48,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private MarshallerContext ctx;
 
     /** */
+    private OptimizedMarshallerIdMapper mapper;
+
+    /** */
     private ClassLoader clsLdr;
 
     /** */
@@ -78,15 +81,12 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
     /**
      * @param ctx Context.
-     */
-    void context(MarshallerContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /**
+     * @param mapper ID mapper.
      * @param clsLdr Class loader.
      */
-    void classLoader(ClassLoader clsLdr) {
+    void context(MarshallerContext ctx, OptimizedMarshallerIdMapper mapper, ClassLoader clsLdr) {
+        this.ctx = ctx;
+        this.mapper = mapper;
         this.clsLdr = clsLdr;
     }
 
@@ -149,7 +149,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             case OBJECT:
                 int typeId = readInt();
 
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx);
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
 

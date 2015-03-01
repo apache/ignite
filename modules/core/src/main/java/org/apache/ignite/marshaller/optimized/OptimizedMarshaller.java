@@ -79,6 +79,9 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */
     private boolean requireSer = true;
 
+    /** ID mapper. */
+    private OptimizedMarshallerIdMapper mapper;
+
     /**
      * Creates new marshaller will all defaults.
      *
@@ -110,6 +113,15 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /**
+     * Sets ID mapper.
+     *
+     * @param mapper ID mapper.
+     */
+    public void setIdMapper(OptimizedMarshallerIdMapper mapper) {
+        this.mapper = mapper;
+    }
+
+    /**
      * Specifies size of cached object streams used by marshaller. Object streams are cached for
      * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
      * pool is not used and each thread has its own cached object stream which it keeps reusing.
@@ -137,8 +149,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(ctx);
-            objOut.requireSerializable(requireSer);
+            objOut.context(ctx, mapper, requireSer);
 
             objOut.out().outputStream(out);
 
@@ -159,8 +170,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(ctx);
-            objOut.requireSerializable(requireSer);
+            objOut.context(ctx, mapper, requireSer);
 
             objOut.writeObject(obj);
 
@@ -175,6 +185,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
@@ -183,8 +194,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(ctx);
-            objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
 
@@ -204,6 +214,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
@@ -212,8 +223,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(ctx);
-            objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 

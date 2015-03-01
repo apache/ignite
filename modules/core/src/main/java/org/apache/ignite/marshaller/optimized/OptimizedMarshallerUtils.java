@@ -17,13 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -57,38 +51,8 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Predefined classes. */
-    private static final Class[] PREDEFINED = new Class[] {
-        byte[].class,
-        Boolean.class,
-        Integer.class,
-        String.class,
-        UUID.class,
-        ArrayList.class,
-        LinkedList.class,
-        HashSet.class,
-        HashMap.class,
-
-        GridDhtPartitionMap.class,
-        GridDhtPartitionFullMap.class,
-        GridCacheMvccCandidate.class,
-        GridCacheVersion.class,
-        IgniteTxEntry.class,
-        IgnitePredicate[].class,
-        IgniteExternalizableExpiryPolicy.class,
-        IgniteTxKey.class,
-        GridCacheReturn.class,
-        GridTuple4.class,
-        GridCacheEntryInfo.class,
-        GridLeanMap.class
-    };
-
-    /** Predefined class names. */
-    private static final String[] PREDEFINED_NAMES = new String[] {
-        "org.apache.ignite.internal.GridTopic$T7",
-        "org.apache.ignite.internal.util.lang.GridFunc$37",
-        "org.apache.ignite.internal.util.GridLeanMap$Map3"
-    };
+    /** Classnames file path. */
+    private static final String CLS_NAMES_FILE = "org/apache/ignite/marshaller/optimized/classnames.properties";
 
     /** Class descriptors by class. */
     private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
@@ -98,17 +62,20 @@ class OptimizedMarshallerUtils {
         new ConcurrentHashMap8<>(256);
 
     static {
-        for (Class cls : PREDEFINED)
-            CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
-
         try {
-            for (String clsName : PREDEFINED_NAMES) {
-                Class cls = U.forName(clsName, OptimizedMarshallerUtils.class.getClassLoader());
+            ClassLoader ldr = OptimizedMarshallerUtils.class.getClassLoader();
+
+            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
+
+            String clsName;
+
+            while ((clsName = rdr.readLine()) != null) {
+                Class cls = U.forName(clsName, ldr);
 
                 CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
             }
         }
-        catch (ClassNotFoundException e) {
+        catch (IOException | ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -124,14 +91,16 @@ class OptimizedMarshallerUtils {
      *
      * @param cls Class.
      * @param ctx Context.
+     * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class cls, MarshallerContext ctx) throws IOException {
+    static OptimizedClassDescriptor classDescriptor(Class cls, MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper) throws IOException {
         OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
-            desc = new OptimizedClassDescriptor(cls, ctx);
+            desc = new OptimizedClassDescriptor(cls, ctx, mapper);
 
             if (CLS_BY_ID.putIfAbsent(desc.typeId(), F.t(cls, false)) == null)
                 ctx.registerClass(desc.typeId(), cls.getName());
@@ -151,11 +120,13 @@ class OptimizedMarshallerUtils {
      * @param id ID.
      * @param ldr Class loader.
      * @param ctx Context.
+     * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
      */
-    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx)
+    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
         throws IOException, ClassNotFoundException {
         Class cls = CLS_BY_ID.get(id).get1();
 
@@ -172,7 +143,7 @@ class OptimizedMarshallerUtils {
                 cls = old.get1();
         }
 
-        return classDescriptor(cls, ctx);
+        return classDescriptor(cls, ctx, mapper);
     }
 
     /**

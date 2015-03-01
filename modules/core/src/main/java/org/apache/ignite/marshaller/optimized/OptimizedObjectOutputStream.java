@@ -50,6 +50,9 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private MarshallerContext ctx;
 
     /** */
+    private OptimizedMarshallerIdMapper mapper;
+
+    /** */
     private boolean requireSer;
 
     /** */
@@ -74,15 +77,12 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
     /**
      * @param ctx Context.
-     */
-    void context(MarshallerContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /**
+     * @param mapper ID mapper.
      * @param requireSer Require {@link Serializable} flag.
      */
-    void requireSerializable(boolean requireSer) {
+    void context(MarshallerContext ctx, OptimizedMarshallerIdMapper mapper, boolean requireSer) {
+        this.ctx = ctx;
+        this.mapper = mapper;
         this.requireSer = requireSer;
     }
 
@@ -152,7 +152,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         else {
             Class<?> cls = obj.getClass();
 
-            OptimizedClassDescriptor desc = classDescriptor(cls, ctx);
+            OptimizedClassDescriptor desc = classDescriptor(cls, ctx, mapper);
 
             if (desc.excluded()) {
                 writeByte(NULL);
@@ -176,7 +176,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             if (obj0 != obj) {
                 obj = obj0;
 
-                desc = classDescriptor(obj.getClass(), ctx);
+                desc = classDescriptor(obj.getClass(), ctx, mapper);
             }
 
             if (handle >= 0) {

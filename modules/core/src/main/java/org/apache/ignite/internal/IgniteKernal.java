@@ -2793,11 +2793,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
+                // TODO: IGNITE-141 - Remove debug
+                U.debug(">>> REGISTER: " + clsName);
+
                 String old = cache.putIfAbsent(typeId, clsName);
 
-                // TODO: IGNITE-141 - proper message
                 if (old != null && !old.equals(clsName))
-                    throw new IgniteException("Collision.");
+                    throw new IgniteException("Type ID collision acquired in OptimizedMarshaller. Use " +
+                        "OptimizedMarshallerIdMapper to resolve it [id=" + typeId + ", clsName1=" + clsName +
+                        "clsName2=" + old + ']');
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
