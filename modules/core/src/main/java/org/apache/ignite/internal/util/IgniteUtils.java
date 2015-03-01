@@ -7723,7 +7723,7 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
+    public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
         throws ClassNotFoundException {
         if (clsName == null)
             return null;

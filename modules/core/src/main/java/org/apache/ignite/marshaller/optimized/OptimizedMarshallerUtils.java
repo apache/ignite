@@ -60,6 +60,7 @@ class OptimizedMarshallerUtils {
     /** Predefined classes. */
     private static final Class[] PREDEFINED = new Class[] {
         byte[].class,
+        Boolean.class,
         Integer.class,
         String.class,
         UUID.class,
@@ -78,7 +79,15 @@ class OptimizedMarshallerUtils {
         IgniteTxKey.class,
         GridCacheReturn.class,
         GridTuple4.class,
-        GridCacheEntryInfo.class
+        GridCacheEntryInfo.class,
+        GridLeanMap.class
+    };
+
+    /** Predefined class names. */
+    private static final String[] PREDEFINED_NAMES = new String[] {
+        "org.apache.ignite.internal.GridTopic$T7",
+        "org.apache.ignite.internal.util.lang.GridFunc$37",
+        "org.apache.ignite.internal.util.GridLeanMap$Map3"
     };
 
     /** Class descriptors by class. */
@@ -91,6 +100,17 @@ class OptimizedMarshallerUtils {
     static {
         for (Class cls : PREDEFINED)
             CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
+
+        try {
+            for (String clsName : PREDEFINED_NAMES) {
+                Class cls = U.forName(clsName, OptimizedMarshallerUtils.class.getClassLoader());
+
+                CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
+            }
+        }
+        catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
