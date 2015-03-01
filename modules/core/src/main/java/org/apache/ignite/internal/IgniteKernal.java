@@ -2742,7 +2742,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cache = ctx.cache().marshallerCache();
 
             // TODO: IGNITE-141 - Do not create thread.
-            Thread t = new Thread(new MarshallerCacheUpdater(cache, id, clsName));
+            Thread t = new Thread(new MarshallerCacheUpdater(ctx.log(), cache, id, clsName));
 
             t.start();
 
@@ -2772,6 +2772,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private static class MarshallerCacheUpdater implements Runnable {
         /** */
+        private final IgniteLogger log;
+
+        /** */
         private final GridCacheAdapter<Integer, String> cache;
 
         /** */
@@ -2785,7 +2788,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * @param typeId Type ID.
          * @param clsName Class name.
          */
-        private MarshallerCacheUpdater(GridCacheAdapter<Integer, String> cache, int typeId, String clsName) {
+        private MarshallerCacheUpdater(IgniteLogger log, GridCacheAdapter<Integer, String> cache, int typeId, String clsName) {
+            this.log = log;
             this.cache = cache;
             this.typeId = typeId;
             this.clsName = clsName;
@@ -2795,7 +2799,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Override public void run() {
             try {
                 // TODO: IGNITE-141 - Remove debug
-                U.debug(">>> REGISTER: " + clsName);
+                U.debug(log, ">>> REGISTER: " + clsName);
 
                 String old = cache.putIfAbsent(typeId, clsName);
 
