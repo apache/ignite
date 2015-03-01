@@ -1393,7 +1393,7 @@ public class IgnitionEx {
                 Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
 
                 helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
-                        String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
+                    String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
             }
             catch (Exception ignored) {
                 // No-op.
@@ -1522,14 +1522,14 @@ public class IgnitionEx {
             // for correct segment after segmentation happens.
             if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
                 U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
-                        "on start?) [segPlc=" + segPlc + ", wait=false]");
+                    "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
             myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
-                    new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
+                new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
 
             myCfg.setConnectorConfiguration(myCfg.getConnectorConfiguration() != null ?
-                    new ConnectorConfiguration(myCfg.getConnectorConfiguration()) : null);
+                new ConnectorConfiguration(myCfg.getConnectorConfiguration()) : null);
 
             // Local host.
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
@@ -1546,7 +1546,7 @@ public class IgnitionEx {
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(myCfg.getCacheConfiguration())) {
                     U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
-                            "execution may not work for console Visor)");
+                        "execution may not work for console Visor)");
                 }
                 else {
                     try {
@@ -1557,8 +1557,8 @@ public class IgnitionEx {
                     }
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Failed to override deployment mode using system property " +
-                                "(are there any misspellings?)" +
-                                "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                            "(are there any misspellings?)" +
+                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
                     }
                 }
             }
@@ -1576,18 +1576,18 @@ public class IgnitionEx {
             if (marsh == null) {
                 if (!U.isHotSpot()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                            "(only Java HotSpot VMs are supported). Switching to standard JDK marshalling - " +
-                            "object serialization performance will be significantly slower.",
+                        "(only Java HotSpot VMs are supported). Switching to standard JDK marshalling - " +
+                        "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
                     marsh = new JdkMarshaller();
                 }
                 else if (!OptimizedMarshaller.available()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                            "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                            "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                            "Switching to standard JDK marshalling - " +
-                            "object serialization performance will be significantly slower.",
+                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
+                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
+                        "Switching to standard JDK marshalling - " +
+                        "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
                     marsh = new JdkMarshaller();
@@ -1597,7 +1597,7 @@ public class IgnitionEx {
             }
             else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
                 U.warn(log, "Using OptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
-                        "object serialization behavior could yield unexpected results.",
+                    "object serialization behavior could yield unexpected results.",
                     "Using GridOptimizedMarshaller on untested JVM.");
             }
 
