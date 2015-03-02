@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
