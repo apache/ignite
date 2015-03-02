@@ -367,12 +367,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(null,
-            keys,
+            ctx.cacheKeysView(keys),
             false,
             forcePrimary,
             subjId,

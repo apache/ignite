@@ -111,6 +111,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx();
 
         if (tx != null && !tx.implicit() && !skipTx) {
@@ -131,7 +134,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(null,
-            keys,
+            ctx.cacheKeysView(keys),
             false,
             forcePrimary,
             subjId,
@@ -150,7 +153,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return Future.
      */
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
-        @Nullable Collection<? extends K> keys,
+        @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,

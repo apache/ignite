@@ -273,22 +273,18 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         if (dhtVer == null)
             return null;
         else {
-            CacheObject val0 = null;
-            byte[] valBytes0 = null;
+            CacheObject val0 = val;
 
-// TODO IGNITE-51.
-//            GridCacheValueBytes valBytesTuple = valueBytes();
-//
-//            if (!valBytesTuple.isNull()) {
-//                if (valBytesTuple.isPlain())
-//                    val0 = (V)valBytesTuple.get();
-//                else
-//                    valBytes0 = valBytesTuple.get();
-//            }
-//            else
-//                val0 = val;
+            if (val0 == null && valPtr != 0) {
+                IgniteBiTuple<byte[], Boolean> t = valueBytes0();
 
-            return F.t(dhtVer, val0, valBytes0);
+                if (t.get2())
+                    val0 = cctx.toCacheObject(t.get1(), null);
+                else
+                    val0 = cctx.toCacheObject(null, t.get1());
+            }
+
+            return F.t(ver, val0, null);
         }
     }
 
@@ -320,17 +316,15 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
         UUID subjId, String taskName) throws IgniteCheckedException {
-        return null;
-// TODO IGNTIE-51.
-//        return cctx.near().loadAsync(tx,
-//            F.asList(key),
-//            reload,
-//            /*force primary*/false,
-//            subjId,
-//            taskName,
-//            true,
-//            null,
-//            false).get().get(key);
+        return cctx.near().loadAsync(tx,
+            F.asList(key),
+            reload,
+            /*force primary*/false,
+            subjId,
+            taskName,
+            true,
+            null,
+            false).get().get(key.value(cctx, false));
     }
 
     /**
