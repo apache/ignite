@@ -1494,6 +1494,8 @@ public class IgnitionEx {
 
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
+            myCfg.setNodeId(nodeId);
+
             IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
 
             assert cfgLog != null;
@@ -1563,10 +1565,8 @@ public class IgnitionEx {
                 }
             }
 
-            if (myCfg.getUserAttributes() == null) {
-                Map<String, ?> emptyAttr = Collections.emptyMap();
-                myCfg.setUserAttributes(emptyAttr);
-            }
+            if (myCfg.getUserAttributes() == null)
+                myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
             if (myCfg.getMBeanServer() == null)
                 myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
@@ -1605,8 +1605,6 @@ public class IgnitionEx {
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
-
-            myCfg.setNodeId(nodeId);
 
             IgfsConfiguration[] igfsCfgs = myCfg.getIgfsConfiguration();
 
