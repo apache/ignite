@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * Request to fetch next page.
  */
-public class GridNextPageRequest implements Serializable {
+public class GridQueryNextPageRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class GridNextPageRequest implements Serializable {
      * @param qry Query.
      * @param pageSize Page size.
      */
-    public GridNextPageRequest(long qryReqId, int qry, int pageSize) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int pageSize) {
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.pageSize = pageSize;
@@ -72,6 +72,6 @@ public class GridNextPageRequest implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNextPageRequest.class, this);
+        return S.toString(GridQueryNextPageRequest.class, this);
     }
 }

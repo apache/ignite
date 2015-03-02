@@ -48,6 +48,11 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
+    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
+        return new IteratorCursor(fetched.iterator());
+    }
+
+    /** {@inheritDoc} */
     @Override protected Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last) {
         return new FetchingCursor(new Iterator<Row>() {
             /** */

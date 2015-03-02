@@ -28,13 +28,13 @@ public class GridResultPage<Z> {
     private final Z src;
 
     /** */
-    protected final GridNextPageResponse res;
+    protected final GridQueryNextPageResponse res;
 
     /**
      * @param src Source.
      * @param res Response.
      */
-    protected GridResultPage(Z src, GridNextPageResponse res) {
+    protected GridResultPage(Z src, GridQueryNextPageResponse res) {
         this.src = src;
         this.res = res;
     }
@@ -49,7 +49,7 @@ public class GridResultPage<Z> {
     /**
      * @return Response.
      */
-    public GridNextPageResponse response() {
+    public GridQueryNextPageResponse response() {
         return res;
     }
 

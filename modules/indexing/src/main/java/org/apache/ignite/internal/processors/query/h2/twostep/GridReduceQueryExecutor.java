@@ -77,8 +77,8 @@ public class GridReduceQueryExecutor {
 
                     boolean processed = true;
 
-                    if (msg instanceof GridNextPageResponse)
-                        onNextPage(node, (GridNextPageResponse)msg);
+                    if (msg instanceof GridQueryNextPageResponse)
+                        onNextPage(node, (GridQueryNextPageResponse)msg);
                     else if (msg instanceof GridQueryFailResponse)
                         onFail(node, (GridQueryFailResponse)msg);
                     else
@@ -115,7 +115,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onNextPage(final ClusterNode node, GridNextPageResponse msg) {
+    private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
         final int pageSize = msg.rows().size();
@@ -139,7 +139,7 @@ public class GridReduceQueryExecutor {
                     return; // No-op if this message known to be the last.
 
                 try {
-                    ctx.io().sendUserMessage(F.asList(node), new GridNextPageRequest(qryReqId, qry, pageSize),
+                    ctx.io().sendUserMessage(F.asList(node), new GridQueryNextPageRequest(qryReqId, qry, pageSize),
                         GridTopic.TOPIC_QUERY, false, 0);
                 }
                 catch (IgniteCheckedException e) {

@@ -131,9 +131,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param last Last row.
      * @return Cursor.
      */
-    protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new IteratorCursor(fetched.iterator());
-    }
+    protected abstract Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last);
 
     /** {@inheritDoc} */
     @Override public void checkRename() {

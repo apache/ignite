@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Next page response.
  */
-public class GridNextPageResponse implements Externalizable {
+public class GridQueryNextPageResponse implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class GridNextPageResponse implements Externalizable {
     /**
      * For {@link Externalizable}.
      */
-    public GridNextPageResponse() {
+    public GridQueryNextPageResponse() {
         // No-op.
     }
 
@@ -64,7 +64,8 @@ public class GridNextPageResponse implements Externalizable {
      * @param last Last row.
      * @param rows Rows.
      */
-    public GridNextPageResponse(long qryReqId, int qry, int page, int allRows, boolean last, Collection<Value[]> rows) {
+    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, boolean last,
+        Collection<Value[]> rows) {
         assert rows != null;
 
         this.qryReqId = qryReqId;
@@ -189,6 +190,6 @@ public class GridNextPageResponse implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNextPageResponse.class, this);
+        return S.toString(GridQueryNextPageResponse.class, this);
     }
 }

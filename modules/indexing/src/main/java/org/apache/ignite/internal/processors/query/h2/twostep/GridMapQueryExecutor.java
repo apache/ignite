@@ -96,8 +96,8 @@ public class GridMapQueryExecutor {
 
                     if (msg instanceof GridQueryRequest)
                         executeLocalQuery(node, (GridQueryRequest)msg);
-                    else if (msg instanceof GridNextPageRequest)
-                        sendNextPage(node, (GridNextPageRequest)msg);
+                    else if (msg instanceof GridQueryNextPageRequest)
+                        sendNextPage(node, (GridQueryNextPageRequest)msg);
                     else
                         processed = false;
 
@@ -212,7 +212,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Request.
      */
-    private void sendNextPage(ClusterNode node, GridNextPageRequest req) {
+    private void sendNextPage(ClusterNode node, GridQueryNextPageRequest req) {
         ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(node.id());
 
         QueryResults qr = nodeRess == null ? null : nodeRess.get(req.queryRequestId());
@@ -258,7 +258,7 @@ public class GridMapQueryExecutor {
 
         try {
             ctx.io().sendUserMessage(F.asList(node),
-                new GridNextPageResponse(qr.qryReqId, qry, page, allRows, last, rows),
+                new GridQueryNextPageResponse(qr.qryReqId, qry, page, allRows, last, rows),
                 GridTopic.TOPIC_QUERY, false, 0);
         }
         catch (IgniteCheckedException e) {
