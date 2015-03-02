@@ -152,7 +152,7 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
         aff.setHashIdResolver(new GridClientPartitionAffinity.HashIdResolver() {
             @Override public Object getHashId(GridClientNode node) {
-                return node.replicaCount();
+                return 1;
             }
         });
 
@@ -258,7 +258,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
     private GridClientNode createNode(String nodeId, int replicaCnt) {
         return GridClientNodeImpl.builder()
             .nodeId(UUID.fromString(nodeId))
-            .replicaCount(replicaCnt)
             .build();
     }
 
@@ -276,7 +275,6 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
             nodes.add(GridClientNodeImpl.builder()
                 .nodeId(nodeId)
-                .replicaCount(replicaCnt)
                 .build());
 
             ClusterNode srvNode = new TestRichNode(nodeId);
