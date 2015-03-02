@@ -1001,5 +1001,10 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Override public String latestVersion() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public GridKernalContext context() {
+            return null;
+        }
     }
 }
