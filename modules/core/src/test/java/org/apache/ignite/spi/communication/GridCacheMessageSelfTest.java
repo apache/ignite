@@ -26,18 +26,25 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final byte DIRECT_TYPE = (byte)202;
 
+    /** */
+    private static final byte DIRECT_TYPE1 = (byte)203;
+
     static {
         GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
-            @Override
-            public Message apply() {
+            @Override public Message apply() {
                 return new TestMessage();
             }
         });
 
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override
-            public Message apply() {
+            @Override public Message apply() {
                 return new GridTestMessage();
+            }
+        });
+
+        GridIoMessageFactory.registerCustom(DIRECT_TYPE1, new CO<Message>() {
+            @Override public Message apply() {
+                return new TestMessage1();
             }
         });
     }
@@ -50,7 +57,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName(null);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -100,7 +106,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i <= SAMPLE_CNT; i++) {
             mgr0.send(grid(1).localNode(), topic, message, GridIoPolicy.PUBLIC_POOL);
 
-            message.add(new GridTestMessage(grid(1).localNode().id(), i, 0));
+            TestMessage1 mes1 = new TestMessage1();
+
+            mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0));
+
+            message.add(mes1);
         }
 
         assert latch.await(3, SECONDS);
@@ -109,13 +119,13 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
-        @GridDirectCollection(GridTestMessage.class)
-        private Collection<GridTestMessage> entries = new ArrayList<>();
+        @GridDirectCollection(TestMessage1.class)
+        private Collection<TestMessage1> entries = new ArrayList<>();
 
         /**
          * @param entry Entry.
          */
-        public void add(GridTestMessage entry) {
+        public void add(TestMessage1 entry) {
             entries.add(entry);
         }
 
@@ -159,6 +169,66 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             switch (reader.state()) {
                 case 0:
                     entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+            }
+
+            return true;
+        }
+    }
+
+    private static class TestMessage1 extends GridCacheMessage {
+        GridTestMessage mes;
+
+        public void init(GridTestMessage mes) {
+            this.mes = mes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte directType() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(directType(), fieldsCount()))
+                    return false;
+
+                writer.onHeaderWritten();
+            }
+
+            switch (writer.state()) {
+                case 0:
+                    if (!mes.writeTo(buf, writer))
+                        return false;
+
+                    writer.incrementState();
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            reader.setBuffer(buf);
+
+            if (!reader.beforeMessageRead())
+                return false;
+
+            switch (reader.state()) {
+                case 0:
+                    mes.readFrom(buf, reader);
 
                     if (!reader.isLastRead())
                         return false;
