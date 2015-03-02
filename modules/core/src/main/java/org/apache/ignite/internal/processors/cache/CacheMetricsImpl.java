@@ -460,6 +460,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Transaction commit callback.
+     *
+     * @param duration the time taken in nanoseconds.
      */
     public void onTxCommit(long duration) {
         txCommits.incrementAndGet();
@@ -472,6 +474,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Transaction rollback callback.
+     *
+     * @param duration the time taken in nanoseconds.
      */
     public void onTxRollback(long duration) {
         txRollbacks.incrementAndGet();

@@ -138,6 +138,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
+        suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
 
         // Heuristic exception handling. TODO IGNITE-257
 //        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);

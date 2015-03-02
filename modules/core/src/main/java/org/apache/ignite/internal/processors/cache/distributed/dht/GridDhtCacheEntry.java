@@ -563,6 +563,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                         log.debug("Entry has been cleared from swap storage: " + this);
                 }
 
+                if (cctx.store().isLocalStore())
+                    cctx.store().removeFromStore(null, key());
+
                 rmv = true;
 
                 return true;

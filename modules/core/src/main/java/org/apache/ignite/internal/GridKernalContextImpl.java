@@ -36,11 +36,12 @@ import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -242,6 +243,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteSpringProcessor spring;
+
+    /** */
+    @GridToStringExclude
+    private ClusterProcessor cluster;
 
     /** */
     @GridToStringExclude
@@ -461,6 +466,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             qryProc = (GridQueryProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
+        else if (comp instanceof ClusterProcessor)
+            cluster = (ClusterProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -851,6 +858,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return registry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterProcessor cluster() {
+        return cluster;
     }
 
     /** {@inheritDoc} */
