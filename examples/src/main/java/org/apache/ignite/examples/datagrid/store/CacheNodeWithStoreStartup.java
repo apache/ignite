@@ -64,19 +64,19 @@ public class CacheNodeWithStoreStartup {
 
         discoSpi.setIpFinder(ipFinder);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>();
 
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheStore store;
+        CacheStore<Long, Person> store;
 
         // Uncomment other cache stores to try them.
         store = new CacheDummyPersonStore();
         // store = new CacheJdbcPersonStore();
         // store = new CacheHibernatePersonStore();
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
 

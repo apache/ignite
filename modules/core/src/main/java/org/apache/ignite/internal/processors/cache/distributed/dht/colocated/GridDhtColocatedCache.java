@@ -319,7 +319,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!success)
                     break;
-                else if (!skipVals)
+                else if (!skipVals && ctx.config().isStatisticsEnabled())
                     ctx.cache().metrics0().onRead(true);
             }
 

@@ -15,56 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits.cache;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
 
-import java.util.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public class TestCacheSession implements CacheStoreSession {
-    /** */
-    private Transaction tx;
-
-    /** */
-    private Map<Object, Object> props;
-
+public class GridCachePartitionedOffHeapLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
     /**
      *
-     * @param tx Transaction.
      */
-    public void newSession(@Nullable Transaction tx) {
-        this.tx = tx;
-
-        props = null;
+    public GridCachePartitionedOffHeapLocalStoreSelfTest() {
+        super();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Transaction transaction() {
-        return tx;
+    @Override protected CacheDistributionMode getDistributionMode() {
+        return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isWithinTransaction() {
-        return transaction() != null;
+    @Override protected CacheAtomicityMode getAtomicMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> Map<K, V> properties() {
-        if (props == null)
-            props = U.newHashMap(1);
-
-        return (Map<K, V>)props;
+    @Override protected CacheMode getCacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String cacheName() {
-        return null;
+    @Override protected boolean isOffHeapTieredMode() {
+        return true;
     }
 }

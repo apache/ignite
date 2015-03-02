@@ -55,12 +55,12 @@ public class VisorCachePreloadConfiguration implements Serializable {
     public static VisorCachePreloadConfiguration from(CacheConfiguration ccfg) {
         VisorCachePreloadConfiguration cfg = new VisorCachePreloadConfiguration();
 
-        cfg.mode(ccfg.getPreloadMode());
-        cfg.batchSize(ccfg.getPreloadBatchSize());
-        cfg.threadPoolSize(ccfg.getPreloadThreadPoolSize());
-        cfg.partitionedDelay(ccfg.getPreloadPartitionedDelay());
-        cfg.throttle(ccfg.getPreloadThrottle());
-        cfg.timeout(ccfg.getPreloadTimeout());
+        cfg.mode = ccfg.getPreloadMode();
+        cfg.batchSize = ccfg.getPreloadBatchSize();
+        cfg.threadPoolSize = ccfg.getPreloadThreadPoolSize();
+        cfg.partitionedDelay = ccfg.getPreloadPartitionedDelay();
+        cfg.throttle = ccfg.getPreloadThrottle();
+        cfg.timeout = ccfg.getPreloadTimeout();
 
         return cfg;
     }
@@ -73,24 +73,10 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param mode New cache preload mode.
-     */
-    public void mode(CachePreloadMode mode) {
-        this.mode = mode;
-    }
-
-    /**
      * @return Preload thread pool size.
      */
     public int threadPoolSize() {
         return threadPoolSize;
-    }
-
-    /**
-     * @param threadPoolSize New preload thread pool size.
-     */
-    public void threadPoolSize(int threadPoolSize) {
-        this.threadPoolSize = threadPoolSize;
     }
 
     /**
@@ -101,24 +87,10 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param batchSize New cache preload batch size.
-     */
-    public void batchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
-
-    /**
      * @return Preloading partitioned delay.
      */
     public long partitionedDelay() {
         return partitionedDelay;
-    }
-
-    /**
-     * @param partitionedDelay New preloading partitioned delay.
-     */
-    public void partitionedDelay(long partitionedDelay) {
-        this.partitionedDelay = partitionedDelay;
     }
 
     /**
@@ -129,24 +101,10 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param throttle New time in milliseconds to wait between preload messages.
-     */
-    public void throttle(long throttle) {
-        this.throttle = throttle;
-    }
-
-    /**
      * @return Preload timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout New preload timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
