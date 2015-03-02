@@ -102,24 +102,24 @@ public class VisorGridConfiguration implements Serializable {
 
         IgniteConfiguration c = ignite.configuration();
 
-        basic(VisorBasicConfiguration.from(ignite, c));
-        metrics(VisorMetricsConfiguration.from(c));
-        spis(VisorSpisConfiguration.from(c));
-        p2p(VisorPeerToPeerConfiguration.from(c));
-        lifecycle(VisorLifecycleConfiguration.from(c));
-        executeService(VisorExecutorServiceConfiguration.from(c));
-        segmentation(VisorSegmentationConfiguration.from(c));
-        includeProperties(compactArray(c.getIncludeProperties()));
-        includeEventTypes(c.getIncludeEventTypes());
-        rest(VisorRestConfiguration.from(c));
-        userAttributes(c.getUserAttributes());
-        caches(VisorCacheConfiguration.list(ignite, c.getCacheConfiguration()));
-        igfss(VisorIgfsConfiguration.list(c.getIgfsConfiguration()));
-        streamers(VisorStreamerConfiguration.list(c.getStreamerConfiguration()));
-        env(new HashMap<>(getenv()));
-        systemProperties(getProperties());
-        atomic(VisorAtomicConfiguration.from(c.getAtomicConfiguration()));
-        transaction(VisorTransactionConfiguration.from(c.getTransactionConfiguration()));
+        basic = VisorBasicConfiguration.from(ignite, c);
+        metrics = VisorMetricsConfiguration.from(c);
+        spis = VisorSpisConfiguration.from(c);
+        p2p = VisorPeerToPeerConfiguration.from(c);
+        lifecycle = VisorLifecycleConfiguration.from(c);
+        execSvc = VisorExecutorServiceConfiguration.from(c);
+        seg = VisorSegmentationConfiguration.from(c);
+        inclProps = compactArray(c.getIncludeProperties());
+        inclEvtTypes = c.getIncludeEventTypes();
+        rest = VisorRestConfiguration.from(c);
+        userAttrs = c.getUserAttributes();
+        caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
+        igfss = VisorIgfsConfiguration.list(c.getIgfsConfiguration());
+        streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
+        env = new HashMap<>(getenv());
+        sysProps = getProperties();
+        atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
+        txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
 
         return this;
     }
@@ -132,24 +132,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param basic New basic.
-     */
-    public void basic(VisorBasicConfiguration basic) {
-        this.basic = basic;
-    }
-
-    /**
      * @return Metrics.
      */
     public VisorMetricsConfiguration metrics() {
         return metrics;
-    }
-
-    /**
-     * @param metrics New metrics.
-     */
-    public void metrics(VisorMetricsConfiguration metrics) {
-        this.metrics = metrics;
     }
 
     /**
@@ -160,24 +146,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param spis New SPIs.
-     */
-    public void spis(VisorSpisConfiguration spis) {
-        this.spis = spis;
-    }
-
-    /**
      * @return P2P.
      */
     public VisorPeerToPeerConfiguration p2p() {
         return p2p;
-    }
-
-    /**
-     * @param p2P New p2p.
-     */
-    public void p2p(VisorPeerToPeerConfiguration p2P) {
-        p2p = p2P;
     }
 
     /**
@@ -188,24 +160,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param lifecycle New lifecycle.
-     */
-    public void lifecycle(VisorLifecycleConfiguration lifecycle) {
-        this.lifecycle = lifecycle;
-    }
-
-    /**
      * @return Executors service configuration.
      */
     public VisorExecutorServiceConfiguration executeService() {
         return execSvc;
-    }
-
-    /**
-     * @param execSvc New executors service configuration.
-     */
-    public void executeService(VisorExecutorServiceConfiguration execSvc) {
-        this.execSvc = execSvc;
     }
 
     /**
@@ -216,24 +174,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param seg New segmentation.
-     */
-    public void segmentation(VisorSegmentationConfiguration seg) {
-        this.seg = seg;
-    }
-
-    /**
      * @return Include properties.
      */
     public String includeProperties() {
         return inclProps;
-    }
-
-    /**
-     * @param inclProps New include properties.
-     */
-    public void includeProperties(String inclProps) {
-        this.inclProps = inclProps;
     }
 
     /**
@@ -244,24 +188,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param inclEvtTypes New include events types.
-     */
-    public void includeEventTypes(int[] inclEvtTypes) {
-        this.inclEvtTypes = inclEvtTypes;
-    }
-
-    /**
      * @return Rest.
      */
     public VisorRestConfiguration rest() {
         return rest;
-    }
-
-    /**
-     * @param rest New rest.
-     */
-    public void rest(VisorRestConfiguration rest) {
-        this.rest = rest;
     }
 
     /**
@@ -272,24 +202,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param userAttrs New user attributes.
-     */
-    public void userAttributes(Map<String, ?> userAttrs) {
-        this.userAttrs = userAttrs;
-    }
-
-    /**
      * @return Caches.
      */
     public Iterable<VisorCacheConfiguration> caches() {
         return caches;
-    }
-
-    /**
-     * @param caches New caches.
-     */
-    public void caches(Iterable<VisorCacheConfiguration> caches) {
-        this.caches = caches;
     }
 
     /**
@@ -300,24 +216,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param igfss New igfss.
-     */
-    public void igfss(Iterable<VisorIgfsConfiguration> igfss) {
-        this.igfss = igfss;
-    }
-
-    /**
      * @return Streamers.
      */
     public Iterable<VisorStreamerConfiguration> streamers() {
         return streamers;
-    }
-
-    /**
-     * @param streamers New streamers.
-     */
-    public void streamers(Iterable<VisorStreamerConfiguration> streamers) {
-        this.streamers = streamers;
     }
 
     /**
@@ -328,24 +230,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param env New environment.
-     */
-    public void env(Map<String, String> env) {
-        this.env = env;
-    }
-
-    /**
      * @return System properties.
      */
     public Properties systemProperties() {
         return sysProps;
-    }
-
-    /**
-     * @param sysProps New system properties.
-     */
-    public void systemProperties(Properties sysProps) {
-        this.sysProps = sysProps;
     }
 
     /**
@@ -356,29 +244,10 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @param atomic New configuration of atomic data structures.
-     */
-    public void atomic(VisorAtomicConfiguration atomic) {
-        this.atomic = atomic;
-    }
-
-    /**
      * @return Transactions configuration.
      */
     public VisorTransactionConfiguration transaction() {
         return txCfg;
-    }
-
-    /**
-     * @param txCfg New transactions configuration.
-     */
-    public void transaction(VisorTransactionConfiguration txCfg) {
-        this.txCfg = txCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorGridConfiguration.class, this);
     }
 
     /**
@@ -388,10 +257,8 @@ public class VisorGridConfiguration implements Serializable {
         return qryCfg;
     }
 
-    /**
-     * @param qryCfg New query configuration.
-     */
-    public void queryConfiguration(VisorQueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorGridConfiguration.class, this);
     }
 }

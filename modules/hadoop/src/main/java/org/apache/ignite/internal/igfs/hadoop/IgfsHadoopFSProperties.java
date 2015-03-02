@@ -27,7 +27,7 @@ import static org.apache.ignite.IgniteFs.*;
 /**
  * Hadoop file system properties.
  */
-class IgfsHadoopFSProperties {
+public class IgfsHadoopFSProperties {
     /** Username. */
     private String usrName;
 
@@ -43,7 +43,7 @@ class IgfsHadoopFSProperties {
      * @param props Properties.
      * @throws IgniteException In case of error.
      */
-    IgfsHadoopFSProperties(Map<String, String> props) throws IgniteException {
+    public IgfsHadoopFSProperties(Map<String, String> props) throws IgniteException {
         usrName = props.get(PROP_USER_NAME);
         grpName = props.get(PROP_GROUP_NAME);
 
@@ -64,7 +64,7 @@ class IgfsHadoopFSProperties {
      *
      * @return User name.
      */
-    String userName() {
+    public String userName() {
         return usrName;
     }
 
@@ -73,7 +73,7 @@ class IgfsHadoopFSProperties {
      *
      * @return Group name.
      */
-    String groupName() {
+    public String groupName() {
         return grpName;
     }
 
@@ -82,7 +82,7 @@ class IgfsHadoopFSProperties {
      *
      * @return Permission.
      */
-    FsPermission permission() {
+    public FsPermission permission() {
         return perm;
     }
 }

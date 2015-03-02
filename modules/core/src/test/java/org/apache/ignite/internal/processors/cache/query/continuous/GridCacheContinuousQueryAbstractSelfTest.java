@@ -614,12 +614,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicate() throws Exception {
+    public void testInitialQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        qry.setInitialPredicate(new ScanQuery<>(new P2<Integer, Integer>() {
+        qry.setInitialQuery(new ScanQuery<>(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }
@@ -659,12 +659,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicateAndUpdates() throws Exception {
+    public void testInitialQueryAndUpdates() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        qry.setInitialPredicate(new ScanQuery<>(new P2<Integer, Integer>() {
+        qry.setInitialQuery(new ScanQuery<>(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }

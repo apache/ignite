@@ -341,7 +341,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Initial iteration cursor.
      */
     private QueryCursor<Entry<K,V>> queryContinuous(ContinuousQuery<K, V> qry, boolean loc) {
-        if (qry.getInitialPredicate() instanceof ContinuousQuery)
+        if (qry.getInitialQuery() instanceof ContinuousQuery)
             throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
                 "continuous query. Use SCAN or SQL query for initial iteration.");
 
@@ -359,8 +359,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             final QueryCursor<Cache.Entry<K, V>> cur;
 
-            if (qry.getInitialPredicate() != null)
-                cur = loc ? localQuery(qry.getInitialPredicate()) : query(qry.getInitialPredicate());
+            if (qry.getInitialQuery() != null)
+                cur = loc ? localQuery(qry.getInitialQuery()) : query(qry.getInitialQuery());
             else
                 cur = null;
 

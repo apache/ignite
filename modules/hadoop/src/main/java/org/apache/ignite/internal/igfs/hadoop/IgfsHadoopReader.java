@@ -56,7 +56,7 @@ public class IgfsHadoopReader implements IgfsReader {
      * @param path Path to the file to open.
      * @param bufSize Buffer size.
      */
-    IgfsHadoopReader(FileSystem fs, Path path, int bufSize) {
+    public IgfsHadoopReader(FileSystem fs, Path path, int bufSize) {
         assert fs != null;
         assert path != null;
 

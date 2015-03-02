@@ -277,6 +277,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
                 try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
+
                     dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
 
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {

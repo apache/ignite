@@ -45,7 +45,7 @@ import java.util.concurrent.*;
 public class GridHadoopExternalCommunication {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower)."; // todo IGNITE-70 Add link to documentation
+        "(switching to TCP, may be slower)."; // TODO IGNITE-70 Add link to documentation
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 27100;
@@ -687,6 +687,11 @@ public class GridHadoopExternalCommunication {
             locPort + ", portRange=" + locPortRange + ", locHost=" + locHost + ']', lastEx);
     }
 
+    /**
+     * Stops the server.
+     *
+     * @throws IgniteCheckedException
+     */
     public void stop() throws IgniteCheckedException {
         // Stop TCP server.
         if (nioSrvr != null)
@@ -710,6 +715,13 @@ public class GridHadoopExternalCommunication {
         boundTcpPort = -1;
     }
 
+    /**
+     * Sends message to Hadoop process.
+     *
+     * @param desc
+     * @param msg
+     * @throws IgniteCheckedException
+     */
     public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) throws
         IgniteCheckedException {
         assert desc != null;

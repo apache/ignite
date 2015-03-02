@@ -48,19 +48,12 @@ public class VisorQueryConfiguration implements Serializable {
 
     /** The flag indicating that serializer for H2 database will be set to Ignite's marshaller. */
     private boolean useOptimizedSerializer;
-
+    
     /**
      * @return Classes with methods annotated by {@link QuerySqlFunction}.
      */
     public String[] indexCustomFunctionClasses() {
         return idxCustomFuncClss;
-    }
-
-    /**
-     * @param idxCustomFuncClss Classes with methods annotated by {@link QuerySqlFunction}.
-     */
-    public void indexCustomFunctionClasses(String[] idxCustomFuncClss) {
-        this.idxCustomFuncClss = idxCustomFuncClss;
     }
 
     /**
@@ -71,24 +64,10 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param searchPath Optional search path consisting of space names to search SQL schema objects.
-     */
-    public void searchPath(String[] searchPath) {
-        this.searchPath = searchPath;
-    }
-
-    /**
      * @return Script path to be ran against H2 database after opening.
      */
     public String initialScriptPath() {
         return initScriptPath;
-    }
-
-    /**
-     * @param initScriptPath Script path to be ran against H2 database after opening.
-     */
-    public void initialScriptPath(String initScriptPath) {
-        this.initScriptPath = initScriptPath;
     }
 
     /**
@@ -99,24 +78,10 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param maxOffHeapMemory Maximum amount of memory available to off-heap storage.
-     */
-    public void maxOffHeapMemory(long maxOffHeapMemory) {
-        this.maxOffHeapMemory = maxOffHeapMemory;
-    }
-
-    /**
      * @return Query execution time threshold.
      */
     public long longQueryExecutionTimeout() {
         return longQryExecTimeout;
-    }
-
-    /**
-     * @param longQryExecTimeout Query execution time threshold.
-     */
-    public void longQueryExecutionTimeout(long longQryExecTimeout) {
-        this.longQryExecTimeout = longQryExecTimeout;
     }
 
     /**
@@ -127,24 +92,14 @@ public class VisorQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param longQryExplain If {@code true}, SPI will print SQL execution plan for long queries.
-     */
-    public void longQueryExplain(boolean longQryExplain) {
-        this.longQryExplain = longQryExplain;
-    }
-
-    /**
      * @return The flag indicating that serializer for H2 database will be set to Ignite's marshaller.
      */
     public boolean useOptimizedSerializer() {
         return useOptimizedSerializer;
     }
 
-    /**
-     * @param useOptimizedSerializer The flag indicating that serializer for H2 database will be set to Ignite's
-     * marshaller.
-     */
-    public void useOptimizedSerializer(boolean useOptimizedSerializer) {
-        this.useOptimizedSerializer = useOptimizedSerializer;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorQueryConfiguration.class, this);
     }
 }
