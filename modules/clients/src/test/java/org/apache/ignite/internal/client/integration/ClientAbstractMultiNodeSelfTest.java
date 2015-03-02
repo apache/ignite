@@ -403,8 +403,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             if (affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals("zzz", cache.localPeek(key, CachePeekMode.ONHEAP));
-            else
-                assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 
