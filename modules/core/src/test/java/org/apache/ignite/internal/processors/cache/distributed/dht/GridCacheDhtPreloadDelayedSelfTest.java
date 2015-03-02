@@ -149,7 +149,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         checkMaps(false, d0, d1, d2);
 
         // Force preload.
-        internalCache(c1).forceRepartition();
+        c1.forceRebalancing();
 
         l1.await();
 
@@ -160,7 +160,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         info("Beginning to wait for cache2 repartition.");
 
         // Force preload.
-        internalCache(c2).forceRepartition();
+        c2.forceRebalancing();
 
         l2.await();
 
@@ -352,7 +352,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
             long start = System.currentTimeMillis();
 
-            internalCache(g.jcache(null)).forceRepartition().get();
+            g.jcache(null).forceRebalancing().get();
 
             info(">>> Finished preloading of empty cache in " + (System.currentTimeMillis() - start) + "ms.");
         }

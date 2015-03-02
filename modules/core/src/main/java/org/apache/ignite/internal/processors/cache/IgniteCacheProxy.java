@@ -1443,6 +1443,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<?> forceRebalancing() {
+        ctx.preloader().forcePreload();
+
+        return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
     }

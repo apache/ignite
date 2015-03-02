@@ -74,7 +74,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                ((IgniteKernal)grid(i)).cache(null).forceRepartition().get();
+                grid(i).jcache(null).forceRebalancing().get();
 
             startGrid(GRID_CNT - 1);
 

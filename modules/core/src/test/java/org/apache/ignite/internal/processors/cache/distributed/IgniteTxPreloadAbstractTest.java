@@ -121,7 +121,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         for (int i = 0; i < GRID_CNT; i++)
             // Wait for preloader.
-            cache(i).forceRepartition().get();
+            jcache(i).forceRebalancing().get();
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (String key : keys)

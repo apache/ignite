@@ -20,6 +20,8 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -454,6 +456,28 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         IgniteEntryProcessor<K, V, T> entryProcessor, Object... args);
+
+    /**
+     * Forces this cache node to re-balance its partitions. This method is usually used when
+     * {@link CacheConfiguration#getRebalancePartitionedDelay()} configuration parameter has non-zero value.
+     * When many nodes are started or stopped almost concurrently, it is more efficient to delay
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+     * happens.
+     * <p>
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
+     * usually make sure that new nodes get placed on the same place of consistent hash ring as
+     * the left nodes, and that nodes are restarted before
+     * {@link CacheConfiguration#getRebalancePartitionedDelay() rebalanceDelay} expires. To place nodes
+     * on the same place in consistent hash ring, use
+     * {@link CacheConsistentHashAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * a node maps to the same hash ID if re-started.
+     * <p>
+     * See {@link CacheConfiguration#getRebalancePartitionedDelay()} for more information on how to configure
+     * rebalance re-partition delay.
+     * <p>
+     * @return Future that will be completed when rebalancing is finished.
+     */
+    public IgniteFuture<?> forceRebalancing();
 
     /**
      * Gets snapshot metrics (statistics) for this cache.
