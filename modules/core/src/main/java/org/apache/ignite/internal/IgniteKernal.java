@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -182,10 +183,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private boolean errOnStop;
 
-    /** Cluster. */
-    @GridToStringExclude
-    private IgniteClusterImpl cluster;
-
     /** Scheduler. */
     @GridToStringExclude
     private IgniteScheduler scheduler;
@@ -229,37 +226,37 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
-        return cluster;
+        return ctx.cluster().get();
     }
 
     /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
-        return cluster.localNode();
+        return ctx.cluster().get().localNode();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        return cluster.compute();
+        return ctx.cluster().get().compute();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
-        return cluster.message();
+        return ctx.cluster().get().message();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events() {
-        return cluster.events();
+        return ctx.cluster().get().events();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        return cluster.services();
+        return ctx.cluster().get().services();
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        return cluster.executorService();
+        return ctx.cluster().get().executorService();
     }
 
     /** {@inheritDoc} */
@@ -674,9 +671,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc);
 
-            fillNodeAttributes();
+            startProcessor(new ClusterProcessor(ctx));
 
-            cluster = new IgniteClusterImpl(ctx);
+            fillNodeAttributes();
 
             U.onGridStart();
 
@@ -1761,7 +1758,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
 
-                cluster.clearNodeMap();
+                ctx.cluster().get().clearNodeMap();
 
                 if (log.isDebugEnabled())
                     log.debug("Grid " + (gridName == null ? "" : '\'' + gridName + "' ") + "is stopping.");

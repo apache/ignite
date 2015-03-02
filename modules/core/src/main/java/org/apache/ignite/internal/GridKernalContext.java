@@ -33,11 +33,12 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -538,4 +539,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Node attributes.
      */
     public Map<String, Object> nodeAttributes();
+
+    /**
+     * Gets Cluster processor.
+     *
+     * @return Cluster processor.
+     */
+    public ClusterProcessor cluster();
 }

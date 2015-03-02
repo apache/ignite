@@ -103,23 +103,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnUpdate() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return Duration.ZERO;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, 0L, null));
 
         startGrids();
 
@@ -150,23 +134,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnAccess() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return Duration.ZERO;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return null;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, null, 0L));
 
         startGrids();
 
@@ -1087,7 +1055,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestPolicy implements ExpiryPolicy {
+    private static class TestPolicy implements ExpiryPolicy {
         /** */
         private Long create;
 

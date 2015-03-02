@@ -616,6 +616,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     handleClassCastException(e);
                 }
                 catch (Exception e) {
+                    if (!(e instanceof CacheWriterException))
+                        e = new CacheWriterException(e);
+
                     if (!entries.isEmpty()) {
                         List<Object> keys = new ArrayList<>(entries.size());
 
@@ -624,9 +627,6 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                         throw new CacheStorePartialUpdateException(keys, e);
                     }
-
-                    if (!(e instanceof CacheWriterException))
-                        e = new CacheWriterException(e);
 
                     throw new IgniteCheckedException(e);
                 }
@@ -725,11 +725,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 handleClassCastException(e);
             }
             catch (Exception e) {
-                if (!keys0.isEmpty())
-                    throw new CacheStorePartialUpdateException(keys0, e);
-
                 if (!(e instanceof CacheWriterException))
                     e = new CacheWriterException(e);
+
+                if (!keys0.isEmpty())
+                    throw new CacheStorePartialUpdateException(keys0, e);
 
                 throw new IgniteCheckedException(e);
             }
