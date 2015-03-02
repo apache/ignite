@@ -224,13 +224,15 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
         if (ownedVals != null && ownedValsBytes == null) {
             ownedValsBytes = new ArrayList<>(ownedVals.size());
 
             for (Map.Entry<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> entry : ownedVals.entrySet()) {
                 IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
+
+                GridCacheContext cctx = ctx.cacheContext(entry.getKey().cacheId());
+
+                entry.getKey().prepareMarshal(cctx);
 
                 CacheObject val = tup.get2();
 
@@ -245,16 +247,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             retValBytes = ctx.marshaller().marshal(retVal);
 
         if (filterFailedKeys != null) {
-            for (IgniteTxKey key :filterFailedKeys)
+            for (IgniteTxKey key :filterFailedKeys) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+
                 key.prepareMarshal(cctx);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (ownedValsBytes != null && ownedVals == null) {
             ownedVals = new HashMap<>();
@@ -263,6 +266,10 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 GridTuple3<IgniteTxKey, GridCacheVersion, CacheObject> tup = ctx.marshaller().unmarshal(bytes, ldr);
 
                 CacheObject val = tup.get3();
+
+                GridCacheContext cctx = ctx.cacheContext(tup.get1().cacheId());
+
+                tup.get1().finishUnmarshal(cctx, ldr);
 
                 if (val != null)
                     val.finishUnmarshal(cctx, ldr);
@@ -275,8 +282,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             retVal = ctx.marshaller().unmarshal(retValBytes, ldr);
 
         if (filterFailedKeys != null) {
-            for (IgniteTxKey key :filterFailedKeys)
+            for (IgniteTxKey key :filterFailedKeys) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+
                 key.finishUnmarshal(cctx, ldr);
+            }
         }
     }
 

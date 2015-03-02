@@ -506,7 +506,6 @@ public class GridDhtPartitionDemandPool<K, V> {
                     if (preloadPred == null || preloadPred.apply(entry)) {
                         if (cached.initialValue(
                             entry.value(),
-                            null,
                             entry.version(),
                             entry.ttl(),
                             entry.expireTime(),

@@ -183,12 +183,20 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
-                    return ctx.wrapCloneMap(tx.<K, V>getAllAsync(ctx, keys, entry, deserializePortable, skipVals));
+                    return tx.getAllAsync(ctx,
+                        ctx.cacheKeysView(keys),
+                        entry,
+                        deserializePortable,
+                        skipVals,
+                        false);
                 }
             });
         }
@@ -200,7 +208,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(
-            keys,
+            ctx.cacheKeysView(keys),
             true,
             false,
             forcePrimary,
@@ -232,9 +240,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
@@ -248,9 +257,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         if (expiryPlc == null)
             expiryPlc = expiryPolicy(null);
 
@@ -261,17 +267,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             boolean success = true;
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
-            for (K key : keys) {
-                if (key == null)
-                    throw new NullPointerException("Null key.");
-
+            for (KeyCacheObject key : keys) {
                 GridCacheEntryEx entry = null;
-
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
+                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -295,12 +296,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeIfObsolete(cacheKey);
+                                    removeIfObsolete(key);
 
                                 success = false;
                             }
                             else
-                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable, true);
+                                ctx.addResult(locVals, key, v, skipVals, false, deserializePortable, true);
                         }
                         else
                             success = false;
@@ -337,7 +338,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (success) {
                 sendTtlUpdateRequest(expiryPlc);
 
-                return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+                return new GridFinishedFuture<>(ctx.kernalContext(), locVals);
             }
         }
 
@@ -360,7 +361,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         fut.init();
 
-        return ctx.wrapCloneMap(fut);
+        return fut;
     }
 
     /**
@@ -369,7 +370,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * {@inheritDoc}
      */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -426,7 +427,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Collection<KeyCacheObject> locKeys = new ArrayList<>();
 
             for (K key : keys) {
-                // TODO IGNITE-51.
                 KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
@@ -519,7 +519,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param ver Lock version.
      * @param keys Keys.
      */
-    public void removeLocks(long threadId, GridCacheVersion ver, Collection<? extends K> keys) {
+    public void removeLocks(long threadId, GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;
 
@@ -530,11 +530,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
-            for (K key : keys) {
-                // TODO IGNITE-51.
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, cacheKey, ver);
+            for (KeyCacheObject key : keys) {
+                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
 
                 if (lock != null) {
                     long topVer = lock.topologyVersion();
@@ -559,14 +556,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             req.version(ver);
                         }
 
-                        GridCacheEntryEx entry = peekEx(cacheKey);
+                        GridCacheEntryEx entry = peekEx(key);
 
-                        KeyCacheObject key0 = entry != null ? entry.key() : cacheKey;
+                        KeyCacheObject key0 = entry != null ? entry.key() : key;
 
                         req.addKey(key0, ctx);
                     }
                     else
-                        locKeys.add(cacheKey);
+                        locKeys.add(key);
                 }
             }
 
@@ -616,7 +613,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long threadId,
         final GridCacheVersion ver,
         final long topVer,
-        final Collection<K> keys,
+        final Collection<KeyCacheObject> keys,
         final boolean txRead,
         final long timeout,
         final long accessTtl,
@@ -624,9 +621,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     ) {
         assert keys != null;
 
-        // TODO IGNITE-51.
-        // IgniteInternalFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
-        IgniteInternalFuture<Object> keyFut = null;
+        IgniteInternalFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
 
         // Prevent embedded future creation if possible.
         if (keyFut.isDone()) {
@@ -691,7 +686,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         long threadId,
         final GridCacheVersion ver,
         final long topVer,
-        final Collection<K> keys,
+        final Collection<KeyCacheObject> keys,
         final boolean txRead,
         final long timeout,
         final long accessTtl,
@@ -717,15 +712,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             boolean timedout = false;
 
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 if (timedout)
                     break;
 
-                // TODO IGNITE-51.
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
                 while (true) {
-                    GridDhtCacheEntry entry = entryExx(cacheKey, topVer);
+                    GridDhtCacheEntry entry = entryExx(key, topVer);
 
                     try {
                         fut.addEntry(key == null ? null : entry);

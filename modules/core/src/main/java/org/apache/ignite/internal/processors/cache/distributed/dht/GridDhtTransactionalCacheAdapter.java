@@ -548,7 +548,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
-        @Nullable Collection<? extends K> keys,
+        @Nullable Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx txx,
         boolean isInvalidate,
@@ -583,7 +583,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param filter Optional filter.
      * @return Lock future.
      */
-    public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys,
+    public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx txx,
         boolean isInvalidate,
@@ -612,16 +612,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             filter);
 
-        for (K key : keys) {
-            if (key == null)
-                continue;
-
-            // TODO IGNITE-51.
-            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
+        for (KeyCacheObject key : keys) {
             try {
                 while (true) {
-                    GridDhtCacheEntry entry = entryExx(cacheKey, tx.topologyVersion());
+                    GridDhtCacheEntry entry = entryExx(key, tx.topologyVersion());
 
                     try {
                         fut.addEntry(entry);

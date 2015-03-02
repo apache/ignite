@@ -1029,7 +1029,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                         // Lock is held at this point, so we can set the
                                         // returned value if any.
-                                        entry.resetFromPrimary(newVal, null, lockVer, dhtVer, node.id());
+                                        entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id());
 
                                         entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
                                             res.rolledbackVersions(), res.pending());
@@ -1387,7 +1387,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             // Lock is held at this point, so we can set the
                             // returned value if any.
-                            entry.resetFromPrimary(newVal, null, lockVer, dhtVer, node.id());
+                            entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id());
 
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);

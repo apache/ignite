@@ -104,7 +104,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,
@@ -121,7 +121,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         IgniteTxLocalEx tx = ctx.tm().localTx();
 
-        return lockAllAsync(keys, timeout, tx, filter);
+        return lockAllAsync(ctx.cacheKeysView(keys), timeout, tx, filter);
     }
 
     /**
@@ -131,7 +131,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Filter.
      * @return Future.
      */
-    public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    public IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
@@ -141,12 +141,12 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 
         try {
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 while (true) {
                     GridLocalCacheEntry entry = null;
 
                     try {
-                        entry = entryExx(ctx.toCacheKeyObject(key));
+                        entry = entryExx(key);
 
                         if (!ctx.isAll(entry, filter)) {
                             fut.onFailed();

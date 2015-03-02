@@ -43,6 +43,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /**
+     * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
      */
     protected boolean needCopy(GridCacheContext ctx) {

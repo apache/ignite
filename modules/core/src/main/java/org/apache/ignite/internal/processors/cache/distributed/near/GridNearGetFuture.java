@@ -63,7 +63,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private GridCacheContext<K, V> cctx;
 
     /** Keys. */
-    private Collection<? extends K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Reload flag. */
     private boolean reload;
@@ -130,7 +130,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
@@ -170,21 +170,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     public void init() {
         long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-            @Override public KeyCacheObject apply(K key) {
-                if (key == null) {
-                    NullPointerException err = new NullPointerException("Null key.");
-
-                    onDone(err);
-
-                    throw err;
-                }
-
-                return cctx.toCacheKeyObject(key);
-            }
-        });
-
-        map(keys0, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }
@@ -197,13 +183,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // Should not flip trackable flag from true to false since get future can be remapped.
-    }
-
-    /**
-     * @return Keys.
-     */
-    Collection<? extends K> keys() {
-        return keys;
     }
 
     /** {@inheritDoc} */

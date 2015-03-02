@@ -464,24 +464,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 entry.cached(cached, null);
 
-// TODO IGNITE-51.
-//                while (true) {
-//                    GridDhtCacheEntry cached = dhtCache.entryExx(entry.key(), topologyVersion());
-//
-//                    try {
-//                        // Set key bytes to avoid serializing in future.
-//                        cached.keyBytes(entry.keyBytes());
-//
-//                        entry.cached(cached, null);
-//
-//                        break;
-//                    }
-//                    catch (GridCacheEntryRemovedException ignore) {
-//                        if (log.isDebugEnabled())
-//                            log.debug("Got removed entry when adding to dht tx (will retry): " + cached);
-//                    }
-//                }
-
                 GridCacheVersion explicit = entry.explicitVersion();
 
                 if (explicit != null) {
@@ -641,17 +623,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         GridDhtTransactionalCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
-        IgniteInternalFuture<Boolean> fut = null;
-// TODO IGNTIE-51
-//        IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
-//            lockTimeout(),
-//            this,
-//            isInvalidate(),
-//            read,
-//            /*retval*/false,
-//            isolation,
-//            accessTtl,
-//            CU.empty());
+        IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
+            lockTimeout(),
+            this,
+            isInvalidate(),
+            read,
+            /*retval*/false,
+            isolation,
+            accessTtl,
+            (IgnitePredicate[])CU.empty());
 
         return new GridEmbeddedFuture<>(
             fut,

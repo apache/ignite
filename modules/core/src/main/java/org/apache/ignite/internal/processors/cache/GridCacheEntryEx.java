@@ -244,7 +244,6 @@ public interface GridCacheEntryEx {
      * @return Swap entry if this entry was marked obsolete, {@code null} if entry was not evicted.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO IGNITE-51
     public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer) throws IgniteCheckedException;
 
     /**
@@ -333,7 +332,6 @@ public interface GridCacheEntryEx {
      * @param evtNodeId ID of node responsible for this change.
      * @param affNodeId Partitioned node iD.
      * @param val Value to set.
-     * @param valBytes Value bytes to set.
      * @param writeThrough If {@code true} then persist to storage.
      * @param retval {@code True} if value should be returned (and unmarshalled if needed).
      * @param ttl Time to live.
@@ -356,7 +354,6 @@ public interface GridCacheEntryEx {
         UUID evtNodeId,
         UUID affNodeId,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
         long ttl,
@@ -412,7 +409,6 @@ public interface GridCacheEntryEx {
      * @param affNodeId Affinity node ID.
      * @param op Update operation.
      * @param val Value. Type depends on operation.
-     * @param valBytes Value bytes. Can be non-null only if operation is UPDATE.
      * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
@@ -445,7 +441,6 @@ public interface GridCacheEntryEx {
         UUID affNodeId,
         GridCacheOperation op,
         @Nullable Object val,
-        @Nullable byte[] valBytes,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
@@ -485,7 +480,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> innerUpdateLocal(
+    public GridTuple3<Boolean, Object, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -500,7 +495,6 @@ public interface GridCacheEntryEx {
         @Nullable UUID subjId,
         String taskName
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
-
 
     /**
      * Marks entry as obsolete and, if possible or required, removes it
@@ -662,7 +656,6 @@ public interface GridCacheEntryEx {
      * Sets new value if current version is <tt>0</tt>
      *
      * @param val New value.
-     * @param valBytes Value bytes.
      * @param ver Version to use.
      * @param ttl Time to live.
      * @param expireTime Expiration time.
@@ -674,7 +667,6 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public boolean initialValue(CacheObject val,
-        @Nullable byte[] valBytes,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
@@ -692,7 +684,6 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    // TODO IGNITE-51
     public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -715,7 +706,9 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean versionedValue(CacheObject val, @Nullable GridCacheVersion curVer, @Nullable GridCacheVersion newVer)
+    public boolean versionedValue(CacheObject val,
+        @Nullable GridCacheVersion curVer,
+        @Nullable GridCacheVersion newVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

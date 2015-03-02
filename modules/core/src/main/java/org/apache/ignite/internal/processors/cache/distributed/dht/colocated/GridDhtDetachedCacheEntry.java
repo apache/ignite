@@ -46,16 +46,12 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      * Sets value to detached entry so it can be retrieved in transactional gets.
      *
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ver Version.
      * @throws IgniteCheckedException If value unmarshalling failed.
      */
-    public void resetFromPrimary(CacheObject val, byte[] valBytes, GridCacheVersion ver)
+    public void resetFromPrimary(CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
-       if (valBytes != null && val == null)
-            val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-
-        value(val, valBytes);
+        value(val);
 
         this.ver = ver;
     }
@@ -66,7 +62,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void value(@Nullable CacheObject val, @Nullable byte[] valBytes) {
+    @Override protected void value(@Nullable CacheObject val) {
         this.val = val;
     }
 
@@ -79,7 +75,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(CacheObject val, byte[] valBytes, long expireTime,
+    @Override protected void updateIndex(CacheObject val, long expireTime,
         GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary nodes.
     }

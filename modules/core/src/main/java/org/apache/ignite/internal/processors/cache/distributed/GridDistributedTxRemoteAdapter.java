@@ -500,12 +500,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
 
-                                    GridTuple3<GridCacheOperation, CacheObject, byte[]> res =
+                                    IgniteBiTuple<GridCacheOperation, CacheObject> res =
                                         applyTransformClosures(txEntry, false);
 
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
-                                    byte[] valBytes = res.get3();
 
                                     GridCacheVersion explicitVer = txEntry.conflictVersion();
 
@@ -556,7 +555,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
                                                 resolveTaskName());
                                         else {
-                                            cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
+                                            cached.innerSet(this, eventNodeId(), nodeId, val, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
                                                 replicate ? DR_BACKUP : DR_NONE, txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
@@ -565,7 +564,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             // Keep near entry up to date.
                                             if (nearCached != null) {
                                                 CacheObject val0 = null;
-                                                byte[] valBytes0 = null;
 
                                                 GridCacheValueBytes valBytesTuple = cached.valueBytes();
 
@@ -579,8 +577,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 else
                                                     val0 = cached.rawGet();
 
-                                                nearCached.updateOrEvict(xidVer, val0, valBytes0, cached.expireTime(),
-                                                    cached.ttl(), nodeId);
+                                                nearCached.updateOrEvict(xidVer,
+                                                    val0,
+                                                    cached.expireTime(),
+                                                    cached.ttl(),
+                                                    nodeId);
                                             }
                                         }
                                     }
@@ -591,7 +592,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)
-                                            nearCached.updateOrEvict(xidVer, null, null, 0, 0, nodeId);
+                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId);
                                     }
                                     else if (op == RELOAD) {
                                         CacheObject reloaded = cached.innerReload();
@@ -599,7 +600,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         if (nearCached != null) {
                                             nearCached.innerReload();
 
-                                            nearCached.updateOrEvict(cached.version(), reloaded, null,
+                                            nearCached.updateOrEvict(cached.version(), reloaded,
                                                 cached.expireTime(), cached.ttl(), nodeId);
                                         }
                                     }
@@ -621,7 +622,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                             if (nearCached != null) {
                                                 CacheObject val0 = null;
-                                                byte[] valBytes0 = null;
 
                                                 GridCacheValueBytes valBytesTuple = cached.valueBytes();
 
@@ -635,8 +635,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 else
                                                     val0 = cached.rawGet();
 
-                                                nearCached.updateOrEvict(xidVer, val0, valBytes0, cached.expireTime(),
-                                                    cached.ttl(), nodeId);
+                                                nearCached.updateOrEvict(xidVer,
+                                                    val0,
+                                                    cached.expireTime(),
+                                                    cached.ttl(),
+                                                    nodeId);
                                             }
                                         }
                                     }

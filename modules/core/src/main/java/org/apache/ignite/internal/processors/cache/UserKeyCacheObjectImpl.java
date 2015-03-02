@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Cache object wrapping key provided by user. Need to be copied before stored in cache.
@@ -38,19 +39,29 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
-        if (needCopy(ctx)) {
-            try {
-                if (valBytes == null)
-                    valBytes = ctx.marshaller().marshal(val);
+    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+        if (valBytes == null)
+            valBytes = CU.marshal(ctx.shared(), val);
 
-                return new KeyCacheObjectImpl(ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader()), valBytes);
+        return valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+        try {
+            if (valBytes == null)
+                valBytes = ctx.marshaller().marshal(val);
+
+            if (needCopy(ctx)) {
+                Object val = ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader());
+
+                return new KeyCacheObjectImpl(val, valBytes);
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-        else
+
             return new KeyCacheObjectImpl(val, valBytes);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshal object: " + val, e);
+        }
     }
 }

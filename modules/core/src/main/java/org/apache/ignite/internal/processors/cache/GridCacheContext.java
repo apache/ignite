@@ -1322,26 +1322,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param f Target future.
-     * @return Wrapped future that is aware of cloning behaviour.
-     */
-    public IgniteInternalFuture<Map<K, V>> wrapCloneMap(IgniteInternalFuture<Map<K, V>> f) {
-        if (!hasFlag(CLONE))
-            return f;
-
-        return f.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
-            @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                Map<K, V> map = new GridLeanMap<>();
-
-                for (Map.Entry<K, V> e : f.get().entrySet())
-                    map.put(e.getKey(), cloneValue(e.getValue()));
-
-                return map;
-            }
-        });
-    }
-
-    /**
      * Creates Runnable that can be executed safely in a different thread inheriting
      * the same thread local projection as for the current thread. If no projection is
      * set for current thread then there's no need to create new object and method simply
@@ -1780,7 +1760,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
-        return portable().toCacheObject(cacheObjCtx, obj);
+        return portable().toCacheObject(cacheObjCtx, obj, null);
+    }
+
+    /**
+     * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(@Nullable Object obj, byte[] bytes) {
+        return portable().toCacheObject(cacheObjCtx, obj, bytes);
     }
 
     /**
@@ -1945,6 +1933,21 @@ public class GridCacheContext<K, V> implements Externalizable {
                 if (!printed.contains(mgr))
                     mgr.printMemoryStats();
     }
+
+    /**
+     * @param keys Keys.
+     * @return Co
+     */
+    public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
+        return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
+            @Override public KeyCacheObject apply(Object key) {
+                if (key == null)
+                    throw new NullPointerException("Null key.");
+
+                return toCacheKeyObject(key);
+            }
+        });
+    };
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

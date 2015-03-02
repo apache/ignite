@@ -327,7 +327,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         GridCacheReturn ret = (GridCacheReturn)res;
 
-        if (op != TRANSFORM) {
+        if (op != TRANSFORM && ret != null) {
             CacheObject val = (CacheObject)ret.value();
 
             ret.value(CU.value(val, cctx, false));
@@ -357,7 +357,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (res.remapKeys() != null) {
             assert cctx.config().getAtomicWriteOrderMode() == PRIMARY;
 
-            // TODO IGNITE-51.
             mapOnTopology(res.remapKeys(), true, nodeId);
 
             return;
@@ -809,7 +808,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
-                    onDone(new GridCacheReturn<Object>(null, true));
+                    onDone(new GridCacheReturn(null, true));
             }
             catch (IgniteCheckedException e) {
                 onDone(addFailedKeys(req.keys(), e));
@@ -928,8 +927,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (err0 == null)
             err0 = this.err = new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
-        // TODO IGNITE-51.
-        err0.add(failedKeys, err);
+        List<Object> keys = new ArrayList<>(failedKeys.size());
+
+        for (KeyCacheObject key : failedKeys)
+            keys.add(key.value(cctx, false));
+
+        err0.add(keys, err);
 
         return err0;
     }

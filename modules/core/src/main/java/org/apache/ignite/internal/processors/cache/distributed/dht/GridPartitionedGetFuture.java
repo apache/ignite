@@ -60,7 +60,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheContext<K, V> cctx;
 
     /** Keys. */
-    private Collection<? extends K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Topology version. */
     private long topVer;
@@ -127,7 +127,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long topVer,
         boolean readThrough,
         boolean reload,
@@ -167,21 +167,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public void init() {
         long topVer = this.topVer > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
 
-        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-            @Override public KeyCacheObject apply(K key) {
-                if (key == null) {
-                    NullPointerException err = new NullPointerException("Null key.");
-
-                    onDone(err);
-
-                    throw err;
-                }
-
-                return cctx.toCacheKeyObject(key);
-            }
-        });
-
-        map(keys0, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }

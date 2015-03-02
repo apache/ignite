@@ -503,7 +503,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     try {
                         if (entry.initialValue(
                             info.value(),
-                            null,
                             info.version(),
                             info.ttl(),
                             info.expireTime(),

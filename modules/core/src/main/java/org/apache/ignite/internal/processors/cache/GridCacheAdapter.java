@@ -558,7 +558,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Locks future.
      */
     public abstract IgniteInternalFuture<Boolean> txLockAsync(
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,
@@ -2233,16 +2233,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-            @Override public KeyCacheObject apply(K key) {
-                if (key == null)
-                    throw new NullPointerException("Null key.");
-
-                return ctx.toCacheKeyObject(key);
-            }
-        });
-
-        return getAllAsync0(keys0,
+        return getAllAsync0(ctx.cacheKeysView(keys),
             readThrough,
             checkTx,
             subjId,
@@ -2263,7 +2254,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects
-     * @return
+     * @return Future.
      */
     public <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(@Nullable final Collection<KeyCacheObject> keys,
         boolean readThrough,
@@ -2502,13 +2493,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
         }
         else {
-            return null;
-// TODO IGNITE-51.
-//            return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-//                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
-//                    return ctx.wrapCloneMap(tx.<K, V>getAllAsync(ctx, keys, cached0, deserializePortable, skipVals));
-//                }
-//            });
+            return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
+                @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
+                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false);
+                }
+            });
         }
     }
 
@@ -4166,7 +4155,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheEntryEx entry = entryEx(key, false);
 
         try {
-            entry.initialValue(cacheVal, null, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
+            entry.initialValue(cacheVal, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
                 replicate ? DR_LOAD : DR_NONE);
         }
         catch (IgniteCheckedException e) {
@@ -4615,8 +4604,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             GridCacheEntryEx entry = peekEx(cacheKey);
 
             try {
-                if (entry == null || entry.obsolete() || entry.isNewLocked())
+                if (entry == null || entry.obsolete() || entry.isNewLocked()) {
+                    if (entry != null)
+                        cacheKey = entry.key();
+
                     unswap.add(cacheKey);
+                }
             }
             catch (GridCacheEntryRemovedException ignored) {
                 // No-op.
@@ -5856,7 +5849,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         private final boolean single;
 
         /** Keys. */
-        private final Collection<? extends K> keys;
+        private final Collection<?> keys;
 
         /**
          * @param key Key.
@@ -5870,7 +5863,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * @param keys Keys involved.
          */
-        protected AsyncOp(Collection<? extends K> keys) {
+        protected AsyncOp(Collection<?> keys) {
             this.keys = keys;
 
             single = keys.size() == 1;
@@ -5881,13 +5874,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          */
         final boolean single() {
             return single;
-        }
-
-        /**
-         * @return Keys.
-         */
-        Collection<? extends K> keys() {
-            return keys;
         }
 
         /**

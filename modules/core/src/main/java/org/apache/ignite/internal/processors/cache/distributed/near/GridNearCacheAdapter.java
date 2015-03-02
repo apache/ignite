@@ -275,7 +275,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
-        @Nullable Collection<? extends K> keys,
+        @Nullable Collection<KeyCacheObject> keys,
         boolean reload,
         boolean forcePrimary,
         @Nullable UUID subjId,
@@ -286,9 +286,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
-
-        if (keyCheck)
-            validateCacheKeys(keys);
 
         IgniteTxLocalEx txx = (tx != null && tx.local()) ? (IgniteTxLocalEx)tx : null;
 
@@ -309,7 +306,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         // init() will register future for responses if future has remote mappings.
         fut.init();
 
-        return ctx.wrapCloneMap(fut);
+        return fut;
     }
 
     /** {@inheritDoc} */

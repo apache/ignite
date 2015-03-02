@@ -52,10 +52,10 @@ public class VisorCacheNearConfiguration implements Serializable {
     public static VisorCacheNearConfiguration from(CacheConfiguration ccfg) {
         VisorCacheNearConfiguration cfg = new VisorCacheNearConfiguration();
 
-        cfg.nearEnabled(GridCacheUtils.isNearEnabled(ccfg));
-        cfg.nearStartSize(ccfg.getNearStartSize());
-        cfg.nearEvictPolicy(compactClass(ccfg.getNearEvictionPolicy()));
-        cfg.nearEvictMaxSize(evictionPolicyMaxSize(ccfg.getNearEvictionPolicy()));
+        cfg.nearEnabled = GridCacheUtils.isNearEnabled(ccfg);
+        cfg.nearStartSize = ccfg.getNearStartSize();
+        cfg.nearEvictPlc = compactClass(ccfg.getNearEvictionPolicy());
+        cfg.nearEvictMaxSize = evictionPolicyMaxSize(ccfg.getNearEvictionPolicy());
 
         return cfg;
     }
@@ -68,24 +68,10 @@ public class VisorCacheNearConfiguration implements Serializable {
     }
 
     /**
-     * @param nearEnabled New flag to enable/disable near cache eviction policy.
-     */
-    public void nearEnabled(boolean nearEnabled) {
-        this.nearEnabled = nearEnabled;
-    }
-
-    /**
      * @return Near cache start size.
      */
     public int nearStartSize() {
         return nearStartSize;
-    }
-
-    /**
-     * @param nearStartSize New near cache start size.
-     */
-    public void nearStartSize(int nearStartSize) {
-        this.nearStartSize = nearStartSize;
     }
 
     /**
@@ -96,28 +82,14 @@ public class VisorCacheNearConfiguration implements Serializable {
     }
 
     /**
-     * @param nearEvictPlc New near cache eviction policy.
-     */
-    public void nearEvictPolicy(String nearEvictPlc) {
-        this.nearEvictPlc = nearEvictPlc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheNearConfiguration.class, this);
-    }
-
-    /**
      * @return Near cache eviction policy max size.
      */
     @Nullable public Integer nearEvictMaxSize() {
         return nearEvictMaxSize;
     }
 
-    /**
-     * @param nearEvictMaxSize New near cache eviction policy max size.
-     */
-    public void nearEvictMaxSize(@Nullable Integer nearEvictMaxSize) {
-        this.nearEvictMaxSize = nearEvictMaxSize;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheNearConfiguration.class, this);
     }
 }

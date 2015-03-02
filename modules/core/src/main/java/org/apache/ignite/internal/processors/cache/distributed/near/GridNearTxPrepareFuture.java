@@ -949,7 +949,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
 
-                                    nearEntry.resetFromPrimary(tup.get2(), null, tx.xidVersion(),
+                                    nearEntry.resetFromPrimary(tup.get2(), tx.xidVersion(),
                                         tup.get1(), m.node().id());
                                 }
                                 else if (txEntry.cached().detached()) {
@@ -957,7 +957,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
 
-                                    detachedEntry.resetFromPrimary(tup.get2(), null, tx.xidVersion());
+                                    detachedEntry.resetFromPrimary(tup.get2(), tx.xidVersion());
                                 }
 
                                 break;

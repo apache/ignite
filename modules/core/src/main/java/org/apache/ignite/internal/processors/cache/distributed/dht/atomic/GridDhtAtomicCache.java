@@ -276,6 +276,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean deserializePortable,
         final boolean skipVals
     ) {
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
+        if (F.isEmpty(keys))
+            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(null, prj);
@@ -286,7 +294,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
-                return getAllAsync0(keys,
+                return getAllAsync0(ctx.cacheKeysView(keys),
                     false,
                     forcePrimary,
                     subjId0,
@@ -624,7 +632,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -895,7 +903,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param skipVals Skip values flag.
      * @return Get future.
      */
-    private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys,
+    private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<KeyCacheObject> keys,
         boolean reload,
         boolean forcePrimary,
         UUID subjId,
@@ -903,14 +911,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
-
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
-
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
@@ -922,17 +922,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             boolean success = true;
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
-            for (K key : keys) {
-                if (key == null)
-                    throw new NullPointerException("Null key.");
-
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
+            for (KeyCacheObject key : keys) {
                 GridCacheEntryEx entry = null;
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
+                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -956,12 +951,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeIfObsolete(cacheKey);
+                                    removeIfObsolete(key);
 
                                 success = false;
                             }
                             else
-                                ctx.addResult(locVals, cacheKey, v, skipVals, false, deserializePortable, false);
+                                ctx.addResult(locVals, key, v, skipVals, false, deserializePortable, false);
                         }
                         else
                             success = false;
@@ -998,7 +993,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (success) {
                 sendTtlUpdateRequest(expiry);
 
-                return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+                return new GridFinishedFuture<>(ctx.kernalContext(), locVals);
             }
         }
 
@@ -1020,7 +1015,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         fut.init();
 
-        return ctx.wrapCloneMap(fut);
+        return fut;
     }
 
     /**
@@ -1700,7 +1695,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     locNodeId,
                     op,
                     writeVal,
-                    null,
                     req.invokeArguments(),
                     primary && writeThrough(),
                     req.returnValue(),
@@ -1964,7 +1958,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         locNodeId,
                         op,
                         writeVal,
-                        null,
                         null,
                         false,
                         false,
@@ -2460,7 +2453,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             nodeId,
                             op,
                             op == TRANSFORM ? entryProcessor : val,
-                            null,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,

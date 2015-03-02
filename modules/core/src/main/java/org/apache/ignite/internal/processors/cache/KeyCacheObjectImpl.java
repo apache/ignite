@@ -41,6 +41,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes) {
         assert val != null;
+        assert valBytes != null || this instanceof UserKeyCacheObjectImpl : this;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -61,8 +62,8 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(GridCacheContext ctx) {
-        assert valBytes != null;
+    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+        assert valBytes != null : this;
 
         return valBytes;
     }

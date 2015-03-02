@@ -95,16 +95,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        TestMessage message = new TestMessage();
+        TestMessage msg = new TestMessage();
 
         for (int i = 1; i <= SAMPLE_CNT; i++) {
-            mgr0.send(grid(1).localNode(), topic, message, GridIoPolicy.PUBLIC_POOL);
+            mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
             TestMessage1 mes1 = new TestMessage1();
 
             mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0));
 
-            message.add(mes1);
+            msg.add(mes1);
         }
 
         assert latch.await(3, SECONDS);

@@ -1460,8 +1460,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             m.put(null, 2);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     cache.putAll(m);
 
                     return null;
@@ -1480,8 +1479,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             m.put("key4", null);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     cache.putAll(m);
 
                     return null;
@@ -1696,7 +1694,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteFuture<Integer> fut1 = cacheAsync.future();
 
-            assert fut1.get() == null;
+            assertNull(fut1.get());
             assertEquals((Integer)1, cache.get("key"));
 
             cacheAsync.getAndPutIfAbsent("key", 2);
@@ -3934,7 +3932,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         CacheAffinity<Integer> aff = ignite(0).affinity(null);
 
         boolean near = cfg.getDistributionMode() == CacheDistributionMode.NEAR_PARTITIONED ||
-                cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
+            cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
 
         ClusterNode locNode = ignite(0).cluster().localNode();
 
@@ -3964,7 +3962,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertEquals(i, getObj1.val);
 
-            if (loc)
+            if (loc && !offHeapValues())
                 assertSame("Same expected [key=" + i + ", primary=" + primary + ", backup=" + backup + ']',
                     putObj1,
                     getObj1);

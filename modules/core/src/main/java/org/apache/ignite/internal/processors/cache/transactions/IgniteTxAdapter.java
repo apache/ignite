@@ -1193,7 +1193,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
      */
-    protected GridTuple3<GridCacheOperation, CacheObject, byte[]> applyTransformClosures(
+    protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
         boolean metrics) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
@@ -1201,10 +1201,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         assert cacheCtx != null;
 
         if (isSystemInvalidate())
-            return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null, null);
+            return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors()))
-            return F.t(txEntry.op(), txEntry.value(), null);
+            return F.t(txEntry.op(), txEntry.value());
         else {
             try {
                 boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
@@ -1246,14 +1246,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     modified |= invokeEntry.modified();
                 }
 
-                if (modified) {
-                    cacheVal = cacheCtx.toCacheObject(val);
-// TODO IGNITE-51
-//                    val = (V)cacheCtx.<V>unwrapTemporary(val);
-//
-//                    if (cacheCtx.portableEnabled())
-//                        val = (V)cacheCtx.marshalToPortable(val);
-                }
+                if (modified)
+                    cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
 
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
@@ -1270,7 +1264,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     }
                 }
 
-                return F.t(op, cacheVal, null);
+                return F.t(op, cacheVal);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;

@@ -107,7 +107,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      */
     GridLocalLockFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         IgniteTxLocalEx tx,
         GridLocalCache<K, V> cache,
         long timeout,

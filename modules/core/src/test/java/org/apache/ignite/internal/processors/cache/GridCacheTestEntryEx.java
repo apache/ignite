@@ -453,7 +453,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         UUID evtNodeId,
         UUID affNodeId,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
         long ttl,
@@ -467,7 +466,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> innerUpdateLocal(
+    @Override public GridTuple3<Boolean, Object, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -492,7 +491,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         UUID affNodeId,
         GridCacheOperation op,
         @Nullable Object val,
-        @Nullable byte[] valBytes,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
@@ -653,7 +651,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean initialValue(CacheObject val,
-        @Nullable byte[] valBytes,
         GridCacheVersion ver,
         long ttl,
         long expireTime,

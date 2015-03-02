@@ -219,7 +219,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         nodeId,
                         op,
                         val,
-                        valBytes,
                         null,
                         /*write-through*/false,
                         /*retval*/false,
@@ -316,7 +315,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             op,
                             op == TRANSFORM ? entryProcessor : val,
-                            null,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,
@@ -369,12 +367,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(null,
-            keys,
+            ctx.cacheKeysView(keys),
             false,
             forcePrimary,
             subjId,
@@ -650,7 +651,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -659,7 +660,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable TransactionIsolation isolation,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        return dht.lockAllAsync(keys, timeout, filter);
+        return dht.lockAllAsync(null, timeout, filter);
     }
 
     /** {@inheritDoc} */
