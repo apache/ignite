@@ -36,7 +36,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -946,6 +945,11 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.transaction() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWithinTransaction() {
+            return transaction() != null;
         }
 
         /** {@inheritDoc} */

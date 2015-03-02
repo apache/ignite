@@ -22,7 +22,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -72,8 +71,6 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void txEnd(boolean commit) {
-        Transaction tx = transaction();
-
         Map<String, Connection> props = ses.properties();
 
         try (Connection conn = props.remove(ATTR_NAME)) {
@@ -84,23 +81,21 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
                     conn.rollback();
             }
 
-            System.out.println(">>> Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
+            System.out.println(">>> Transaction ended [commit=" + commit + ']');
         }
         catch (SQLException e) {
-            throw new CacheWriterException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+            throw new CacheWriterException("Failed to end transaction: " + ses.transaction(), e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
-        Transaction tx = transaction();
-
-        System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
+        System.out.println(">>> Loading key: " + key);
 
         Connection conn = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
             try (PreparedStatement st = conn.prepareStatement("select * from PERSONS where id=?")) {
                 st.setString(1, key.toString());
@@ -108,14 +103,14 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
                 ResultSet rs = st.executeQuery();
 
                 if (rs.next())
-                    return person(rs.getLong(1), rs.getString(2), rs.getString(3));
+                    return new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
             }
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load object: " + key, e);
         }
         finally {
-            end(tx, conn);
+            end(conn);
         }
 
         return null;
@@ -123,60 +118,58 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
-        Transaction tx = transaction();
-
         Long key = entry.getKey();
 
         Person val = entry.getValue();
 
-        System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
+        System.out.println(">>> Putting [key=" + key + ", val=" + val +  ']');
 
         Connection conn = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
-        int updated;
+            int updated;
 
-        try (PreparedStatement st = conn.prepareStatement(
-            "update PERSONS set firstName=?, lastName=? where id=?")) {
-            st.setString(1, val.getFirstName());
-            st.setString(2, val.getLastName());
-            st.setLong(3, val.getId());
-
-            updated = st.executeUpdate();
-        }
-
-        // If update failed, try to insert.
-        if (updated == 0) {
+            // Try update first. If it does not work, then try insert.
+            // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
-                "insert into PERSONS (id, firstName, lastName) values(?, ?, ?)")) {
-                st.setLong(1, val.getId());
-                st.setString(2, val.getFirstName());
-                st.setString(3, val.getLastName());
+                "update PERSONS set firstName=?, lastName=? where id=?")) {
+                st.setString(1, val.getFirstName());
+                st.setString(2, val.getLastName());
+                st.setLong(3, val.getId());
 
-                st.executeUpdate();
+                updated = st.executeUpdate();
             }
-        }
+
+            // If update failed, try to insert.
+            if (updated == 0) {
+                try (PreparedStatement st = conn.prepareStatement(
+                    "insert into PERSONS (id, firstName, lastName) values(?, ?, ?)")) {
+                    st.setLong(1, val.getId());
+                    st.setString(2, val.getFirstName());
+                    st.setString(3, val.getLastName());
+
+                    st.executeUpdate();
+                }
+            }
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to put object [key=" + key + ", val=" + val + ']', e);
         }
         finally {
-            end(tx, conn);
+            end(conn);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) {
-        Transaction tx = transaction();
-
-        System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
+        System.out.println(">>> Removing key: " + key);
 
         Connection conn = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
             try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
                 st.setLong(1, (Long)key);
@@ -188,7 +181,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             throw new CacheWriterException("Failed to remove object: " + key, e);
         }
         finally {
-            end(tx, conn);
+            end(conn);
         }
     }
 
@@ -199,17 +192,13 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         final int entryCnt = (Integer)args[0];
 
-        Connection conn = null;
-
-        try {
-            conn = connection(null);
-
+        try (Connection conn = connection()) {
             try (PreparedStatement st = conn.prepareStatement("select * from PERSONS")) {
                 try (ResultSet rs = st.executeQuery()) {
                     int cnt = 0;
 
                     while (cnt < entryCnt && rs.next()) {
-                        Person person = person(rs.getLong(1), rs.getString(2), rs.getString(3));
+                        Person person = new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
 
                         clo.apply(person.getId(), person);
 
@@ -223,18 +212,16 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load values from cache store.", e);
         }
-        finally {
-            end(null, conn);
-        }
     }
 
     /**
-     * @param tx Cache transaction.
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable Transaction tx) throws SQLException  {
-        if (tx != null) {
+    private Connection connection() throws SQLException  {
+        // If there is an ongoing transaction,
+        // we must reuse the same connection.
+        if (ses.isWithinTransaction()) {
             Map<Object, Object> props = ses.properties();
 
             Connection conn = (Connection)props.get(ATTR_NAME);
@@ -257,11 +244,10 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * Closes allocated resources depending on transaction status.
      *
-     * @param tx Active transaction, if any.
      * @param conn Allocated connection.
      */
-    private void end(@Nullable Transaction tx, @Nullable Connection conn) {
-        if (tx == null && conn != null) {
+    private void end(@Nullable Connection conn) {
+        if (!ses.isWithinTransaction() && conn != null) {
             // Close connection right away if there is no transaction.
             try {
                 conn.close();
@@ -285,24 +271,5 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         conn.setAutoCommit(autocommit);
 
         return conn;
-    }
-
-    /**
-     * Builds person object out of provided values.
-     *
-     * @param id ID.
-     * @param firstName First name.
-     * @param lastName Last name.
-     * @return Person.
-     */
-    private Person person(Long id, String firstName, String lastName) {
-        return new Person(id, firstName, lastName);
-    }
-
-    /**
-     * @return Current transaction.
-     */
-    private Transaction transaction() {
-        return ses != null ? ses.transaction() : null;
     }
 }

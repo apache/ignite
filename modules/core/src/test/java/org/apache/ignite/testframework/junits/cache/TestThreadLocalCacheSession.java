@@ -49,6 +49,11 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isWithinTransaction() {
+        return transaction() != null;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> Map<K, V> properties() {
         TestCacheSession ses = sesHolder.get();
