@@ -28,10 +28,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@code GridCluster} also provides a handle on {@link #nodeLocalMap()} which provides map-like functionality
- * linked to current grid node. Node-local map is useful for saving shared state between job executions
- * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
- * and get other useful information about topology.
+ * Represents whole cluster (all available nodes) and also provides a handle on {@link #nodeLocalMap()} which
+ * provides map-like functionality linked to current grid node. Node-local map is useful for saving shared state
+ * between job executions on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to
+ * caching nodes, and get other useful information about topology.
  */
 public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**

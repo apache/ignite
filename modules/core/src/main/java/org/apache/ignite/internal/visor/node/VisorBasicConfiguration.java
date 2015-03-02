@@ -104,26 +104,26 @@ public class VisorBasicConfiguration implements Serializable {
     public static VisorBasicConfiguration from(IgniteEx ignite, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
-        cfg.gridName(c.getGridName());
-        cfg.ggHome(getProperty(IGNITE_HOME, c.getIgniteHome()));
-        cfg.localHost(getProperty(IGNITE_LOCAL_HOST, c.getLocalHost()));
-        cfg.nodeId(ignite.localNode().id());
-        cfg.marshaller(compactClass(c.getMarshaller()));
-        cfg.deploymentMode(compactObject(c.getDeploymentMode()));
-        cfg.daemon(boolValue(IGNITE_DAEMON, c.isDaemon()));
-        cfg.jmxRemote(ignite.isJmxRemoteEnabled());
-        cfg.restart(ignite.isRestartEnabled());
-        cfg.networkTimeout(c.getNetworkTimeout());
-        cfg.logger(compactClass(c.getGridLogger()));
-        cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
-        cfg.mBeanServer(compactClass(c.getMBeanServer()));
-        cfg.noAscii(boolValue(IGNITE_NO_ASCII, false));
-        cfg.noDiscoOrder(boolValue(IGNITE_NO_DISCO_ORDER, false));
-        cfg.noShutdownHook(boolValue(IGNITE_NO_SHUTDOWN_HOOK, false));
-        cfg.programName(getProperty(IGNITE_PROG_NAME));
-        cfg.quiet(boolValue(IGNITE_QUIET, true));
-        cfg.successFile(getProperty(IGNITE_SUCCESS_FILE));
-        cfg.updateNotifier(boolValue(IGNITE_UPDATE_NOTIFIER, true));
+        cfg.gridName = c.getGridName();
+        cfg.ggHome = getProperty(IGNITE_HOME, c.getIgniteHome());
+        cfg.locHost = getProperty(IGNITE_LOCAL_HOST, c.getLocalHost());
+        cfg.nodeId = ignite.localNode().id();
+        cfg.marsh = compactClass(c.getMarshaller());
+        cfg.deployMode = compactObject(c.getDeploymentMode());
+        cfg.daemon = boolValue(IGNITE_DAEMON, c.isDaemon());
+        cfg.jmxRemote = ignite.isJmxRemoteEnabled();
+        cfg.restart = ignite.isRestartEnabled();
+        cfg.netTimeout = c.getNetworkTimeout();
+        cfg.log = compactClass(c.getGridLogger());
+        cfg.discoStartupDelay = c.getDiscoveryStartupDelay();
+        cfg.mBeanSrv = compactClass(c.getMBeanServer());
+        cfg.noAscii = boolValue(IGNITE_NO_ASCII, false);
+        cfg.noDiscoOrder = boolValue(IGNITE_NO_DISCO_ORDER, false);
+        cfg.noShutdownHook = boolValue(IGNITE_NO_SHUTDOWN_HOOK, false);
+        cfg.progName = getProperty(IGNITE_PROG_NAME);
+        cfg.quiet = boolValue(IGNITE_QUIET, true);
+        cfg.successFile = getProperty(IGNITE_SUCCESS_FILE);
+        cfg.updateNtf = boolValue(IGNITE_UPDATE_NOTIFIER, true);
 
         return cfg;
     }
@@ -136,24 +136,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param gridName New grid name.
-     */
-    public void gridName(@Nullable String gridName) {
-        this.gridName = gridName;
-    }
-
-    /**
      * @return IGNITE_HOME determined at startup.
      */
     @Nullable public String ggHome() {
         return ggHome;
-    }
-
-    /**
-     * @param ggHome New IGNITE_HOME determined at startup.
-     */
-    public void ggHome(@Nullable String ggHome) {
-        this.ggHome = ggHome;
     }
 
     /**
@@ -164,24 +150,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param locHost New local host value used.
-     */
-    public void localHost(@Nullable String locHost) {
-        this.locHost = locHost;
-    }
-
-    /**
      * @return Node id.
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @param nodeId New node id.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /**
@@ -192,24 +164,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param marsh New marshaller used.
-     */
-    public void marshaller(String marsh) {
-        this.marsh = marsh;
-    }
-
-    /**
      * @return Deployment Mode.
      */
     public Object deploymentMode() {
         return deployMode;
-    }
-
-    /**
-     * @param deployMode New Deployment Mode.
-     */
-    public void deploymentMode(Object deployMode) {
-        this.deployMode = deployMode;
     }
 
     /**
@@ -220,24 +178,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param daemon New whether this node daemon or not.
-     */
-    public void daemon(boolean daemon) {
-        this.daemon = daemon;
-    }
-
-    /**
      * @return Whether remote JMX is enabled.
      */
     public boolean jmxRemote() {
         return jmxRemote;
-    }
-
-    /**
-     * @param jmxRemote New whether remote JMX is enabled.
-     */
-    public void jmxRemote(boolean jmxRemote) {
-        this.jmxRemote = jmxRemote;
     }
 
     /**
@@ -248,24 +192,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param restart New is node restart enabled.
-     */
-    public void restart(boolean restart) {
-        this.restart = restart;
-    }
-
-    /**
      * @return Network timeout.
      */
     public long networkTimeout() {
         return netTimeout;
-    }
-
-    /**
-     * @param netTimeout New network timeout.
-     */
-    public void networkTimeout(long netTimeout) {
-        this.netTimeout = netTimeout;
     }
 
     /**
@@ -276,24 +206,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param log New logger used on node.
-     */
-    public void logger(String log) {
-        this.log = log;
-    }
-
-    /**
      * @return Discovery startup delay.
      */
     public long discoStartupDelay() {
         return discoStartupDelay;
-    }
-
-    /**
-     * @param discoStartupDelay New discovery startup delay.
-     */
-    public void discoStartupDelay(long discoStartupDelay) {
-        this.discoStartupDelay = discoStartupDelay;
     }
 
     /**
@@ -304,24 +220,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param mBeanSrv New mBean server name
-     */
-    public void mBeanServer(@Nullable String mBeanSrv) {
-        this.mBeanSrv = mBeanSrv;
-    }
-
-    /**
      * @return Whether ASCII logo is disabled.
      */
     public boolean noAscii() {
         return noAscii;
-    }
-
-    /**
-     * @param noAscii New whether ASCII logo is disabled.
-     */
-    public void noAscii(boolean noAscii) {
-        this.noAscii = noAscii;
     }
 
     /**
@@ -332,24 +234,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param noDiscoOrder New whether no discovery order is allowed.
-     */
-    public void noDiscoOrder(boolean noDiscoOrder) {
-        this.noDiscoOrder = noDiscoOrder;
-    }
-
-    /**
      * @return Whether shutdown hook is disabled.
      */
     public boolean noShutdownHook() {
         return noShutdownHook;
-    }
-
-    /**
-     * @param noShutdownHook New whether shutdown hook is disabled.
-     */
-    public void noShutdownHook(boolean noShutdownHook) {
-        this.noShutdownHook = noShutdownHook;
     }
 
     /**
@@ -360,24 +248,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param progName New name of command line program.
-     */
-    public void programName(String progName) {
-        this.progName = progName;
-    }
-
-    /**
      * @return Whether node is in quiet mode.
      */
     public boolean quiet() {
         return quiet;
-    }
-
-    /**
-     * @param quiet New whether node is in quiet mode.
-     */
-    public void quiet(boolean quiet) {
-        this.quiet = quiet;
     }
 
     /**
@@ -388,24 +262,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @param successFile New success file name.
-     */
-    public void successFile(String successFile) {
-        this.successFile = successFile;
-    }
-
-    /**
      * @return Whether update checker is enabled.
      */
     public boolean updateNotifier() {
         return updateNtf;
-    }
-
-    /**
-     * @param updateNtf New whether update checker is enabled.
-     */
-    public void updateNotifier(boolean updateNtf) {
-        this.updateNtf = updateNtf;
     }
 
     /** {@inheritDoc} */

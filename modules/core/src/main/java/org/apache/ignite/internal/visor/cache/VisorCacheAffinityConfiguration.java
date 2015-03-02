@@ -69,10 +69,11 @@ public class VisorCacheAffinityConfiguration implements Serializable {
 
         VisorCacheAffinityConfiguration cfg = new VisorCacheAffinityConfiguration();
 
-        cfg.function(compactClass(aff));
-        cfg.mapper(compactClass(ccfg.getAffinityMapper()));
-        cfg.partitionedBackups(ccfg.getBackups());
-        cfg.excludeNeighbors(excludeNeighbors);
+        cfg.function = compactClass(aff);
+        cfg.mapper = compactClass(ccfg.getAffinityMapper());
+        cfg.partitions = aff.partitions();
+        cfg.partitionedBackups = ccfg.getBackups();
+        cfg.excludeNeighbors = excludeNeighbors;
 
         return cfg;
     }
@@ -85,24 +86,10 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param function New cache affinity function.
-     */
-    public void function(String function) {
-        this.function = function;
-    }
-
-    /**
      * @return Cache affinity mapper.
      */
     public String mapper() {
         return mapper;
-    }
-
-    /**
-     * @param mapper New cache affinity mapper.
-     */
-    public void mapper(String mapper) {
-        this.mapper = mapper;
     }
 
     /**
@@ -113,24 +100,10 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param partitionedBackups New count of key backups.
-     */
-    public void partitionedBackups(int partitionedBackups) {
-        this.partitionedBackups = partitionedBackups;
-    }
-
-    /**
      * @return Cache affinity partitions.
      */
     public Integer partitions() {
         return partitions;
-    }
-
-    /**
-     * @param partitions New cache affinity partitions.
-     */
-    public void partitions(Integer partitions) {
-        this.partitions = partitions;
     }
 
     /**
@@ -141,24 +114,10 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param dfltReplicas New cache partitioned affinity default replicas.
-     */
-    public void defaultReplicas(Integer dfltReplicas) {
-        this.dfltReplicas = dfltReplicas;
-    }
-
-    /**
      * @return Cache partitioned affinity exclude neighbors.
      */
     @Nullable public Boolean excludeNeighbors() {
         return excludeNeighbors;
-    }
-
-    /**
-     * @param excludeNeighbors New cache partitioned affinity exclude neighbors.
-     */
-    public void excludeNeighbors(Boolean excludeNeighbors) {
-        this.excludeNeighbors = excludeNeighbors;
     }
 
     /** {@inheritDoc} */
