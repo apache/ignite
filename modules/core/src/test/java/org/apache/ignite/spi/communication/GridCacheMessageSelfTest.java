@@ -107,7 +107,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(count, i);
 
-                        GridTestMessage msg2 = (GridTestMessage) msg1.message();
+                        GridTestMessage msg2 = (GridTestMessage) ((TestMessage1) msg1.message()).message();
 
                         assertEquals(count, msg2.getMsgId());
 
@@ -117,7 +117,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     }
                 }
                 catch (Exception e) {
-                    fail("Exception " + e.getStackTrace());
+                    fail("Exception " + e.getMessage());
                 }
             }
         });
@@ -129,7 +129,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0), TEST_BODY + "_" + i);
 
-            msg.add(mes1);
+            TestMessage1 mes2 = new TestMessage1();
+
+            mes2.init(mes1, TEST_BODY + "_" + i);
+
+            msg.add(mes2);
         }
 
         mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
