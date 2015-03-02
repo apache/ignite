@@ -21,9 +21,12 @@
     Ignite Spring configuration file to startup grid.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:util="http://www.springframework.org/schema/util"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
     <!--
         Store data source.
     -->
@@ -45,7 +48,9 @@
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                     <property name="databaseName" value="ID"/>
-                    <property name="databaseType" value="4"/>
+                    <property name="databaseType">
+                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                    </property>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="int"/>
                 </bean>
@@ -55,7 +60,9 @@
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                     <property name="databaseName" value="VALUE"/>
-                    <property name="databaseType" value="4"/>
+                    <property name="databaseType">
+                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                    </property>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="int"/>
                 </bean>
