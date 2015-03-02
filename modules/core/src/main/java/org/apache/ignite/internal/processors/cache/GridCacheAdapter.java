@@ -1678,9 +1678,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         String taskName,
         final IgniteBiInClosure<KeyCacheObject, Object> vis) {
         return ctx.closures().callLocalSafe(new GPC<Object>() {
-            @Nullable
-            @Override
-            public Object call() {
+            @Nullable @Override public Object call() {
                 try {
                     ctx.store().loadAllFromStore(tx, keys, vis);
                 }

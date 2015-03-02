@@ -595,7 +595,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     @SuppressWarnings({"unchecked"})
-    public void removeLocks(GridCacheVersion ver, Collection<? extends K> keys) {
+    public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;
 
@@ -604,15 +604,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
             Map<ClusterNode, GridNearUnlockRequest> map = null;
 
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 // Send request to remove from remote nodes.
                 GridNearUnlockRequest req = null;
 
                 while (true) {
-                    // TODO IGNITE-51.
-                    KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-                    GridDistributedCacheEntry entry = peekExx(cacheKey);
+                    GridDistributedCacheEntry entry = peekExx(key);
 
                     try {
                         if (entry != null) {
@@ -645,7 +642,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
                                     if (primary.isLocal()) {
-                                        dht.removeLocks(primary.id(), ver, F.asList(cacheKey), true);
+                                        dht.removeLocks(primary.id(), ver, F.asList(key), true);
 
                                         assert req == null;
 

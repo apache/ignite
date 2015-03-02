@@ -362,9 +362,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         cached,
                         drVer);
-// TODO IGNITE-51.
-//                    txEntry.keyBytes(keyBytes);
-//                    txEntry.valueBytes(valBytes);
 
                     writeMap.put(key, txEntry);
 

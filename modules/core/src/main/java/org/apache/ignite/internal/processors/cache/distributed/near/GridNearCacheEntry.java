@@ -360,10 +360,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
-// TODO IGNITE-51.
-//        if (valBytes != null && val == null && (isNewLocked() || !valid))
-//            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
-
         GridCacheVersion enqueueVer = null;
 
         try {

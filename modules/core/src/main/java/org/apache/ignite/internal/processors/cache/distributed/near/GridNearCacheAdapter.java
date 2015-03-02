@@ -192,17 +192,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         IgniteBiInClosure<KeyCacheObject, Object> vis
     ) {
-        return null;
-// TODO IGNITE-51.
-//        return (IgniteInternalFuture)loadAsync(tx,
-//            keys,
-//            reload,
-//            false,
-//            subjId,
-//            taskName,
-//            true,
-//            null,
-//            skipVals);
+        return (IgniteInternalFuture)loadAsync(tx,
+            keys,
+            reload,
+            false,
+            subjId,
+            taskName,
+            true,
+            null,
+            skipVals);
     }
 
     /** {@inheritDoc} */

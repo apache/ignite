@@ -353,9 +353,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private void undoLocks(boolean dist) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
-            cctx.nearTx().removeLocks(lockVer, null);
-            // TODO IGNTIE-51
-            // cctx.nearTx().removeLocks(lockVer, keys);
+            cctx.nearTx().removeLocks(lockVer, keys);
         else {
             if (tx != null) {
                 if (tx.setRollbackOnly()) {
