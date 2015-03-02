@@ -206,7 +206,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.subjectId(),
                                     req.taskNameHash());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
                                     throw new IgniteTxRollbackCheckedException("Failed to acquire lock (transaction " +
@@ -804,7 +804,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 tx.syncCommit(req.syncCommit());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !tx.init()) {
                                     String msg = "Failed to acquire lock (transaction has been completed): " +

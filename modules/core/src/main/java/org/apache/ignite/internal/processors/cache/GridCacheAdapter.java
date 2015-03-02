@@ -2122,7 +2122,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return new GridFinishedFuture<>(ctx.kernalContext(), e);
             }
 
-            tx = ctx.tm().threadLocalTx();
+            tx = ctx.tm().threadLocalTx(ctx.system() ? ctx : null);
         }
 
         if (tx == null || tx.implicit()) {
@@ -3680,7 +3680,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Nullable @Override public Transaction tx() {
-        IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx(null);
 
         return tx == null ? null : new TransactionProxyImpl<>(tx, ctx.shared(), false);
     }
@@ -3825,9 +3825,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         TransactionIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
-        return ctx.system() ?
-            txs.txStartSystem(concurrency, isolation, timeout, txSize) :
-            txs.txStart(concurrency, isolation, timeout, txSize);
+        return txs.txStartEx(ctx, concurrency, isolation, timeout, txSize).proxy();
     }
 
     /** {@inheritDoc} */
@@ -4546,7 +4544,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         awaitLastFut();
 
-        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
             TransactionConfiguration tCfg = ctx.gridConfig().getTransactionConfiguration();
@@ -4554,7 +4552,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
-                ctx.system(),
+                ctx.system() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
@@ -4623,13 +4621,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (log.isDebugEnabled())
             log.debug("Performing async op: " + op);
 
-        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
-                ctx.system(),
+                ctx.system() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
