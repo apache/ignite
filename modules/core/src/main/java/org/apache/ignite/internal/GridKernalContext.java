@@ -516,4 +516,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cluster processor.
      */
     public ClusterProcessor cluster();
+
+    /**
+     * Gets marshaller context.
+     *
+     * @return Marshaller context.
+     */
+    public MarshallerContextImpl marshallerContext();
 }

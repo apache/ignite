@@ -24,15 +24,15 @@ import java.util.*;
  */
 public class MarshallerContextTestImpl implements MarshallerContext {
     /** */
-    private final Map<Integer, String> map = new HashMap<>();
+    private final Map<Integer, Class> map = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void registerClass(int id, String clsName) {
-        map.put(id, clsName);
+    @Override public void registerClass(int id, Class cls) {
+        map.put(id, cls);
     }
 
     /** {@inheritDoc} */
-    @Override public String className(int id) {
+    @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
         return map.get(id);
     }
 }

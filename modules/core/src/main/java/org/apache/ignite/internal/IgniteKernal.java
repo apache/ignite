@@ -675,7 +675,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc);
 
-            cfg.getMarshaller().setContext(new MarshallerContextImpl(ctx));
+            cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             startProcessor(ctx, new ClusterProcessor(ctx), attrs);
 
@@ -2715,99 +2715,5 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
-    }
-
-    /**
-     */
-    private static class MarshallerContextImpl implements MarshallerContext {
-        /** */
-        private final GridKernalContext ctx;
-
-        /** */
-        private GridCacheAdapter<Integer, String> cache;
-
-        /**
-         * @param ctx Kernal context.
-         */
-        private MarshallerContextImpl(GridKernalContext ctx) {
-            this.ctx = ctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void registerClass(int id, String clsName) {
-            if (cache == null)
-                cache = ctx.cache().marshallerCache();
-
-            // TODO: IGNITE-141 - Do not create thread.
-            Thread t = new Thread(new MarshallerCacheUpdater(ctx.log(), cache, id, clsName));
-
-            t.start();
-
-            try {
-                t.join();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String className(int id) {
-            if (cache == null)
-                cache = ctx.cache().marshallerCache();
-
-            try {
-                return cache.get(id);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
-    }
-
-    /**
-     */
-    private static class MarshallerCacheUpdater implements Runnable {
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private final GridCacheAdapter<Integer, String> cache;
-
-        /** */
-        private final int typeId;
-
-        /** */
-        private final String clsName;
-
-        /**
-         * @param cache Cache.
-         * @param typeId Type ID.
-         * @param clsName Class name.
-         */
-        private MarshallerCacheUpdater(IgniteLogger log, GridCacheAdapter<Integer, String> cache, int typeId, String clsName) {
-            this.log = log;
-            this.cache = cache;
-            this.typeId = typeId;
-            this.clsName = clsName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                // TODO: IGNITE-141 - Remove debug
-                U.debug(log, ">>> REGISTER: " + clsName);
-
-                String old = cache.putIfAbsent(typeId, clsName);
-
-                if (old != null && !old.equals(clsName))
-                    throw new IgniteException("Type ID collision acquired in OptimizedMarshaller. Use " +
-                        "OptimizedMarshallerIdMapper to resolve it [id=" + typeId + ", clsName1=" + clsName +
-                        "clsName2=" + old + ']');
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
     }
 }

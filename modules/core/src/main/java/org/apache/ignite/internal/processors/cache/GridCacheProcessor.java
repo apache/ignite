@@ -911,6 +911,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
 
+        marshallerCache().context().preloader().syncFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+            }
+        });
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
     }

@@ -305,6 +305,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Exception registry. */
     private IgniteExceptionRegistry registry;
 
+    /** Marshaller context. */
+    private final MarshallerContextImpl marshCtx = new MarshallerContextImpl();
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -863,6 +866,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return cluster;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MarshallerContextImpl marshallerContext() {
+        return marshCtx;
     }
 
     /** {@inheritDoc} */

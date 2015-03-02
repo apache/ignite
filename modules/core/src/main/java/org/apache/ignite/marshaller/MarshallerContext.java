@@ -22,18 +22,20 @@ package org.apache.ignite.marshaller;
  */
 public interface MarshallerContext {
     /**
-     * Registers class name for provided type ID.
+     * Registers class with provided type ID.
      *
      * @param id Type ID.
-     * @param clsName Class name.
+     * @param cls Class.
      */
-    public void registerClass(int id, String clsName);
+    public void registerClass(int id, Class cls);
 
     /**
-     * Gets class name for provided type ID.
+     * Gets class for provided type ID.
      *
      * @param id Type ID.
-     * @return Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class was not found.
      */
-    public String className(int id);
+    public Class className(int id, ClassLoader ldr) throws ClassNotFoundException;
 }

@@ -19,8 +19,6 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 import sun.misc.*;
@@ -51,35 +49,8 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Classnames file path. */
-    private static final String CLS_NAMES_FILE = "org/apache/ignite/marshaller/optimized/classnames.properties";
-
     /** Class descriptors by class. */
     private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
-
-    /** Classes by ID. */
-    // TODO: IGNITE-141 - Move to marshaller context implementation.
-    private static final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> CLS_BY_ID =
-        new ConcurrentHashMap8<>(256);
-
-    static {
-        try {
-            ClassLoader ldr = OptimizedMarshallerUtils.class.getClassLoader();
-
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
-
-            String clsName;
-
-            while ((clsName = rdr.readLine()) != null) {
-                Class cls = U.forName(clsName, ldr);
-
-                CLS_BY_ID.put(cls.getName().hashCode(), F.t(cls, true));
-            }
-        }
-        catch (IOException | ClassNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 
     /**
      */
@@ -103,8 +74,7 @@ class OptimizedMarshallerUtils {
         if (desc == null) {
             desc = new OptimizedClassDescriptor(cls, ctx, mapper);
 
-            if (CLS_BY_ID.putIfAbsent(desc.typeId(), F.t(cls, false)) == null)
-                ctx.registerClass(desc.typeId(), cls.getName());
+            ctx.registerClass(desc.typeId(), cls);
 
             OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
 
@@ -127,24 +97,8 @@ class OptimizedMarshallerUtils {
      * @throws ClassNotFoundException If class was not found.
      */
     static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
-        throws IOException, ClassNotFoundException {
-        IgniteBiTuple<Class, Boolean> t = CLS_BY_ID.get(id);
-
-        if (t == null) {
-            String clsName = ctx.className(id);
-
-            assert clsName != null : id;
-
-            Class cls = U.forName(clsName, ldr);
-
-            IgniteBiTuple<Class, Boolean> old = CLS_BY_ID.putIfAbsent(id, t = F.t(cls, false));
-
-            if (old != null)
-                t = old;
-        }
-
-        return classDescriptor(t.get1(), ctx, mapper);
+        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        return classDescriptor(ctx.className(id, ldr), ctx, mapper);
     }
 
     /**
@@ -157,11 +111,6 @@ class OptimizedMarshallerUtils {
             if (ldr.equals(cls.getClassLoader()))
                 DESC_BY_CLS.remove(cls);
         }
-
-        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : CLS_BY_ID.entrySet()) {
-            if (!e.getValue().get2() && ldr.equals(e.getValue().get1().getClassLoader()))
-                CLS_BY_ID.remove(e.getKey());
-        }
     }
 
     /**
@@ -169,11 +118,6 @@ class OptimizedMarshallerUtils {
      */
     public static void clearCache() {
         DESC_BY_CLS.clear();
-
-        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : CLS_BY_ID.entrySet()) {
-            if (!e.getValue().get2())
-                CLS_BY_ID.remove(e.getKey());
-        }
     }
 
     /**
