@@ -43,6 +43,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         });
     }
 
+    public static final String TEST_BODY = "Test body";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -89,9 +91,34 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                latch.countDown();
-                TestMessage msg1 = (TestMessage) msg;
-                info("Test : " + msg1.fieldsCount());
+                try {
+                    latch.countDown();
+
+                    Collection<TestMessage1> messages = ((TestMessage) msg).entries();
+
+                    assertEquals(10, messages.size());
+
+                    int count = 0;
+
+                    for (TestMessage1 msg1 : messages) {
+                        assertTrue(msg1.body().contains(TEST_BODY));
+
+                        int i = Integer.parseInt(msg1.body().substring(TEST_BODY.length() + 1));
+
+                        assertEquals(count, i);
+
+                        GridTestMessage msg2 = (GridTestMessage) msg1.message();
+
+                        assertEquals(count, msg2.getMsgId());
+
+                        assertEquals(grid(1).localNode().id(), msg2.getSourceNodeId());
+
+                        count++;
+                    }
+                }
+                catch (Exception e) {
+                    fail("Exception " + e.getStackTrace());
+                }
             }
         });
 
@@ -100,7 +127,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             TestMessage1 mes1 = new TestMessage1();
 
-            mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0));
+            mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0), TEST_BODY + "_" + i);
 
             msg.add(mes1);
         }
@@ -126,10 +153,19 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             entries.add(entry);
         }
 
+        /**
+         * @return COllection of test messages.
+         */
+        public Collection<TestMessage1> entries() {
+            return entries;
+        }
+
+        /** {@inheritDoc} */
         @Override public byte directType() {
             return DIRECT_TYPE;
         }
 
+        /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             return 4;
         }
@@ -190,13 +226,35 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     */
     static class TestMessage1 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte)203;
+        public static final byte DIRECT_TYPE = (byte) 203;
+
+        /** Body. */
+        private String body;
 
         /** */
-        private Message mes;
+        private Message msg;
 
-        public void init(Message mes) {
-            this.mes = mes;
+        /**
+         * @param mes Message.
+         */
+        public void init(Message mes, String body) {
+            this.msg = mes;
+
+            this.body = body;
+        }
+
+        /**
+         * @return Body.
+         */
+        public String body() {
+            return body;
+        }
+
+        /**
+         * @return Message.
+         */
+        public Message message() {
+            return msg;
         }
 
         /** {@inheritDoc} */
@@ -206,7 +264,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return 4;
+            return 5;
         }
 
         /** {@inheritDoc} */
@@ -225,7 +283,13 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeMessage("mes", mes))
+                    if (!writer.writeString("body", body))
+                        return false;
+
+                    writer.incrementState();
+
+                case 4:
+                    if (!writer.writeMessage("msg", msg))
                         return false;
 
                     writer.incrementState();
@@ -247,7 +311,15 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (reader.state()) {
                 case 3:
-                    mes = reader.readMessage("mes");
+                    body = reader.readString("body");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 4:
+                    msg = reader.readMessage("msg");
 
                     if (!reader.isLastRead())
                         return false;
