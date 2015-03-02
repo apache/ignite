@@ -783,7 +783,6 @@ object VisorCacheCommand {
 
         cacheT += ("Mode", cfg.mode)
         cacheT += ("Atomicity Mode", safe(cfg.atomicityMode))
-        cacheT += ("Atomic Sequence Reserve Size", cfg.atomicSequenceReserveSize)
         cacheT += ("Atomic Write Ordering Mode", safe(cfg.atomicWriteOrderMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.statisticsEnabled()))
         cacheT += ("Management Enabled", bool2Str(cfg.managementEnabled()))
@@ -839,11 +838,10 @@ object VisorCacheCommand {
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
-        cacheT += ("Store", safe(storeCfg.store()))
-        cacheT += ("Configured JDBC Store", bool2Str(storeCfg.jdbcStore()))
-
-        cacheT += ("Read Through", bool2Str(storeCfg.readThrough()))
-        cacheT += ("Write Through", bool2Str(storeCfg.writeThrough()))
+        cacheT += ("Store Сlass", safe(storeCfg.store()))
+        cacheT += ("Store Factory Сlass", storeCfg.storeFactory())
+        cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
+        cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 
         cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.enabled()))
         cacheT += ("Write-Behind Flush Size", storeCfg.flushSize())
@@ -853,9 +851,7 @@ object VisorCacheCommand {
 
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
-
-        cacheT += ("Store Values Bytes", cfg.valueBytes())
-
+        cacheT += ("Keep Values Bytes", cfg.valueBytes())
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
 
         cacheT += ("Loader Factory Class Name", safe(cfg.loaderFactory()))

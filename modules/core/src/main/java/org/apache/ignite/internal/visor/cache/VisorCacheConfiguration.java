@@ -48,9 +48,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Cache atomicity mode */
     private CacheAtomicityMode atomicityMode;
 
-    /** Cache atomic sequence reserve size */
-    private int atomicSeqReserveSize;
-
     /** Cache atomicity write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
@@ -223,13 +220,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public CacheAtomicityMode atomicityMode() {
         return atomicityMode;
-    }
-
-    /**
-     * @return Cache atomic sequence reserve size
-     */
-    public int atomicSequenceReserveSize() {
-        return atomicSeqReserveSize;
     }
 
     /**
