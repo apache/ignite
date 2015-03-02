@@ -45,9 +45,8 @@ public class GridHadoopSetup {
     /**
      * The main method.
      * @param ignore Params.
-     * @throws IOException If fails.
      */
-    public static void main(String[] ignore) throws IOException {
+    public static void main(String[] ignore) {
         X.println(
             "   __________  ________________ ",
             "  /  _/ ___/ |/ /  _/_  __/ __/ ",
@@ -290,16 +289,16 @@ public class GridHadoopSetup {
     /**
      * Checks Ignite home.
      *
-     * @param ggHome Ignite home.
+     * @param igniteHome Ignite home.
      */
-    private static void checkIgniteHome(String ggHome) {
+    private static void checkIgniteHome(String igniteHome) {
         URL jarUrl = U.class.getProtectionDomain().getCodeSource().getLocation();
 
         try {
             Path jar = Paths.get(jarUrl.toURI());
-            Path gg = Paths.get(ggHome);
+            Path igHome = Paths.get(igniteHome);
 
-            if (!jar.startsWith(gg))
+            if (!jar.startsWith(igHome))
                 exit("Ignite JAR files are not under IGNITE_HOME.", null);
         }
         catch (Exception e) {

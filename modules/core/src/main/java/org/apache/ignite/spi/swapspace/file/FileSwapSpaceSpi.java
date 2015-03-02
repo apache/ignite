@@ -529,7 +529,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         final Iterator<Map.Entry<SwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
-            @Override protected Map.Entry<byte[], byte[]> onNext() throws IgniteCheckedException {
+            @Override protected Map.Entry<byte[], byte[]> onNext() {
                 Map.Entry<SwapKey, byte[]> x = iter.next();
 
                 return new T2<>(keyBytes(x.getKey()), x.getValue());

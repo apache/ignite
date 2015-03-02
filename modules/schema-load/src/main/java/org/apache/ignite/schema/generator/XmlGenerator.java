@@ -159,7 +159,8 @@ public class XmlGenerator {
                 Element item = addBean(doc, list, CacheTypeFieldMetadata.class);
 
                 addProperty(doc, item, "databaseName", field.dbName());
-                addProperty(doc, item, "databaseType", String.valueOf(field.dbType()));
+                Element dbType = addProperty(doc, item, "databaseType", null);
+                addElement(doc, dbType, "util:constant", "static-field", "java.sql.Types." + field.dbTypeName());
                 addProperty(doc, item, "javaName", field.javaName());
                 addProperty(doc, item, "javaType", field.javaTypeName());
             }
@@ -308,9 +309,12 @@ public class XmlGenerator {
             Element beans = addElement(doc, doc, "beans");
             beans.setAttribute("xmlns", "http://www.springframework.org/schema/beans");
             beans.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+            beans.setAttribute("xmlns:util", "http://www.springframework.org/schema/util");
             beans.setAttribute("xsi:schemaLocation",
                 "http://www.springframework.org/schema/beans " +
-                "http://www.springframework.org/schema/beans/spring-beans.xsd");
+                "http://www.springframework.org/schema/beans/spring-beans.xsd " +
+                "http://www.springframework.org/schema/util " +
+                "http://www.springframework.org/schema/util/spring-util.xsd");
 
             for (PojoDescriptor pojo : pojos)
                 addTypeMetadata(doc, beans, pkg, pojo, includeKeys);

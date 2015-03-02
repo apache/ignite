@@ -50,6 +50,11 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isWithinTransaction() {
+        return transaction() != null;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> Map<K, V> properties() {
         if (props == null)

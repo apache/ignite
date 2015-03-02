@@ -31,10 +31,10 @@ public class VisorTransactionConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default cache concurrency. */
-    private TransactionConcurrency dfltConcurrency;
+    private TransactionConcurrency dfltTxConcurrency;
 
     /** Default transaction isolation. */
-    private TransactionIsolation dfltIsolation;
+    private TransactionIsolation dfltTxIsolation;
 
     /** Default transaction timeout. */
     private long dfltTxTimeout;
@@ -57,12 +57,12 @@ public class VisorTransactionConfiguration implements Serializable {
     public static VisorTransactionConfiguration from(TransactionConfiguration src) {
         VisorTransactionConfiguration cfg = new VisorTransactionConfiguration();
 
-        cfg.defaultTxConcurrency(src.getDefaultTxConcurrency());
-        cfg.defaultTxIsolation(src.getDefaultTxIsolation());
-        cfg.defaultTxTimeout(src.getDefaultTxTimeout());
-        cfg.pessimisticTxLogLinger(src.getPessimisticTxLogLinger());
-        cfg.pessimisticTxLogSize(src.getPessimisticTxLogSize());
-        cfg.txSerializableEnabled(src.isTxSerializableEnabled());
+        cfg.dfltTxConcurrency = src.getDefaultTxConcurrency();
+        cfg.dfltTxIsolation = src.getDefaultTxIsolation();
+        cfg.dfltTxTimeout = src.getDefaultTxTimeout();
+        cfg.pessimisticTxLogLinger = src.getPessimisticTxLogLinger();
+        cfg.pessimisticTxLogSize = src.getPessimisticTxLogSize();
+        cfg.txSerEnabled = src.isTxSerializableEnabled();
 
         return cfg;
     }
@@ -71,28 +71,14 @@ public class VisorTransactionConfiguration implements Serializable {
      * @return Default cache transaction concurrency.
      */
     public TransactionConcurrency defaultTxConcurrency() {
-        return dfltConcurrency;
-    }
-
-    /**
-     * @param dfltConcurrency Default cache transaction concurrency.
-     */
-    public void defaultTxConcurrency(TransactionConcurrency dfltConcurrency) {
-        this.dfltConcurrency = dfltConcurrency;
+        return dfltTxConcurrency;
     }
 
     /**
      * @return Default cache transaction isolation.
      */
     public TransactionIsolation defaultTxIsolation() {
-        return dfltIsolation;
-    }
-
-    /**
-     * @param dfltIsolation Default cache transaction isolation.
-     */
-    public void defaultTxIsolation(TransactionIsolation dfltIsolation) {
-        this.dfltIsolation = dfltIsolation;
+        return dfltTxIsolation;
     }
 
     /**
@@ -103,24 +89,10 @@ public class VisorTransactionConfiguration implements Serializable {
     }
 
     /**
-     * @param dfltTxTimeout Default transaction timeout.
-     */
-    public void defaultTxTimeout(long dfltTxTimeout) {
-        this.dfltTxTimeout = dfltTxTimeout;
-    }
-
-    /**
      * @return Pessimistic log cleanup delay in milliseconds.
      */
     public int pessimisticTxLogLinger() {
         return pessimisticTxLogLinger;
-    }
-
-    /**
-     * @param pessimisticTxLogLinger Pessimistic log cleanup delay.
-     */
-    public void pessimisticTxLogLinger(int pessimisticTxLogLinger) {
-        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
     }
 
     /**
@@ -131,24 +103,10 @@ public class VisorTransactionConfiguration implements Serializable {
     }
 
     /**
-     * @param pessimisticTxLogSize Pessimistic transactions log size.
-     */
-    public void pessimisticTxLogSize(int pessimisticTxLogSize) {
-        this.pessimisticTxLogSize = pessimisticTxLogSize;
-    }
-
-    /**
      * @return {@code True} if serializable transactions are enabled, {@code false} otherwise.
      */
     public boolean txSerializableEnabled() {
         return txSerEnabled;
-    }
-
-    /**
-     * @param txSerEnabled Flag to enable/disable serializable cache transactions.
-     */
-    public void txSerializableEnabled(boolean txSerEnabled) {
-        this.txSerEnabled = txSerEnabled;
     }
 
     /** {@inheritDoc} */

@@ -131,7 +131,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
             assert G.allGrids().isEmpty();
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             System.err.println("Uncaught exception: " + e.getMessage());
 
             e.printStackTrace(System.err);
@@ -145,9 +145,8 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
      * @param add New nodes count.
      * @param rmv Remove nodes count.
      * @param type Type of nodes to manipulate.
-     * @throws IgniteCheckedException On any exception.
      */
-    private static void changeTopology(Ignite parent, int add, int rmv, String type) throws IgniteCheckedException {
+    private static void changeTopology(Ignite parent, int add, int rmv, String type) {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
         IgniteCompute comp = parent.compute().withAsync();

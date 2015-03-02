@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.visor.streamer.*;
 import org.apache.ignite.streamer.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.*;
@@ -84,7 +84,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 res.taskMonitoringEnabled(arg.taskMonitoringEnabled());
 
                 if (arg.taskMonitoringEnabled()) {
-                    ClusterNodeLocalMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
+                    ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 

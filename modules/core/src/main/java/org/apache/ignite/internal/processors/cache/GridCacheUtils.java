@@ -39,6 +39,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
+import javax.cache.integration.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1783,6 +1784,9 @@ public class GridCacheUtils {
      * @return CacheException runtime exception, never null.
      */
     @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
+        if (e.hasCause(CacheWriterException.class))
+            return new CacheWriterException(e);
+
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)

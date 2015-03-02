@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -100,7 +101,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Compatible versions. */
-    private static final String COMPATIBLE_VERS = GridProperties.get("ignite.compatible.vers");
+    private static final String COMPATIBLE_VERS = IgniteProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
@@ -182,10 +183,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private boolean errOnStop;
 
-    /** Cluster. */
-    @GridToStringExclude
-    private IgniteClusterImpl cluster;
-
     /** Scheduler. */
     @GridToStringExclude
     private IgniteScheduler scheduler;
@@ -229,37 +226,37 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
-        return cluster;
+        return ctx.cluster().get();
     }
 
     /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
-        return cluster.localNode();
+        return ctx.cluster().get().localNode();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        return cluster.compute();
+        return ctx.cluster().get().compute();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
-        return cluster.message();
+        return ctx.cluster().get().message();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events() {
-        return cluster.events();
+        return ctx.cluster().get().events();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        return cluster.services();
+        return ctx.cluster().get().services();
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        return cluster.executorService();
+        return ctx.cluster().get().executorService();
     }
 
     /** {@inheritDoc} */
@@ -398,6 +395,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String getOsUser() {
         return System.getProperty("user.name");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printLastErrors() {
+        ctx.exceptionRegistry().printErrors();
     }
 
     /** {@inheritDoc} */
@@ -664,6 +666,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 this,
                 cfg,
                 gw,
+                new IgniteExceptionRegistry(log),
                 utilityCachePool,
                 execSvc,
                 sysExecSvc,
@@ -672,7 +675,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc);
 
-            cluster = new IgniteClusterImpl(ctx);
+            startProcessor(ctx, new ClusterProcessor(ctx), attrs);
 
             U.onGridStart();
 
@@ -1532,7 +1535,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 U.quiet(false,
                     "   __________  ________________ ",
                     "  /  _/ ___/ |/ /  _/_  __/ __/ ",
-                    " _/ // (_ /    // /  / / / _/   ",
+                    " _/ // (7 7    // /  / / / _/   ",
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
@@ -1550,13 +1553,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (log.isInfoEnabled()) {
                 log.info(NL + NL +
-                    ">>>    __________  ________________  " + NL +
-                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                    ">>>  _/ // (_ /    // /  / / / _/    " + NL +
-                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                    ">>> " + NL +
-                    ">>> " + ver + NL +
-                    ">>> " + COPYRIGHT + NL
+                        ">>>    __________  ________________  " + NL +
+                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                        ">>> " + NL +
+                        ">>> " + ver + NL +
+                        ">>> " + COPYRIGHT + NL
                 );
             }
         }
@@ -1787,7 +1790,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
 
-                cluster.clearNodeMap();
+                ctx.cluster().get().clearNodeMap();
 
                 if (log.isDebugEnabled())
                     log.debug("Grid " + (gridName == null ? "" : '\'' + gridName + "' ") + "is stopping.");

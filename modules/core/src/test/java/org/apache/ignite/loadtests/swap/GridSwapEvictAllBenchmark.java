@@ -247,10 +247,9 @@ public class GridSwapEvictAllBenchmark {
     /**
      * @param store Cache store.
      * @return Started grid.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private static Ignite start(CacheStore<Long, String> store) throws IgniteCheckedException {
+    private static Ignite start(CacheStore<Long, String> store) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

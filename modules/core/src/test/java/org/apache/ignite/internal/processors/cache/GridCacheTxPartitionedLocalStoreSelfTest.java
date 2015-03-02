@@ -15,26 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.hibernate.cache.spi.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Implementation of {@link TimestampsRegion}. This region is automatically created when query
- * caching is enabled and it holds most recent updates timestamps to queryable tables.
- * Name of timestamps region is {@code "org.hibernate.cache.spi.UpdateTimestampsCache"}.
+ *
  */
-public class GridHibernateTimestampsRegion extends GridHibernateGeneralDataRegion implements TimestampsRegion {
+public class GridCacheTxPartitionedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
     /**
-     * @param factory Region factory.
-     * @param name Region name.
-     * @param ignite Grid.
-     * @param cache Region cache.
+     *
      */
-    public GridHibernateTimestampsRegion(GridHibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
-        super(factory, name, ignite, cache);
+    public GridCacheTxPartitionedLocalStoreSelfTest() {
+        super();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheDistributionMode getDistributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode getAtomicMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode getCacheMode() {
+        return PARTITIONED;
     }
 }

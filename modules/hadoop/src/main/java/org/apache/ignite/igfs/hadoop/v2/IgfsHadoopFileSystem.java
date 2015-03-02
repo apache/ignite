@@ -26,6 +26,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.igfs.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -223,7 +224,7 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
             if (seqReadsBeforePrefetch > 0)
                 seqReadsBeforePrefetchOverride = true;
 
-            // In GG replication factor is controlled by data cache affinity.
+            // In Ignite replication factor is controlled by data cache affinity.
             // We use replication factor to force the whole file to be stored on local node.
             dfltReplication = (short)cfg.getInt("dfs.replication", 3);
 
