@@ -54,16 +54,16 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     public static VisorExecutorServiceConfiguration from(IgniteConfiguration c) {
         VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
-        cfg.publicThreadPoolSize(c.getPublicThreadPoolSize());
-        cfg.systemThreadPoolSize(c.getSystemThreadPoolSize());
-        cfg.managementThreadPoolSize(c.getManagementThreadPoolSize());
-        cfg.peerClassLoadingThreadPoolSize(c.getPeerClassLoadingThreadPoolSize());
-        cfg.igfsThreadPoolSize(c.getIgfsThreadPoolSize());
+        cfg.pubPoolSize = c.getPublicThreadPoolSize();
+        cfg.sysPoolSz = c.getSystemThreadPoolSize();
+        cfg.mgmtPoolSize = c.getManagementThreadPoolSize();
+        cfg.p2pPoolSz = c.getPeerClassLoadingThreadPoolSize();
+        cfg.igfsPoolSize = c.getIgfsThreadPoolSize();
 
         ConnectorConfiguration cc = c.getConnectorConfiguration();
 
         if (cc != null)
-            cfg.restThreadPoolSize(cc.getThreadPoolSize());
+            cfg.restPoolSz = cc.getThreadPoolSize();
 
         return cfg;
     }
@@ -76,24 +76,10 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @param pubPoolSize Public pool size.
-     */
-    public void publicThreadPoolSize(int pubPoolSize) {
-        this.pubPoolSize = pubPoolSize;
-    }
-
-    /**
      * @return System pool size.
      */
     public int systemThreadPoolSize() {
         return sysPoolSz;
-    }
-
-    /**
-     * @param sysPoolSz System pool size.
-     */
-    public void systemThreadPoolSize(int sysPoolSz) {
-        this.sysPoolSz = sysPoolSz;
     }
 
     /**
@@ -104,24 +90,10 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @param mgmtPoolSize New Management pool size.
-     */
-    public void managementThreadPoolSize(int mgmtPoolSize) {
-        this.mgmtPoolSize = mgmtPoolSize;
-    }
-
-    /**
      * @return IGFS pool size.
      */
     public int igfsThreadPoolSize() {
         return igfsPoolSize;
-    }
-
-    /**
-     * @param igfsPoolSize New iGFS pool size.
-     */
-    public void igfsThreadPoolSize(int igfsPoolSize) {
-        this.igfsPoolSize = igfsPoolSize;
     }
 
     /**
@@ -132,24 +104,10 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @param p2pPoolSz New peer-to-peer pool size.
-     */
-    public void peerClassLoadingThreadPoolSize(int p2pPoolSz) {
-        this.p2pPoolSz = p2pPoolSz;
-    }
-
-    /**
      * @return REST requests pool size.
      */
     public int restThreadPoolSize() {
         return restPoolSz;
-    }
-
-    /**
-     * @param restPoolSz REST requests pool size.
-     */
-    public void restThreadPoolSize(int restPoolSz) {
-        this.restPoolSz = restPoolSz;
     }
 
     /** {@inheritDoc} */

@@ -51,15 +51,15 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** Setup lock file. */
     private static File setupLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
-        "gg-lock-setup.file");
+        "ignite-lock-setup.file");
 
     /** Map lock file. */
     private static File mapLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
-        "gg-lock-map.file");
+        "ignite-lock-map.file");
 
     /** Reduce lock file. */
     private static File reduceLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
-        "gg-lock-reduce.file");
+        "ignite-lock-reduce.file");
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {

@@ -42,7 +42,7 @@ public class VisorLifecycleConfiguration implements Serializable {
     public static VisorLifecycleConfiguration from(IgniteConfiguration c) {
         VisorLifecycleConfiguration cfg = new VisorLifecycleConfiguration();
 
-        cfg.beans(compactArray(c.getLifecycleBeans()));
+        cfg.beans = compactArray(c.getLifecycleBeans());
 
         return cfg;
     }
@@ -52,13 +52,6 @@ public class VisorLifecycleConfiguration implements Serializable {
      */
     @Nullable public String beans() {
         return beans;
-    }
-
-    /**
-     * @param beans New lifecycle beans.
-     */
-    public void beans(@Nullable String beans) {
-        this.beans = beans;
     }
 
     /** {@inheritDoc} */

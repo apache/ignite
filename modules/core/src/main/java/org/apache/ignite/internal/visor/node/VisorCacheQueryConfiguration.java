@@ -58,12 +58,12 @@ public class VisorCacheQueryConfiguration implements Serializable {
             QueryTypeResolver rslvr = qccfg.getTypeResolver();
 
             if (rslvr != null)
-                cfg.typeResolver(U.compact(rslvr.getClass().getName()));
+                cfg.typeRslvr = U.compact(rslvr.getClass().getName());
 
-            cfg.indexPrimitiveKey(qccfg.isIndexPrimitiveKey());
-            cfg.indexPrimitiveValue(qccfg.isIndexPrimitiveValue());
-            cfg.indexFixedTyping(qccfg.isIndexFixedTyping());
-            cfg.escapeAll(qccfg.isEscapeAll());
+            cfg.idxPrimitiveKey = qccfg.isIndexPrimitiveKey();
+            cfg.idxPrimitiveVal = qccfg.isIndexPrimitiveValue();
+            cfg.idxFixedTyping = qccfg.isIndexFixedTyping();
+            cfg.escapeAll = qccfg.isEscapeAll();
         }
 
         return cfg;
@@ -77,24 +77,10 @@ public class VisorCacheQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param typeRslvr Query type resolver class name.
-     */
-    public void typeResolver(String typeRslvr) {
-        this.typeRslvr = typeRslvr;
-    }
-
-    /**
      * @return {@code true} if primitive keys should be indexed.
      */
     public boolean indexPrimitiveKey() {
         return idxPrimitiveKey;
-    }
-
-    /**
-     * @param idxPrimitiveKey {@code true} if primitive keys should be indexed.
-     */
-    public void indexPrimitiveKey(boolean idxPrimitiveKey) {
-        this.idxPrimitiveKey = idxPrimitiveKey;
     }
 
     /**
@@ -105,13 +91,6 @@ public class VisorCacheQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param idxPrimitiveVal {@code true} if primitive values should be indexed.
-     */
-    public void indexPrimitiveValue(boolean idxPrimitiveVal) {
-        this.idxPrimitiveVal = idxPrimitiveVal;
-    }
-
-    /**
      * @return {@code true} if SQL engine should try to convert values to their respective SQL types.
      */
     public boolean indexFixedTyping() {
@@ -119,23 +98,9 @@ public class VisorCacheQueryConfiguration implements Serializable {
     }
 
     /**
-     * @param idxFixedTyping {@code true} if SQL engine should try to convert values to their respective SQL types.
-     */
-    public void indexFixedTyping(boolean idxFixedTyping) {
-        this.idxFixedTyping = idxFixedTyping;
-    }
-
-    /**
      * @return {@code true} if SQL engine generate SQL statements with escaped names.
      */
     public boolean escapeAll() {
         return escapeAll;
-    }
-
-    /**
-     * @param escapeAll {@code true} if SQL engine should generate SQL statements with escaped names.
-     */
-    public void escapeAll(boolean escapeAll) {
-        this.escapeAll = escapeAll;
     }
 }

@@ -62,7 +62,7 @@ public class CacheContinuousQueryExample {
             // Create new continuous query.
             ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
-            qry.setInitialPredicate(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+            qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
                 @Override public boolean apply(Integer key, String val) {
                     return key > 10;
                 }

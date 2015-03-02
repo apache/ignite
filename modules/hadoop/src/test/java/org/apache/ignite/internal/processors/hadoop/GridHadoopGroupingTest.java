@@ -144,12 +144,12 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
     }
 
     public static class YearComparator implements RawComparator<YearTemperature> { // Grouping comparator.
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public int compare(YearTemperature o1, YearTemperature o2) {
             return Integer.compare(o1.year, o2.year);
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             throw new IllegalStateException();
         }
