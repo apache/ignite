@@ -21,7 +21,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** Sample count. */
-    private static final int SAMPLE_CNT = 3;
+    private static final int SAMPLE_CNT = 1;
 
     static {
         GridIoMessageFactory.registerCustom(TestMessage.DIRECT_TYPE, new CO<Message>() {
@@ -97,15 +97,15 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         TestMessage msg = new TestMessage();
 
-        for (int i = 1; i <= SAMPLE_CNT; i++) {
-            mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
-
+        for (int i = 0; i < 10; i++) {
             TestMessage1 mes1 = new TestMessage1();
 
             mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0));
 
             msg.add(mes1);
         }
+
+        mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
         assert latch.await(3, SECONDS);
     }
@@ -191,6 +191,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     static class TestMessage1 extends GridCacheMessage {
         /** */
         public static final byte DIRECT_TYPE = (byte)203;
+
         /** */
         private Message mes;
 
