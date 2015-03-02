@@ -282,7 +282,7 @@ public class IgniteTxHandler<K, V> {
                 req.taskNameHash()
             );
 
-            tx = ctx.tm().onCreated(tx);
+            tx = ctx.tm().onCreated(null, tx);
 
             if (tx != null)
                 tx.topologyVersion(req.topologyVersion());
@@ -527,7 +527,7 @@ public class IgniteTxHandler<K, V> {
             if (req.commit()) {
                 if (tx == null) {
                     // Create transaction and add entries.
-                    tx = ctx.tm().onCreated(
+                    tx = ctx.tm().onCreated(null,
                         new GridDhtTxLocal<>(
                             ctx,
                             nodeId,
@@ -932,7 +932,7 @@ public class IgniteTxHandler<K, V> {
 
                 tx.writeVersion(req.writeVersion());
 
-                tx = ctx.tm().onCreated(tx);
+                tx = ctx.tm().onCreated(null, tx);
 
                 if (tx == null || !ctx.tm().onStarted(tx)) {
                     if (log.isDebugEnabled())
@@ -1052,7 +1052,7 @@ public class IgniteTxHandler<K, V> {
                 tx.writeVersion(req.writeVersion());
 
                 if (!tx.empty()) {
-                    tx = ctx.tm().onCreated(tx);
+                    tx = ctx.tm().onCreated(null, tx);
 
                     if (tx == null || !ctx.tm().onStarted(tx))
                         throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + tx);
