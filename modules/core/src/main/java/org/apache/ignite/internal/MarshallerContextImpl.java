@@ -101,16 +101,16 @@ public class MarshallerContextImpl implements MarshallerContext {
             U.awaitQuiet(latch);
 
         if (clsById.putIfAbsent(id, F.t(cls, false)) == null) {
-            // TODO: IGNITE-141 - Do not create thread.
-            Thread t = new Thread(new MarshallerCacheUpdater(cache, id, cls.getName()));
-
-            t.start();
-
             try {
-                t.join();
+                String old = cache.putIfAbsent(id, cls.getName());
+
+                if (old != null && !old.equals(cls.getName()))
+                    throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
+                        "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + cls.getName() +
+                        "clsName2=" + old + ']');
             }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
     }
@@ -143,46 +143,5 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return t.get1();
-    }
-
-    /**
-     */
-    private static class MarshallerCacheUpdater implements Runnable {
-        /** */
-        private final GridCacheAdapter<Integer, String> cache;
-
-        /** */
-        private final int typeId;
-
-        /** */
-        private final String clsName;
-
-        /**
-         * @param cache Cache.
-         * @param typeId Type ID.
-         * @param clsName Class name.
-         */
-        private MarshallerCacheUpdater(GridCacheAdapter<Integer, String> cache, int typeId, String clsName) {
-            assert cache != null;
-
-            this.cache = cache;
-            this.typeId = typeId;
-            this.clsName = clsName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                String old = cache.putIfAbsent(typeId, clsName);
-
-                if (old != null && !old.equals(clsName))
-                    throw new IgniteException("Type ID collision acquired in OptimizedMarshaller. Use " +
-                        "OptimizedMarshallerIdMapper to resolve it [id=" + typeId + ", clsName1=" + clsName +
-                        "clsName2=" + old + ']');
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
     }
 }
