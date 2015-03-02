@@ -41,6 +41,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return new TestMessage1();
             }
         });
+
+        GridIoMessageFactory.registerCustom(TestMessage2.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
+                return new TestMessage2();
+            }
+        });
     }
 
     public static final String TEST_BODY = "Test body";
@@ -107,11 +113,19 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(count, i);
 
-                        GridTestMessage msg2 = (GridTestMessage) ((TestMessage1) msg1.message()).message();
+                        TestMessage2 msg2 = (TestMessage2) msg1.message();
 
-                        assertEquals(count, msg2.getMsgId());
+                        assertEquals(TEST_BODY + "_" + i + "_2", msg2.body());
 
-                        assertEquals(grid(1).localNode().id(), msg2.getSourceNodeId());
+                        assertEquals(grid(0).localNode().id(), msg2.nodeId());
+
+                        assertEquals(i, msg2.id());
+
+                        GridTestMessage msg3 = (GridTestMessage) msg2.message();
+
+                        assertEquals(count, msg3.getMsgId());
+
+                        assertEquals(grid(1).localNode().id(), msg3.getSourceNodeId());
 
                         count++;
                     }
@@ -125,9 +139,10 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         TestMessage msg = new TestMessage();
 
         for (int i = 0; i < 10; i++) {
-            TestMessage1 mes1 = new TestMessage1();
+            TestMessage2 mes1 = new TestMessage2();
 
-            mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0), TEST_BODY + "_" + i);
+            mes1.init(new GridTestMessage(grid(1).localNode().id(), i, 0),
+                grid(0).localNode().id(), i, TEST_BODY + "_" + i + "_2");
 
             TestMessage1 mes2 = new TestMessage1();
 
@@ -323,6 +338,166 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 4:
+                    msg = reader.readMessage("msg");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * Test message class.
+     */
+    static class TestMessage2 extends GridCacheMessage {
+        /** */
+        public static final byte DIRECT_TYPE = (byte) 205;
+
+        /** Node id. */
+        private UUID nodeId;
+
+        /** Integer field. */
+        private int id;
+
+        /** Body. */
+        private String body;
+
+        /** */
+        private Message msg;
+
+        /**
+         * @param mes Message.
+         */
+        public void init(Message mes, UUID nodeId, int id, String body) {
+            this.nodeId = nodeId;
+            this.id = id;
+            this.msg = mes;
+            this.body = body;
+        }
+
+        /**
+         * @return Body.
+         */
+        public String body() {
+            return body;
+        }
+
+        /**
+         * @return Message.
+         */
+        public Message message() {
+            return msg;
+        }
+
+        /**
+         * @return Node id.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Id.
+         */
+        public int id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte directType() {
+            return DIRECT_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 7;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!super.writeTo(buf, writer))
+                return false;
+
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(directType(), fieldsCount()))
+                    return false;
+
+                writer.onHeaderWritten();
+            }
+
+            switch (writer.state()) {
+                case 3:
+                    if (!writer.writeUuid("nodeId", nodeId))
+                        return false;
+
+                    writer.incrementState();
+
+                case 4:
+                    if (!writer.writeInt("id", id))
+                        return false;
+
+                    writer.incrementState();
+
+                case 5:
+                    if (!writer.writeString("body", body))
+                        return false;
+
+                    writer.incrementState();
+
+                case 6:
+                    if (!writer.writeMessage("msg", msg))
+                        return false;
+
+                    writer.incrementState();
+
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            reader.setBuffer(buf);
+
+            if (!reader.beforeMessageRead())
+                return false;
+
+            if (!super.readFrom(buf, reader))
+                return false;
+
+            switch (reader.state()) {
+                case 3:
+                    nodeId = reader.readUuid("nodeId");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 4:
+                    id = reader.readInt("id");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 5:
+                    body = reader.readString("body");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 6:
                     msg = reader.readMessage("msg");
 
                     if (!reader.isLastRead())
