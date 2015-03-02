@@ -419,9 +419,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
     /**
      * @param entry Cache entry.
-     * @param keyBytes Key bytes, possibly {@code null}.
      */
-    public void cached(GridCacheEntryEx entry, @Nullable byte[] keyBytes) {
+    public void cached(GridCacheEntryEx entry) {
         assert entry != null;
 
         assert entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
@@ -573,32 +572,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         }
 
         return ctx.toCacheObject(val);
-    }
-
-    /**
-     * @param cacheVal Value.
-     * @return New value.
-     */
-    public <V> V applyEntryProcessors(V cacheVal) {
-        Object val = cacheVal;
-        Object key = CU.value(this.key, ctx, false);
-
-        for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
-            try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key, val);
-
-                EntryProcessor processor = t.get1();
-
-                processor.process(invokeEntry, t.get2());
-
-                val = invokeEntry.getValue();
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
-        }
-
-        return (V)val;
     }
 
     /**

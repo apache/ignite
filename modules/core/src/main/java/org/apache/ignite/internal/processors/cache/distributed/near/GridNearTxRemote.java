@@ -299,7 +299,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                 }
                 else {
                     // Initialize cache entry.
-                    entry.cached(cached, null);
+                    entry.cached(cached);
 
                     writeMap.put(entry.txKey(), entry);
 

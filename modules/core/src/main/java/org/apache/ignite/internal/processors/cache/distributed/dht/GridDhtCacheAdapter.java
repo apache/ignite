@@ -695,10 +695,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridCacheTtlUpdateRequest req = reqMap.get(node);
 
                                 if (req == null) {
-                                    reqMap.put(node,
-                                        req = new GridCacheTtlUpdateRequest(topVer, expiryPlc.forAccess()));
-
-                                    req.cacheId(ctx.cacheId());
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
+                                        topVer,
+                                        expiryPlc.forAccess()));
                                 }
 
                                 req.addEntry(e.getKey(), e.getValue());
@@ -718,10 +717,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridCacheTtlUpdateRequest req = reqMap.get(node);
 
                                 if (req == null) {
-                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest(topVer,
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
+                                        topVer,
                                         expiryPlc.forAccess()));
-
-                                    req.cacheId(ctx.cacheId());
                                 }
 
                                 for (IgniteBiTuple<KeyCacheObject, GridCacheVersion> t : e.getValue())

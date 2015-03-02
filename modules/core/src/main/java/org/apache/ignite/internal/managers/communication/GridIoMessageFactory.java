@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
@@ -525,6 +526,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 95:
                 msg = new IgniteDataLoaderEntry();
+
+                break;
+
+            case 96:
+                msg = new CacheContinuousQueryEntry();
 
                 break;
 

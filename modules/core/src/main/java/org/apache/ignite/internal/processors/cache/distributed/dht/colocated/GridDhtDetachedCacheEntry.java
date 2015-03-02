@@ -67,11 +67,8 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheValueBytes valueBytesUnlocked() {
-        return null;
-// TODO IGNITE-51.
-//        return (val != null && val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-//            valBytes == null ? GridCacheValueBytes.nil() : GridCacheValueBytes.marshaled(valBytes);
+    @Override protected CacheObject valueBytesUnlocked() {
+        return val;
     }
 
     /** {@inheritDoc} */

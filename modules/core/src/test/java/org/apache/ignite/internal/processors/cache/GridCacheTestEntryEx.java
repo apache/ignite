@@ -607,16 +607,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public byte[] keyBytes() {
-        assert false; return null;
-    }
-
-    /** @inheritDoc */
-    @Override public byte[] getOrMarshalKeyBytes() {
-        assert false; return null;
-    }
-
-    /** @inheritDoc */
     @Override public GridCacheVersion version() {
         return ver;
     }
@@ -786,18 +776,17 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public void keyBytes(byte[] keyBytes) {
+    @Override public CacheObject valueBytes() {
         assert false;
+
+        return null;
     }
 
     /** @inheritDoc */
-    @Override public GridCacheValueBytes valueBytes() {
-        assert false; return GridCacheValueBytes.nil();
-    }
+    @Override public CacheObject valueBytes(GridCacheVersion ver) {
+        assert false;
 
-    /** @inheritDoc */
-    @Override public GridCacheValueBytes valueBytes(GridCacheVersion ver) {
-        assert false; return GridCacheValueBytes.nil();
+        return null;
     }
 
     /** {@inheritDoc} */

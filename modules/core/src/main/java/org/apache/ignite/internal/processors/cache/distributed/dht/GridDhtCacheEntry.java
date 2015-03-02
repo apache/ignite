@@ -311,16 +311,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         if (isNew() || !valid(-1) || deletedUnlocked())
             return null;
         else {
-            CacheObject val0 = val;
-
-            if (val0 == null && valPtr != 0) {
-                IgniteBiTuple<byte[], Boolean> t = valueBytes0();
-
-                if (t.get2())
-                    val0 = cctx.toCacheObject(t.get1(), null);
-                else
-                    val0 = cctx.toCacheObject(null, t.get1());
-            }
+            CacheObject val0 = valueBytesUnlocked();
 
             return F.t(ver, val0, null);
         }

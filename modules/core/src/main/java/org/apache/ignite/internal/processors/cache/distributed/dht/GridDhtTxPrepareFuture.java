@@ -429,7 +429,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             if (entry == null) {
                 entry = (GridDistributedCacheEntry)cacheCtx.cache().entryEx(txEntry.key());
 
-                txEntry.cached(entry, null);
+                txEntry.cached(entry);
             }
 
             if (tx.optimistic() && txEntry.explicitVersion() == null) {
@@ -455,7 +455,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                     entry = (GridDistributedCacheEntry)cacheCtx.cache().entryEx(txEntry.key());
 
-                    txEntry.cached(entry, null);
+                    txEntry.cached(entry);
                 }
             }
         }
@@ -625,7 +625,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                         GridCacheVersion dhtVer = entry.version();
 
-                        CacheObject val0 = entry.rawGet();
+                        CacheObject val0 = entry.valueBytes();
 
                         if (val0 != null)
                             res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
@@ -634,7 +634,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     }
                     catch (GridCacheEntryRemovedException ignored) {
                         // Retry.
-                        txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), null);
+                        txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
                     }
                 }
             }
@@ -655,7 +655,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     GridCacheVersion dhtVer = entry.version();
 
                     if (ver.getValue() == null || !ver.getValue().equals(dhtVer)) {
-                        CacheObject val0 = entry.rawGet();
+                        CacheObject val0 = entry.valueBytes();
 
                         res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
                     }
@@ -664,7 +664,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), null);
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
                 }
             }
         }
@@ -1015,7 +1015,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             catch (GridCacheEntryRemovedException ignore) {
                 cached = dht.entryExx(entry.key());
 
-                entry.cached(cached, cached.keyBytes());
+                entry.cached(cached);
             }
         }
 
@@ -1195,7 +1195,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                     if (e == null)
                                         break;
 
-                                    entry.cached(e, null);
+                                    entry.cached(e);
                                 }
                             }
                         }

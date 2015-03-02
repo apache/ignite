@@ -325,7 +325,8 @@ public class GridCacheEntryInfo implements Externalizable, Message {
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx.cacheObjectContext());
 
-        val.prepareMarshal(ctx.cacheObjectContext());
+        if (val != null)
+            val.prepareMarshal(ctx.cacheObjectContext());
 // TODO IGNITE-51
 //        boolean depEnabled = ctx.gridDeploy().enabled();
 //
@@ -352,7 +353,8 @@ public class GridCacheEntryInfo implements Externalizable, Message {
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx, clsLdr);
 
-        val.finishUnmarshal(ctx, clsLdr);
+        if (val != null)
+            val.finishUnmarshal(ctx, clsLdr);
 // TODO IGNITE-51
 //        Marshaller mrsh = ctx.marshaller();
 //

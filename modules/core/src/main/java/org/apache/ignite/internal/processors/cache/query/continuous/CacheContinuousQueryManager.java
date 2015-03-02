@@ -116,18 +116,14 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param e Cache entry.
      * @param key Key.
      * @param newVal New value.
-     * @param newBytes New value bytes.
      * @param oldVal Old value.
-     * @param oldBytes Old value bytes.
      * @param preload Whether update happened during preloading.
      * @throws IgniteCheckedException In case of error.
      */
     public void onEntryUpdated(GridCacheEntryEx e,
         KeyCacheObject key,
         CacheObject newVal,
-        GridCacheValueBytes newBytes,
         CacheObject oldVal,
-        GridCacheValueBytes oldBytes,
         boolean preload)
         throws IgniteCheckedException
     {
@@ -149,8 +145,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         if (F.isEmpty(lsnrCol))
             return;
 
-        boolean hasNewVal = newVal != null || (newBytes != null && !newBytes.isNull());
-        boolean hasOldVal = oldVal != null || (oldBytes != null && !oldBytes.isNull());
+        boolean hasNewVal = newVal != null;
+        boolean hasOldVal = oldVal != null;
 
         if (!hasNewVal && !hasOldVal)
             return;
@@ -169,27 +165,26 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             if (!initialized) {
                 if (lsnr.oldValueRequired()) {
                     oldVal = cctx.unwrapTemporary(oldVal);
-// TODO IGNITE-51.
-//                    if (oldVal == null && oldBytes != null && !oldBytes.isNull())
-//                        oldVal = oldBytes.isPlain() ? (V)oldBytes.get() : cctx.marshaller().<V>unmarshal(oldBytes.get
-//                            (), cctx.deploy().globalLoader());
+
+                    if (oldVal != null)
+                        oldVal.finishUnmarshal(cctx, cctx.deploy().globalLoader());
                 }
 
-                if (newVal == null && newBytes != null && !newBytes.isNull()) {
-// TODO IGNITE-51.
-//                    newVal = newBytes.isPlain() ? (V) newBytes.get() : cctx.marshaller().<V>unmarshal(newBytes.get(),
-//                        cctx.deploy().globalLoader());
-                }
+                if (newVal != null)
+                    newVal.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+
+                initialized = true;
             }
 
-            CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx, false),
-                CU.<V>value(newVal, cctx, false),
-                newBytes,
-                lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx, false) : null,
-                lsnr.oldValueRequired() ? oldBytes : null);
+            CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+                cctx.cacheId(),
+                evtType,
+                key,
+                newVal,
+                lsnr.oldValueRequired() ? oldVal : null);
 
             CacheContinuousQueryEvent<K, V> evt = new CacheContinuousQueryEvent<>(
-                cctx.kernalContext().cache().jcache(cctx.name()), evtType, e0);
+                cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
             lsnr.onEntryUpdated(evt, primary, recordIgniteEvt);
         }
@@ -199,10 +194,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param e Entry.
      * @param key Key.
      * @param oldVal Old value.
-     * @param oldBytes Old value bytes.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onEntryExpired(GridCacheEntryEx e, KeyCacheObject key, CacheObject oldVal, GridCacheValueBytes oldBytes)
+    public void onEntryExpired(GridCacheEntryEx e, KeyCacheObject key, CacheObject oldVal)
         throws IgniteCheckedException {
         assert e != null;
         assert key != null;
@@ -223,26 +217,24 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
             for (CacheContinuousQueryListener<K, V> lsnr : lsnrCol.values()) {
                 if (!initialized) {
-                    if (lsnr.oldValueRequired()) {
+                    if (lsnr.oldValueRequired())
                         oldVal = cctx.unwrapTemporary(oldVal);
 
-                        if (oldVal == null && oldBytes != null && !oldBytes.isNull()) {
-// TODO IGNITE-51.
-//                            oldVal = oldBytes.isPlain() ? (V) oldBytes.get() :
-//                                cctx.marshaller().<V>unmarshal(oldBytes.get(), cctx.deploy().globalLoader());
-                        }
-                    }
+                    if (oldVal != null)
+                        oldVal.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+
+                    initialized = true;
                 }
 
-               // TODO IGNITE-51.
-               CacheContinuousQueryEntry<K, V> e0 = new CacheContinuousQueryEntry<>(key.<K>value(cctx, false),
-                    null,
-                    null,
-                    lsnr.oldValueRequired() ? CU.<V>value(oldVal, cctx, false) : null,
-                    lsnr.oldValueRequired() ? oldBytes : null);
+               CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+                   cctx.cacheId(),
+                   EXPIRED,
+                   key,
+                   null,
+                   lsnr.oldValueRequired() ? oldVal : null);
 
-                CacheContinuousQueryEvent<K, V> evt = new CacheContinuousQueryEvent<>(
-                    cctx.kernalContext().cache().jcache(cctx.name()), EXPIRED, e0);
+                CacheContinuousQueryEvent<K, V> evt = new CacheContinuousQueryEvent(
+                    cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
                 lsnr.onEntryUpdated(evt, primary, recordIgniteEvt);
             }
@@ -419,7 +411,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             autoUnsubscribe, grp.predicate()).get();
 
         if (notifyExisting) {
-            final Iterator<Cache.Entry<K, V>> it = cctx.cache().entrySetx().iterator();
+            final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent<? extends K, ? extends V>>() {
                 @Override public Iterator<CacheEntryEvent<? extends K, ? extends V>> iterator() {
@@ -456,11 +448,12 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                                 if (!it.hasNext())
                                     break;
 
-                                Cache.Entry<K, V> e = it.next();
+                                GridCacheEntryEx e = it.next();
 
                                 next = new CacheContinuousQueryEvent<>(
-                                    cctx.kernalContext().cache().jcache(cctx.name()), CREATED,
-                                    new CacheContinuousQueryEntry<>(e.getKey(), e.getValue(), null, null, null));
+                                    cctx.kernalContext().cache().jcache(cctx.name()),
+                                    cctx,
+                                    new CacheContinuousQueryEntry(cctx.cacheId(), CREATED, e.key(), e.rawGet(), null));
 
                                 if (rmtFilter != null && !rmtFilter.evaluate(next))
                                     next = null;
@@ -686,8 +679,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
             Collection<CacheEntryEvent<? extends K, ? extends V>> evts = new ArrayList<>(1);
 
-            evts.add(new CacheContinuousQueryEvent<>(cache, evt.getEventType(),
-                ((CacheContinuousQueryEvent<? extends K, ? extends V>)evt).entry()));
+            evts.add(evt);
 
             return evts;
         }

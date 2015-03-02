@@ -260,7 +260,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param keyBytes Key bytes.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(KeyCacheObject key, byte[] keyBytes, GridCacheVersion ownerMapped) {
+    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 

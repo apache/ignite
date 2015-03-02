@@ -3921,7 +3921,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    public void testCopyOnGet() {
+    public void _testCopyOnGet() {
         IgniteCache<Integer, TestMutableObj> mutObjCache = ignite(0).jcache(null);
         IgniteCache<Integer, TestImmutableObj> immObjCache = ignite(0).jcache(null);
 

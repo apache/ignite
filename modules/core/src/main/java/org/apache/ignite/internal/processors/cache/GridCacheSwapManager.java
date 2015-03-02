@@ -678,7 +678,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             return null;
 
         return read(entry.key(),
-            entry.getOrMarshalKeyBytes(),
+            entry.key().valueBytes(cctx),
             entry.partition(),
             locked,
             readOffheap,
@@ -697,8 +697,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         KeyCacheObject key = entry.key();
 
         int part = cctx.affinity().partition(key);
-
-        byte[] keyBytes = entry.getOrMarshalKeyBytes();
 
         IgniteBiTuple<Long, Integer> ptr = offheap.valuePointer(spaceName, part, key, key.valueBytes(cctx));
 

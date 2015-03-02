@@ -963,12 +963,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    return v.value(ctx, true);
-// TODO IGNITE-51
-//                    if (ctx.portableEnabled())
-//                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
-//
-//                    return F.t(ctx.cloneOnFlag(v));
+                    Object val0 = v.value(ctx, true);
+
+                    if (ctx.portableEnabled())
+                        val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
+
+                    return F.t((V)val0);
                 }
             }
 
@@ -980,12 +980,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    return v.value(ctx, true);
-// TODO IGNITE-51
-//                    if (ctx.portableEnabled())
-//                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
-//
-//                    return F.t(ctx.cloneOnFlag(v));
+                    Object val0 = v.value(ctx, true);
+
+                    if (ctx.portableEnabled())
+                        val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
+
+                    return F.t((V) val0);
                 }
             }
 

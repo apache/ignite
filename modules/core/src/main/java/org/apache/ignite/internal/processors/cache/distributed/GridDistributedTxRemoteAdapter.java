@@ -281,7 +281,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     log.debug("Replacing obsolete entry in remote transaction [entry=" + entry + ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
             }
         }
     }
@@ -327,13 +327,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             IgniteTxEntry rmv = readMap.remove(e.txKey());
 
             if (rmv != null) {
-                e.cached(rmv.cached(), null);
+                e.cached(rmv.cached());
 
                 writeMap.put(e.txKey(), e);
             }
             // If lock is explicit.
             else {
-                e.cached(e.context().cache().entryEx(e.key()), null);
+                e.cached(e.context().cache().entryEx(e.key()));
 
                 // explicit lock.
                 writeMap.put(e.txKey(), e);
@@ -456,7 +456,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
+                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
                     }
                 }
             }
@@ -484,7 +484,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     GridCacheEntryEx cached = txEntry.cached();
 
                                     if (cached == null)
-                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()), null);
+                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()));
 
                                     if (near() && cacheCtx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
@@ -563,19 +563,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                             // Keep near entry up to date.
                                             if (nearCached != null) {
-                                                CacheObject val0 = null;
-
-                                                GridCacheValueBytes valBytesTuple = cached.valueBytes();
-
-                                                if (!valBytesTuple.isNull()) {
-// TODO IGNITE-51.
-//                                                    if (valBytesTuple.isPlain())
-//                                                        val0 = (V)valBytesTuple.get();
-//                                                    else
-//                                                        valBytes0 = valBytesTuple.get();
-                                                }
-                                                else
-                                                    val0 = cached.rawGet();
+                                                CacheObject val0 = cached.valueBytes();
 
                                                 nearCached.updateOrEvict(xidVer,
                                                     val0,
@@ -621,19 +609,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 cached.updateTtl(null, txEntry.ttl());
 
                                             if (nearCached != null) {
-                                                CacheObject val0 = null;
-
-                                                GridCacheValueBytes valBytesTuple = cached.valueBytes();
-
-                                                if (!valBytesTuple.isNull()) {
-// TODO IGNITE-51.
-//                                                    if (valBytesTuple.isPlain())
-//                                                        val0 = (V)valBytesTuple.get();
-//                                                    else
-//                                                        valBytes0 = valBytesTuple.get();
-                                                }
-                                                else
-                                                    val0 = cached.rawGet();
+                                                CacheObject val0 = cached.valueBytes();
 
                                                 nearCached.updateOrEvict(xidVer,
                                                     val0,
@@ -662,7 +638,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         log.debug("Attempting to commit a removed entry (will retry): " + txEntry);
 
                                     // Renew cached entry.
-                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), null);
+                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
                                 }
                             }
                         }

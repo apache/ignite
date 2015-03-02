@@ -264,7 +264,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             checkInternal(entry.txKey());
 
             // Initialize cache entry.
-            entry.cached(cached, null);
+            entry.cached(cached);
 
             writeMap.put(entry.txKey(), entry);
 

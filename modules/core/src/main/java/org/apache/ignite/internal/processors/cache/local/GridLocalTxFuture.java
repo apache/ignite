@@ -218,7 +218,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in checkLocks method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
                 }
             }
         }
@@ -264,7 +264,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx>
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in onOwnerChanged method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), null);
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
                 }
             }
         }

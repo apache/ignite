@@ -778,11 +778,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
-            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), null);
+            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer));
         else if (!cacheCtx.isLocal())
-            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), null);
+            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true));
         else
-            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), null);
+            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
             if (waitLock && entry.explicitVersion() == null) {
@@ -812,7 +812,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()), null);
+                    entry.cached(cacheCtx.near().entryEx(entry.key()));
                 }
             }
         }

@@ -67,12 +67,14 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param ttl TTL.
      */
-    public GridCacheTtlUpdateRequest(long topVer, long ttl) {
+    public GridCacheTtlUpdateRequest(int cacheId, long topVer, long ttl) {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
+        this.cacheId = cacheId;
         this.topVer = topVer;
         this.ttl = ttl;
     }

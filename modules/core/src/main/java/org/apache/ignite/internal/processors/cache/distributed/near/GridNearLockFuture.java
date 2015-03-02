@@ -316,7 +316,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         if (inTx()) {
             IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
-            txEntry.cached(entry, null);
+            txEntry.cached(entry);
         }
 
         if (c != null)

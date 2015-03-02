@@ -419,12 +419,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         for (Iterator<GridCacheEntryInfo> it = infos.iterator(); it.hasNext();) {
                             GridCacheEntryInfo info = it.next();
 
-                            CacheObject v = map.get(info.key());
+                            Object v = map.get(info.key());
 
                             if (v == null)
                                 it.remove();
-                            else
-                                info.value(v);
+                            else if (!skipVals)
+                                info.value((CacheObject)v);
                         }
 
                         return infos;

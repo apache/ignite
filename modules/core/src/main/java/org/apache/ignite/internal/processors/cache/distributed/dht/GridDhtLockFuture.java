@@ -906,7 +906,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 assert added.dhtLocal();
 
                 if (added.ownerVersion() != null)
-                    req.owned(e.key(), e.getOrMarshalKeyBytes(), added.ownerVersion());
+                    req.owned(e.key(), added.ownerVersion());
 
                 break;
             }

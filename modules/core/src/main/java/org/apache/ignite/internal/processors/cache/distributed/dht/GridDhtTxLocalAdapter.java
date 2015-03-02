@@ -209,7 +209,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 if (e.cached().obsolete()) {
                     GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
 
-                    e.cached(cached, cached.keyBytes());
+                    e.cached(cached);
                 }
 
                 if (e.cached().detached() || e.cached().isLocal())
@@ -234,7 +234,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     catch (GridCacheEntryRemovedException ignore) {
                         GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
 
-                        e.cached(cached, cached.keyBytes());
+                        e.cached(cached);
                     }
                 }
             }
@@ -462,7 +462,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 GridDhtCacheEntry cached = dhtCache.entryExx(entry.key(), topologyVersion());
 
-                entry.cached(cached, null);
+                entry.cached(cached);
 
                 GridCacheVersion explicit = entry.explicitVersion();
 
@@ -562,7 +562,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     if (read)
                         txEntry.ttl(accessTtl);
 
-                    txEntry.cached(cached, null);
+                    txEntry.cached(cached);
 
                     addReader(msgId, cached, txEntry, topVer);
                 }
@@ -710,7 +710,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
-                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()), null);
+                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()));
                 }
             }
         }

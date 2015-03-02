@@ -167,16 +167,20 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
         if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
+            for (IgniteTxKey key : nearEvicted) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+
                 key.prepareMarshal(cctx);
+            }
         }
 
         if (preloadEntries != null) {
-            for (GridCacheEntryInfo info : preloadEntries)
+            for (GridCacheEntryInfo info : preloadEntries) {
+                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+
                 info.marshal(cctx);
+            }
         }
     }
 
@@ -184,16 +188,20 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
         if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
+            for (IgniteTxKey key : nearEvicted) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+
                 key.finishUnmarshal(cctx, ldr);
+            }
         }
 
         if (preloadEntries != null) {
-            for (GridCacheEntryInfo info : preloadEntries)
+            for (GridCacheEntryInfo info : preloadEntries) {
+                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+
                 info.unmarshal(cctx, ldr);
+            }
         }
     }
 

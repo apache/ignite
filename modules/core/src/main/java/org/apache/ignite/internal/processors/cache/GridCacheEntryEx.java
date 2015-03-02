@@ -565,17 +565,6 @@ public interface GridCacheEntryEx {
     public boolean markObsoleteVersion(GridCacheVersion ver);
 
     /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes();
-
-    /**
-     * @return Key bytes.
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    public byte[] getOrMarshalKeyBytes() throws IgniteCheckedException;
-
-    /**
      * @return Version.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
@@ -858,16 +847,10 @@ public interface GridCacheEntryEx {
     @Nullable public GridCacheMvccCandidate localOwner() throws GridCacheEntryRemovedException;
 
     /**
-     * @param keyBytes Key bytes.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public void keyBytes(byte[] keyBytes) throws GridCacheEntryRemovedException;
-
-    /**
      * @return Value bytes.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public GridCacheValueBytes valueBytes() throws GridCacheEntryRemovedException;
+    public CacheObject valueBytes() throws GridCacheEntryRemovedException;
 
     /**
      * Gets cached serialized value bytes.
@@ -877,7 +860,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If serialization failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheValueBytes valueBytes(@Nullable GridCacheVersion ver)
+    @Nullable public CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

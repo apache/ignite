@@ -270,7 +270,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (inTx()) {
             IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
-            txEntry.cached(entry, null);
+            txEntry.cached(entry);
 
             if (cand != null) {
                 if (!tx.implicit())

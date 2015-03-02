@@ -582,7 +582,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                             ", tx=" + this + ']');
 
                     // Replace the entry.
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), entry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
                 }
             }
         }
@@ -1129,7 +1129,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             if (cached.obsoleteVersion() != null) {
                 cached = cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
 
-                txEntry.cached(cached, null);
+                txEntry.cached(cached);
             }
 
             return cached;
@@ -1156,7 +1156,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             if (cached.obsoleteVersion() != null) {
                 cached = cacheCtx.colocated().entryExx(key.key(), topVer, true);
 
-                txEntry.cached(cached, null);
+                txEntry.cached(cached);
             }
 
             return cached;

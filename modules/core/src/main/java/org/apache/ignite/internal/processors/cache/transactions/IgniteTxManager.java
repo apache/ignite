@@ -1544,7 +1544,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         // Renew cache entry.
-                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key()), null);
+                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key()));
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert tx.dht() : "Received invalid partition for non DHT transaction [tx=" +
@@ -1606,7 +1606,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     GridCacheAdapter cache = cacheCtx.cache();
 
                     // Renew cache entry.
-                    txEntry.cached(cache.entryEx(txEntry.key()), null);
+                    txEntry.cached(cache.entryEx(txEntry.key()));
                 }
             }
         }
@@ -1638,7 +1638,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
 
                     // Renew cache entry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), null);
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
                 }
             }
         }
@@ -1907,7 +1907,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         if (cached == null || cached.detached())
                             cached = write.context().cache().entryEx(entry.key(), tx.topologyVersion());
 
-                        recovered.cached(cached, cached.keyBytes());
+                        recovered.cached(cached);
 
                         tx.writeMap().put(entry.txKey(), recovered);
 

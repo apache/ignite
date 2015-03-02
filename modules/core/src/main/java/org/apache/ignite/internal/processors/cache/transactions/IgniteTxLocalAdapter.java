@@ -926,7 +926,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (log.isDebugEnabled())
                                     log.debug("Got removed entry during transaction commit (will retry): " + txEntry);
 
-                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey()), null);
+                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey()));
                             }
                         }
                     }
@@ -1214,7 +1214,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 txEntry.readValue(e.<V>value());
                         }
                         catch (GridCacheEntryRemovedException ignored) {
-                            txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer), null);
+                            txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer));
                         }
                     }
                 }
@@ -1487,7 +1487,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 }
 
                                 if (txEntry != null)
-                                    txEntry.cached(entryEx(cacheCtx, txKey), null);
+                                    txEntry.cached(entryEx(cacheCtx, txKey));
 
                                 continue; // While loop.
                             }
@@ -1685,10 +1685,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                                         txEntry.setAndMarkValid(val);
 
-                                        Object val0 = val.value(cacheCtx, false);
-
                                         if (!F.isEmpty(txEntry.entryProcessors()))
-                                            val0 = txEntry.applyEntryProcessors(val0);
+                                            val = txEntry.applyEntryProcessors(val);
 
                                         cacheCtx.addResult(retMap,
                                             cacheKey,
@@ -1710,7 +1708,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         log.debug("Got removed exception in get postLock (will retry): " +
                                             cached);
 
-                                    txEntry.cached(entryEx(cacheCtx, txKey), null);
+                                    txEntry.cached(entryEx(cacheCtx, txKey));
                                 }
                                 catch (GridCacheFilterFailedException e) {
                                     // Failed value for the filter.
@@ -2443,7 +2441,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in putAllAsync method (will retry): " + cached);
 
-                    txEntry.cached(entryEx(cached.context(), txEntry.txKey()), null);
+                    txEntry.cached(entryEx(cached.context(), txEntry.txKey()));
                 }
             }
         }
@@ -3236,7 +3234,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             }
 
             // Keep old ttl value.
-            old.cached(entry, null);
+            old.cached(entry);
             old.filters(filter);
 
             // Update ttl if specified.
@@ -3292,7 +3290,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 entry = entryEx(entry.context(), txEntry.txKey(), topologyVersion());
 
-                txEntry.cached(entry, null);
+                txEntry.cached(entry);
             }
         }
     }

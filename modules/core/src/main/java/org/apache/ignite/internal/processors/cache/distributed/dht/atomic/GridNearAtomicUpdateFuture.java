@@ -327,12 +327,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         GridCacheReturn ret = (GridCacheReturn)res;
 
-        if (op != TRANSFORM && ret != null) {
-            CacheObject val = (CacheObject)ret.value();
-
-            ret.value(CU.value(val, cctx, false));
-        }
-
         Object retval = res == null ? null : rawRetval ? ret : this.retval ? ret.value() : ret.success();
 
         if (op == TRANSFORM && retval == null)
@@ -362,6 +356,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             return;
         }
 
+        GridCacheReturn ret = res.returnValue();
+
+        if (op != TRANSFORM && ret != null) {
+            CacheObject val = (CacheObject)ret.value();
+
+            ret.value(CU.value(val, cctx, false));
+        }
+
         Boolean single0 = single;
 
         if (single0 != null && single0) {
@@ -374,13 +376,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 onDone(addFailedKeys(res.failedKeys(), res.error()));
             else {
                 if (op == TRANSFORM) {
-                    if (res.returnValue() != null)
-                        addInvokeResults(res.returnValue());
+                    if (ret != null)
+                        addInvokeResults(ret);
 
                     onDone(opRes);
                 }
                 else {
-                    GridCacheReturn<?> opRes0 = opRes = res.returnValue();
+                    GridCacheReturn<?> opRes0 = opRes = ret;
 
                     onDone(opRes0);
                 }
@@ -398,11 +400,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     if (op == TRANSFORM) {
                         assert !req.fastMap();
 
-                        if (res.returnValue() != null)
-                            addInvokeResults(res.returnValue());
+                        if (ret != null)
+                            addInvokeResults(ret);
                     }
                     else if (req.fastMap() && req.hasPrimary())
-                        opRes = res.returnValue();
+                        opRes = ret;
                 }
 
                 mappings.remove(nodeId);

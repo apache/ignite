@@ -272,33 +272,21 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     /**
      * @return Value bytes.
      */
-    protected GridCacheValueBytes valueBytesUnlocked() {
+    protected CacheObject valueBytesUnlocked() {
         assert Thread.holdsLock(this);
 
-        if (!isOffHeapValuesOnly()) {
-// TODO IGNITE-51.
-//            if (valBytes != null)
-//                return GridCacheValueBytes.marshaled(valBytes);
+        CacheObject val0 = val;
 
-            try {
-                if (valPtr != 0 && cctx.offheapTiered())
-                    return offheapValueBytes();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-        else {
-            if (valPtr != 0) {
-                GridUnsafeMemory mem = cctx.unsafeMemory();
+        if (val0 == null && valPtr != 0) {
+            IgniteBiTuple<byte[], Boolean> t = valueBytes0();
 
-                assert mem != null;
-
-                return mem.getOffHeap(valPtr);
-            }
+            if (t.get2())
+                val0 = cctx.toCacheObject(t.get1(), null);
+            else
+                val0 = cctx.toCacheObject(null, t.get1());
         }
 
-        return GridCacheValueBytes.nil();
+        return val0;
     }
 
     /** {@inheritDoc} */
@@ -439,33 +427,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     info.setNew(isStartVersion());
                     info.setDeleted(deletedUnlocked());
 
-                    if (!expired) {
-                        CacheObject val0 = val;
-
-                        if (val0 == null && valPtr != 0) {
-                            IgniteBiTuple<byte[], Boolean> t = valueBytes0();
-
-                            if (t.get2())
-                                val0 = cctx.toCacheObject(t.get1(), null);
-                            else
-                                val0 = cctx.toCacheObject(null, t.get1());
-
-                        }
-
-                        info.value(val0);
-// TODO IGNITE-51.
-//                        info.value(cctx.kernalContext().config().isPeerClassLoadingEnabled() ?
-//                            rawGetOrUnmarshalUnlocked(false) : val);
-//
-//                        GridCacheValueBytes valBytes = valueBytesUnlocked();
-//
-//                        if (!valBytes.isNull()) {
-//                            if (valBytes.isPlain())
-//                                info.value((V)valBytes.get());
-//                            else
-//                                info.valueBytes(valBytes.get());
-//                        }
-                   }
+                    if (!expired)
+                        info.value(valueBytesUnlocked());
                 }
             }
         }
@@ -611,6 +574,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @return Value bytes and flag indicating whether value is byte array.
      */
     protected IgniteBiTuple<byte[], Boolean> valueBytes0() {
+        assert Thread.holdsLock(this);
+
         if (valPtr != 0) {
             assert isOffHeapValuesOnly() || cctx.offheapTiered();
 
@@ -827,7 +792,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         taskName);
                 }
 
-                cctx.continuousQueries().onEntryExpired(this, key, expiredVal, null);
+                cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
 
                 // No more notifications.
                 evt = false;
@@ -1064,8 +1029,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : this.val;
 
-            GridCacheValueBytes oldBytes = valueBytesUnlocked();
-
             if (intercept) {
                 key0 = key.value(cctx, false);
                 val0 = CU.value(val, cctx, false);
@@ -1138,7 +1101,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
 
             if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
+                cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
 
             cctx.dataStructures().onEntryUpdated(key, false);
         }
@@ -1228,8 +1191,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
             }
 
-            GridCacheValueBytes oldBytes = valueBytesUnlocked();
-
             if (old == null)
                 old = saveValueForIndexUnlocked();
 
@@ -1295,7 +1256,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
 
                 if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                    cctx.continuousQueries().onEntryUpdated(this, key, null, null, old, oldBytes, false);
+                    cctx.continuousQueries().onEntryUpdated(this, key, null, old, false);
 
             cctx.dataStructures().onEntryUpdated(key, true);
         }
@@ -1387,8 +1348,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             // Possibly get old value form store.
             old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
-
-            GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
             boolean readThrough = false;
 
@@ -1618,7 +1577,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (res)
                 updateMetrics(op, metrics);
 
-            cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
+            cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -1821,7 +1780,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             // Prepare old value and value bytes.
             oldVal = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
-            GridCacheValueBytes oldValBytes = valueBytesUnlocked();
 
             // Possibly read value from store.
             boolean readThrough = false;
@@ -2196,8 +2154,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 updateMetrics(op, metrics);
 
             if (cctx.isReplicated() || primary)
-                cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(),
-                    oldVal, oldValBytes, false);
+                cctx.continuousQueries().onEntryUpdated(this, key, val, oldVal, false);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -3298,8 +3255,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 if (!skipQryNtf) {
                     if (cctx.isLocal() || cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer))
-                        cctx.continuousQueries().onEntryUpdated(this, key, val, valueBytesUnlocked(), null, null,
-                            preload);
+                        cctx.continuousQueries().onEntryUpdated(this, key, val, null, preload);
 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }
@@ -3617,7 +3573,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             null);
                     }
 
-                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal, null);
+                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
                 }
             }
         }
@@ -3707,84 +3663,25 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void keyBytes(byte[] keyBytes) throws GridCacheEntryRemovedException {
-        checkObsolete();
-
-// TODO IGNITE-51.
-//        if (keyBytes != null)
-//            this.keyBytes = keyBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized byte[] keyBytes() {
-// TODO IGNITE-51.
-//        return keyBytes;
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] getOrMarshalKeyBytes() throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        byte[] bytes = keyBytes();
-//
-//        if (bytes != null)
-//            return bytes;
-//
-//        bytes = CU.marshal(cctx.shared(), key);
-//
-//        synchronized (this) {
-//            keyBytes = bytes;
-//        }
-//
-//        return bytes;
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized GridCacheValueBytes valueBytes() throws GridCacheEntryRemovedException {
+    @Override public synchronized CacheObject valueBytes() throws GridCacheEntryRemovedException {
         checkObsolete();
 
         return valueBytesUnlocked();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheValueBytes valueBytes(@Nullable GridCacheVersion ver)
+    @Nullable @Override public CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject val = null;
-        GridCacheValueBytes valBytes = GridCacheValueBytes.nil();
 
-// TODO IGNITE-51.
-//        synchronized (this) {
-//            checkObsolete();
-//
-//            if (ver == null || this.ver.equals(ver)) {
-//                val = this.val;
-//                ver = this.ver;
-//                valBytes = valueBytesUnlocked();
-//
-//                if (valBytes.isNull() && cctx.offheapTiered() && valPtr != 0)
-//                    valBytes = offheapValueBytes();
-//            }
-//            else
-//                ver = null;
-//        }
-//
-//        if (valBytes.isNull()) {
-//            if (val != null)
-//                valBytes = (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-//                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
-//
-//            if (ver != null && !isOffHeapValuesOnly()) {
-//                synchronized (this) {
-//                    checkObsolete();
-//
-//                    if (this.val == val)
-//                        this.valBytes = isStoreValueBytes() ? valBytes.getIfMarshaled() : null;
-//                }
-//            }
-//        }
+        synchronized (this) {
+            checkObsolete();
 
-        return valBytes;
+            if (ver == null || this.ver.equals(ver))
+                val = valueBytesUnlocked();
+        }
+
+        return val;
     }
 
     /**
