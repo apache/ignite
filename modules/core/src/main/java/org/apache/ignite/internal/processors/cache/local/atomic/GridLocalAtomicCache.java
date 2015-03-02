@@ -1014,7 +1014,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 try {
                     entry = entryEx(cacheKey);
 
-                    GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
+                    GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
                         ver,
                         val == null ? DELETE : op,
                         val,
@@ -1452,7 +1452,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
-                GridTuple3<Boolean, CacheObject, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
+                GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
                     ver,
                     op,
                     writeVal,
@@ -1468,12 +1468,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     taskName);
 
                 if (intercept) {
-                    if (op == UPDATE)
+                    if (op == UPDATE) {
                         ctx.config().getInterceptor().onAfterPut(entry.key().value(ctx, false),
-                                writeVal.value(ctx, false));
+                            writeVal.value(ctx, false));
+                    }
                     else
-                        ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false),
-                                CU.value(t.get2(), ctx, false));
+                        ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false), t.get2());
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
@@ -1555,7 +1555,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,

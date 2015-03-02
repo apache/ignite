@@ -143,9 +143,12 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj) {
-        if (obj == null || obj instanceof CacheObject)
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes) {
+        if ((obj == null && bytes == null) || obj instanceof CacheObject)
             return (CacheObject)obj;
+
+        if (bytes != null)
+            return new CacheObjectImpl(obj, bytes);
 
         return new UserCacheObjectImpl(obj);
     }

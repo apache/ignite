@@ -587,8 +587,12 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++)
-            col.get(i).prepareMarshal(ctx.cacheObjectContext());
+        for (int i = 0 ; i < size; i++) {
+            CacheObject obj = col.get(i);
+
+            if (obj != null)
+                obj.prepareMarshal(ctx.cacheObjectContext());
+        }
     }
 
     /**
@@ -601,8 +605,10 @@ public abstract class GridCacheMessage implements Message {
         if (col == null)
             return;
 
-        for (CacheObject obj : col)
-            obj.prepareMarshal(ctx.cacheObjectContext());
+        for (CacheObject obj : col) {
+            if (obj != null)
+                obj.prepareMarshal(ctx.cacheObjectContext());
+        }
     }
 
     /**
@@ -622,8 +628,12 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++)
-            col.get(i).finishUnmarshal(ctx, ldr);
+        for (int i = 0 ; i < size; i++) {
+            CacheObject obj = col.get(i);
+
+            if (obj != null)
+                obj.finishUnmarshal(ctx, ldr);
+        }
     }
 
     /**
@@ -640,8 +650,10 @@ public abstract class GridCacheMessage implements Message {
         if (col == null)
             return;
 
-        for (CacheObject obj : col)
-            obj.finishUnmarshal(ctx, ldr);
+        for (CacheObject obj : col) {
+            if (obj != null)
+                obj.finishUnmarshal(ctx, ldr);
+        }
     }
 
     /**

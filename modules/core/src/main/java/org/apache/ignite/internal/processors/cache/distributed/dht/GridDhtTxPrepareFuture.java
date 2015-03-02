@@ -340,7 +340,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             }
 
                             if (err != null || procRes != null)
-                                ret.addEntryProcessResult(key,
+                                ret.addEntryProcessResult(key.value(cacheCtx, false),
                                     err == null ? new CacheInvokeResult<>(procRes) : new CacheInvokeResult<>(err));
                             else
                                 ret.invokeResult(true);
@@ -1240,7 +1240,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         GridDrType drType = cacheCtx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
 
                         try {
-                            if (entry.initialValue(info.value(), null, info.version(),
+                            if (entry.initialValue(info.value(), info.version(),
                                 info.ttl(), info.expireTime(), true, topVer, drType)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),

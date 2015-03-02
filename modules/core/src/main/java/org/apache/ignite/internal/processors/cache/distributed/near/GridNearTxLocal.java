@@ -280,7 +280,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> loadMissing(
-        GridCacheContext cacheCtx,
+        final GridCacheContext cacheCtx,
         boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
@@ -288,69 +288,67 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean skipVals,
         final IgniteBiInClosure<KeyCacheObject, Object> c
     ) {
-        return null;
-// TODO IGNITE-51.
-//        if (cacheCtx.isNear()) {
-//            return cacheCtx.nearTx().txLoadAsync(this,
-//                keys,
-//                readThrough,
-//                deserializePortable,
-//                accessPolicy(cacheCtx, keys),
-//                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
-//                @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
-//                    try {
-//                        Map<K, V> map = f.get();
-//
-//                        // Must loop through keys, not map entries,
-//                        // as map entries may not have all the keys.
-//                        for (K key : keys)
-//                            c.apply(key, map.get(key));
-//
-//                        return true;
-//                    }
-//                    catch (Exception e) {
-//                        setRollbackOnly();
-//
-//                        throw new GridClosureException(e);
-//                    }
-//                }
-//            });
-//        }
-//        else if (cacheCtx.isColocated()) {
-//            return cacheCtx.colocated().loadAsync(keys,
-//                readThrough,
-//                /*reload*/false,
-//                /*force primary*/false,
-//                topologyVersion(),
-//                CU.subjectId(this, cctx),
-//                resolveTaskName(),
-//                deserializePortable,
-//                accessPolicy(cacheCtx, keys),
-//                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
-//                    @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
-//                        try {
-//                            Map<K, V> map = f.get();
-//
-//                            // Must loop through keys, not map entries,
-//                            // as map entries may not have all the keys.
-//                            for (K key : keys)
-//                                c.apply(key, map.get(key));
-//
-//                            return true;
-//                        }
-//                        catch (Exception e) {
-//                            setRollbackOnly();
-//
-//                            throw new GridClosureException(e);
-//                        }
-//                    }
-//                });
-//        }
-//        else {
-//            assert cacheCtx.isLocal();
-//
-//            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, skipVals, c);
-//        }
+        if (cacheCtx.isNear()) {
+            return cacheCtx.nearTx().txLoadAsync(this,
+                keys,
+                readThrough,
+                deserializePortable,
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Boolean>() {
+                @Override public Boolean apply(IgniteInternalFuture<Map<Object, Object>> f) {
+                    try {
+                        Map<Object, Object> map = f.get();
+
+                        // Must loop through keys, not map entries,
+                        // as map entries may not have all the keys.
+                        for (KeyCacheObject key : keys)
+                            c.apply(key, map.get(key.value(cacheCtx, false)));
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        setRollbackOnly();
+
+                        throw new GridClosureException(e);
+                    }
+                }
+            });
+        }
+        else if (cacheCtx.isColocated()) {
+            return cacheCtx.colocated().loadAsync(keys,
+                readThrough,
+                /*reload*/false,
+                /*force primary*/false,
+                topologyVersion(),
+                CU.subjectId(this, cctx),
+                resolveTaskName(),
+                deserializePortable,
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Boolean>() {
+                    @Override public Boolean apply(IgniteInternalFuture<Map<Object, Object>> f) {
+                        try {
+                            Map<Object, Object> map = f.get();
+
+                            // Must loop through keys, not map entries,
+                            // as map entries may not have all the keys.
+                            for (KeyCacheObject key : keys)
+                                c.apply(key, map.get(key.value(cacheCtx, false)));
+
+                            return true;
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
+
+                            throw new GridClosureException(e);
+                        }
+                    }
+                });
+        }
+        else {
+            assert cacheCtx.isLocal();
+
+            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, skipVals, c);
+        }
     }
 
     /** {@inheritDoc} */

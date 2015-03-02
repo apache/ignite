@@ -116,7 +116,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
-                    return ctx.wrapCloneMap(tx.<K, V>getAllAsync(ctx, keys, entry, deserializePortable, skipVals));
+                    return tx.getAllAsync(ctx,
+                        ctx.cacheKeysView(keys),
+                        entry,
+                        deserializePortable,
+                        skipVals,
+                        false);
                 }
             });
         }
@@ -400,7 +405,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -411,9 +416,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
-            // TODO IGNITE-51
-            // keys,
-            null,
+            keys,
             (GridNearTxLocal)tx,
             isRead,
             retval,

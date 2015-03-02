@@ -66,7 +66,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private long threadId;
 
     /** Keys to lock. */
-    private Collection<? extends K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -133,7 +133,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         @Nullable GridNearTxLocal tx,
         boolean read,
         boolean retval,
@@ -535,8 +535,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             // Continue mapping on the same topology version as it was before.
             topSnapshot.compareAndSet(null, snapshot);
 
-            // TODO IGNITE-51.
-            // map(keys);
+            map(keys);
 
             markInitialized();
 
@@ -569,8 +568,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                     topSnapshot.compareAndSet(null, snapshot);
 
-                    // TODO IGNITE-51.
-                    // map(keys);
+                    map(keys);
 
                     markInitialized();
                 }
@@ -881,9 +879,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             threadId,
             lockVer,
             topVer,
-            // TODO IGNITE-51.
-            // keys,
-            null,
+            keys,
             read,
             timeout,
             accessTtl,
@@ -1244,7 +1240,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             }
 
                             // Set value to detached entry.
-                            entry.resetFromPrimary(newVal, null, dhtVer);
+                            entry.resetFromPrimary(newVal, dhtVer);
 
                             if (log.isDebugEnabled())
                                 log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');

@@ -1075,7 +1075,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     try {
                         GridCacheEntryEx entry = cctx.cache().entryEx(info.key(), topVer);
 
-                        if (entry.initialValue(info.value(), null, info.version(), info.ttl(),
+                        if (entry.initialValue(info.value(), info.version(), info.ttl(),
                             info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),

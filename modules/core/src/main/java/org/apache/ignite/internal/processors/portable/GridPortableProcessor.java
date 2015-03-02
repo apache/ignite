@@ -158,7 +158,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param obj Object.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj);
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes);
 
     /**
      * @param obj Key value.

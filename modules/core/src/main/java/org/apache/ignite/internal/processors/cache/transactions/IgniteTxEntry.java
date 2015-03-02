@@ -1044,7 +1044,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
             hasWriteVal = in.readBoolean();
 
-            val = (CacheObject)in.readObject();
+            if (hasWriteVal)
+                val = (CacheObject)in.readObject();
 
             op = fromOrdinal(in.readInt());
 // TODO IGNITE-51.

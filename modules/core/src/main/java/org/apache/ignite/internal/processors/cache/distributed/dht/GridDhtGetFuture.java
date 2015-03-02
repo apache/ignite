@@ -357,14 +357,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         expiryPlc,
                         skipVals);
                 }
-// TODO IGNITE-51.
-//                else {
-//                    fut = tx.getAllAsync(cctx,
-//                        keys.keySet(),
-//                        null,
-//                        deserializePortable,
-//                        skipVals);
-//                }
+                else {
+                    fut = tx.getAllAsync(cctx,
+                        keys.keySet(),
+                        null,
+                        false,
+                        skipVals,
+                        true);
+                }
             }
         }
         else {
@@ -394,13 +394,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     expiryPlc, skipVals);
                             }
                             else {
-                                return null;
-// TODO IGNITE-51.
-//                                return tx.getAllAsync(cctx,
-//                                    keys.keySet(),
-//                                    null,
-//                                    false,
-//                                    skipVals);
+                                return tx.getAllAsync(cctx,
+                                    keys.keySet(),
+                                    null,
+                                    false,
+                                    skipVals,
+                                    true);
                             }
                         }
                     }

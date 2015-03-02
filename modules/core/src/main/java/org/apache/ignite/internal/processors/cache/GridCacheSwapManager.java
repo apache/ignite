@@ -511,7 +511,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
             // First check off-heap store.
             if (readOffheap && offheapEnabled) {
-                byte[] bytes = offheap.get(spaceName, part, key, key.valueBytes(cctx));
+                byte[] bytes = offheap.get(spaceName, part, key, keyBytes);
 
                 if (bytes != null)
                     return swapEntry(unmarshalSwapEntry(bytes));
@@ -522,7 +522,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
             assert key != null;
 
-            byte[] bytes = swapMgr.read(spaceName, new SwapKey(key, part, keyBytes), cctx.deploy().globalLoader());
+            byte[] bytes = swapMgr.read(spaceName,
+                new SwapKey(key.value(cctx, false), part, keyBytes),
+                cctx.deploy().globalLoader());
 
             if (bytes == null && lsnr != null)
                 return lsnr.entry;
@@ -606,7 +608,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         final GridTuple<GridCacheSwapEntry> t = F.t1();
         final GridTuple<IgniteCheckedException> err = F.t1();
 
-        swapMgr.remove(spaceName, new SwapKey(key, part, key.valueBytes(cctx)), new CI1<byte[]>() {
+        swapMgr.remove(spaceName, new SwapKey(key.value(cctx, false), part, key.valueBytes(cctx)), new CI1<byte[]>() {
             @Override public void apply(byte[] rmv) {
                 if (rmv != null) {
                     try {
@@ -727,7 +729,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         int part = cctx.affinity().partition(key);
 
-        return read(key, CU.marshal(cctx.shared(), key), part, false, readOffheap, readSwap);
+        return read(key, key.valueBytes(cctx), part, false, readOffheap, readSwap);
     }
 
     /**
@@ -801,8 +803,11 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     if (unprocessedKeys == null)
                         unprocessedKeys = new ArrayList<>(keys.size());
 
-                    unprocessedKeys.add(
-                        new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
+                    SwapKey swapKey = new SwapKey(key.value(cctx, false),
+                        cctx.affinity().partition(key),
+                        key.valueBytes(cctx));
+
+                    unprocessedKeys.add(swapKey);
                 }
             }
 
@@ -812,8 +817,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         else {
             unprocessedKeys = new ArrayList<>(keys.size());
 
-            for (KeyCacheObject key : keys)
-                unprocessedKeys.add(new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key)));
+            for (KeyCacheObject key : keys) {
+                SwapKey swapKey = new SwapKey(key.value(cctx, false),
+                    cctx.affinity().partition(key),
+                    key.valueBytes(cctx));
+
+                unprocessedKeys.add(swapKey);
+            }
         }
 
         assert swapEnabled;
@@ -960,7 +970,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         // First try offheap.
         if (offheapEnabled) {
-            byte[] val = offheap.remove(spaceName, part, key, key.valueBytes(cctx));
+            byte[] val = offheap.remove(spaceName, part, key.value(cctx, false), key.valueBytes(cctx));
 
             if (val != null) {
                 if (c != null)
@@ -970,9 +980,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             }
         }
 
-        if (swapEnabled)
-            swapMgr.remove(spaceName, new SwapKey(key, part, key.valueBytes(cctx)), c,
+        if (swapEnabled) {
+            swapMgr.remove(spaceName,
+                new SwapKey(key.value(cctx, false), part, key.valueBytes(cctx)),
+                c,
                 cctx.deploy().globalLoader());
+        }
     }
 
     /**
@@ -1060,8 +1073,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         else {
             Map<SwapKey, byte[]> batch = new LinkedHashMap<>();
 
-            for (GridCacheBatchSwapEntry entry : swapped)
-                batch.put(new SwapKey(entry.key(), entry.partition(), entry.key().valueBytes(cctx)), entry.marshal());
+            for (GridCacheBatchSwapEntry entry : swapped) {
+                SwapKey swapKey = new SwapKey(entry.key().value(cctx, false),
+                    entry.partition(),
+                    entry.key().valueBytes(cctx));
+
+                batch.put(swapKey, entry.marshal());
+            }
 
             swapMgr.writeAll(spaceName, batch, cctx.deploy().globalLoader());
 

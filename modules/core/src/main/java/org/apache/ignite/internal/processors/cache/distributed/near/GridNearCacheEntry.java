@@ -138,7 +138,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                             if (isNew() || !valid(topVer)) {
                                 // Version does not change for load ops.
-                                update(e.value(), null, e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
                                 if (cctx.deferredDelete()) {
                                     boolean deleted = val == null;
@@ -176,7 +176,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * This method should be called only when lock is owned on this entry.
      *
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ver Version.
      * @param dhtVer DHT version.
      * @param primaryNodeId Primary node ID.
@@ -185,19 +184,15 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"RedundantTypeArguments"})
-    public boolean resetFromPrimary(CacheObject val, byte[] valBytes, GridCacheVersion ver, GridCacheVersion dhtVer,
-        UUID primaryNodeId) throws GridCacheEntryRemovedException, IgniteCheckedException {
+    public boolean resetFromPrimary(CacheObject val,
+        GridCacheVersion ver,
+        GridCacheVersion dhtVer,
+        UUID primaryNodeId)
+        throws GridCacheEntryRemovedException, IgniteCheckedException
+    {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
-
-// TODO IGNITE-51.
-//        if (valBytes != null && val == null && !cctx.config().isStoreValueBytes()) {
-//            GridCacheVersion curDhtVer = dhtVersion();
-//
-//            if (!F.eq(dhtVer, curDhtVer))
-//                val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
-//        }
 
         synchronized (this) {
             checkObsolete();
@@ -205,7 +200,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             this.primaryNodeId = primaryNodeId;
 
             if (!F.eq(this.dhtVer, dhtVer)) {
-                value(val, valBytes);
+                value(val);
 
                 this.ver = ver;
                 this.dhtVer = dhtVer;
@@ -222,14 +217,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      *
      * @param dhtVer DHT version.
      * @param val Value associated with version.
-     * @param valBytes Value bytes.
      * @param expireTime Expire time.
      * @param ttl Time to live.
      * @param primaryNodeId Primary node ID.
      */
     public void updateOrEvict(GridCacheVersion dhtVer,
         @Nullable CacheObject val,
-        @Nullable byte[] valBytes,
         long expireTime,
         long ttl,
         UUID primaryNodeId)
@@ -248,7 +241,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 // If cannot evict, then update.
                 if (this.dhtVer == null) {
                     if (!markObsolete(dhtVer)) {
-                        value(val, valBytes);
+                        value(val);
 
                         ttlAndExpireTimeExtras((int) ttl, expireTime);
 
@@ -396,7 +389,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                     // Change entry only if dht version has changed.
                     if (!dhtVer.equals(dhtVersion())) {
-                        update(val, valBytes, expireTime, ttl, ver);
+                        update(val, expireTime, ttl, ver);
 
                         if (cctx.deferredDelete()) {
                             boolean deleted = val == null && valBytes == null;
@@ -429,7 +422,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(CacheObject val, byte[] valBytes, long expireTime,
+    @Override protected void updateIndex(CacheObject val, long expireTime,
         GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
