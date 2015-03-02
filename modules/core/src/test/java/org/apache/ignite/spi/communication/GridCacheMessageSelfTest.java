@@ -23,14 +23,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** Sample count. */
     private static final int SAMPLE_CNT = 3;
 
-    /** */
-    private static final byte DIRECT_TYPE = (byte)202;
-
-    /** */
-    private static final byte DIRECT_TYPE1 = (byte)203;
-
     static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
+        GridIoMessageFactory.registerCustom(TestMessage.DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
                 return new TestMessage();
             }
@@ -42,7 +36,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE1, new CO<Message>() {
+        GridIoMessageFactory.registerCustom(TestMessage1.DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
                 return new TestMessage1();
             }
@@ -119,6 +113,9 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
+        public static final byte DIRECT_TYPE = (byte)202;
+
+        /** */
         @GridDirectCollection(TestMessage1.class)
         private Collection<TestMessage1> entries = new ArrayList<>();
 
@@ -134,12 +131,15 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         @Override public byte fieldsCount() {
-            return 1;
+            return 4;
         }
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
+
+            if (!super.writeTo(buf, writer))
+                return false;
 
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(directType(), fieldsCount()))
@@ -149,11 +149,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             }
 
             switch (writer.state()) {
-                case 0:
+                case 3:
                     if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                         return false;
 
                     writer.incrementState();
+
             }
 
             return true;
@@ -166,14 +167,18 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             if (!reader.beforeMessageRead())
                 return false;
 
+            if (!super.readFrom(buf, reader))
+                return false;
+
             switch (reader.state()) {
-                case 0:
+                case 3:
                     entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                     if (!reader.isLastRead())
                         return false;
 
                     reader.incrementState();
+
             }
 
             return true;
@@ -181,29 +186,34 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    private static class TestMessage1 extends GridCacheMessage {
+    * Test message class.
+    */
+    static class TestMessage1 extends GridCacheMessage {
         /** */
-        GridTestMessage mes;
+        public static final byte DIRECT_TYPE = (byte)203;
+        /** */
+        private Message mes;
 
-        public void init(GridTestMessage mes) {
+        public void init(Message mes) {
             this.mes = mes;
         }
 
         /** {@inheritDoc} */
         @Override public byte directType() {
-            return DIRECT_TYPE1;
+            return DIRECT_TYPE;
         }
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return 1;
+            return 4;
         }
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
+
+            if (!super.writeTo(buf, writer))
+                return false;
 
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(directType(), fieldsCount()))
@@ -213,11 +223,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             }
 
             switch (writer.state()) {
-                case 0:
-                    if (!mes.writeTo(buf, writer))
+                case 3:
+                    if (!writer.writeMessage("mes", mes))
                         return false;
 
                     writer.incrementState();
+
             }
 
             return true;
@@ -230,14 +241,18 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             if (!reader.beforeMessageRead())
                 return false;
 
+            if (!super.readFrom(buf, reader))
+                return false;
+
             switch (reader.state()) {
-                case 0:
-                    mes.readFrom(buf, reader);
+                case 3:
+                    mes = reader.readMessage("mes");
 
                     if (!reader.isLastRead())
                         return false;
 
                     reader.incrementState();
+
             }
 
             return true;
