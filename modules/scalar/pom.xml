@@ -160,6 +160,12 @@
                                     <include name="**/index.js"/>
                                 </replace>
 
+                                <replace dir="target/site/scaladocs">
+                                    <replacetoken>docs.scala-lang.org/overviews/scaladoc/usage.html#members</replacetoken>
+                                    <replacevalue>docs.scala-lang.org/overviews/scaladoc/interface.html</replacevalue>
+                                    <fileset dir="target/site/scaladocs"/>
+                                </replace>
+
                                 <replaceregexp byline="true" flags="im" encoding="UTF-8">
                                     <regexp pattern='(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)'/>
                                     <substitution expression="\1\2\3"/>
