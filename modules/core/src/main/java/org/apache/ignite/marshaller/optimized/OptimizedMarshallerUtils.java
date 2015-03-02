@@ -129,22 +129,22 @@ class OptimizedMarshallerUtils {
     static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper)
         throws IOException, ClassNotFoundException {
-        Class cls = CLS_BY_ID.get(id).get1();
+        IgniteBiTuple<Class, Boolean> t = CLS_BY_ID.get(id);
 
-        if (cls == null) {
+        if (t == null) {
             String clsName = ctx.className(id);
 
             assert clsName != null : id;
 
-            cls = U.forName(clsName, ldr);
+            Class cls = U.forName(clsName, ldr);
 
-            IgniteBiTuple<Class, Boolean> old = CLS_BY_ID.putIfAbsent(id, F.t(cls, false));
+            IgniteBiTuple<Class, Boolean> old = CLS_BY_ID.putIfAbsent(id, t = F.t(cls, false));
 
             if (old != null)
-                cls = old.get1();
+                t = old;
         }
 
-        return classDescriptor(cls, ctx, mapper);
+        return classDescriptor(t.get1(), ctx, mapper);
     }
 
     /**
