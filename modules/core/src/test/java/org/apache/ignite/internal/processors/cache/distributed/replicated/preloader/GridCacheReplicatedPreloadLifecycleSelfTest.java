@@ -32,7 +32,7 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -60,7 +60,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setName("one");
         cc1.setCacheMode(REPLICATED);
         cc1.setWriteSynchronizationMode(FULL_SYNC);
-        cc1.setPreloadMode(preloadMode);
+        cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
         cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);

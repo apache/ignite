@@ -20,40 +20,40 @@ package org.apache.ignite.cache;
 import org.jetbrains.annotations.*;
 
 /**
- * Cache preload mode. When preloading is enabled (i.e. has value other than {@link #NONE}), distributed caches
- * will attempt to preload all necessary values from other grid nodes. This enumeration is used to configure
- * preloading via {@link org.apache.ignite.configuration.CacheConfiguration#getPreloadMode()} configuration property. If not configured
- * explicitly, then {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_PRELOAD_MODE} is used.
+ * Cache rebalance mode. When rebalancing is enabled (i.e. has value other than {@link #NONE}), distributed caches
+ * will attempt to rebalance all necessary values from other grid nodes. This enumeration is used to configure
+ * rebalancing via {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceMode()} configuration property. If not configured
+ * explicitly, then {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_REBALANCE_MODE} is used.
  * <p>
  * Replicated caches will try to load the full set of cache entries from other nodes (or as defined by
  * pluggable {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}), while partitioned caches will only load the entries for which
  * current node is primary or back up.
  * <p>
- * Note that preload mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}
- * caches. Caches with {@link CacheMode#LOCAL} mode are local by definition and therefore cannot preload
+ * Note that rebalance mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}
+ * caches. Caches with {@link CacheMode#LOCAL} mode are local by definition and therefore cannot rebalance
  * any values from neighboring nodes.
  */
-public enum CachePreloadMode {
+public enum CacheRebalanceMode {
     /**
-     * Synchronous preload mode. Distributed caches will not start until all necessary data
+     * Synchronous rebalance mode. Distributed caches will not start until all necessary data
      * is loaded from other available grid nodes.
      */
     SYNC,
 
     /**
-     * Asynchronous preload mode. Distributed caches will start immediately and will load all necessary
+     * Asynchronous rebalance mode. Distributed caches will start immediately and will load all necessary
      * data from other available grid nodes in the background.
      */
     ASYNC,
 
     /**
-     * In this mode no preloading will take place which means that caches will be either loaded on
+     * In this mode no rebalancing will take place which means that caches will be either loaded on
      * demand from persistent store whenever data is accessed, or will be populated explicitly.
      */
     NONE;
 
     /** Enumerated values. */
-    private static final CachePreloadMode[] VALS = values();
+    private static final CacheRebalanceMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -61,7 +61,7 @@ public enum CachePreloadMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CachePreloadMode fromOrdinal(int ord) {
+    @Nullable public static CacheRebalanceMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

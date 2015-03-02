@@ -2424,8 +2424,8 @@ object visor extends VisorTag {
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
 
-                EVT_CACHE_PRELOAD_STARTED,
-                EVT_CACHE_PRELOAD_STOPPED,
+                EVT_CACHE_REBALANCE_STARTED,
+                EVT_CACHE_REBALANCE_STOPPED,
                 EVT_CLASS_DEPLOY_FAILED
             )
 

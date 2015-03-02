@@ -83,7 +83,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
         top = cctx.dht().topology();
 
-        int poolSize = cctx.preloadEnabled() ? cctx.config().getPreloadThreadPoolSize() : 0;
+        int poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
 
         for (int i = 0; i < poolSize; i++)
             workers.add(new SupplyWorker());
@@ -128,7 +128,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      * @return Size of this thread pool.
      */
     int poolSize() {
-        return cctx.config().getPreloadThreadPoolSize();
+        return cctx.config().getRebalanceThreadPoolSize();
     }
 
     /**
@@ -153,14 +153,14 @@ class GridDhtPartitionSupplyPool<K, V> {
             return;
 
         try {
-            if (cctx.preloadEnabled()) {
+            if (cctx.rebalanceEnabled()) {
                 if (log.isDebugEnabled())
                     log.debug("Received partition demand [node=" + nodeId + ", demand=" + d + ']');
 
                 queue.offer(new DemandMessage<>(nodeId, d));
             }
             else
-                U.warn(log, "Received partition demand message when preloading is disabled (will ignore): " + d);
+                U.warn(log, "Received partition demand message when rebalancing is disabled (will ignore): " + d);
         }
         finally {
             leaveBusy();
@@ -243,7 +243,7 @@ class GridDhtPartitionSupplyPool<K, V> {
             GridDhtPartitionSupplyMessage<K, V> s = new GridDhtPartitionSupplyMessage<>(d.workerId(),
                 d.updateSequence(), cctx.cacheId());
 
-            long preloadThrottle = cctx.config().getPreloadThrottle();
+            long preloadThrottle = cctx.config().getRebalanceThrottle();
 
             boolean ack = false;
 
@@ -296,7 +296,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 break;
                             }
 
-                            if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
+                            if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
                                 ack = true;
 
                                 if (!reply(node, d, s))
@@ -316,7 +316,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 if (preloadPred == null || preloadPred.apply(info))
                                     s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
-                                    log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
+                                    log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
                                         info);
                             }
                         }
@@ -348,7 +348,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                             break; // For.
                                         }
 
-                                        if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
+                                        if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
                                             ack = true;
 
                                             if (!reply(node, d, s))
@@ -384,7 +384,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                             s.addEntry0(part, info, cctx.shared());
                                         else {
                                             if (log.isDebugEnabled())
-                                                log.debug("Preload predicate evaluated to false (will not send " +
+                                                log.debug("Rebalance predicate evaluated to false (will not send " +
                                                     "cache entry): " + info);
 
                                             continue;
@@ -443,7 +443,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                     break;
                                 }
 
-                                if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
+                                if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
                                     ack = true;
 
                                     if (!reply(node, d, s))
@@ -456,7 +456,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 if (preloadPred == null || preloadPred.apply(info))
                                     s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
-                                    log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
+                                    log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
                                         info);
                             }
                         }

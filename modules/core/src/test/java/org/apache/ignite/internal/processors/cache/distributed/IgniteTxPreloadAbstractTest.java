@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
@@ -209,7 +209,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setPreloadMode(ASYNC);
+        cfg.setRebalanceMode(ASYNC);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 

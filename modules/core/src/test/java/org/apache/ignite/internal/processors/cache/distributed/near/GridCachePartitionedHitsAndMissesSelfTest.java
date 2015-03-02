@@ -86,7 +86,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
         cfg.setDistributionMode(PARTITIONED_ONLY);
-        cfg.setPreloadPartitionedDelay(-1);
+        cfg.setRebalancePartitionedDelay(-1);
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
 

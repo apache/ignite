@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
@@ -57,7 +57,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** */
-    private CachePreloadMode mode = SYNC;
+    private CacheRebalanceMode mode = SYNC;
 
     /** */
     private boolean offheap;
@@ -82,7 +82,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         repCacheCfg.setName("replicated");
         repCacheCfg.setCacheMode(REPLICATED);
-        repCacheCfg.setPreloadMode(mode);
+        repCacheCfg.setRebalanceMode(mode);
         repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         repCacheCfg.setQueryIndexEnabled(false);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -96,7 +96,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         partCacheCfg.setName("partitioned");
         partCacheCfg.setCacheMode(PARTITIONED);
-        partCacheCfg.setPreloadMode(mode);
+        partCacheCfg.setRebalanceMode(mode);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setEvictNearSynchronized(false);

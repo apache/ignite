@@ -110,8 +110,8 @@
                         </bean>
                     </property>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
 

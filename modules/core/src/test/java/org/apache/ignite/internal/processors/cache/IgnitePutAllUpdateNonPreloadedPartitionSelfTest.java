@@ -59,7 +59,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
         ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        ccfg.setPreloadPartitionedDelay(-1);
+        ccfg.setRebalancePartitionedDelay(-1);
 
         return ccfg;
     }
