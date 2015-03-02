@@ -384,7 +384,6 @@ public class IgniteConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
-    @SuppressWarnings("deprecation")
     public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
@@ -397,8 +396,8 @@ public class IgniteConfiguration {
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
-        swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
+        swapSpaceSpi = cfg.getSwapSpaceSpi();
 
         /*
          * Order alphabetically for maintenance purposes.
@@ -443,6 +442,7 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
+        qryCfg = cfg.getQueryConfiguration();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -450,6 +450,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         streamerCfg = cfg.getStreamerConfiguration();
+        svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
