@@ -440,7 +440,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     info.setDeleted(deletedUnlocked());
 
                     if (!expired) {
-                        info.value(val);
+                        CacheObject val0 = val;
+
+                        if (val0 == null && valPtr != 0) {
+                            IgniteBiTuple<byte[], Boolean> t = valueBytes0();
+
+                            if (t.get2())
+                                val0 = cctx.toCacheObject(t.get1(), null);
+                            else
+                                val0 = cctx.toCacheObject(null, t.get1());
+
+                        }
+
+                        info.value(val0);
 // TODO IGNITE-51.
 //                        info.value(cctx.kernalContext().config().isPeerClassLoadingEnabled() ?
 //                            rawGetOrUnmarshalUnlocked(false) : val);
