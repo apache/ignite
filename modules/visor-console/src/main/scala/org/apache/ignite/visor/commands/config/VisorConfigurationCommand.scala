@@ -21,6 +21,7 @@ import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
 
 import java.lang.System._
@@ -199,7 +200,7 @@ class VisorConfigurationCommand {
 
             val basic = cfg.basic()
 
-            cmnT += ("Grid name", safe(basic.gridName(), "<default>"))
+            cmnT += ("Grid name", escapeName(basic.gridName()))
             cmnT += ("Ignite home", safe(basic.ggHome()))
             cmnT += ("Localhost", safe(basic.localHost()))
             cmnT += ("Node ID", safe(basic.nodeId()))
@@ -407,7 +408,7 @@ class VisorConfigurationCommand {
                 println("\nNo system properties defined.")
 
             cfg.caches().foreach(cacheCfg => {
-                VisorCacheCommand.showCacheConfiguration("\nCache '" + safe(cacheCfg.name()) + "':", cacheCfg)
+                VisorCacheCommand.showCacheConfiguration("\nCache '" + escapeName(cacheCfg.name()) + "':", cacheCfg)
             })
         }
     }
