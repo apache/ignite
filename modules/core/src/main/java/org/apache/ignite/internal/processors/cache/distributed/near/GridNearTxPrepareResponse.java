@@ -65,12 +65,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** OwnedVals' keys for marshalling. */
     @GridToStringExclude
-    @GridDirectTransient
+    @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> ownedValKeys;
 
     /** OwnedVals' values for marshalling. */
     @GridToStringExclude
-    @GridDirectTransient
+    @GridDirectCollection(OwnedValue.class)
     private Collection<OwnedValue> ownedValVals;
 
     /** Cache return value. */
@@ -234,14 +234,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             ownedValVals = ownedVals.values();
 
-            for (IgniteTxKey key : ownedVals.keySet()) {
-                GridCacheContext cacheCtx = ctx.cacheContext(key.cacheId());
+            for (Map.Entry<IgniteTxKey, OwnedValue> entry : ownedVals.entrySet()) {
+                GridCacheContext cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
-                OwnedValue value = ownedVals.get(key);
+                entry.getKey().prepareMarshal(cacheCtx);
 
-                key.prepareMarshal(cacheCtx);
-
-                value.prepareMarshal(cacheCtx.cacheObjectContext());
+                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
             }
         }
 
@@ -262,7 +260,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedValKeys != null && ownedVals == null) {
-            ownedVals = new HashMap<>();
+            ownedVals = U.newHashMap(ownedValKeys.size());
 
             assert ownedValKeys.size() == ownedValVals.size();
 
@@ -484,14 +482,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         /** Cache object. */
         private CacheObject obj;
 
+        /** */
         public OwnedValue() {
             // No-op.
         }
 
         /**
-         * Initialize OwnedValues.
-         *
-          * @param vers Cache version.
+         * @param vers Cache version.
          * @param obj Cache object.
          */
         OwnedValue(GridCacheVersion vers, CacheObject obj) {

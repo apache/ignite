@@ -295,7 +295,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (ownedKeys != null && owned == null) {
+        if (ownedKeys != null) {
             assert ownedKeys.size() == ownedVals.size();
 
             owned = U.newHashMap(ownedKeys.size());
@@ -311,7 +311,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 owned.put(key, valIter.next());
             }
-
         }
 
         unmarshalTx(nearWrites, true, ctx, ldr);

@@ -71,7 +71,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** Transaction write entries. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(IgniteTxEntry.class)
     private Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
@@ -84,7 +84,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @GridDirectCollection(IgniteTxKey.class)
+    @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> dhtVerVals;
 
     /** Group lock key, if any. */
