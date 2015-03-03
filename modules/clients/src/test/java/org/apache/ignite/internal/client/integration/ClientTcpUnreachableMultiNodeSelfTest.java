@@ -85,10 +85,6 @@ public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSel
                     return node.caches();
                 }
 
-                @Override public int replicaCount() {
-                    return node.replicaCount();
-                }
-
                 @Override public List<String> tcpAddresses() {
                     return node.tcpAddresses();
                 }

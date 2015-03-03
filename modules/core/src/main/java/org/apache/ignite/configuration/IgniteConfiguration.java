@@ -311,7 +311,7 @@ public class IgniteConfiguration {
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
-    private Collection<? extends PluginConfiguration> pluginCfgs;
+    private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
@@ -1875,14 +1875,14 @@ public class IgniteConfiguration {
     /**
      * @return Plugin configurations.
      */
-    public Collection<? extends PluginConfiguration> getPluginConfigurations() {
+    public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
      * @param pluginCfgs Plugin configurations.
      */
-    public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
+    public void setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
     }
 
