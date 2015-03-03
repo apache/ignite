@@ -34,11 +34,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * Data loader performance test. Compares group lock data loader to traditional lock.
+ * Data streamer performance test. Compares group lock data loader to traditional lock.
  * <p>
  * Disable assertions and give at least 2 GB heap to run this test.
  */
-public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
+public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

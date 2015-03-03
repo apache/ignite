@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Tests for {@code GridDataLoaderImpl}.
  */
-public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
+public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -114,7 +114,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data loader should correctly load entries from HashMap in case of grids with more than one node
+     * Data streamer should correctly load entries from HashMap in case of grids with more than one node
      *  and with GridOptimizedMarshaller that requires serializable.
      *
      * @throws Exception If failed.

@@ -24,7 +24,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data loader is responsible for loading external data into cache. It achieves it by
+ * Data streamer is responsible for loading external data into cache. It achieves it by
  * properly buffering updates and properly mapping keys to nodes responsible for the data
  * to make sure that there is the least amount of data movement possible and optimal
  * network and memory utilization.
@@ -363,7 +363,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
      * performance custom user-defined implementation may help.
      * <p>
-     * Data loader can be configured to use custom implementation of updater instead of default one using
+     * Data streamer can be configured to use custom implementation of updater instead of default one using
      * {@link IgniteDataStreamer#updater(IgniteDataStreamer.Updater)} method.
      */
     interface Updater<K, V> extends Serializable {

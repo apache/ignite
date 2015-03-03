@@ -1139,7 +1139,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /**
-     * Data loader peer-deploy aware.
+     * Data streamer peer-deploy aware.
      */
     private class StreamerPda implements GridPeerDeployAware {
         /** */

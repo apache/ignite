@@ -26,13 +26,13 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data loader future.
+ * Data streamer future.
  */
 class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Data loader. */
+    /** Data streamer. */
     @GridToStringExclude
     private IgniteDataStreamerImpl dataLdr;
 
@@ -45,7 +45,7 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
 
     /**
      * @param ctx Context.
-     * @param dataLdr Data loader.
+     * @param dataLdr Data streamer.
      */
     IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
         super(ctx);

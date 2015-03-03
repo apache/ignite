@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
- * Data loader implementation.
+ * Data streamer implementation.
  */
 @SuppressWarnings("unchecked")
 public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
@@ -253,7 +253,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      */
     private void enterBusy() {
         if (!busyLock.enterBusy())
-            throw new IllegalStateException("Data loader has been closed.");
+            throw new IllegalStateException("Data streamer has been closed.");
     }
 
     /**
@@ -520,7 +520,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                             log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
                         if (cancelled) {
-                            resFut.onDone(new IgniteCheckedException("Data loader has been cancelled: " +
+                            resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
                                 IgniteDataStreamerImpl.this, e1));
                         }
                         else if (remaps + 1 > maxRemapCnt) {
@@ -887,7 +887,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                 submit(entries0, curFut0);
 
                 if (cancelled)
-                    curFut0.onDone(new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataStreamerImpl.this));
+                    curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " + IgniteDataStreamerImpl.this));
             }
 
             return curFut0;
@@ -1160,7 +1160,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          *
          */
         void cancelAll() {
-            IgniteCheckedException err = new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataStreamerImpl.this);
+            IgniteCheckedException err = new IgniteCheckedException("Data streamer has been cancelled: " + IgniteDataStreamerImpl.this);
 
             for (IgniteInternalFuture<?> f : locFuts) {
                 try {
@@ -1191,7 +1191,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     }
 
     /**
-     * Data loader peer-deploy aware.
+     * Data streamer peer-deploy aware.
      */
     private class DataLoaderPda implements GridPeerDeployAware {
         /** */

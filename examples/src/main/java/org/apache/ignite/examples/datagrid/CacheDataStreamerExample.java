@@ -32,7 +32,7 @@ import org.apache.ignite.examples.*;
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-cache.xml} configuration.
  */
-public class CacheDataLoaderExample {
+public class CacheDataStreamerExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 

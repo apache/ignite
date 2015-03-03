@@ -140,7 +140,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name ({@code null} for default cache).
      * @param compact {@code true} if data loader should transfer data in compact format.
-     * @return Data loader.
+     * @return Data streamer.
      */
     public IgniteDataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
@@ -171,7 +171,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name ({@code null} for default cache).
-     * @return Data loader.
+     * @return Data streamer.
      */
     public IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         return dataStreamer(cacheName, true);
@@ -310,7 +310,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Data loader processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Data streamer processor memory stats [grid=" + ctx.gridName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
     }
 }

@@ -110,7 +110,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
         suite.addTestSuite(IgniteDataStreamerProcessorSelfTest.class);
-        suite.addTestSuite(GridDataLoaderImplSelfTest.class);
+        suite.addTestSuite(IgniteDataStreamerImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
         suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
