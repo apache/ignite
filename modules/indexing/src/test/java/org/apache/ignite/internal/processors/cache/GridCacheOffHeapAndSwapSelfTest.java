@@ -274,7 +274,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             Long val = entry.rawGet().value(entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), val);
+            assertEquals(entry.key().value(entry.context(), false), val);
             assertEquals(entry.version(), versions.get(i));
         }
 

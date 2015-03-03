@@ -247,9 +247,10 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
      * @param rmv {@code True} if entry was removed.
      */
     public void onEntryUpdated(KeyCacheObject key, boolean rmv) {
-        // TODO IGNITE-51.
-        if (key instanceof GridCacheSetItemKey)
-            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
+        Object key0 = key.value(cctx, false);
+
+        if (key0 instanceof GridCacheSetItemKey)
+            onSetItemUpdated((GridCacheSetItemKey)key0, rmv);
     }
 
     /**

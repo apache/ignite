@@ -1005,9 +1005,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             for (IgniteTxEntry entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
                 if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key().internal()) {
-                    GridCacheInternal key = (GridCacheInternal)entry.key();
+                    GridCacheInternal key = entry.key().value(entry.context(), false);
 
-                    // TODO IGNITE-51.
                     Object val0 = CU.value(entry.value(), entry.context(), false);
 
                     if (val0 instanceof GridCacheCountDownLatchValue) {
@@ -1038,8 +1037,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 }
 
                 // Check deleted GridCacheInternal keys.
-                if (entry.op() == DELETE && entry.key() instanceof GridCacheInternal) {
-                    GridCacheInternal key = (GridCacheInternal)entry.key();
+                if (entry.op() == DELETE && entry.key().internal()) {
+                    GridCacheInternal key = entry.key().value(entry.context(), false);
 
                     // Entry's val is null if entry deleted.
                     GridCacheRemovable obj = dsMap.remove(key);

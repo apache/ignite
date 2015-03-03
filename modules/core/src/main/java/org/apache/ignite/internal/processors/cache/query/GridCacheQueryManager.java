@@ -345,11 +345,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param key Key.
-     * @param keyBytes Byte array with key value.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(KeyCacheObject key) throws IgniteCheckedException {
+    public void remove(Object key) throws IgniteCheckedException {
         assert key != null;
 
         if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))

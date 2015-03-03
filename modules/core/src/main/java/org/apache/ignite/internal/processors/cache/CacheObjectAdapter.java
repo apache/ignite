@@ -52,14 +52,24 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        byte[] valBytes = byteArray() ? (byte[])val : this.valBytes;
+
         assert valBytes != null;
 
+        out.writeBoolean(byteArray());
         U.writeByteArray(out, valBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        valBytes = U.readByteArray(in);
+        boolean byteArr = in.readBoolean();
+
+        byte[] valBytes = U.readByteArray(in);
+
+        if (byteArr)
+            val = valBytes;
+        else
+            this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */

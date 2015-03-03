@@ -258,7 +258,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 if (val == null) {
                                     assertNull(ver);
 
-                                    val = entry.rawGetOrUnmarshal(false);
+                                    val = CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false);
                                     ver = entry.version();
                                     nodeId = locNode.id();
                                 }
@@ -267,7 +267,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, entry.rawGetOrUnmarshal(false));
+                                        val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
                                     assertEquals(ver, entry.version());
                                 }
                             }

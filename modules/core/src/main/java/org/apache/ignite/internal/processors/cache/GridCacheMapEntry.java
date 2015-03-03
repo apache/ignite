@@ -188,7 +188,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         // In case we deal with IGFS cache, count updated data
         if (cctx.cache().isIgfsDataCache() && cctx.kernalContext().igfsHelper().isIgfsBlockKey(key.value(cctx, false))) {
             int newSize = valueLength0(val, null);
-            int oldSize = valueLength0(this.val, this.val == null ? valueBytes0() : null);
+            int oldSize = valueLength0(this.val, (this.val == null && valPtr != 0) ? valueBytes0() : null);
 
             int delta = newSize - oldSize;
 
@@ -3708,8 +3708,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         try {
             GridCacheQueryManager qryMgr = cctx.queries();
 
+            // TODO IGNITE-51.
             if (qryMgr != null)
-                qryMgr.store(key, null, val, null, ver, expireTime);
+                qryMgr.store(key.value(cctx, false), null, CU.value(val, cctx, false), null, ver, expireTime);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3728,8 +3729,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         try {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
+            // TODO IGNITE-51.
             if (qryMgr != null)
-                qryMgr.remove(key());
+                qryMgr.remove(key().value(cctx, false));
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -4393,7 +4395,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     GridTuple<CacheObject> peek = tx.peek(cctx, false, key, null);
 
                     if (peek != null)
-                        return peek.get().value(cctx, false);
+                        return CU.value(peek.get(), cctx, false);
                 }
 
                 if (detached())

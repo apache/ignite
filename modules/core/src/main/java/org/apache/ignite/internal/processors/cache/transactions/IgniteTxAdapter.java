@@ -901,7 +901,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return {@code True} if key is internal.
      */
     protected boolean checkInternal(IgniteTxKey key) {
-        if (key.key() instanceof GridCacheInternal) {
+        if (key.key().internal()) {
             internal = true;
 
             return true;

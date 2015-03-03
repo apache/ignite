@@ -17,10 +17,12 @@
 
 package org.apache.ignite.spring;
 
+import java.io.*;
+
 /**
  * Complex key.
  */
-public class GridSpringCacheTestKey {
+public class GridSpringCacheTestKey implements Serializable {
     /** */
     private final Integer p1;
 
