@@ -37,7 +37,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
 
     /** */
-    private final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> clsById = new ConcurrentHashMap8<>(256);
+    private final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> clsById = new ConcurrentHashMap8<>();
 
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
@@ -49,22 +49,24 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param log Logger.
      */
     MarshallerContextImpl(IgniteLogger log) {
-        String clsName = null;
-
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
             BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
 
-            while ((clsName = rdr.readLine()) != null) {
-                Class cls = U.forName(clsName, ldr);
+            String clsName;
 
-                clsById.put(cls.getName().hashCode(), F.t(cls, true));
+            while ((clsName = rdr.readLine()) != null) {
+                try {
+                    Class cls = U.forName(clsName, ldr);
+
+                    clsById.put(cls.getName().hashCode(), F.t(cls, true));
+                }
+                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Class defined in classnames.properties doesn't exist (ignoring): " + clsName);
+                }
             }
-        }
-        catch (ClassNotFoundException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Class defined in classnames.properties doesn't exist (ignoring): " + clsName);
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -105,8 +107,6 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
         if (clsById.putIfAbsent(id, F.t(cls, false)) == null) {
-            U.debug("REGISTER: " + cls.getName());
-
             try {
                 if (cache == null)
                     U.awaitQuiet(latch);
