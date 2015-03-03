@@ -17,6 +17,9 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.io.*;
 import java.util.*;
 
 /**
@@ -24,7 +27,34 @@ import java.util.*;
  */
 public class MarshallerContextTestImpl implements MarshallerContext {
     /** */
+    private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
+
+    /** */
     private final Map<Integer, Class> map = new HashMap<>();
+
+    /**
+     */
+    public MarshallerContextTestImpl() {
+        try {
+            ClassLoader ldr = getClass().getClassLoader();
+
+            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
+
+            String clsName;
+
+            while ((clsName = rdr.readLine()) != null) {
+                Class cls = U.forName(clsName, ldr);
+
+                map.put(cls.getName().hashCode(), cls);
+            }
+        }
+        catch (ClassNotFoundException ignored) {
+            // No-op.
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Failed to initialize marshaller context.", e);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {

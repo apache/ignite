@@ -63,6 +63,8 @@ public class MarshallerContextImpl implements MarshallerContext {
             }
         }
         catch (ClassNotFoundException ignored) {
+            U.debug("IGNORED: " + clsName);
+
             if (log.isDebugEnabled())
                 log.debug("Class defined in classnames.properties doesn't exist (ignoring): " + clsName);
         }
