@@ -50,7 +50,7 @@ public class CacheTypeFieldMetadata {
      * @param javaName Field name in java object.
      * @param javaType Field java type.
      */
-    public CacheTypeFieldMetadata(String javaName, Class<?> javaType, String dbName, int dbType) {
+    public CacheTypeFieldMetadata(String dbName, int dbType, String javaName, Class<?> javaType) {
         this.dbName = dbName;
         this.dbType = dbType;
         this.javaName = javaName;
