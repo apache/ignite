@@ -95,7 +95,6 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ClientDefaultCacheSelfTest.class));
 
         suite.addTestSuite(ClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(ClientPartitionAffinitySelfTest.class);
         suite.addTestSuite(ClientPropertiesConfigurationSelfTest.class);
         suite.addTestSuite(ClientConsistentHashSelfTest.class);
         suite.addTestSuite(ClientJavaHasherSelfTest.class);

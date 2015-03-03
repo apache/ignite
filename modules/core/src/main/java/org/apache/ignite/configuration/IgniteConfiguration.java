@@ -311,7 +311,7 @@ public class IgniteConfiguration {
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
-    private Collection<? extends PluginConfiguration> pluginCfgs;
+    private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
@@ -381,7 +381,6 @@ public class IgniteConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
-    @SuppressWarnings("deprecation")
     public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
@@ -394,8 +393,8 @@ public class IgniteConfiguration {
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
-        swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
+        swapSpaceSpi = cfg.getSwapSpaceSpi();
 
         /*
          * Order alphabetically for maintenance purposes.
@@ -440,6 +439,7 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
+        qryCfg = cfg.getQueryConfiguration();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -447,6 +447,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         streamerCfg = cfg.getStreamerConfiguration();
+        svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
@@ -1871,14 +1872,14 @@ public class IgniteConfiguration {
     /**
      * @return Plugin configurations.
      */
-    public Collection<? extends PluginConfiguration> getPluginConfigurations() {
+    public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
      * @param pluginCfgs Plugin configurations.
      */
-    public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
+    public void setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
     }
 

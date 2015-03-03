@@ -63,6 +63,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** PeerClassLoadingLocalClassPathExclude enable. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -91,8 +94,10 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         return cfg;
     }
@@ -111,6 +116,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     public void testOffHeapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
             GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);

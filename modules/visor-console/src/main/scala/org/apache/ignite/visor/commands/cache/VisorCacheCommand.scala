@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
 import org.jetbrains.annotations._
 
@@ -243,10 +244,11 @@ class VisorCacheCommand {
                 }
 
                 val cacheName = argValue("c", argLst) match {
-                    case Some("<default>") | Some(CACHE_DFLT) =>
+                    case Some(dfltName) if dfltName == DFLT_CACHE_KEY || dfltName == DFLT_CACHE_NAME =>
                         argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
 
                         Some(null)
+
                     case cn => cn
                 }
 
@@ -422,9 +424,9 @@ class VisorCacheCommand {
      */
     private def mkCacheName(@Nullable s: String): String = {
         if (s == null) {
-            val v = mfind(CACHE_DFLT)
+            val v = mfind(DFLT_CACHE_KEY)
 
-            "<default>" + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
+            DFLT_CACHE_NAME + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
         else {
             val v = mfind(s)
@@ -438,7 +440,7 @@ class VisorCacheCommand {
      *
      * @param s Cache host.
      */
-    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else CACHE_DFLT, "c")
+    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else DFLT_CACHE_KEY, "c")
 
     /**
      * ===Command===
@@ -744,8 +746,11 @@ object VisorCacheCommand {
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
 
+    /** Default cache name to show on screen. */
+    private final val DFLT_CACHE_NAME = escapeName(null)
+    
     /** Default cache key. */
-    protected val CACHE_DFLT = "<default>-" + UUID.randomUUID().toString
+    protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
 
     /** Singleton command */
     private val cmd = new VisorCacheCommand
@@ -800,7 +805,6 @@ object VisorCacheCommand {
         cacheT += ("Affinity Function", safe(affinityCfg.function()))
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
         cacheT += ("Affinity Partitions", safe(affinityCfg.partitions()))
-        cacheT += ("Affinity Default Replicas", safe(affinityCfg.defaultReplicas()))
         cacheT += ("Affinity Exclude Neighbors", safe(affinityCfg.excludeNeighbors()))
         cacheT += ("Affinity Mapper", safe(affinityCfg.mapper()))
 
@@ -851,7 +855,7 @@ object VisorCacheCommand {
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
         cacheT += ("Keep Values Bytes", cfg.valueBytes())
-        cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
+        cacheT += ("Off-Heap Size", if (cfg.offsetHeapMaxMemory() >= 0) cfg.offsetHeapMaxMemory() else NA)
 
         cacheT += ("Loader Factory Class Name", safe(cfg.loaderFactory()))
         cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))

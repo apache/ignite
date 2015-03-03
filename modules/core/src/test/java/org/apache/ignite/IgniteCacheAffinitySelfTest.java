@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
@@ -40,13 +39,10 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     private int GRID_COUNT = 3;
 
     /** Cache name */
-    private final String CACHE1 = "ConsistentHash";
+    private final String CACHE1 = "Fair";
 
     /** Cache name */
-    private final String CACHE2 = "Fair";
-
-    /** Cache name */
-    private final String CACHE3 = "Rendezvous";
+    private final String CACHE2 = "Rendezvous";
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -61,20 +57,16 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
         CacheConfiguration cache1 = cacheConfiguration(null);
         cache1.setName(CACHE1);
-        cache1.setAffinity(new CacheConsistentHashAffinityFunction());
+        cache1.setAffinity(new CachePartitionFairAffinity());
 
         CacheConfiguration cache2 = cacheConfiguration(null);
         cache2.setName(CACHE2);
-        cache2.setAffinity(new CachePartitionFairAffinity());
-
-        CacheConfiguration cache3 = cacheConfiguration(null);
-        cache3.setName(CACHE3);
-        cache3.setAffinity(new CacheRendezvousAffinityFunction());
+        cache2.setAffinity(new CacheRendezvousAffinityFunction());
 
         if (gridName.contains("0"))
             cfg.setCacheConfiguration(cache0);
         else
-            cfg.setCacheConfiguration(cache0, cache1, cache2, cache3);
+            cfg.setCacheConfiguration(cache0, cache1, cache2);
 
         return cfg;
     }
@@ -116,8 +108,8 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     private void checkAffinity() {
         checkAffinity(grid(0).affinity(null), cache(1, null).affinity());
         checkAffinity(grid(0).affinity(CACHE1), cache(1, CACHE1).affinity());
+        checkAffinity(grid(0).affinity(CACHE1), cache(1, CACHE1).affinity());
         checkAffinity(grid(0).affinity(CACHE2), cache(1, CACHE2).affinity());
-        checkAffinity(grid(0).affinity(CACHE3), cache(1, CACHE3).affinity());
     }
 
     /**
@@ -226,13 +218,13 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
         Collection<Integer> col1 = new HashSet<>();
 
-        for (int i = 0; i < arr1.length; ++i)
-            col1.add(arr1[i]);
+        for (int anArr1 : arr1)
+            col1.add(anArr1);
 
-        for (int i = 0; i < arr2.length; ++i) {
-            assertTrue(col1.contains(arr2[i]));
+        for (int anArr2 : arr2) {
+            assertTrue(col1.contains(anArr2));
 
-            col1.remove(arr2[i]);
+            col1.remove(anArr2);
         }
 
         assertEquals(0, col1.size());

@@ -15,17 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.affinity;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests consistent hash affinity function.
+ *
  */
-public class GridAffinityProcessorConsistentHashSelfTest extends GridAffinityProcessorAbstractSelfTest {
+public class GridCachePartitionedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
+    /**
+     *
+     */
+    public GridCachePartitionedLocalStoreSelfTest() {
+        super();
+    }
+
     /** {@inheritDoc} */
-    @Override protected CacheAffinityFunction affinityFunction() {
-        return new CacheConsistentHashAffinityFunction();
+    @Override protected CacheDistributionMode getDistributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode getAtomicMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode getCacheMode() {
+        return PARTITIONED;
     }
 }
