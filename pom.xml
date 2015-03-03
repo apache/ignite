@@ -1146,7 +1146,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/bin"(\s*#.*)?'/>
                                             <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>

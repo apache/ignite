@@ -30,10 +30,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -41,6 +37,10 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -3149,14 +3149,7 @@ public abstract class IgniteUtils {
         if (file.exists())
             return file;
 
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
+        return null;
     }
 
     /**
@@ -3193,9 +3186,6 @@ public abstract class IgniteUtils {
     @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
-
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
 
         if (f != null) {
             try {
