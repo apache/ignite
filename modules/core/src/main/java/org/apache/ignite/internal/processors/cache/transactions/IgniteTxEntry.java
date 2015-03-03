@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -45,7 +44,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMarshallable {
+public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,6 +54,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
     /** Owning transaction. */
     @GridToStringExclude
+    @GridDirectTransient
     private IgniteInternalTx tx;
 
     /** Cache key. */
@@ -65,6 +65,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
     private int cacheId;
 
     /** Transient tx key. */
+    @GridDirectTransient
     private IgniteTxKey txKey;
 
     /** Cache value. */
@@ -73,6 +74,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
     /** Visible value for peek. */
     @GridToStringInclude
+    @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
     /** Filter bytes. */
@@ -98,6 +100,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
+    @GridDirectTransient
     private GridCacheVersion explicitVer;
 
     /** DHT version. */
@@ -109,6 +112,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
     private IgnitePredicate<Cache.Entry<Object, Object>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
+    @GridDirectTransient
     private boolean filtersPassed;
 
     /** Flag indicating that filter is set and can not be replaced. */
@@ -131,18 +135,18 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
     private transient UUID nodeId;
 
     /** Flag if this node is a back up node. */
+    @GridDirectTransient
     private boolean locMapped;
 
     /** Group lock entry flag. */
     private boolean grpLock;
 
-    /** Deployment enabled flag. */
-    private boolean depEnabled = true;
-
     /** Expiry policy. */
+    @GridDirectTransient
     private ExpiryPolicy expiryPlc;
 
     /** Expiry policy transfer flag. */
+    @GridDirectTransient
     private boolean transferExpiryPlc;
 
     /**
@@ -188,8 +192,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
         key = entry.key();
 
         cacheId = entry.context().cacheId();
-
-        depEnabled = ctx.gridDeploy().enabled();
     }
 
     /**
@@ -235,8 +237,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
         key = entry.key();
 
         cacheId = entry.context().cacheId();
-
-        depEnabled = ctx.gridDeploy().enabled();
     }
 
     /**
@@ -296,7 +296,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
         cp.conflictExpireTime = conflictExpireTime;
         cp.explicitVer = explicitVer;
         cp.grpLock = grpLock;
-        cp.depEnabled = depEnabled;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
 
@@ -688,22 +687,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
      */
     public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
-        if (depEnabled) {
-            if (transformClosBytes == null && entryProcessorsCol != null)
-                transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
+        if (transformClosBytes == null && entryProcessorsCol != null)
+            transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
-            if (F.isEmptyOrNulls(filters))
-                filterBytes = null;
-            else if (filterBytes == null)
-                filterBytes = CU.marshal(ctx, filters);
-        }
+        if (F.isEmptyOrNulls(filters))
+            filterBytes = null;
+        else if (filterBytes == null)
+            filterBytes = CU.marshal(ctx, filters);
 
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
         key.prepareMarshal(context().cacheObjectContext());
 
-        val.marshal(ctx, context(), depEnabled);
+        val.marshal(ctx, context());
     }
 
     /**
@@ -726,22 +723,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
             this.ctx = cacheCtx;
         }
 
-        if (depEnabled) {
-            // Unmarshal transform closure anyway if it exists.
-            if (transformClosBytes != null && entryProcessorsCol == null)
-                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+        // Unmarshal transform closure anyway if it exists.
+        if (transformClosBytes != null && entryProcessorsCol == null)
+            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
-            if (filters == null && filterBytes != null) {
-                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
+        if (filters == null && filterBytes != null) {
+            filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
 
-                if (filters == null)
-                    filters = CU.empty();
-            }
+            if (filters == null)
+                filters = CU.empty();
         }
 
         key.finishUnmarshal(context(), clsLdr);
 
-        val.unmarshal(this.ctx, clsLdr, depEnabled);
+        val.unmarshal(this.ctx, clsLdr);
     }
 
     /**
@@ -771,50 +766,59 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
-                    return false;
-
-                writer.incrementState();
-            case 1:
                 if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
                 writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("conflictExpireTime", conflictExpireTime))
+                    return false;
+
+                writer.incrementState();
+
             case 2:
-                if (!writer.writeMessage("val", val))
-                    return false;
-
-                writer.incrementState();
-            case 3:
-                if (!writer.writeLong("ttl", ttl))
-                    return false;
-
-                writer.incrementState();
-            case 4:
                 if (!writer.writeMessage("conflictVer", conflictVer))
                     return false;
 
                 writer.incrementState();
-            case 5:
+
+            case 3:
+                if (!writer.writeByteArray("filterBytes", filterBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeBoolean("grpLock", grpLock))
                     return false;
 
                 writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
             case 6:
                 if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
                     return false;
 
                 writer.incrementState();
+
             case 7:
-                if (!writer.writeByteArray("filterBytes", filterBytes))
+                if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
+
             case 8:
-                if (!(writer.writeLong("conflictExpireTime", conflictExpireTime)))
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -829,61 +833,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 1:
                 cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-            case 2:
-                val = reader.readMessage("val");
 
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 3:
-                ttl = reader.readLong("ttl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 4:
-                conflictVer = reader.readMessage("conflictVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 5:
-                grpLock = reader.readBoolean("grpLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 6:
-                transformClosBytes = reader.readByteArray("transformClosBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 7:
-                filterBytes = reader.readByteArray("filterBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 8:
+            case 1:
                 conflictExpireTime = reader.readLong("conflictExpireTime");
 
                 if (!reader.isLastRead())
@@ -891,6 +848,61 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
 
                 reader.incrementState();
 
+            case 2:
+                conflictVer = reader.readMessage("conflictVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                filterBytes = reader.readByteArray("filterBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                grpLock = reader.readBoolean("grpLock");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                transformClosBytes = reader.readByteArray("transformClosBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
 
         }
 
@@ -905,11 +917,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMar
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 9;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -44,6 +45,7 @@ public class TxEntryValueHolder implements Message {
     private boolean hasWriteVal;
 
     /** Flag indicating that value has been set for read. */
+    @GridDirectTransient
     private boolean hasReadVal;
 
     /**
@@ -121,10 +123,9 @@ public class TxEntryValueHolder implements Message {
     /**
      * @param sharedCtx Shared cache context.
      * @param ctx Cache context.
-     * @param depEnabled Deployment enabled flag.
      * @throws org.apache.ignite.IgniteCheckedException If marshaling failed.
      */
-    public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx, boolean depEnabled)
+    public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx)
         throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
@@ -143,10 +144,9 @@ public class TxEntryValueHolder implements Message {
     /**
      * @param ctx Cache context.
      * @param ldr Class loader.
-     * @param depEnabled Deployment enabled flag.
      * @throws org.apache.ignite.IgniteCheckedException If unmarshalling failed.
      */
-    public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
+    public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val != null)
             val.finishUnmarshal(ctx, ldr);
 
@@ -235,24 +235,18 @@ public class TxEntryValueHolder implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("hasReadVal", hasReadVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeBoolean("hasWriteVal", hasWriteVal))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -272,14 +266,6 @@ public class TxEntryValueHolder implements Message {
 
         switch (reader.state()) {
             case 0:
-                hasReadVal = reader.readBoolean("hasReadVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 hasWriteVal = reader.readBoolean("hasWriteVal");
 
                 if (!reader.isLastRead())
@@ -287,18 +273,19 @@ public class TxEntryValueHolder implements Message {
 
                 reader.incrementState();
 
-            case 2:
-                byte opOrd = reader.readByte("op");
+            case 1:
+                byte opOrd;
+
+                opOrd = reader.readByte("op");
 
                 if (!reader.isLastRead())
                     return false;
 
-                if (opOrd != -1)
-                    op = GridCacheOperation.fromOrdinal(opOrd);
+                op = GridCacheOperation.fromOrdinal(opOrd);
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -318,6 +305,6 @@ public class TxEntryValueHolder implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 }
