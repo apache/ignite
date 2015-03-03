@@ -100,16 +100,17 @@ public class GridNearTxPrepareResponseOwnedValue implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("vers", vers))
+                if (!writer.writeMessage("obj", obj))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("obj", obj))
+                if (!writer.writeMessage("vers", vers))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -124,7 +125,7 @@ public class GridNearTxPrepareResponseOwnedValue implements Message {
 
         switch (reader.state()) {
             case 0:
-                vers = reader.readMessage("vers");
+                obj = reader.readMessage("obj");
 
                 if (!reader.isLastRead())
                     return false;
@@ -132,12 +133,13 @@ public class GridNearTxPrepareResponseOwnedValue implements Message {
                 reader.incrementState();
 
             case 1:
-                obj = reader.readMessage("obj");
+                vers = reader.readMessage("vers");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return true;
