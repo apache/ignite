@@ -103,6 +103,48 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testGetMetricsDisable() throws Exception {
+        // Disable statistics.
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            g.jcache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(false);
+        }
+
+        IgniteCache<Object, Object> jcache = grid(0).jcache(null);
+
+        // Write to cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.put(i, i);
+
+        // Get from cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.get(i);
+
+        // Remove from cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.remove(i);
+
+        // Assert that statistics is clear.
+        for (int i = 0; i < gridCount(); i++) {
+            CacheMetrics m = grid(i).jcache(null).metrics();
+
+            assertEquals(m.getCacheGets(), 0);
+            assertEquals(m.getCachePuts(), 0);
+            assertEquals(m.getCacheRemovals(), 0);
+            assertEquals(m.getCacheHits(), 0);
+            assertEquals(m.getCacheMisses(), 0);
+            assertEquals(m.getAverageGetTime(), 0f);
+            assertEquals(m.getAverageRemoveTime(), 0f);
+            assertEquals(m.getAveragePutTime(), 0f);
+            assertEquals(m.getAverageTxCommitTime(), 0f);
+            assertEquals(m.getAverageTxRollbackTime(), 0f);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetMetricsSnapshot() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).jcache(null);
 

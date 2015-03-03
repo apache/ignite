@@ -618,6 +618,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
 
+            // Init default key mapper.
+            CacheAffinityKeyMapper dfltAffMapper;
+
+            if (cfg.getAffinityMapper().getClass().equals(GridCacheDefaultAffinityKeyMapper.class))
+                dfltAffMapper = cfg.getAffinityMapper();
+            else {
+                dfltAffMapper = new GridCacheDefaultAffinityKeyMapper();
+
+                prepare(cfg, dfltAffMapper, false);
+            }
+
             cfgs[i] = cfg; // Replace original configuration value.
 
             GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
@@ -654,6 +665,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ttlMgr,
                 drMgr,
                 jta);
+
+            cacheCtx.defaultAffMapper(dfltAffMapper);
 
             GridCacheAdapter cache = null;
 
@@ -792,6 +805,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ttlMgr,
                     drMgr,
                     jta);
+
+                cacheCtx.defaultAffMapper(dfltAffMapper);
 
                 GridDhtCacheAdapter dht = null;
 

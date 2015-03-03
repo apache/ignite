@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -163,6 +164,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Cached local rich node. */
     private ClusterNode locNode;
+
+    /** Default cache affinity mapper. */
+    private CacheAffinityKeyMapper affMapper;
 
     /**
      * Thread local projection. If it's set it means that method call was initiated
@@ -1019,6 +1023,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheVersion[] emptyVersion() {
         return EMPTY_VERSION;
+    }
+
+    /**
+     * @return Default affinity key mapper.
+     */
+    public CacheAffinityKeyMapper defaultAffMapper() {
+        return affMapper;
+    }
+
+    /**
+     * Sets default affinity key mapper.
+     */
+    public void defaultAffMapper(CacheAffinityKeyMapper dfltAffMapper) {
+        this.affMapper = dfltAffMapper;
     }
 
     /**
@@ -1905,6 +1923,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         evictMgr = null;
         qryMgr = null;
         dataStructuresMgr = null;
+        affMapper = null;
 
         mgrs.clear();
     }

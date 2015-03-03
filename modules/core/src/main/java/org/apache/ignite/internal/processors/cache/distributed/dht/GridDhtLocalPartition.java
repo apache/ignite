@@ -488,6 +488,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id, false);
 
+            boolean isLocStore = cctx.store().isLocalStore();
+
             if (it != null) {
                 // We can safely remove these values because no entries will be created for evicted partition.
                 while (it.hasNext()) {
@@ -498,6 +500,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                     KeyCacheObject key = cctx.toCacheKeyObject(null, keyBytes);
 
                     cctx.swap().remove(key);
+
+                    if (isLocStore)
+                        cctx.store().removeFromStore(null, key);
                 }
             }
         }

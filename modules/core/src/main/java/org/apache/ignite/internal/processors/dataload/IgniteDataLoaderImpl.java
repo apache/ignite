@@ -65,7 +65,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private byte[] updaterBytes;
 
     /** Max remap count before issuing an error. */
-    private static final int MAX_REMAP_CNT = 32;
+    private static final int DFLT_MAX_REMAP_CNT = 32;
 
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -152,6 +152,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** */
     private boolean skipStore;
+
+    /** */
+    private int maxRemapCnt = DFLT_MAX_REMAP_CNT;
 
     /**
      * @param ctx Grid kernal context.
@@ -486,12 +489,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     ) {
         assert entries != null;
 
-        if (remaps >= MAX_REMAP_CNT) {
-            resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): " + remaps));
-
-            return;
-        }
-
         Map<ClusterNode, Collection<IgniteDataLoaderEntry>> mappings = new HashMap<>();
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
@@ -579,6 +576,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         if (cancelled) {
                             resFut.onDone(new IgniteCheckedException("Data loader has been cancelled: " +
                                 IgniteDataLoaderImpl.this, e1));
+                        }
+                        else if (remaps + 1 > maxRemapCnt) {
+                            resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
+                                + remaps), e1);
                         }
                         else
                             load0(entriesForNode, resFut, activeKeys, remaps + 1);
@@ -812,6 +813,20 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         close(false);
+    }
+
+    /**
+     * @return Max remap count.
+     */
+    public int maxRemapCount() {
+        return maxRemapCnt;
+    }
+
+    /**
+     * @param maxRemapCnt New max remap count.
+     */
+    public void maxRemapCount(int maxRemapCnt) {
+        this.maxRemapCnt = maxRemapCnt;
     }
 
     /** {@inheritDoc} */
