@@ -312,7 +312,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         else
             cacheId = 1;
 
-        sys = CU.MARSH_CACHE_NAME.equals(cacheName) || CU.UTILITY_CACHE_NAME.equals(cacheName);
+        sys = ctx.cache().systemCache(cacheName);
 
         plc = sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
 

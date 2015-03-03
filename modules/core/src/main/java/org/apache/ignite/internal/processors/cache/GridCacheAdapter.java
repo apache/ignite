@@ -3680,7 +3680,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Nullable @Override public Transaction tx() {
-        IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx(null);
+        IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx(ctx);
 
         return tx == null ? null : new TransactionProxyImpl<>(tx, ctx.shared(), false);
     }
