@@ -59,7 +59,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     private static final long serialVersionUID = 0L;
 
     /** Default number of partitions. */
-    public static final int DFLT_PARTITION_COUNT = 10000;
+    public static final int DFLT_PARTITION_COUNT = 1024;
 
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR =

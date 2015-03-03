@@ -3192,6 +3192,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }
 
+                if (cctx.store().isLocalStore()) {
+                    if (val != null || valBytes != null) {
+                        if (val == null)
+                            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
+
+                        cctx.store().putToStore(null, key, val, ver);
+                    }
+                }
+
                 return true;
             }
 

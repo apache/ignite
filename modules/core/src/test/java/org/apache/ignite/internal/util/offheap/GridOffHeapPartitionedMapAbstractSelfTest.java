@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.offheap;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
@@ -245,7 +245,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
-        CacheAffinityFunction aff = new CacheConsistentHashAffinityFunction(parts, null);
+        CacheAffinityFunction aff = new CacheRendezvousAffinityFunction(parts, null);
 
         getTestResources().inject(aff);
 
