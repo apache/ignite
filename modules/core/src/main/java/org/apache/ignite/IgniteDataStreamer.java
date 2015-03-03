@@ -41,7 +41,7 @@ import java.util.*;
  * data can be loaded from underlying data store on demand, whenever it is accessed -
  * for this no explicit data loading step is needed.
  * <p>
- * {@code IgniteDataLoader} supports the following configuration properties:
+ * {@code IgniteDataStreamer} supports the following configuration properties:
  * <ul>
  *  <li>
  *      {@link #perNodeBufferSize(int)} - when entries are added to data loader via

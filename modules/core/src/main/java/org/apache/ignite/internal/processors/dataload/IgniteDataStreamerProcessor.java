@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  *
  */
-public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
+public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<IgniteDataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -58,7 +58,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridDataLoaderProcessor(GridKernalContext ctx) {
+    public IgniteDataStreamerProcessor(GridKernalContext ctx) {
         super(ctx);
 
         ctx.io().addMessageListener(TOPIC_DATALOAD, new GridMessageListener() {

@@ -247,7 +247,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Data loader processor.
      */
-    public <K, V> GridDataLoaderProcessor<K, V> dataLoad();
+    public <K, V> IgniteDataStreamerProcessor<K, V> dataLoad();
 
     /**
      * Gets file system processor.

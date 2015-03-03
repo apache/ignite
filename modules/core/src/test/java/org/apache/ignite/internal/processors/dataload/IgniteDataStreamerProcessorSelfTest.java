@@ -52,7 +52,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  *
  */
-public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
+public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
 
