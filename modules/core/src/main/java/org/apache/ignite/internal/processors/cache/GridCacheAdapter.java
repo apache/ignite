@@ -3880,7 +3880,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             IgniteDataStreamerImpl<K, V> ldr = ctx.kernalContext().<K, V>dataStream().dataStreamer(ctx.namex(), false);
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
@@ -4089,7 +4089,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             IgniteDataStreamerImpl<K, V> ldr = ctx.kernalContext().<K, V>dataStream().dataStreamer(ctx.namex(), false);
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 

@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Data center replication cache updater for data streamer.
  */
-public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V> {
+public class IgniteDrDataStreamerCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataStreamer.Upda
             String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
             GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
-            IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
+            IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
             GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
             assert !F.isEmpty(col);
