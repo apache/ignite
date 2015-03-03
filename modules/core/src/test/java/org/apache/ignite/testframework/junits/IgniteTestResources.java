@@ -70,9 +70,7 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        GridTestKernalContext ctx = new GridTestKernalContext();
-
-        ctx.config().setGridLogger(log);
+        GridTestKernalContext ctx = new GridTestKernalContext(log);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -91,9 +89,7 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        GridTestKernalContext ctx = new GridTestKernalContext();
-
-        ctx.config().setGridLogger(log);
+        GridTestKernalContext ctx = new GridTestKernalContext(log);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -111,9 +107,7 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        GridTestKernalContext ctx = new GridTestKernalContext();
-
-        ctx.config().setGridLogger(log);
+        GridTestKernalContext ctx = new GridTestKernalContext(log);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
