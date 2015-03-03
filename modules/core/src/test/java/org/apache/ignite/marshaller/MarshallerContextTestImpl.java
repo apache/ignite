@@ -43,13 +43,15 @@ public class MarshallerContextTestImpl implements MarshallerContext {
             String clsName;
 
             while ((clsName = rdr.readLine()) != null) {
-                Class cls = U.forName(clsName, ldr);
+                try {
+                    Class cls = U.forName(clsName, ldr);
 
-                map.put(cls.getName().hashCode(), cls);
+                    map.put(cls.getName().hashCode(), cls);
+                }
+                catch (ClassNotFoundException ignored) {
+                    // No-op.
+                }
             }
-        }
-        catch (ClassNotFoundException ignored) {
-            // No-op.
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
