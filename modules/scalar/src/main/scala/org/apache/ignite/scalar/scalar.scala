@@ -292,7 +292,7 @@ object scalar extends ScalarConversions {
      * @param bufSize Per node buffer size.
      * @return New instance of data streamer.
      */
-    @inline def dataLoader$[K, V](
+    @inline def dataStreamer$[K, V](
         @Nullable cacheName: String,
         bufSize: Int): IgniteDataStreamer[K, V] = {
         val dl = ignite$.dataStreamer[K, V](cacheName)

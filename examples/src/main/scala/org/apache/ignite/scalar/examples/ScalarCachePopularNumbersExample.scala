@@ -17,15 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
-import java.util.Timer
-
 import org.apache.ignite.IgniteException
 import org.apache.ignite.examples.datagrid.CacheNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
+import java.util.Timer
+
+import scala.collection.JavaConversions._
 import scala.util.Random
-import collection.JavaConversions._
 
 /**
  * Real time popular number counter.
@@ -92,7 +92,7 @@ object ScalarCachePopularNumbersExample extends App {
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
-        val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
+        val ldr = dataStreamer$[Int, Long](CACHE_NAME, 2048)
 
         // TODO IGNITE-44: restore invoke.
 
