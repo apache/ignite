@@ -112,10 +112,10 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     /** */
     private byte[] topicBytes;
 
-    /** {@code True} if data loader has been cancelled. */
+    /** {@code True} if data streamer has been cancelled. */
     private volatile boolean cancelled;
 
-    /** Active futures of this data loader. */
+    /** Active futures of this data streamer. */
     @GridToStringInclude
     private final Collection<IgniteInternalFuture<?>> activeFuts = new GridConcurrentHashSet<>();
 
@@ -720,7 +720,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         busyLock.block();
 
         if (log.isDebugEnabled())
-            log.debug("Closing data loader [ldr=" + this + ", cancel=" + cancel + ']');
+            log.debug("Closing data streamer [ldr=" + this + ", cancel=" + cancel + ']');
 
         IgniteCheckedException e = null;
 
@@ -1207,7 +1207,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         private Collection<Object> objs;
 
         /**
-         * Constructs data loader peer-deploy aware.
+         * Constructs data streamer peer-deploy aware.
          *
          * @param objs Collection of objects to detect deploy class and class loader.
          */

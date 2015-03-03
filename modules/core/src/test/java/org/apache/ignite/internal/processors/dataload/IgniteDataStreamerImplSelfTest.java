@@ -42,7 +42,7 @@ public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Number of keys to load via data loader. */
+    /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
     /** Started grid counter. */
@@ -98,7 +98,7 @@ public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             U.awaitQuiet(barrier);
 
-            info("Closing data loader.");
+            info("Closing data streamer.");
 
             try {
                 dataLdr.close(true);

@@ -207,7 +207,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
 
             l1.await();
 
-            // This will wait until data loader finishes loading.
+            // This will wait until data streamer finishes loading.
             stopGrid(getTestGridName(1), false);
 
             f1.get();
@@ -342,7 +342,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Test primitive arrays can be passed into data loader.
+     * Test primitive arrays can be passed into data streamer.
      *
      * @throws Exception If failed.
      */

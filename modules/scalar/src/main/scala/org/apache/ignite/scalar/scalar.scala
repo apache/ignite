@@ -286,11 +286,11 @@ object scalar extends ScalarConversions {
         }
 
     /**
-     * Gets a new instance of data loader associated with given cache name.
+     * Gets a new instance of data streamer associated with given cache name.
      *
      * @param cacheName Cache name (`null` for default cache).
      * @param bufSize Per node buffer size.
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
     @inline def dataLoader$[K, V](
         @Nullable cacheName: String,

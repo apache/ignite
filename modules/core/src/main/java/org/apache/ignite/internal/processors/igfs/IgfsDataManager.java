@@ -298,11 +298,11 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Creates new instance of explicit data loader.
+     * Creates new instance of explicit data streamer.
      *
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
-    private IgniteDataStreamer<IgfsBlockKey, byte[]> dataLoader() {
+    private IgniteDataStreamer<IgfsBlockKey, byte[]> dataStreamer() {
         IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
             igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
 
@@ -641,7 +641,7 @@ public class IgfsDataManager extends IgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
                     ldr.removeData(new IgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
@@ -667,7 +667,7 @@ public class IgfsDataManager extends IgfsManager {
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
@@ -1705,7 +1705,7 @@ public class IgfsDataManager extends IgfsManager {
                         break;
                     }
 
-                    IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer();
 
                     try {
                         IgfsFileMap map = fileInfo.fileMap();
@@ -1743,7 +1743,7 @@ public class IgfsDataManager extends IgfsManager {
                                 ldr.close(isCancelled());
                             }
                             catch (IgniteException e) {
-                                log.error("Failed to stop data loader while shutting down igfs async delete thread.", e);
+                                log.error("Failed to stop data streamer while shutting down igfs async delete thread.", e);
                             }
                             finally {
                                 fut.onDone(); // Complete future.

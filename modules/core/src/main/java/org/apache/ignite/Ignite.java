@@ -203,7 +203,7 @@ public interface Ignite extends AutoCloseable {
     public IgniteTransactions transactions();
 
     /**
-     * Gets a new instance of data loader associated with given cache name. Data streamer
+     * Gets a new instance of data streamer associated with given cache name. Data streamer
      * is responsible for loading external data into in-memory data grid. For more information
      * refer to {@link IgniteDataStreamer} documentation.
      *

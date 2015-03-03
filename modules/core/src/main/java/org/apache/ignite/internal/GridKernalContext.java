@@ -243,7 +243,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridSegmentationProcessor segmentation();
 
     /**
-     * Gets data loader processor.
+     * Gets data streamer processor.
      *
      * @return Data streamer processor.
      */

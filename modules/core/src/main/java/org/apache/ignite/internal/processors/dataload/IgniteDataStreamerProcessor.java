@@ -103,7 +103,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
         flusher.start();
 
         if (log.isDebugEnabled())
-            log.debug("Started data loader processor.");
+            log.debug("Started data streamer processor.");
     }
 
     /** {@inheritDoc} */
@@ -120,31 +120,31 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
 
         for (IgniteDataStreamerImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
-                log.debug("Closing active data loader on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
+                log.debug("Closing active data streamer on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
             try {
                 ldr.closeEx(cancel);
             }
             catch (IgniteInterruptedCheckedException e) {
-                U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
+                U.warn(log, "Interrupted while waiting for completion of the data streamer: " + ldr, e);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to close data loader: " + ldr, e);
+                U.error(log, "Failed to close data streamer: " + ldr, e);
             }
         }
 
         if (log.isDebugEnabled())
-            log.debug("Stopped data loader processor.");
+            log.debug("Stopped data streamer processor.");
     }
 
     /**
      * @param cacheName Cache name ({@code null} for default cache).
-     * @param compact {@code true} if data loader should transfer data in compact format.
+     * @param compact {@code true} if data streamer should transfer data in compact format.
      * @return Data streamer.
      */
     public IgniteDataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to create data loader (grid is stopping).");
+            throw new IllegalStateException("Failed to create data streamer (grid is stopping).");
 
         try {
             final IgniteDataStreamerImpl<K, V> ldr = new IgniteDataStreamerImpl<>(ctx, cacheName, flushQ, compact);

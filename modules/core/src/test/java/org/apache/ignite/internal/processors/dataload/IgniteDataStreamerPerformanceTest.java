@@ -34,7 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * Data streamer performance test. Compares group lock data loader to traditional lock.
+ * Data streamer performance test. Compares group lock data streamer to traditional lock.
  * <p>
  * Disable assertions and give at least 2 GB heap to run this test.
  */

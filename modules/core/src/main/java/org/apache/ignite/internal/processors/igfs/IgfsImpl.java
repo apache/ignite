@@ -47,8 +47,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 
 /**
@@ -1255,7 +1255,7 @@ public final class IgfsImpl implements IgfsEx {
                             "directory): " + path);
 
                     // Remove old file from the tree.
-                    // Only one file is deleted, so we use internal data loader.
+                    // Only one file is deleted, so we use internal data streamer.
                     deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_DELETED))

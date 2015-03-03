@@ -135,7 +135,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Populates cache with data loader.
+     * Populates cache with data streamer.
      *
      * @param g Grid.
      */

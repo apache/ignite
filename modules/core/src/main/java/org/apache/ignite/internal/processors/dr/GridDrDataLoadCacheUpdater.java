@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Data center replication cache updater for data loader.
+ * Data center replication cache updater for data streamer.
  */
 public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V> {
     /** */

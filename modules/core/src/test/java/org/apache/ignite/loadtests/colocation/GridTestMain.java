@@ -168,7 +168,7 @@ public class GridTestMain {
     }
 
     /**
-     * Generates and loads data directly through cache API using data loader.
+     * Generates and loads data directly through cache API using data streamer.
      * This method is provided as example and is not called directly because
      * data is loaded through {@link GridTestCacheStore} store.
      *

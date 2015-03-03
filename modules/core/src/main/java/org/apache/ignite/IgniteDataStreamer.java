@@ -44,7 +44,7 @@ import java.util.*;
  * {@code IgniteDataStreamer} supports the following configuration properties:
  * <ul>
  *  <li>
- *      {@link #perNodeBufferSize(int)} - when entries are added to data loader via
+ *      {@link #perNodeBufferSize(int)} - when entries are added to data streamer via
  *      {@link #addData(Object, Object)} method, they are not sent to in-memory data grid right
  *      away and are buffered internally for better performance and network utilization.
  *      This setting controls the size of internal per-node buffer before buffered data
@@ -53,7 +53,7 @@ import java.util.*;
  *  </li>
  *  <li>
  *      {@link #perNodeParallelLoadOperations(int)} - sometimes data may be added
- *      to the data loader via {@link #addData(Object, Object)} method faster than it can
+ *      to the data streamer via {@link #addData(Object, Object)} method faster than it can
  *      be put in cache. In this case, new buffered load messages are sent to remote nodes
  *      before responses from previous ones are received. This could cause unlimited heap
  *      memory utilization growth on local and remote nodes. To control memory utilization,
@@ -70,8 +70,8 @@ import java.util.*;
  *      changing), but it won't be lost anyway. Disabled by default (default value is {@code 0}).
  *  </li>
  *  <li>
- *      {@link #allowOverwrite(boolean)} - defines if data loader will assume that there are no other concurrent
- *      updates and allow data loader choose most optimal concurrent implementation.
+ *      {@link #allowOverwrite(boolean)} - defines if data streamer will assume that there are no other concurrent
+ *      updates and allow data streamer choose most optimal concurrent implementation.
  *  </li>
  *  <li>
  *      {@link #updater(IgniteDataStreamer.Updater)} - defines how cache will be updated with loaded entries.
@@ -79,7 +79,7 @@ import java.util.*;
  *  </li>
  *  <li>
  *      {@link #deployClass(Class)} - optional deploy class for peer deployment. All classes
- *      loaded by a data loader must be class-loadable from the same class-loader.
+ *      loaded by a data streamer must be class-loadable from the same class-loader.
  *      Ignite will make the best effort to detect the most suitable class-loader
  *      for data loading. However, in complex cases, where compound or deeply nested
  *      class-loaders are used, it is best to specify a deploy class which can be any
@@ -102,7 +102,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public String cacheName();
 
     /**
-     * Gets flag value indicating that this data loader assumes that there are no other concurrent updates to the cache.
+     * Gets flag value indicating that this data streamer assumes that there are no other concurrent updates to the cache.
      * Default is {@code true}.
      *
      * @return Flag value.
@@ -110,7 +110,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public boolean allowOverwrite();
 
     /**
-     * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
+     * Sets flag indicating that this data streamer should assume that there are no other concurrent updates to the cache.
      * Should not be used when custom cache updater set using {@link #updater(IgniteDataStreamer.Updater)} method.
      * Default is {@code true}. When this flag is set, updates will not be propagated to the cache store.
      *
@@ -212,7 +212,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public IgniteFuture<?> future();
 
     /**
-     * Optional deploy class for peer deployment. All classes loaded by a data loader
+     * Optional deploy class for peer deployment. All classes loaded by a data streamer
      * must be class-loadable from the same class-loader. Ignite will make the best
      * effort to detect the most suitable class-loader for data loading. However,
      * in complex cases, where compound or deeply nested class-loaders are used,
@@ -224,7 +224,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void deployClass(Class<?> depCls);
 
     /**
-     * Sets custom cache updater to this data loader.
+     * Sets custom cache updater to this data streamer.
      *
      * @param updater Cache updater.
      */
@@ -348,12 +348,12 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void close(boolean cancel) throws IgniteException, IgniteInterruptedException;
 
     /**
-     * Closes data loader. This method is identical to calling {@link #close(boolean) close(false)} method.
+     * Closes data streamer. This method is identical to calling {@link #close(boolean) close(false)} method.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws IgniteException If failed to close data loader.
+     * @throws IgniteException If failed to close data streamer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      */
     @Override public void close() throws IgniteException, IgniteInterruptedException;

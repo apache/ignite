@@ -53,7 +53,7 @@ public class CacheDataStreamerExample {
 
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache data loader example started.");
+            System.out.println(">>> Cache data streamer example started.");
 
             // Clean up caches on all nodes before run.
             ignite.jcache(CACHE_NAME).clear();

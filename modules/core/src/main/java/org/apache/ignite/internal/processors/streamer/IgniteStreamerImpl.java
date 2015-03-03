@@ -1155,7 +1155,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private Collection<Object> objs;
 
         /**
-         * Constructs data loader peer-deploy aware.
+         * Constructs data streamer peer-deploy aware.
          *
          * @param objs Collection of objects to detect deploy class and class loader.
          */
