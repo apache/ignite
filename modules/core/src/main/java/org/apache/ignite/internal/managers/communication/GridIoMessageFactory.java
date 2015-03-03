@@ -533,14 +533,17 @@ public class GridIoMessageFactory implements MessageFactory {
                 msg = new CacheContinuousQueryEntry();
 
                 break;
+
             case 97:
                 msg = new IgniteTxEntry();
 
                 break;
+
             case 98:
                 msg = new IgniteTxEntry.TxEntryValueHolder();
 
                 break;
+
             case 99:
                 msg = new GridNearTxPrepareResponse.OwnedValue();
 

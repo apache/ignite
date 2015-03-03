@@ -31,9 +31,6 @@ import java.nio.*;
  * for multiple caches.
  */
 public class IgniteTxKey implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Key. */
     @GridToStringInclude
     private KeyCacheObject key;

@@ -174,9 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        OwnedValue oVal = new OwnedValue();
-
-        oVal.init(ver, val);
+        OwnedValue oVal = new OwnedValue(ver, val);
 
         ownedVals.put(key, oVal);
     }
@@ -486,13 +484,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         /** Cache object. */
         private CacheObject obj;
 
+        public OwnedValue() {
+            // No-op.
+        }
+
         /**
          * Initialize OwnedValues.
          *
           * @param vers Cache version.
          * @param obj Cache object.
          */
-        void init(GridCacheVersion vers, CacheObject obj) {
+        OwnedValue(GridCacheVersion vers, CacheObject obj) {
             this.vers = vers;
             this.obj = obj;
         }

@@ -58,7 +58,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Near writes. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(IgniteTxEntry.class)
     private Collection<IgniteTxEntry> nearWrites;
 
     /** Owned versions by key. */
@@ -67,9 +67,11 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
+    @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
+    @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> ownedVals;
 
     /** Near transaction ID. */
@@ -294,9 +296,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedKeys != null && owned == null) {
-            owned = new HashMap<>();
-
             assert ownedKeys.size() == ownedVals.size();
+
+            owned = U.newHashMap(ownedKeys.size());
 
             Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
 
@@ -313,7 +315,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         unmarshalTx(nearWrites, true, ctx, ldr);
-
     }
 
     /** {@inheritDoc} */
