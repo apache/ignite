@@ -61,7 +61,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, OwnedValue> ownedVals;
+    private Map<IgniteTxKey, GridNearTxPrepareResponseOwnedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */
     @GridToStringExclude
@@ -70,8 +70,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** OwnedVals' values for marshalling. */
     @GridToStringExclude
-    @GridDirectCollection(OwnedValue.class)
-    private Collection<OwnedValue> ownedValVals;
+    @GridDirectCollection(GridNearTxPrepareResponseOwnedValue.class)
+    private Collection<GridNearTxPrepareResponseOwnedValue> ownedValVals;
 
     /** Cache return value. */
     @GridDirectTransient
@@ -174,7 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        OwnedValue oVal = new OwnedValue(ver, val);
+        GridNearTxPrepareResponseOwnedValue oVal = new GridNearTxPrepareResponseOwnedValue(ver, val);
 
         ownedVals.put(key, oVal);
     }
@@ -182,9 +182,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return Owned values map.
      */
-    public Map<IgniteTxKey, OwnedValue> ownedValues() {
+    public Map<IgniteTxKey, GridNearTxPrepareResponseOwnedValue> ownedValues() {
         return ownedVals == null ?
-            Collections.<IgniteTxKey, OwnedValue>emptyMap() :
+            Collections.<IgniteTxKey, GridNearTxPrepareResponseOwnedValue>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
     }
 
@@ -234,7 +234,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             ownedValVals = ownedVals.values();
 
-            for (Map.Entry<IgniteTxKey, OwnedValue> entry : ownedVals.entrySet()) {
+            for (Map.Entry<IgniteTxKey, GridNearTxPrepareResponseOwnedValue> entry : ownedVals.entrySet()) {
                 GridCacheContext cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
                 entry.getKey().prepareMarshal(cacheCtx);
@@ -266,14 +266,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
 
-            Iterator<OwnedValue> valueIter = ownedValVals.iterator();
+            Iterator<GridNearTxPrepareResponseOwnedValue> valueIter = ownedValVals.iterator();
 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-                OwnedValue value = valueIter.next();
+                GridNearTxPrepareResponseOwnedValue value = valueIter.next();
 
                 key.finishUnmarshal(cctx, ldr);
 
@@ -472,133 +472,4 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         return S.toString(GridNearTxPrepareResponse.class, this, "super", super.toString());
     }
 
-    /**
-     * Message for owned values to set on near node.
-     */
-    public static class OwnedValue implements Message {
-        /** Cache version. */
-        private GridCacheVersion vers;
-
-        /** Cache object. */
-        private CacheObject obj;
-
-        /** */
-        public OwnedValue() {
-            // No-op.
-        }
-
-        /**
-         * @param vers Cache version.
-         * @param obj Cache object.
-         */
-        OwnedValue(GridCacheVersion vers, CacheObject obj) {
-            this.vers = vers;
-            this.obj = obj;
-        }
-
-        /**
-         * @return Cache version.
-         */
-        public GridCacheVersion version() {
-            return vers;
-        }
-
-        /**
-         * @return Cache object.
-         */
-        public CacheObject cacheObject() {
-            return obj;
-        }
-
-        /**
-         * This method is called before the whole message is sent
-         * and is responsible for pre-marshalling state.
-         *
-         * @param ctx Cache object context.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-            if (obj != null)
-                obj.prepareMarshal(ctx);
-        }
-
-        /**
-         * This method is called after the whole message is recived
-         * and is responsible for unmarshalling state.
-         *
-         * @param ctx Context.
-         * @param ldr Class loader.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-            if (obj != null)
-                obj.finishUnmarshal(ctx, ldr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
-            if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
-                    return false;
-
-                writer.onHeaderWritten();
-            }
-
-            switch (writer.state()) {
-                case 0:
-                    if (!writer.writeMessage("vers", vers))
-                        return false;
-
-                    writer.incrementState();
-
-                case 1:
-                    if (!writer.writeMessage("obj", obj))
-                        return false;
-
-                    writer.incrementState();
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            reader.setBuffer(buf);
-
-            if (!reader.beforeMessageRead())
-                return false;
-
-            switch (reader.state()) {
-                case 0:
-                    vers = reader.readMessage("vers");
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    reader.incrementState();
-
-                case 1:
-                    obj = reader.readMessage("obj");
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    reader.incrementState();
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte directType() {
-            return 99;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 2;
-        }
-    }
 }

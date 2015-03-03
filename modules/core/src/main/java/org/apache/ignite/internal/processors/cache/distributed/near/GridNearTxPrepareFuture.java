@@ -934,7 +934,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     assert F.isEmpty(res.invalidPartitions());
 
-                    for (Map.Entry<IgniteTxKey, GridNearTxPrepareResponse.OwnedValue> entry : res.ownedValues().entrySet()) {
+                    for (Map.Entry<IgniteTxKey, GridNearTxPrepareResponseOwnedValue> entry : res.ownedValues().entrySet()) {
                         IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
                         assert txEntry != null;
@@ -946,7 +946,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 if (cacheCtx.isNear()) {
                                     GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                                    GridNearTxPrepareResponse.OwnedValue tup = entry.getValue();
+                                    GridNearTxPrepareResponseOwnedValue tup = entry.getValue();
 
                                     nearEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion(),
                                         tup.version(), m.node().id());
@@ -954,7 +954,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 else if (txEntry.cached().detached()) {
                                     GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                                    GridNearTxPrepareResponse.OwnedValue tup = entry.getValue();
+                                    GridNearTxPrepareResponseOwnedValue tup = entry.getValue();
 
                                     detachedEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion());
                                 }
